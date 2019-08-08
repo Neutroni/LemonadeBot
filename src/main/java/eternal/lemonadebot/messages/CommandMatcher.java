@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
  * @author Neutroni
  */
 public class CommandMatcher {
-    
+
     private static Pattern PATTERN;
     private final Matcher MATCH;
     private final String message;
@@ -79,29 +79,30 @@ public class CommandMatcher {
         final String parameterString = this.message.substring(parameterStart);
         return parameterString.split(" ", limit);
     }
-    
+
     /**
      *
      * @param after Parameter to start after
-     * @return Optional of the data, empty if command ends at or before parameter
+     * @return Optional of the data, empty if command ends at or before
+     * parameter
      */
-    public Optional<String> getData(int after){
+    public Optional<String> getData(int after) {
         int parameterStart = MATCH.end();
-        for(int i = 0; i< after;i++){
+        for (int i = 0; i < after; i++) {
             //Find next parameter
             parameterStart = this.message.indexOf(' ', parameterStart);
             //Did we find anything
-            if(parameterStart == -1){
+            if (parameterStart == -1) {
                 return Optional.empty();
             }
             //Check if after this is the end of the string
             parameterStart++;
-            if(parameterStart == this.message.length()){
+            if (parameterStart == this.message.length()) {
                 return Optional.empty();
             }
         }
         //Found N parameters, return substring after the parameters
         return Optional.of(this.message.substring(parameterStart));
     }
-    
+
 }

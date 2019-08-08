@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2019 joonas.
+ * Copyright 2019 Neutroni.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@ import java.util.Optional;
 
 /**
  *
- * @author joonas
+ * @author Neutroni
  */
 class SQLiteManager implements AutoCloseable {
 
@@ -229,7 +229,7 @@ class SQLiteManager implements AutoCloseable {
         final String query = "SELECT key,value,owner FROM Commands;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
-                admins.add(new String[]{rs.getString("key"),rs.getString("value"),rs.getString("owner")});
+                admins.add(new String[]{rs.getString("key"), rs.getString("value"), rs.getString("owner")});
             }
         }
         return admins;
@@ -259,7 +259,7 @@ class SQLiteManager implements AutoCloseable {
             ps.setString(2, ownerID);
             ps.executeUpdate();
         }
-        
+
     }
 
     /**

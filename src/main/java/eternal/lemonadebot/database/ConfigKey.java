@@ -44,7 +44,6 @@ public enum ConfigKey {
      * Wich group has permission to manage custom commands
      */
     CUSTOM_COMMAND_MANAGE,
-
     /**
      * Wihc group can use custom commands
      */

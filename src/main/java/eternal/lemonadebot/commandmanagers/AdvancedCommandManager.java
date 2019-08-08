@@ -45,7 +45,7 @@ public class AdvancedCommandManager {
 
     private static final org.apache.logging.log4j.Logger LOGGER = LogManager.getLogger();
 
-    private final List<ChatCommand> COMMANDS = List.of(new Admin(),new Channel(),new Shutdown());
+    private final List<ChatCommand> COMMANDS = List.of(new Admin(), new Channel(), new Shutdown());
     private final DatabaseManager DATABASE;
     private final CommandParser COMMAND_PARSER;
 
@@ -68,7 +68,7 @@ public class AdvancedCommandManager {
     public List<ChatCommand> getCommands() {
         return COMMANDS;
     }
-    
+
     private class Shutdown extends OwnerCommand {
 
         @Override
@@ -86,7 +86,7 @@ public class AdvancedCommandManager {
             textChannel.sendMessage("Shutting down").queue();
             message.getJDA().shutdown();
         }
-        
+
     }
 
     private class Admin extends OwnerCommand {
@@ -252,7 +252,7 @@ public class AdvancedCommandManager {
                             sb.append("Database error removing channel ").append(channel.getName());
                             sb.append(" Will not listen on channel until next reboot unless removed succesfully from database\n");
                         }
-                        
+
                     }
                     textChannel.sendMessage(sb.toString()).queue();
                     break;

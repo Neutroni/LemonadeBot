@@ -49,6 +49,7 @@ public class CustomCommand implements ChatCommand {
 
     /**
      * Constructor
+     *
      * @param db Database to fetch permission from
      * @param actions SimpleActions to replace action templates with
      * @param command command this is activeted by
@@ -112,7 +113,7 @@ public class CustomCommand implements ChatCommand {
     public void respond(Member member, Message message, TextChannel textChannel) {
         final String[] parts = this.action.split("\\|");
         String response = parts[actions.getRandom().nextInt(parts.length)];
-        
+
         //Get mentions
         final StringBuilder mentionMessage = new StringBuilder();
         final List<Member> mentionedMembers = message.getMentionedMembers();

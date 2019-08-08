@@ -89,11 +89,11 @@ public class DatabaseManager implements AutoCloseable {
             //Load listen channels and admins
             this.channels = DB.loadChannels();
             this.admins = DB.loadAdmins();
-            
+
             //Load commands
             final List<String[]> commands = DB.loadCommands();
-            for (String[] arr: commands){
-                if(arr.length != 3){
+            for (String[] arr : commands) {
+                if (arr.length != 3) {
                     throw new DatabaseException("Database provided command in wrong format");
                 }
                 final CustomCommand command = build(arr[0], arr[1], arr[2]);
@@ -104,7 +104,7 @@ public class DatabaseManager implements AutoCloseable {
             throw new DatabaseException(ex);
         }
     }
-    
+
     /**
      * Builds a new custom command
      *
@@ -232,7 +232,7 @@ public class DatabaseManager implements AutoCloseable {
         }
         try {
             if (!DB.hasCommand(command.getCommand())) {
-                DB.addCommand(command.getCommand(),command.getAction(),command.getOwner());
+                DB.addCommand(command.getCommand(), command.getAction(), command.getOwner());
             }
         } catch (SQLException ex) {
             LOGGER.error("Adding command to database failed");
@@ -331,12 +331,13 @@ public class DatabaseManager implements AutoCloseable {
     public boolean watchingChannel(TextChannel channel) {
         return this.channels.contains(channel.getId());
     }
-    
+
     /**
      * Get the list of channels we listen on
+     *
      * @return List of channels ids
      */
-    public List<String> getChannelIds(){
+    public List<String> getChannelIds() {
         return Collections.unmodifiableList(this.channels);
     }
 
@@ -374,7 +375,7 @@ public class DatabaseManager implements AutoCloseable {
      * @throws DatabaseException if database connection fails
      */
     public boolean removeAdmin(String id) throws DatabaseException {
-        
+
         boolean removed = this.admins.remove(id);
         //Going to database even if user is not admin,
         //because database might be in different state if remove failed before
@@ -396,12 +397,13 @@ public class DatabaseManager implements AutoCloseable {
     public boolean isAdmin(User user) {
         return this.admins.contains(user.getId());
     }
-    
+
     /**
      * Gets the list of admins
+     *
      * @return List of admin ids
      */
-    public List<String> getAdminIds(){
+    public List<String> getAdminIds() {
         return Collections.unmodifiableList(this.admins);
     }
 

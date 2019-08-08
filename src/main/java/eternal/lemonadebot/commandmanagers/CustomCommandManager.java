@@ -26,7 +26,6 @@ package eternal.lemonadebot.commandmanagers;
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.customcommands.ActionEnum;
 import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.customcommands.SimpleActions;
 import eternal.lemonadebot.database.DatabaseException;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.messages.CommandMatcher;
