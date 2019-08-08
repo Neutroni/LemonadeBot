@@ -11,8 +11,8 @@ package eternal.lemonadebot;
  */
 public enum Returnvalue {
     MISSING_API_KEY(1),
-    LOGIN_FAILED(2);
-
+    DATABASE_FAILED(2),
+    LOGIN_FAILED(3);
     private final int VALUE;
 
     private Returnvalue(int value) {
@@ -22,5 +22,4 @@ public enum Returnvalue {
     public int getValue() {
         return this.VALUE;
     }
-
 }

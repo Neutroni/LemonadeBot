@@ -3,6 +3,7 @@
 
 #Netbean
 nbactions.xml
+nb-configuration.xml
 
 #Logfile
 logfile.log
