@@ -23,13 +23,10 @@
  */
 package eternal.lemonadebot.customcommands;
 
-import eternal.lemonadebot.commands.ChatCommand;
+import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.messages.CommandPermission;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.TextChannel;
@@ -41,7 +38,7 @@ import net.dv8tion.jda.core.entities.TextChannel;
 public class CustomCommand implements ChatCommand {
 
     private final DatabaseManager DB;
-    private final SimpleActions actions;
+    private final ActionManager actionManager;
 
     private final String command;
     private final String action;
@@ -56,9 +53,9 @@ public class CustomCommand implements ChatCommand {
      * @param action action template
      * @param owner who created this command
      */
-    public CustomCommand(DatabaseManager db, SimpleActions actions, String command, String action, String owner) {
+    public CustomCommand(DatabaseManager db, ActionManager actions, String command, String action, String owner) {
         this.DB = db;
-        this.actions = actions;
+        this.actionManager = actions;
         this.command = command;
         this.action = action;
         this.owner = owner;
@@ -111,27 +108,8 @@ public class CustomCommand implements ChatCommand {
 
     @Override
     public void respond(Member member, Message message, TextChannel textChannel) {
-        final String[] parts = this.action.split("\\|");
-        String response = parts[actions.getRandom().nextInt(parts.length)];
-
-        //Get mentions
-        final StringBuilder mentionMessage = new StringBuilder();
-        final List<Member> mentionedMembers = message.getMentionedMembers();
-        final Member self = textChannel.getGuild().getSelfMember();
-        final List<Member> mentions = new ArrayList<>(mentionedMembers);
-        mentions.remove(self);
-        for (int i = 0; i < mentions.size(); i++) {
-            final String nickName = mentions.get(i).getNickname();
-            mentionMessage.append(nickName);
-            if (i < mentionedMembers.size() - 1) {
-                mentionMessage.append(' ');
-            }
-        }
-        response = response.replace(ActionEnum.MENTION.getKey(), mentionMessage.toString());
-        //Process simple actions
-        for (Function<String, String> f : actions.getActions()) {
-            response = f.apply(response);
-        }
+        final String response = this.actionManager.processActions(message,action);
+        textChannel.sendMessage(response).queue();
     }
 
     @Override

@@ -23,7 +23,7 @@
  */
 package eternal.lemonadebot;
 
-import eternal.lemonadebot.commands.ChatCommand;
+import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.DatabaseException;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.messages.CommandParser;

@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.commands;
+package eternal.lemonadebot.commandtypes;
 
 import eternal.lemonadebot.messages.CommandPermission;
 
@@ -29,10 +29,10 @@ import eternal.lemonadebot.messages.CommandPermission;
  *
  * @author Neutroni
  */
-public abstract class UserCommand implements ChatCommand {
+public abstract class OwnerCommand implements ChatCommand {
 
     @Override
     public CommandPermission getPermission() {
-        return CommandPermission.USER;
+        return CommandPermission.OWNER;
     }
 }

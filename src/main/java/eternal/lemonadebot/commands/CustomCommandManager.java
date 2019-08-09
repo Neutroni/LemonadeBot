@@ -21,10 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.commandmanagers;
+package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.commands.ChatCommand;
-import eternal.lemonadebot.customcommands.ActionEnum;
+import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.database.DatabaseException;
 import eternal.lemonadebot.database.DatabaseManager;
@@ -41,6 +40,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
+ * Command used to manage custom commands
  *
  * @author Neutroni
  */
@@ -134,7 +134,7 @@ public class CustomCommandManager {
                         return;
                     }
                     final String newValue = optValue.get();
-                    final CustomCommand newAction = DATABASE.build(name, newValue, message.getAuthor().getId());
+                    final CustomCommand newAction = DATABASE.getCommandBuilder().build(name, newValue, message.getAuthor().getId());
                     {
                         try {
                             final boolean added = DATABASE.addCommand(newAction);
@@ -199,12 +199,7 @@ public class CustomCommandManager {
                     break;
                 }
                 case "keys": {
-                    final StringBuilder sb = new StringBuilder();
-                    for (ActionEnum a : ActionEnum.values()) {
-                        sb.append(a.getKey()).append(" - ").append(a.getHelp()).append('\n');
-                    }
-                    sb.append("{mention} - get mentioned users\n");
-                    textChannel.sendMessage(sb.toString()).queue();
+                    textChannel.sendMessage(DATABASE.getCommandBuilder().getActionManager().getHelp()).queue();
                     break;
                 }
                 default:

@@ -21,10 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.commandmanagers;
+package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.commands.ChatCommand;
-import eternal.lemonadebot.commands.OwnerCommand;
+import eternal.lemonadebot.commandtypes.ChatCommand;
+import eternal.lemonadebot.commandtypes.OwnerCommand;
 import eternal.lemonadebot.database.DatabaseException;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.messages.CommandMatcher;
@@ -41,7 +41,7 @@ import org.apache.logging.log4j.LogManager;
  *
  * @author Neutroni
  */
-public class AdvancedCommandManager {
+public class AdvancedCommands {
 
     private static final org.apache.logging.log4j.Logger LOGGER = LogManager.getLogger();
 
@@ -55,7 +55,7 @@ public class AdvancedCommandManager {
      * @param db
      * @param cp
      */
-    public AdvancedCommandManager(DatabaseManager db, CommandParser cp) {
+    public AdvancedCommands(DatabaseManager db, CommandParser cp) {
         this.DATABASE = db;
         this.COMMAND_PARSER = cp;
     }

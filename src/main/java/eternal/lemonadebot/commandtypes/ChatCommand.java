@@ -21,73 +21,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.customcommands;
+package eternal.lemonadebot.commandtypes;
 
-import java.util.regex.Pattern;
+import eternal.lemonadebot.messages.CommandPermission;
+import net.dv8tion.jda.core.entities.Member;
+import net.dv8tion.jda.core.entities.Message;
+import net.dv8tion.jda.core.entities.TextChannel;
 
 /**
  *
  * @author Neutroni
  */
-public enum ActionEnum {
+public interface ChatCommand {
 
     /**
-     * Flips a coin
-     */
-    COIN("{coin}", "Flips a coin"),
-    /**
-     * Rolls a dice
-     */
-    DICE("{dice}", "Rolls a dice"),
-    /**
-     * Rolls a d20
-     */
-    D20("{d20}", "Rolls a d20"),
-    /**
-     * Adds names of mentioned users to message
-     */
-    MENTION("{mention}", "Mentioned users");
-
-    private final String key;
-    private final String help;
-    private final Pattern pattern;
-
-    /**
-     * Constructor
+     * Every action has a command it is called with
      *
-     * @param key key to call this action with
-     * @param help help message for this action
+     * @return the command to activate this action
      */
-    private ActionEnum(String key, String help) {
-        this.key = key;
-        this.help = help;
-        this.pattern = Pattern.compile(Pattern.quote(key));
-    }
+    public String getCommand();
 
     /**
-     * Key for this action
+     * Help text for command
      *
-     * @return string presentation of the key
+     * @return help
      */
-    public String getKey() {
-        return this.key;
-    }
+    public String getHelp();
 
     /**
-     * Get the pattern for this action
+     * Which roles have permssion to run this command
      *
-     * @return Pattern
+     * @return
      */
-    public Pattern getPattern() {
-        return this.pattern;
-    }
+    public CommandPermission getPermission();
 
     /**
-     * Gets the help text for this action
+     * Responds to a message
      *
-     * @return help text string
+     * @param sender Member who sent the message
+     * @param message Message contents
+     * @param textChannel Channel the message was sent on
      */
-    public String getHelp() {
-        return this.help;
-    }
+    public void respond(Member sender, Message message, TextChannel textChannel);
 }

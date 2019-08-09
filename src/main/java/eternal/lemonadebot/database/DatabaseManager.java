@@ -23,8 +23,9 @@
  */
 package eternal.lemonadebot.database;
 
+import eternal.lemonadebot.customcommands.ActionManager;
 import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.customcommands.SimpleActions;
+import eternal.lemonadebot.customcommands.CommandBuilder;
 import eternal.lemonadebot.messages.CommandPermission;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -57,10 +58,10 @@ public class DatabaseManager implements AutoCloseable {
     private final List<String> admins;
 
     //Custom commands
+    private final CommandBuilder commandBuilder;
     private volatile CommandPermission permissionManageCommands = CommandPermission.MEMBER;
     private volatile CommandPermission permissionUseCommands = CommandPermission.USER;
     private final List<CustomCommand> customCommands = Collections.synchronizedList(new ArrayList<>());
-    private final SimpleActions simpleActions = new SimpleActions();
 
     /**
      * Creates a connection to a database
@@ -91,12 +92,13 @@ public class DatabaseManager implements AutoCloseable {
             this.admins = DB.loadAdmins();
 
             //Load commands
+            this.commandBuilder = new CommandBuilder(this);
             final List<String[]> commands = DB.loadCommands();
             for (String[] arr : commands) {
                 if (arr.length != 3) {
                     throw new DatabaseException("Database provided command in wrong format");
                 }
-                final CustomCommand command = build(arr[0], arr[1], arr[2]);
+                final CustomCommand command = this.commandBuilder.build(arr[0], arr[1], arr[2]);
                 this.customCommands.add(command);
             }
         } catch (SQLException ex) {
@@ -106,15 +108,12 @@ public class DatabaseManager implements AutoCloseable {
     }
 
     /**
-     * Builds a new custom command
+     * Gets the actionmanager used to build custom commands
      *
-     * @param command Command key
-     * @param action action this command pefrorms
-     * @param owner owner of the command
-     * @return
+     * @return CommandBuilder
      */
-    public final CustomCommand build(String command, String action, String owner) {
-        return new CustomCommand(this, this.simpleActions, command, action, owner);
+    public CommandBuilder getCommandBuilder() {
+        return this.commandBuilder;
     }
 
     /**

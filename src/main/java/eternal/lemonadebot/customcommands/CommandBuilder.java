@@ -21,46 +21,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.commands;
+package eternal.lemonadebot.customcommands;
 
-import eternal.lemonadebot.messages.CommandPermission;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.TextChannel;
+import eternal.lemonadebot.database.DatabaseManager;
 
 /**
  *
  * @author Neutroni
  */
-public interface ChatCommand {
+public class CommandBuilder {
+
+    private final ActionManager actionManager = new ActionManager();
+    private final DatabaseManager DATABASE;
 
     /**
-     * Every action has a command it is called with
+     * Constructor
      *
-     * @return the command to activate this action
+     * @param db database to use
      */
-    public String getCommand();
+    public CommandBuilder(DatabaseManager db) {
+        this.DATABASE = db;
+    }
 
     /**
-     * Help text for command
+     * Builds a custom command
      *
-     * @return help
+     * @param key key for command
+     * @param pattern pattern for command
+     * @param owner owner fo the command
+     * @return the new custom command
      */
-    public String getHelp();
+    public CustomCommand build(String key, String pattern, String owner) {
+        return new CustomCommand(DATABASE, actionManager, key, pattern, owner);
+    }
 
     /**
-     * Which roles have permssion to run this command
+     * Gets the action manager used to build commands
      *
-     * @return
+     * @return ActionManager
      */
-    public CommandPermission getPermission();
+    public ActionManager getActionManager() {
+        return this.actionManager;
+    }
 
-    /**
-     * Responds to a message
-     *
-     * @param sender Member who sent the message
-     * @param message Message contents
-     * @param textChannel Channel the message was sent on
-     */
-    public void respond(Member sender, Message message, TextChannel textChannel);
 }
