@@ -27,11 +27,14 @@ import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.DatabaseException;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.messages.CommandParser;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import net.dv8tion.jda.core.entities.ChannelType;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
+import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
@@ -47,8 +50,8 @@ import org.apache.logging.log4j.Logger;
 public class MessageListener extends ListenerAdapter {
 
     private static final Logger LOGGER = LogManager.getLogger();
-    private final CommandParser COMMAND_PARSER;
-    private final DatabaseManager DB;
+    private final CommandParser commandParser;
+    private final DatabaseManager DATABASE;
 
     /**
      * Constructor
@@ -56,8 +59,8 @@ public class MessageListener extends ListenerAdapter {
      * @param db Database to use for operations
      */
     public MessageListener(DatabaseManager db) {
-        this.DB = db;
-        this.COMMAND_PARSER = new CommandParser(db);
+        this.DATABASE = db;
+        this.commandParser = new CommandParser(db);
     }
 
     /**
@@ -73,13 +76,13 @@ public class MessageListener extends ListenerAdapter {
         }
         //Check if we are listening on this channel
         final TextChannel textChannel = event.getTextChannel();
-        if (!DB.watchingChannel(textChannel)) {
+        if (!DATABASE.watchingChannel(textChannel)) {
             return;
         }
 
         //Check if message is a command
         final Message message = event.getMessage();
-        final Optional<ChatCommand> action = COMMAND_PARSER.getAction(message);
+        final Optional<ChatCommand> action = commandParser.getAction(message);
         if (action.isEmpty()) {
             return;
         }
@@ -87,9 +90,31 @@ public class MessageListener extends ListenerAdapter {
         //React to command
         final ChatCommand ca = action.get();
         final Member member = event.getMember();
-        if (COMMAND_PARSER.hasPermission(member, ca)) {
+        if (commandParser.hasPermission(member, ca)) {
             ca.respond(member, message, textChannel);
         }
+    }
+
+    private String getRuleChannelMessage(Guild g) {
+        //Only this guild, direct to rule channel
+        final Optional<String> rco = this.DATABASE.getRuleChannelID();
+        if (rco.isEmpty()) {
+            return "";
+        }
+
+        final String rcsnowflake = rco.get();
+        final TextChannel ruleChannel = g.getTextChannelById(rcsnowflake);
+        if (ruleChannel == null) {
+            return "";
+        }
+        final String rcmention = ruleChannel.getAsMention();
+        return " please check the guild rules over at " + rcmention;
+
+    }
+
+    private void sendDefaultMessage(TextChannel textChannel, Member member) {
+        textChannel.sendMessage("Welcome to our guild discord " + member.getNickname()
+                + getRuleChannelMessage(textChannel.getGuild())).queue();
     }
 
     /**
@@ -107,44 +132,61 @@ public class MessageListener extends ListenerAdapter {
             return;
         }
         //Check if we should react on this channel
-        if (!DB.watchingChannel(textChannel)) {
+        if (!DATABASE.watchingChannel(textChannel)) {
             return;
         }
-        //Get the rule channel
-        String ruleMessage = "";
-        final Optional<String> rco = this.DB.getRuleChannelID();
-        if (rco.isPresent()) {
-            final String rcsnowflake = rco.get();
-            final String rcmention = guild.getTextChannelById(rcsnowflake).getAsMention();
-            ruleMessage = " please check the guild rules over at " + rcmention;
-        }
 
-        //TODO: add command to get a role for ones primary guild
-        /*
-        //Check if they come from another guild we watch
-        final List<Guild> mutualGuilds = user.getMutualGuilds();
-        mutualGuilds.remove(guild);
-        boolean roleAssigned = false;
-        //Iterate over the other guilds
-        for (final Guild g : mutualGuilds) {
-            //Check if user has rule on the other guild
-            if (g.getMember(user).getRoles().isEmpty()) {
-                continue;
+        //Get the correct rule message based on wheter they come from another guild
+        final List<Guild> mutualGuilds = member.getUser().getMutualGuilds();
+        switch (mutualGuilds.size()) {
+            case 1: {
+                sendDefaultMessage(textChannel, member);
+                return;
             }
-            //Sidenote: if user is on multiple guilds we can't know what is their main guild
-            final List<Role> roles = guild.getRolesByName(g.getName(), true);
-            if (roles.isEmpty()) {
-                continue;
+            case 2: {
+                //This and another guild, try to get role for them based on other guild
+                final List<Guild> mutableGuilds = new ArrayList<>(mutualGuilds);
+                mutableGuilds.remove(guild);
+
+                if (mutableGuilds.size() != 1) {
+                    sendDefaultMessage(textChannel, member);
+                    return;
+                }
+
+                final Guild otherGuild = mutableGuilds.get(0);
+                final Member otherGuildmember = otherGuild.getMember(member.getUser());
+                if (otherGuildmember == null) {
+                    sendDefaultMessage(textChannel, member);
+                    return;
+                }
+                final List<Role> otherGuildRoles = otherGuildmember.getRoles();
+                if (otherGuildRoles.isEmpty()) {
+                    sendDefaultMessage(textChannel, member);
+                    return;
+                }
+
+                final String roleName = otherGuild.getName();
+                final List<Role> roles = guild.getRolesByName(roleName, false);
+                guild.getController().addRolesToMember(member, roles).queue((t) -> {
+                    //Success
+                    textChannel.sendMessage("Welcome to our guild discord " + member.getNickname()
+                            + "You have been assigned role based on other guild you are also on, "
+                            + "if you believe this is error please contact guild lead.").queue();
+                }, (t) -> {
+                    //Failure
+                    sendDefaultMessage(textChannel, member);
+                });
+                break;
             }
-            guild.getController().addRolesToMember(member, roles).queue();
-            roleAssigned = true;
+
+            default: {
+                //More guild, ask them to use role command
+                textChannel.sendMessage("Welcome to our guild discord " + member.getNickname() + "\n"
+                        + "You apper to be on multiple guilds and as such I can't find a role for you, "
+                        + "use command \"role\" to assing a role based on other guild you are also on.").queue();
+                break;
+            }
         }
-        if (roleAssigned) {
-            ruleMessage = " it appears you are from an allied guild and as such you have been assigned role based on other guilds you belong to, if you believe this is error please contact guild lead.";
-        }
-         */
-        textChannel.sendMessage("Welcome to guild discord " + member.getNickname()
-                + ruleMessage).queue();
     }
 
     /**
@@ -154,14 +196,14 @@ public class MessageListener extends ListenerAdapter {
      */
     @Override
     public void onGuildJoin(GuildJoinEvent event) {
-        if (DB.getChannelIds().isEmpty()) {
+        if (DATABASE.getChannelIds().isEmpty()) {
             try {
                 final TextChannel channel = event.getGuild().getDefaultChannel();
                 if (channel == null) {
                     LOGGER.error("Cant find a default channel");
                     return;
                 }
-                DB.addChannel(channel);
+                DATABASE.addChannel(channel);
                 channel.sendMessage("Hello everyone I'm a new bot here, nice to meet you all").queue();
             } catch (DatabaseException ex) {
                 LOGGER.error(ex);

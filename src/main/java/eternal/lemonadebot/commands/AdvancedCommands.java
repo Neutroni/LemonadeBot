@@ -47,7 +47,7 @@ public class AdvancedCommands {
 
     private final List<ChatCommand> COMMANDS = List.of(new Admin(), new Channel(), new Shutdown());
     private final DatabaseManager DATABASE;
-    private final CommandParser COMMAND_PARSER;
+    private final CommandParser commandParser;
 
     /**
      * Constructor
@@ -57,7 +57,7 @@ public class AdvancedCommands {
      */
     public AdvancedCommands(DatabaseManager db, CommandParser cp) {
         this.DATABASE = db;
-        this.COMMAND_PARSER = cp;
+        this.commandParser = cp;
     }
 
     /**
@@ -105,7 +105,7 @@ public class AdvancedCommands {
 
         @Override
         public void respond(Member sender, Message message, TextChannel textChannel) {
-            final CommandMatcher matcher = COMMAND_PARSER.getCommandMatcher(message);
+            final CommandMatcher matcher = commandParser.getCommandMatcher(message);
             final String[] opts = matcher.getParameters(1);
             if (opts.length == 0) {
                 textChannel.sendMessage("Provide operation to perform, check help custom for possible operations").queue();
@@ -129,6 +129,7 @@ public class AdvancedCommands {
                                 sb.append("Admin was alredy added ").append(m.getNickname()).append('\n');
                             }
                         } catch (DatabaseException ex) {
+                            LOGGER.error(ex);
                             sb.append("Database error adding admin ").append(m.getNickname());
                             sb.append(" has admin right until next reboot unlessa added succesfully to database\n");
                         }
@@ -151,6 +152,7 @@ public class AdvancedCommands {
                                 sb.append("Admin was alredy removed ").append(m.getNickname()).append('\n');
                             }
                         } catch (DatabaseException ex) {
+                            LOGGER.error(ex);
                             sb.append("Database error removing admin ").append(m.getNickname());
                             sb.append(" does not have admin rights until next reboot unless removed succesfully from database\n");
                         }
@@ -173,6 +175,7 @@ public class AdvancedCommands {
                                     sb.append("Admin alredy removed by someone else\n");
                                 }
                             } catch (DatabaseException ex) {
+                                LOGGER.error(ex);
                                 sb.append("Database failure in removing the admin\n");
                             }
                             continue;
@@ -209,7 +212,7 @@ public class AdvancedCommands {
 
         @Override
         public void respond(Member sender, Message message, TextChannel textChannel) {
-            final CommandMatcher matcher = COMMAND_PARSER.getCommandMatcher(message);
+            final CommandMatcher matcher = commandParser.getCommandMatcher(message);
             final String[] opts = matcher.getParameters(1);
             if (opts.length == 0) {
                 textChannel.sendMessage("Provide operation to perform, check help custom for possible operations").queue();
@@ -230,6 +233,7 @@ public class AdvancedCommands {
                                 sb.append("Was alredy listening on channel ").append(channel.getName()).append('\n');
                             }
                         } catch (DatabaseException ex) {
+                            LOGGER.error(ex);
                             sb.append("Database error adding channel ").append(channel.getName());
                             sb.append(" will listen on channel until next reboot unless added succesfully to database\n");
                         }
@@ -249,6 +253,7 @@ public class AdvancedCommands {
                                 sb.append("Was not listening on channel ").append(channel.getName()).append('\n');
                             }
                         } catch (DatabaseException ex) {
+                            LOGGER.error(ex);
                             sb.append("Database error removing channel ").append(channel.getName());
                             sb.append(" Will not listen on channel until next reboot unless removed succesfully from database\n");
                         }
@@ -272,6 +277,7 @@ public class AdvancedCommands {
                                     sb.append("Channel alredy removed by someone else\n");
                                 }
                             } catch (DatabaseException ex) {
+                                LOGGER.error(ex);
                                 sb.append("Database failure in removing channel from database\n");
                             }
                             continue;

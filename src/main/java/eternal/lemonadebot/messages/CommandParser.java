@@ -25,6 +25,7 @@ package eternal.lemonadebot.messages;
 
 import eternal.lemonadebot.commands.AdvancedCommands;
 import eternal.lemonadebot.commands.CustomCommandManager;
+import eternal.lemonadebot.commands.SimpleCommands;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.commandtypes.OwnerCommand;
 import eternal.lemonadebot.commandtypes.UserCommand;
@@ -53,8 +54,9 @@ public class CommandParser {
     //Command managers
     private final AdvancedCommands advancedCommands;
     private final CustomCommandManager customCommands;
+    private final SimpleCommands simpleCommands;
 
-    //Lists of commands
+    //List of commands
     private final List<ChatCommand> commands = new ArrayList<>();
 
     /**
@@ -66,6 +68,7 @@ public class CommandParser {
         CommandMatcher.updatePattern(DATABASE.getCommandPrefix());
         this.advancedCommands = new AdvancedCommands(db, this);
         this.customCommands = new CustomCommandManager(db, this);
+        this.simpleCommands = new SimpleCommands(this);
 
         //Add help commands
         this.commands.add(new Help());
@@ -73,9 +76,10 @@ public class CommandParser {
 
         //Load commands
         this.commands.addAll(advancedCommands.getCommands());
+        this.commands.addAll(simpleCommands.getCommands());
 
         //Add management commands
-        this.commands.add(new Prefix());
+        this.commands.add(new PrefixCommand());
         this.commands.add(customCommands.getManagmentCommand());
     }
 
@@ -168,7 +172,7 @@ public class CommandParser {
         return perms.contains(cp);
     }
 
-    private class Prefix extends OwnerCommand {
+    private class PrefixCommand extends OwnerCommand {
 
         @Override
         public String getCommand() {
@@ -193,7 +197,7 @@ public class CommandParser {
             CommandMatcher.updatePattern(newPrefix);
             try {
                 DATABASE.setCommandPrefix(newPrefix);
-                textChannel.sendMessage("Updated prefix succesfully").queue();
+                textChannel.sendMessage("Updated prefix succesfully to: " + newPrefix).queue();
             } catch (DatabaseException ex) {
                 LOGGER.warn(ex);
                 textChannel.sendMessage("Storing prefix in DB failed, will still use new prefix until reboot, re-issue command once DB issue is fixed").queue();
@@ -221,7 +225,11 @@ public class CommandParser {
 
             for (ChatCommand c : commands) {
                 if (command.equals(c.getCommand())) {
-                    textChannel.sendMessage(c.getCommand() + " - " + c.getHelp()).queue();
+                    if (hasPermission(member, c)) {
+                        textChannel.sendMessage(c.getCommand() + " - " + c.getHelp()).queue();
+                    } else {
+                        textChannel.sendMessage("You do not have permission to run that command, as such no help was provided").queue();
+                    }
                     return;
                 }
             }
