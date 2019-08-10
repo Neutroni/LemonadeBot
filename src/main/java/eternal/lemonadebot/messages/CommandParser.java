@@ -24,13 +24,10 @@
 package eternal.lemonadebot.messages;
 
 import eternal.lemonadebot.commands.AdvancedCommands;
-import eternal.lemonadebot.commands.CustomCommandManager;
 import eternal.lemonadebot.commands.SimpleCommands;
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.commandtypes.OwnerCommand;
 import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.database.DatabaseException;
 import eternal.lemonadebot.database.DatabaseManager;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,8 +36,6 @@ import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  *
@@ -48,12 +43,11 @@ import org.apache.logging.log4j.Logger;
  */
 public class CommandParser {
 
-    private static final Logger LOGGER = LogManager.getLogger();
     private final DatabaseManager DATABASE;
+    private final CommandPattern PATTERN;
 
     //Command managers
     private final AdvancedCommands advancedCommands;
-    private final CustomCommandManager customCommands;
     private final SimpleCommands simpleCommands;
 
     //List of commands
@@ -65,22 +59,18 @@ public class CommandParser {
      */
     public CommandParser(DatabaseManager db) {
         this.DATABASE = db;
-        CommandMatcher.updatePattern(DATABASE.getCommandPrefix());
-        this.advancedCommands = new AdvancedCommands(db, this);
-        this.customCommands = new CustomCommandManager(db, this);
-        this.simpleCommands = new SimpleCommands(this);
+        this.PATTERN = new CommandPattern(db);
 
-        //Add help commands
-        this.commands.add(new Help());
-        this.commands.add(new Commands());
+        //Add help command
+        this.commands.add(new ListCommands());
+
+        //Command providers
+        this.advancedCommands = new AdvancedCommands(db, this);
+        this.simpleCommands = new SimpleCommands(this);
 
         //Load commands
         this.commands.addAll(advancedCommands.getCommands());
         this.commands.addAll(simpleCommands.getCommands());
-
-        //Add management commands
-        this.commands.add(new PrefixCommand());
-        this.commands.add(customCommands.getManagmentCommand());
     }
 
     /**
@@ -91,17 +81,32 @@ public class CommandParser {
      */
     public Optional<ChatCommand> getAction(Message message) {
         final CommandMatcher m = getCommandMatcher(message);
-        final String command = m.getCommand();
-        if (command == null) {
+        final String name = m.getCommand();
+        if (name == null) {
             return Optional.empty();
         }
-        for (ChatCommand c : commands) {
-            if (command.equals(c.getCommand())) {
-                return Optional.of(c);
-            }
+        //Check if we find command by that name
+        final Optional<ChatCommand> command = getCommand(name);
+        if (command.isPresent()) {
+            return command;
         }
-        for (ChatCommand c : DATABASE.getCommands()) {
-            if (command.equals(c.getCommand())) {
+        //Check if we find custom command by that name
+        final Optional<CustomCommand> custom = getCustomCommand(name);
+        if (custom.isPresent()) {
+            return Optional.of(custom.get());
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Get command by name
+     *
+     * @param name command name to search action for
+     * @return Optional containing the action if found, empty if not found
+     */
+    public Optional<ChatCommand> getCommand(String name) {
+        for (ChatCommand c : commands) {
+            if (name.equals(c.getCommand())) {
                 return Optional.of(c);
             }
         }
@@ -109,14 +114,14 @@ public class CommandParser {
     }
 
     /**
-     * Get custom command
+     * Get custom command by name
      *
-     * @param command command to search action for
+     * @param name command to search action for
      * @return Optional containing the action if found, empty if not found
      */
-    public Optional<CustomCommand> getCustomCommand(String command) {
+    public Optional<CustomCommand> getCustomCommand(String name) {
         for (CustomCommand c : DATABASE.getCommands()) {
-            if (command.equals(c.getCommand())) {
+            if (name.equals(c.getCommand())) {
                 return Optional.of(c);
             }
         }
@@ -131,7 +136,7 @@ public class CommandParser {
      */
     public CommandMatcher getCommandMatcher(Message message) {
         final String text = message.getContentRaw();
-        return new CommandMatcher(text);
+        return PATTERN.getCommandMatcher(text);
     }
 
     /**
@@ -164,91 +169,26 @@ public class CommandParser {
      * @return Does the person have permission
      */
     public boolean hasPermission(Member member, ChatCommand t) {
-        final List<CommandPermission> perms = getPermissions(member);
-        CommandPermission cp = t.getPermission();
+        //Check if command requires any permissions
+        final CommandPermission cp = t.getPermission();
         if (cp == CommandPermission.USER) {
             return true;
         }
+        //Check if user has required permissions
+        final List<CommandPermission> perms = getPermissions(member);
         return perms.contains(cp);
     }
 
-    private class PrefixCommand extends OwnerCommand {
-
-        @Override
-        public String getCommand() {
-            return "prefix";
-        }
-
-        @Override
-        public String getHelp() {
-            return "Set the command prefix used to call this bot";
-        }
-
-        @Override
-        public void respond(Member member, Message message, TextChannel textChannel) {
-            final CommandMatcher m = getCommandMatcher(message);
-            final String[] opt = m.getParameters(1);
-
-            if (opt.length == 0) {
-                textChannel.sendMessage("Current command prefix: " + DATABASE.getCommandPrefix()).queue();
-                return;
-            }
-            final String newPrefix = opt[0];
-            CommandMatcher.updatePattern(newPrefix);
-            try {
-                DATABASE.setCommandPrefix(newPrefix);
-                textChannel.sendMessage("Updated prefix succesfully to: " + newPrefix).queue();
-            } catch (DatabaseException ex) {
-                LOGGER.warn(ex);
-                textChannel.sendMessage("Storing prefix in DB failed, will still use new prefix until reboot, re-issue command once DB issue is fixed").queue();
-            }
-        }
+    /**
+     *
+     * @param newPrefix
+     * @return
+     */
+    public boolean setPrefix(String newPrefix) {
+        return PATTERN.setPrefix(newPrefix);
     }
 
-    private class Help extends UserCommand {
-
-        @Override
-        public String getCommand() {
-            return "help";
-        }
-
-        @Override
-        public void respond(Member member, Message message, TextChannel textChannel) {
-            final CommandMatcher m = getCommandMatcher(message);
-            String[] opt = m.getParameters(1);
-
-            if (opt.length == 0) {
-                textChannel.sendMessage("Provide command to search help for, use commands for list of commands.").queue();
-                return;
-            }
-            final String command = opt[0];
-
-            for (ChatCommand c : commands) {
-                if (command.equals(c.getCommand())) {
-                    if (hasPermission(member, c)) {
-                        textChannel.sendMessage(c.getCommand() + " - " + c.getHelp()).queue();
-                    } else {
-                        textChannel.sendMessage("You do not have permission to run that command, as such no help was provided").queue();
-                    }
-                    return;
-                }
-            }
-            for (ChatCommand c : DATABASE.getCommands()) {
-                if (command.equals(c.getCommand())) {
-                    textChannel.sendMessage("User defined custom command, see command \"custom\" for details.").queue();
-                    return;
-                }
-            }
-            textChannel.sendMessage("No such command: " + command).queue();
-        }
-
-        @Override
-        public String getHelp() {
-            return "Prints help message for command.";
-        }
-    }
-
-    private class Commands extends UserCommand {
+    private class ListCommands extends UserCommand {
 
         @Override
         public String getCommand() {

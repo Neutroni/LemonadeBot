@@ -21,33 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot;
+package eternal.lemonadebot.commands;
+
+import eternal.lemonadebot.commandtypes.ChatCommand;
+import java.util.List;
 
 /**
  *
  * @author Neutroni
  */
-public enum Returnvalue {
+public interface CommandProvider {
 
     /**
-     * If no api key was provided
+     * Get the commands this provider has
+     *
+     * @return immutable list of commands
      */
-    MISSING_API_KEY(1),
-    /**
-     * If database connection could not be established
-     */
-    DATABASE_FAILED(2),
-    /**
-     * If login to discord faild
-     */
-    LOGIN_FAILED(3);
-    private final int VALUE;
-
-    private Returnvalue(int value) {
-        this.VALUE = value;
-    }
-
-    public int getValue() {
-        return this.VALUE;
-    }
+    public List<ChatCommand> getCommands();
 }

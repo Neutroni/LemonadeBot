@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2019 Neutroni.
+ * Copyright 2019 joonas.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,6 @@ package eternal.lemonadebot.messages;
 
 import java.util.Optional;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  *
@@ -33,27 +32,18 @@ import java.util.regex.Pattern;
  */
 public class CommandMatcher {
 
-    private static Pattern PATTERN;
-    private final Matcher MATCH;
     private final String message;
+    private final Matcher MATCH;
 
     /**
      * Constructor
      *
-     * @param msg
+     * @param matcher Matcher to use to match commands
+     * @param msg command message
      */
-    CommandMatcher(String msg) {
+    CommandMatcher(Matcher matcher, String msg) {
+        this.MATCH = matcher;
         this.message = msg;
-        this.MATCH = PATTERN.matcher(msg);
-    }
-
-    /**
-     *
-     * @param prefix
-     */
-    static void updatePattern(String prefix) {
-        //Start of match, optionally @numericID, prefix, match group 2 is command
-        PATTERN = Pattern.compile("^(@\\d+ )?" + Pattern.quote(prefix) + "(\\w+) ?");
     }
 
     /**

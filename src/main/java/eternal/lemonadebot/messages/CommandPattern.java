@@ -21,13 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot;
+package eternal.lemonadebot.messages;
 
 import eternal.lemonadebot.database.DatabaseException;
 import eternal.lemonadebot.database.DatabaseManager;
-import javax.security.auth.login.LoginException;
-import net.dv8tion.jda.core.JDA;
-import net.dv8tion.jda.core.JDABuilder;
+import java.util.Optional;
+import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,36 +34,62 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class LemonadeBot {
+class CommandPattern {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
+    private final DatabaseManager DATABASE;
+    private volatile Pattern PATTERN;
+
     /**
-     * Main function
+     * Constructor
      *
-     * @param args command line arguments
+     * @param db Database to use
      */
-    public static void main(String[] args) {
-        //Check that user provided api key
-        if (args.length < 1) {
-            LOGGER.error("No api key provided, quitting");
-            System.exit(Returnvalue.MISSING_API_KEY.getValue());
+    CommandPattern(DatabaseManager db) {
+        this.DATABASE = db;
+        final Optional<String> opt = DATABASE.getCommandPrefix();
+        if(opt.isPresent()){
+            final String prefix = opt.get();
+            updatePattern(prefix);
+        } else {
+            updatePattern("!");
         }
-        try (final DatabaseManager DB = new DatabaseManager()) {
-            //If owner id was provided initialize database
-            if(args.length == 2){
-                DB.initializeDatabase(args[1]);
-            }
-            final JDA jda = new JDABuilder(args[0]).build();
-            jda.addEventListener(new MessageListener(DB));
+        
+    }
+
+    /**
+     * Gets a command matcher for given input
+     * @param msg
+     * @return
+     */
+    CommandMatcher getCommandMatcher(String msg) {
+        return new CommandMatcher(this.PATTERN.matcher(msg), msg);
+    }
+
+    /**
+     * Updates command pattern
+     * @param prefix
+     */
+    private void updatePattern(String prefix) {
+        //Start of match, optionally @numericID, prefix, match group 2 is command
+        this.PATTERN = Pattern.compile("^(@\\d+ )?" + Pattern.quote(prefix) + "(\\w+) ?");
+    }
+
+    /**
+     * Sets the command prefix
+     *
+     * @param prefix prefix to use
+     * @return was prefix stored succesfully
+     */
+    boolean setPrefix(String prefix) {
+        try {
+            updatePattern(prefix);
+            DATABASE.setCommandPrefix(prefix);
+            return true;
         } catch (DatabaseException ex) {
-            LOGGER.error("Failed to connect to database");
-            LOGGER.warn(ex);
-            System.exit(Returnvalue.DATABASE_FAILED.getValue());
-        } catch (LoginException ex) {
-            LOGGER.error("Login failed");
-            LOGGER.warn(ex.getMessage());
-            System.exit(Returnvalue.LOGIN_FAILED.getValue());
+            LOGGER.error(ex);
         }
+        return false;
     }
 }

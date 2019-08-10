@@ -23,9 +23,8 @@
  */
 package eternal.lemonadebot.database;
 
-import eternal.lemonadebot.customcommands.ActionManager;
-import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.customcommands.CommandBuilder;
+import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.messages.CommandPermission;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -52,7 +51,7 @@ public class DatabaseManager implements AutoCloseable {
 
     // Caching database data
     private final String ownerID;
-    private volatile String commandPrefix;
+    private volatile Optional<String> commandPrefix;
     private volatile Optional<String> ruleChannelID;
     private final List<String> channels;
     private final List<String> admins;
@@ -80,7 +79,7 @@ public class DatabaseManager implements AutoCloseable {
             this.ownerID = owner.get();
 
             //Load settings
-            this.commandPrefix = DB.loadSetting(ConfigKey.COMMAND_PREFIX.name()).orElse("!");
+            this.commandPrefix = DB.loadSetting(ConfigKey.COMMAND_PREFIX.name());
             this.ruleChannelID = DB.loadSetting(ConfigKey.RULE_CHANNEL.name());
 
             //Load
@@ -195,7 +194,7 @@ public class DatabaseManager implements AutoCloseable {
      *
      * @return command prefix
      */
-    public String getCommandPrefix() {
+    public Optional<String> getCommandPrefix() {
         return this.commandPrefix;
     }
 
@@ -206,7 +205,7 @@ public class DatabaseManager implements AutoCloseable {
      * @throws DatabaseException if Database connection failed
      */
     public void setCommandPrefix(String prefix) throws DatabaseException {
-        this.commandPrefix = prefix;
+        this.commandPrefix = Optional.ofNullable(prefix);
         try {
             DB.updateSetting(ConfigKey.COMMAND_PREFIX.name(), prefix);
         } catch (SQLException ex) {
