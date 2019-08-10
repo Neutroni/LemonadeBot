@@ -108,7 +108,7 @@ public class DatabaseManager implements AutoCloseable {
                 this.customCommands.add(command);
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failure creating DatabaseManager",ex);
+            LOGGER.error("Failure creating DatabaseManager", ex);
             throw new DatabaseException(ex);
         }
     }
@@ -131,7 +131,8 @@ public class DatabaseManager implements AutoCloseable {
         final Optional<String> opt = DB.loadSetting(ConfigKey.CUSTOM_COMMAND_MANAGE.name());
         if (opt.isEmpty()) {
             LOGGER.info("No permission for managing custom commands defined in DB.");
-            LOGGER.info("Using default value: " + this.permissionManageCommands.name());
+            LOGGER.info("Saving default value: " + this.permissionManageCommands.getDescription());
+            DB.updateSetting(ConfigKey.CUSTOM_COMMAND_MANAGE.name(), this.permissionManageCommands.name());
             return;
         }
         final String managePerm = opt.get();
@@ -140,9 +141,7 @@ public class DatabaseManager implements AutoCloseable {
         } catch (IllegalArgumentException ex) {
             LOGGER.error("Malformed command permission for custom commands: " + managePerm);
             LOGGER.info("Using default value: " + this.permissionManageCommands.name());
-
         }
-
     }
 
     /**
@@ -154,7 +153,8 @@ public class DatabaseManager implements AutoCloseable {
         final Optional<String> opt = DB.loadSetting(ConfigKey.CUSTOM_COMMAND_USE.name());
         if (opt.isEmpty()) {
             LOGGER.info("No permission for using custom commands defined in DB.");
-            LOGGER.info("Using default value: " + this.permissionUseCommands.name());
+            LOGGER.info("Saving default value: " + this.permissionUseCommands.getDescription());
+            DB.updateSetting(ConfigKey.CUSTOM_COMMAND_USE.name(), this.permissionUseCommands.name());
             return;
         }
         final String usePerm = opt.get();
@@ -176,7 +176,7 @@ public class DatabaseManager implements AutoCloseable {
         try {
             this.DB.close();
         } catch (SQLException ex) {
-            LOGGER.error("Closing database connection failed",ex);
+            LOGGER.error("Closing database connection failed", ex);
             throw new DatabaseException(ex);
         }
     }
@@ -191,7 +191,7 @@ public class DatabaseManager implements AutoCloseable {
         try {
             DB.initialize(ownerID);
         } catch (SQLException ex) {
-            LOGGER.error("Initializing database failed",ex);
+            LOGGER.error("Initializing database failed", ex);
             throw new DatabaseException(ex);
         }
     }
@@ -216,7 +216,7 @@ public class DatabaseManager implements AutoCloseable {
         try {
             DB.updateSetting(ConfigKey.COMMAND_PREFIX.name(), prefix);
         } catch (SQLException ex) {
-            LOGGER.error("Failed to store command prefix",ex);
+            LOGGER.error("Failed to store command prefix", ex);
             throw new DatabaseException(ex);
         }
     }
@@ -240,7 +240,7 @@ public class DatabaseManager implements AutoCloseable {
                 DB.addCommand(command.getCommand(), command.getAction(), command.getOwner());
             }
         } catch (SQLException ex) {
-            LOGGER.error("Adding command to database failed",ex);
+            LOGGER.error("Adding command to database failed", ex);
             throw new DatabaseException(ex);
         }
         return cached;
@@ -259,7 +259,7 @@ public class DatabaseManager implements AutoCloseable {
         try {
             removed = DB.removeCommand(command.getCommand()) > 0;
         } catch (SQLException ex) {
-            LOGGER.error("Failed to remove command from database",ex);
+            LOGGER.error("Failed to remove command from database", ex);
             throw new DatabaseException(ex);
         }
         return removed;
@@ -321,7 +321,7 @@ public class DatabaseManager implements AutoCloseable {
         try {
             removed = DB.removeChannel(id) > 0;
         } catch (SQLException ex) {
-            LOGGER.error("Removing channel failed",ex);
+            LOGGER.error("Removing channel failed", ex);
             throw new DatabaseException(ex);
         }
         return removed;
@@ -365,7 +365,7 @@ public class DatabaseManager implements AutoCloseable {
                 this.DB.addAdmin(id);
             }
         } catch (SQLException ex) {
-            LOGGER.error("Adding admin to database failed",ex);
+            LOGGER.error("Adding admin to database failed", ex);
             throw new DatabaseException(ex);
         }
         return added;
@@ -387,7 +387,7 @@ public class DatabaseManager implements AutoCloseable {
         try {
             removed = DB.removeAdmin(id) > 0;
         } catch (SQLException ex) {
-            LOGGER.error("Removing admin from database failed",ex);
+            LOGGER.error("Removing admin from database failed", ex);
             throw new DatabaseException(ex);
         }
         return removed;
