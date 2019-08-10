@@ -54,8 +54,9 @@ public class CommandParser {
     private final List<ChatCommand> commands = new ArrayList<>();
 
     /**
+     * Constructor
      *
-     * @param db
+     * @param db database to use
      */
     public CommandParser(DatabaseManager db) {
         this.DATABASE = db;
@@ -180,9 +181,10 @@ public class CommandParser {
     }
 
     /**
+     * Sets the commands prefix
      *
-     * @param newPrefix
-     * @return
+     * @param newPrefix prefix to use
+     * @return was storing prefix in database succesfull
      */
     public boolean setPrefix(String newPrefix) {
         return PATTERN.setPrefix(newPrefix);
