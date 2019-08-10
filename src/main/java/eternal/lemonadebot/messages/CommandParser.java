@@ -225,11 +225,11 @@ public class CommandParser {
                         break;
                 }
             }
-
+            
             //Construct the list of commands
-            final StringBuilder sb = new StringBuilder("Commands:\n");
-            final List<CommandPermission> cp = getPermissions(member);
+            final StringBuilder sb = new StringBuilder();
             if (printDefault) {
+                sb.append("Commands:\n");
                 for (ChatCommand c : commands) {
                     if (hasPermission(member, c)) {
                         sb.append(' ').append(c.getCommand()).append('\n');
@@ -237,8 +237,8 @@ public class CommandParser {
                 }
             }
             if (printCustom) {
-                sb.append("Custom commands:");
-                for (ChatCommand c : DATABASE.getCommands()) {
+                sb.append("Custom commands:\n");
+                for (CustomCommand c : DATABASE.getCommands()) {
                     if (hasPermission(member, c)) {
                         sb.append(' ').append(c.getCommand()).append('\n');
                     }

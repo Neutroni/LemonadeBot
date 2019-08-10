@@ -91,7 +91,7 @@ public class MessageListener extends ListenerAdapter {
         if (action.isEmpty()) {
             return;
         }
-
+        
         //React to command
         final ChatCommand ca = action.get();
         final Member member = event.getMember();

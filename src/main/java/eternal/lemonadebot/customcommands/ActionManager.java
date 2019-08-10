@@ -40,7 +40,7 @@ import net.dv8tion.jda.core.entities.Message;
 public class ActionManager {
 
     private final Random rng = new Random();
-    private final String[] COIN_SIDES = new String[]{"Heads", "Tails"};
+    private final String[] COIN_SIDES = new String[]{"heads", "tails"};
 
     private final List<SimpleAction> actions = List.of(
             new SimpleAction("{coin}", "Flips a coin", (Message message, String input) -> {
@@ -108,7 +108,7 @@ public class ActionManager {
     public String getHelp() {
         final StringBuilder sb = new StringBuilder();
         for (SimpleAction action : this.actions) {
-            sb.append(action.getKey()).append(" - ").append(action.getHelp());
+            sb.append(action.getKey()).append(" - ").append(action.getHelp()).append('\n');
         }
         return sb.toString();
     }

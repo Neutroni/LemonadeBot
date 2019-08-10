@@ -120,7 +120,7 @@ class SQLiteManager implements AutoCloseable {
      * @throws SQLException if database connection fails
      */
     int removeCommand(String key) throws SQLException {
-        final String query = "REMOVE FROM Commands WHERE name = ?;";
+        final String query = "DELETE FROM Commands WHERE name = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, key);
             return ps.executeUpdate();
@@ -149,7 +149,7 @@ class SQLiteManager implements AutoCloseable {
      * @throws SQLException
      */
     int removeChannel(String id) throws SQLException {
-        final String query = "REMOVE FROM Channels WHERE id = ?;";
+        final String query = "DELETE FROM Channels WHERE id = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, id);
             return ps.executeUpdate();
@@ -178,7 +178,7 @@ class SQLiteManager implements AutoCloseable {
      * @throws SQLException if database connection fails
      */
     int removeAdmin(String id) throws SQLException {
-        final String query = "REMOVE FROM Admins Where id = ?";
+        final String query = "DELETE FROM Admins Where id = ?";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, id);
             return ps.executeUpdate();
@@ -271,7 +271,7 @@ class SQLiteManager implements AutoCloseable {
      * @throws java.sql.SQLException if database connection fails
      */
     boolean hasCommand(String key) throws SQLException {
-        final String query = "Select name FROM Commands WHERE name = ?";
+        final String query = "SELECT name FROM Commands WHERE name = ?";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, key);
             try (ResultSet rs = ps.executeQuery()) {
@@ -291,7 +291,7 @@ class SQLiteManager implements AutoCloseable {
      * @throws SQLException if database connection fails
      */
     boolean hasChannel(String id) throws SQLException {
-        final String query = "Select id FROM Channels WHERE id = ?";
+        final String query = "SELECT id FROM Channels WHERE id = ?";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -311,7 +311,7 @@ class SQLiteManager implements AutoCloseable {
      * @throws SQLException if database connection fails
      */
     boolean hasAdmin(String id) throws SQLException {
-        final String query = "Select id FROM Admins WHERE id = ?";
+        final String query = "SELECT id FROM Admins WHERE id = ?";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
