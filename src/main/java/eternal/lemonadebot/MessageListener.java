@@ -71,6 +71,9 @@ public class MessageListener extends ListenerAdapter {
      */
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
+        if(event.getAuthor().isBot()){
+            return;
+        }
         //Only listen on textchannels for now
         if (!event.isFromType(ChannelType.TEXT)) {
             return;
