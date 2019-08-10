@@ -71,6 +71,7 @@ public class CommandMatcher {
     }
 
     /**
+     * Gets the input data after given parameter
      *
      * @param after Parameter to start after
      * @return Optional of the data, empty if command ends at or before
