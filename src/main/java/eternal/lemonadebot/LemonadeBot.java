@@ -25,6 +25,7 @@ package eternal.lemonadebot;
 
 import eternal.lemonadebot.database.DatabaseException;
 import eternal.lemonadebot.database.DatabaseManager;
+import java.util.Optional;
 import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.JDABuilder;
@@ -51,11 +52,16 @@ public class LemonadeBot {
             LOGGER.error("No api key provided, quitting");
             System.exit(Returnvalue.MISSING_API_KEY.getValue());
         }
-        try (final DatabaseManager DB = new DatabaseManager()) {
-            //If owner id was provided initialize database
-            if (args.length == 2) {
-                DB.initializeDatabase(args[1]);
-            }
+        //If owner id was provided initialize database
+        final Optional<String> ownerID;
+        if (args.length == 2) {
+            ownerID = Optional.of(args[1]);
+        } else {
+            ownerID = Optional.empty();
+        }
+
+        //Load database and initialize JDA
+        try (final DatabaseManager DB = new DatabaseManager(ownerID)) {
             final JDA jda = new JDABuilder(args[0]).build();
             jda.addEventListener(new MessageListener(DB));
         } catch (DatabaseException ex) {

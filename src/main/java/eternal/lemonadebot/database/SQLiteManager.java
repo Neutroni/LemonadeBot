@@ -243,7 +243,7 @@ class SQLiteManager implements AutoCloseable {
      * @throws SQLException if database connection fails
      */
     void initialize(String ownerID) throws SQLException {
-        final String CONFIG = "CREATE TABLE Config(key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);";
+        final String CONFIG = "CREATE TABLE Options(key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);";
         final String ADMINS = "CREATE TABLE Admins(id TEXT PRIMARY KEY NOT NULL);";
         final String CHANNELS = "CREATE TABLE Channels(id TEXT PRIMRY KEY NOT NULL);";
         final String COMMANDS = "CREATE TABLE Commands(key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL, owner TEXT NOT NULL);";

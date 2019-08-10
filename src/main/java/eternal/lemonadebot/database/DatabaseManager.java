@@ -42,7 +42,7 @@ import org.apache.logging.log4j.Logger;
  * @author Neutroni
  */
 public class DatabaseManager implements AutoCloseable {
-
+    
     private static final Logger LOGGER = LogManager.getLogger();
 
     //SQLite database
@@ -65,11 +65,18 @@ public class DatabaseManager implements AutoCloseable {
     /**
      * Creates a connection to a database
      *
+     * @param ownerID Id of the bot owner, if present used to initialize
+     * database
      * @throws DatabaseException if database connection failed
      */
-    public DatabaseManager() throws DatabaseException {
+    public DatabaseManager(Optional<String> ownerID) throws DatabaseException {
         try {
             this.DB = new SQLiteManager(DB_LOCATION);
+
+            //Check if DB needs to be initialized
+            if (ownerID.isPresent()) {
+                this.DB.initialize(ownerID.get());
+            }
 
             //Load owner
             final Optional<String> owner = DB.loadSetting(ConfigKey.OWNER_ID.name());
@@ -133,9 +140,9 @@ public class DatabaseManager implements AutoCloseable {
         } catch (IllegalArgumentException ex) {
             LOGGER.error("Malformed command permission for custom commands: " + managePerm);
             LOGGER.info("Using default value: " + this.permissionManageCommands.name());
-
+            
         }
-
+        
     }
 
     /**
@@ -373,7 +380,7 @@ public class DatabaseManager implements AutoCloseable {
      * @throws DatabaseException if database connection fails
      */
     public boolean removeAdmin(String id) throws DatabaseException {
-
+        
         boolean removed = this.admins.remove(id);
         //Going to database even if user is not admin,
         //because database might be in different state if remove failed before
