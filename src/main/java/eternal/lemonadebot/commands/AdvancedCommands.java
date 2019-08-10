@@ -91,7 +91,7 @@ public class AdvancedCommands implements CommandProvider {
         @Override
         public void respond(Member sender, Message message, TextChannel textChannel) {
             final CommandMatcher matcher = commandParser.getCommandMatcher(message);
-            final String[] opts = matcher.getParameters(1);
+            final String[] opts = matcher.getArguments(1);
             if (opts.length == 0) {
                 textChannel.sendMessage("Provide operation to perform, check help custom for possible operations").queue();
                 return;
@@ -114,7 +114,6 @@ public class AdvancedCommands implements CommandProvider {
                                 sb.append("Admin was alredy added ").append(m.getNickname()).append('\n');
                             }
                         } catch (DatabaseException ex) {
-                            LOGGER.error(ex);
                             sb.append("Database error adding admin ").append(m.getNickname());
                             sb.append(" has admin right until next reboot unlessa added succesfully to database\n");
                         }
@@ -137,7 +136,6 @@ public class AdvancedCommands implements CommandProvider {
                                 sb.append("Admin was alredy removed ").append(m.getNickname()).append('\n');
                             }
                         } catch (DatabaseException ex) {
-                            LOGGER.error(ex);
                             sb.append("Database error removing admin ").append(m.getNickname());
                             sb.append(" does not have admin rights until next reboot unless removed succesfully from database\n");
                         }
@@ -160,7 +158,6 @@ public class AdvancedCommands implements CommandProvider {
                                     sb.append("Admin alredy removed by someone else\n");
                                 }
                             } catch (DatabaseException ex) {
-                                LOGGER.error(ex);
                                 sb.append("Database failure in removing the admin\n");
                             }
                             continue;
@@ -169,7 +166,9 @@ public class AdvancedCommands implements CommandProvider {
                         if (i < adminIds.size() - 1) {
                             sb.append('\n');
                         }
-
+                    }
+                    if (adminIds.isEmpty()) {
+                        sb.append("No admins added.");
                     }
                     textChannel.sendMessage(sb.toString()).queue();
                     break;
@@ -198,7 +197,7 @@ public class AdvancedCommands implements CommandProvider {
         @Override
         public void respond(Member sender, Message message, TextChannel textChannel) {
             final CommandMatcher matcher = commandParser.getCommandMatcher(message);
-            final String[] opts = matcher.getParameters(1);
+            final String[] opts = matcher.getArguments(1);
             if (opts.length == 0) {
                 textChannel.sendMessage("Provide operation to perform, check help custom for possible operations").queue();
                 return;
@@ -218,7 +217,6 @@ public class AdvancedCommands implements CommandProvider {
                                 sb.append("Was alredy listening on channel ").append(channel.getName()).append('\n');
                             }
                         } catch (DatabaseException ex) {
-                            LOGGER.error(ex);
                             sb.append("Database error adding channel ").append(channel.getName());
                             sb.append(" will listen on channel until next reboot unless added succesfully to database\n");
                         }
@@ -238,7 +236,6 @@ public class AdvancedCommands implements CommandProvider {
                                 sb.append("Was not listening on channel ").append(channel.getName()).append('\n');
                             }
                         } catch (DatabaseException ex) {
-                            LOGGER.error(ex);
                             sb.append("Database error removing channel ").append(channel.getName());
                             sb.append(" Will not listen on channel until next reboot unless removed succesfully from database\n");
                         }
@@ -262,7 +259,6 @@ public class AdvancedCommands implements CommandProvider {
                                     sb.append("Channel alredy removed by someone else\n");
                                 }
                             } catch (DatabaseException ex) {
-                                LOGGER.error(ex);
                                 sb.append("Database failure in removing channel from database\n");
                             }
                             continue;
@@ -271,6 +267,9 @@ public class AdvancedCommands implements CommandProvider {
                         if (i < channelIds.size() - 1) {
                             sb.append('\n');
                         }
+                    }
+                    if (channelIds.isEmpty()) {
+                        sb.append("Not listening on any channels");
                     }
                     textChannel.sendMessage(sb.toString()).queue();
                     break;
@@ -307,7 +306,7 @@ public class AdvancedCommands implements CommandProvider {
         @Override
         public void respond(Member member, Message message, TextChannel textChannel) {
             final CommandMatcher m = commandParser.getCommandMatcher(message);
-            final String[] opt = m.getParameters(2);
+            final String[] opt = m.getArguments(2);
             if (opt.length == 0) {
                 textChannel.sendMessage("Provide operation to perform,"
                         + " check help custom for possible operations").queue();
@@ -317,6 +316,10 @@ public class AdvancedCommands implements CommandProvider {
                 case "add": {
                     if (opt.length < 2) {
                         textChannel.sendMessage("Adding custom command requires a name for the command").queue();
+                        return;
+                    }
+                    if (opt.length < 3) {
+                        textChannel.sendMessage("Command must contain a template string for the response").queue();
                         return;
                     }
                     final String name = opt[1];
@@ -333,17 +336,10 @@ public class AdvancedCommands implements CommandProvider {
                             }
                         } catch (DatabaseException ex) {
                             textChannel.sendMessage("Found old command by that name in memory but adding it to database failed.").queue();
-                            LOGGER.warn(ex);
                         }
                         return;
                     }
-                    final Optional<String> optValue = m.getData(2);
-                    if (optValue.isEmpty()) {
-                        textChannel.sendMessage("Command requires an action to perform, "
-                                + "please provide one after the name of the command").queue();
-                        return;
-                    }
-                    final String newValue = optValue.get();
+                    final String newValue = opt[2];
                     final CustomCommand newAction = DATABASE.getCommandBuilder().build(name, newValue, message.getAuthor().getId());
                     {
                         try {
@@ -355,7 +351,6 @@ public class AdvancedCommands implements CommandProvider {
                             textChannel.sendMessage("Command alredy exists, propably a database error").queue();
                         } catch (DatabaseException ex) {
                             textChannel.sendMessage("Adding command to database failed, added to temporary memory that will be lost on reboot").queue();
-                            LOGGER.warn(ex);
                         }
                     }
                     break;
@@ -400,7 +395,6 @@ public class AdvancedCommands implements CommandProvider {
                             textChannel.sendMessage("Command was alredy removed, propably a database error").queue();
                         } catch (DatabaseException ex) {
                             textChannel.sendMessage("Removing command from database failed, removed from temporary memory command will be back after reboot").queue();
-                            LOGGER.warn(ex);
                         }
                         return;
                     }

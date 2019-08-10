@@ -36,6 +36,7 @@ import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.entities.TextChannel;
+import net.dv8tion.jda.core.events.ShutdownEvent;
 import net.dv8tion.jda.core.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
@@ -49,7 +50,7 @@ import org.apache.logging.log4j.Logger;
  * @author Neutroni
  */
 public class MessageListener extends ListenerAdapter {
-
+    
     private static final Logger LOGGER = LogManager.getLogger();
     private final CommandParser commandParser;
     private final DatabaseManager DATABASE;
@@ -71,7 +72,7 @@ public class MessageListener extends ListenerAdapter {
      */
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
-        if(event.getAuthor().isBot()){
+        if (event.getAuthor().isBot()) {
             return;
         }
         //Only listen on textchannels for now
@@ -98,14 +99,14 @@ public class MessageListener extends ListenerAdapter {
             ca.respond(member, message, textChannel);
         }
     }
-
+    
     private String getRuleChannelMessage(Guild g) {
         //Only this guild, direct to rule channel
         final Optional<String> rco = this.DATABASE.getRuleChannelID();
         if (rco.isEmpty()) {
             return "";
         }
-
+        
         final String rcsnowflake = rco.get();
         final TextChannel ruleChannel = g.getTextChannelById(rcsnowflake);
         if (ruleChannel == null) {
@@ -113,9 +114,9 @@ public class MessageListener extends ListenerAdapter {
         }
         final String rcmention = ruleChannel.getAsMention();
         return " please check the guild rules over at " + rcmention;
-
+        
     }
-
+    
     private void sendDefaultMessage(TextChannel textChannel, Member member) {
         textChannel.sendMessage("Welcome to our guild discord " + member.getNickname()
                 + getRuleChannelMessage(textChannel.getGuild())).queue();
@@ -151,12 +152,12 @@ public class MessageListener extends ListenerAdapter {
                 //This and another guild, try to get role for them based on other guild
                 final List<Guild> mutableGuilds = new ArrayList<>(mutualGuilds);
                 mutableGuilds.remove(guild);
-
+                
                 if (mutableGuilds.size() != 1) {
                     sendDefaultMessage(textChannel, member);
                     return;
                 }
-
+                
                 final Guild otherGuild = mutableGuilds.get(0);
                 final Member otherGuildmember = otherGuild.getMember(member.getUser());
                 if (otherGuildmember == null) {
@@ -168,7 +169,7 @@ public class MessageListener extends ListenerAdapter {
                     sendDefaultMessage(textChannel, member);
                     return;
                 }
-
+                
                 final String roleName = otherGuild.getName();
                 final List<Role> roles = guild.getRolesByName(roleName, false);
                 guild.getController().addRolesToMember(member, roles).queue((t) -> {
@@ -182,7 +183,7 @@ public class MessageListener extends ListenerAdapter {
                 });
                 break;
             }
-
+            
             default: {
                 //More guild, ask them to use role command
                 textChannel.sendMessage("Welcome to our guild discord " + member.getNickname() + "\n"
@@ -210,9 +211,23 @@ public class MessageListener extends ListenerAdapter {
                 DATABASE.addChannel(channel);
                 channel.sendMessage("Hello everyone I'm a new bot here, nice to meet you all").queue();
             } catch (DatabaseException ex) {
-                LOGGER.error(ex);
+                LOGGER.error("Adding default listen channel failed",ex);
             }
         }
+    }
 
+    /**
+     * Closes the database once JDA has shutdown
+     *
+     * @param event event from JDA
+     */
+    @Override
+    public void onShutdown(ShutdownEvent event) {
+        try {
+            DATABASE.close();
+        } catch (DatabaseException ex) {
+            LOGGER.error("Shutting down database connection failed", ex);
+        }
+        LOGGER.info("Shutting down");
     }
 }

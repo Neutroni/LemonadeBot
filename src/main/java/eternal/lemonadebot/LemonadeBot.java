@@ -61,16 +61,15 @@ public class LemonadeBot {
         }
 
         //Load database and initialize JDA
-        try (final DatabaseManager DB = new DatabaseManager(ownerID)) {
+        try {
+            final DatabaseManager DB = new DatabaseManager(ownerID);
             final JDA jda = new JDABuilder(args[0]).build();
             jda.addEventListener(new MessageListener(DB));
         } catch (DatabaseException ex) {
-            LOGGER.error("Failed to connect to database");
-            LOGGER.warn(ex);
+            LOGGER.error("Failed to connect to database",ex);
             System.exit(Returnvalue.DATABASE_FAILED.getValue());
         } catch (LoginException ex) {
-            LOGGER.error("Login failed");
-            LOGGER.warn(ex.getMessage());
+            LOGGER.error("Login failed",ex);
             System.exit(Returnvalue.LOGIN_FAILED.getValue());
         }
     }

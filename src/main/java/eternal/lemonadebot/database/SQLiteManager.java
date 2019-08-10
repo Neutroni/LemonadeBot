@@ -66,7 +66,7 @@ class SQLiteManager implements AutoCloseable {
      * @throws java.sql.SQLException
      */
     void updateSetting(String key, String value) throws SQLException {
-        final String query = "UPDATE Options set value = ? WHERE key = ?;";
+        final String query = "UPDATE Options set value = ? WHERE name = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, key);
             ps.setString(2, value);
@@ -82,7 +82,7 @@ class SQLiteManager implements AutoCloseable {
      * @throws java.sql.SQLException
      */
     Optional<String> loadSetting(String key) throws SQLException {
-        final String query = "SELECT value FROM Options WHERE key = ?;";
+        final String query = "SELECT value FROM Options WHERE name = ?;";
         try (final PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, key);
             try (final ResultSet rs = ps.executeQuery()) {
@@ -103,7 +103,7 @@ class SQLiteManager implements AutoCloseable {
      * @throws SQLException if database connection fails
      */
     void addCommand(String key, String value, String owner) throws SQLException {
-        final String query = "INSERT INTO Commands(key,value,owner) VALUES(?,?,?);";
+        final String query = "INSERT INTO Commands(name,value,owner) VALUES(?,?,?);";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, key);
             ps.setString(2, value);
@@ -120,7 +120,7 @@ class SQLiteManager implements AutoCloseable {
      * @throws SQLException if database connection fails
      */
     int removeCommand(String key) throws SQLException {
-        final String query = "REMOVE FROM Commands WHERE key = ?;";
+        final String query = "REMOVE FROM Commands WHERE name = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, key);
             return ps.executeUpdate();
@@ -227,10 +227,10 @@ class SQLiteManager implements AutoCloseable {
      */
     List<String[]> loadCommands() throws SQLException {
         final List<String[]> admins = Collections.synchronizedList(new ArrayList<>());
-        final String query = "SELECT key,value,owner FROM Commands;";
+        final String query = "SELECT name,value,owner FROM Commands;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
-                admins.add(new String[]{rs.getString("key"), rs.getString("value"), rs.getString("owner")});
+                admins.add(new String[]{rs.getString("name"), rs.getString("value"), rs.getString("owner")});
             }
         }
         return admins;
@@ -243,11 +243,11 @@ class SQLiteManager implements AutoCloseable {
      * @throws SQLException if database connection fails
      */
     void initialize(String ownerID) throws SQLException {
-        final String CONFIG = "CREATE TABLE Options(key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);";
+        final String CONFIG = "CREATE TABLE Options(name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);";
         final String ADMINS = "CREATE TABLE Admins(id TEXT PRIMARY KEY NOT NULL);";
         final String CHANNELS = "CREATE TABLE Channels(id TEXT PRIMRY KEY NOT NULL);";
-        final String COMMANDS = "CREATE TABLE Commands(key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL, owner TEXT NOT NULL);";
-        final String INSERT = "INSERT INTO Config key,value VALUES(?,?);";
+        final String COMMANDS = "CREATE TABLE Commands(name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL, owner TEXT NOT NULL);";
+        final String INSERT = "INSERT INTO Options(name,value) VALUES(?,?);";
         try (Statement st = conn.createStatement()) {
             st.addBatch(CONFIG);
             st.addBatch(ADMINS);
@@ -271,7 +271,7 @@ class SQLiteManager implements AutoCloseable {
      * @throws java.sql.SQLException if database connection fails
      */
     boolean hasCommand(String key) throws SQLException {
-        final String query = "Select key FROM Commands WHERE key = ?";
+        final String query = "Select name FROM Commands WHERE name = ?";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, key);
             try (ResultSet rs = ps.executeQuery()) {

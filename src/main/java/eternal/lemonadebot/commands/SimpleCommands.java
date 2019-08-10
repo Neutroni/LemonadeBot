@@ -50,9 +50,9 @@ public class SimpleCommands implements CommandProvider {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final List<ChatCommand> COMMANDS = List.of(
+            new ShutdownCommand(),
             new HelpCommand(),
             new PrefixCommand(),
-            new ShutdownCommand(),
             new RoleCommand()
     );
 
@@ -71,6 +71,25 @@ public class SimpleCommands implements CommandProvider {
     public List<ChatCommand> getCommands() {
         return COMMANDS;
     }
+    
+        private class ShutdownCommand extends OwnerCommand {
+
+        @Override
+        public String getCommand() {
+            return "shutdown";
+        }
+
+        @Override
+        public String getHelp() {
+            return "Shuts the bot down";
+        }
+
+        @Override
+        public void respond(Member sender, Message message, TextChannel textChannel) {
+            textChannel.sendMessage("Shutting down").queue();
+            message.getJDA().shutdown();
+        }
+    }
 
     private class HelpCommand extends UserCommand {
 
@@ -82,7 +101,7 @@ public class SimpleCommands implements CommandProvider {
         @Override
         public void respond(Member member, Message message, TextChannel textChannel) {
             final CommandMatcher m = commandParser.getCommandMatcher(message);
-            final String[] options = m.getParameters(1);
+            final String[] options = m.getArguments(1);
 
             if (options.length == 0) {
                 textChannel.sendMessage("Provide command to search help for, use commands for list of commands.").queue();
@@ -132,7 +151,7 @@ public class SimpleCommands implements CommandProvider {
         @Override
         public void respond(Member member, Message message, TextChannel textChannel) {
             final CommandMatcher m = commandParser.getCommandMatcher(message);
-            final String[] options = m.getParameters(1);
+            final String[] options = m.getArguments(1);
 
             //Check if user provide prefix
             if (options.length == 0) {
@@ -148,25 +167,6 @@ public class SimpleCommands implements CommandProvider {
             } else {
                 textChannel.sendMessage("Storing prefix in DB failed, will still use new prefix until reboot, re-issue command once DB issue is fixed.").queue();
             }
-        }
-    }
-
-    private class ShutdownCommand extends OwnerCommand {
-
-        @Override
-        public String getCommand() {
-            return "shutdown";
-        }
-
-        @Override
-        public String getHelp() {
-            return "Shuts the bot down";
-        }
-
-        @Override
-        public void respond(Member sender, Message message, TextChannel textChannel) {
-            textChannel.sendMessage("Shutting down").queue();
-            message.getJDA().shutdown();
         }
     }
 
@@ -190,7 +190,7 @@ public class SimpleCommands implements CommandProvider {
                 return;
             }
             final CommandMatcher matcher = commandParser.getCommandMatcher(message);
-            final String[] parameters = matcher.getParameters(1);
+            final String[] parameters = matcher.getArguments(1);
             if (parameters.length == 0) {
                 textChannel.sendMessage("Please provide guild name you want the role for").queue();
                 return;

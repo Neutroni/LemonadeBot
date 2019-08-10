@@ -8,6 +8,9 @@ nb-configuration.xml
 #Logfile
 logfile.log
 
+#Database
+database.db
+
 # Compiled class file
 *.class
 

@@ -83,17 +83,19 @@ public class CommandParser {
      */
     public Optional<ChatCommand> getAction(Message message) {
         final CommandMatcher m = getCommandMatcher(message);
-        final String name = m.getCommand();
-        if (name == null) {
+        final Optional<String> name = m.getCommand();
+        if (name.isEmpty()) {
             return Optional.empty();
         }
+        //get the command name
+        final String commandName = name.get();
         //Check if we find command by that name
-        final Optional<ChatCommand> command = getCommand(name);
+        final Optional<ChatCommand> command = getCommand(commandName);
         if (command.isPresent()) {
             return command;
         }
         //Check if we find custom command by that name
-        final Optional<CustomCommand> custom = getCustomCommand(name);
+        final Optional<CustomCommand> custom = getCustomCommand(commandName);
         if (custom.isPresent()) {
             return Optional.of(custom.get());
         }
@@ -160,6 +162,7 @@ public class CommandParser {
         if (member.getRoles().size() > 0) {
             cp.add(CommandPermission.MEMBER);
         }
+        cp.add(CommandPermission.USER);
         return cp;
     }
 
@@ -167,18 +170,11 @@ public class CommandParser {
      * Checks wheter given user has permission to run given command
      *
      * @param member Person to check permission for
-     * @param t Command to check
+     * @param command Command to check
      * @return Does the person have permission
      */
-    public boolean hasPermission(Member member, ChatCommand t) {
-        //Check if command requires any permissions
-        final CommandPermission cp = t.getPermission();
-        if (cp == CommandPermission.USER) {
-            return true;
-        }
-        //Check if user has required permissions
-        final List<CommandPermission> perms = getPermissions(member);
-        return perms.contains(cp);
+    public boolean hasPermission(Member member, ChatCommand command) {
+        return getPermissions(member).contains(command.getPermission());
     }
 
     /**
@@ -207,7 +203,7 @@ public class CommandParser {
         public void respond(Member member, Message message, TextChannel textChannel) {
             //Check what commands we should print
             final CommandMatcher m = getCommandMatcher(message);
-            final String[] opt = m.getParameters(1);
+            final String[] opt = m.getArguments(1);
             final boolean printDefault;
             final boolean printCustom;
             if (opt.length == 0) {
@@ -235,7 +231,7 @@ public class CommandParser {
             final List<CommandPermission> cp = getPermissions(member);
             if (printDefault) {
                 for (ChatCommand c : commands) {
-                    if (cp.contains(c.getPermission())) {
+                    if (hasPermission(member, c)) {
                         sb.append(' ').append(c.getCommand()).append('\n');
                     }
                 }
@@ -243,7 +239,7 @@ public class CommandParser {
             if (printCustom) {
                 sb.append("Custom commands:");
                 for (ChatCommand c : DATABASE.getCommands()) {
-                    if (cp.contains(c.getPermission())) {
+                    if (hasPermission(member, c)) {
                         sb.append(' ').append(c.getCommand()).append('\n');
                     }
                 }

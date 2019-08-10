@@ -23,6 +23,8 @@
  */
 package eternal.lemonadebot.messages;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 
@@ -34,6 +36,7 @@ import java.util.regex.Matcher;
 public class CommandMatcher {
 
     private final String message;
+    private final boolean matches;
     private final Matcher MATCH;
 
     /**
@@ -44,57 +47,38 @@ public class CommandMatcher {
      */
     CommandMatcher(Matcher matcher, String msg) {
         this.MATCH = matcher;
+        this.matches = this.MATCH.find();
         this.message = msg;
     }
 
     /**
      * Get the command from the match
      *
-     * @return command string
+     * @return optional containing command string if found
      */
-    public String getCommand() {
-        return MATCH.group(2);
+    public Optional<String> getCommand() {
+        if (this.matches) {
+            return Optional.of(MATCH.group(2));
+        }
+        return Optional.empty();
     }
 
     /**
-     * Get parameters limited by whitespace
+     * Get parameters limited by whitespace and the rest of the message as last
+     * entry in returned array
      *
-     * @param limit number of parameters to return
+     * @param count number of parameters to return
      * @return array of parameters
      */
-    public String[] getParameters(int limit) {
-        final int parameterStart = MATCH.start(4);
-        if (parameterStart == -1) {
+    public String[] getArguments(int count) {
+        int parameterStart = MATCH.end();
+
+        //Check if message ends at match end
+        if (parameterStart == this.message.length()) {
             return new String[0];
         }
+
         final String parameterString = this.message.substring(parameterStart);
-        return parameterString.split(" ", limit);
+        return parameterString.split(" ", count + 1);
     }
-
-    /**
-     * Gets the input data after given parameter
-     *
-     * @param after Parameter to start after
-     * @return Optional of the data, empty if command ends at or before
-     * parameter
-     */
-    public Optional<String> getData(int after) {
-        int parameterStart = MATCH.end();
-        for (int i = 0; i < after; i++) {
-            //Find next parameter
-            parameterStart = this.message.indexOf(' ', parameterStart);
-            //Did we find anything
-            if (parameterStart == -1) {
-                return Optional.empty();
-            }
-            //Check if after this is the end of the string
-            parameterStart++;
-            if (parameterStart == this.message.length()) {
-                return Optional.empty();
-            }
-        }
-        //Found N parameters, return substring after the parameters
-        return Optional.of(this.message.substring(parameterStart));
-    }
-
 }
