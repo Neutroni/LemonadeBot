@@ -27,6 +27,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 
 /**
+ * Matcher for commands
  *
  * @author Neutroni
  */

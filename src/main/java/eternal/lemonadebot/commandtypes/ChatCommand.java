@@ -29,6 +29,7 @@ import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.TextChannel;
 
 /**
+ * Interface all commands must implement
  *
  * @author Neutroni
  */

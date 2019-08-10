@@ -24,6 +24,7 @@
 package eternal.lemonadebot.database;
 
 /**
+ * Keys used to store configuration data in database
  *
  * @author Neutroni
  */

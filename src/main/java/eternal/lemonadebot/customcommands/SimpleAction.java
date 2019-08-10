@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 import net.dv8tion.jda.core.entities.Message;
 
 /**
+ * Class that holds substitutions for custom command templates
  *
  * @author Neutroni
  */

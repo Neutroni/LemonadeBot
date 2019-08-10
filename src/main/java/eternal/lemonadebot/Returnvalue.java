@@ -24,6 +24,7 @@
 package eternal.lemonadebot;
 
 /**
+ * Program return codes
  *
  * @author Neutroni
  */

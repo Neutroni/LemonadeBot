@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
+ * SQLite implementation of database access for Databasemanager
  *
  * @author Neutroni
  */

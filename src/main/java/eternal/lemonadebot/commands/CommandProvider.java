@@ -27,6 +27,7 @@ import eternal.lemonadebot.commandtypes.ChatCommand;
 import java.util.List;
 
 /**
+ * Interface for classes holding commands
  *
  * @author Neutroni
  */

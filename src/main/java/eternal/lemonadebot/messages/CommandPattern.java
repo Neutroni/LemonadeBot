@@ -31,6 +31,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
+ * Holds command pattern for parsing commands
  *
  * @author Neutroni
  */
@@ -49,17 +50,18 @@ class CommandPattern {
     CommandPattern(DatabaseManager db) {
         this.DATABASE = db;
         final Optional<String> opt = DATABASE.getCommandPrefix();
-        if(opt.isPresent()){
+        if (opt.isPresent()) {
             final String prefix = opt.get();
             updatePattern(prefix);
         } else {
             updatePattern("!");
         }
-        
+
     }
 
     /**
      * Gets a command matcher for given input
+     *
      * @param msg
      * @return
      */
@@ -69,6 +71,7 @@ class CommandPattern {
 
     /**
      * Updates command pattern
+     *
      * @param prefix
      */
     private void updatePattern(String prefix) {

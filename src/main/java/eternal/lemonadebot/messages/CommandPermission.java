@@ -24,6 +24,7 @@
 package eternal.lemonadebot.messages;
 
 /**
+ * Permissions required to run a command
  *
  * @author Neutroni
  */

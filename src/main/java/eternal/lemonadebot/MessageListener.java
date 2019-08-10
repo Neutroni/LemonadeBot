@@ -44,6 +44,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
+ * JDA MessageListener, responsible for reacting to messages discord sends
  *
  * @author Neutroni
  */

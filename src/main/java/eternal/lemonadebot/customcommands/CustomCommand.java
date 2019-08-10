@@ -32,6 +32,9 @@ import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.TextChannel;
 
 /**
+ * User defined commands that take template as input and when run return the
+ * template with parts substituted according to SimpleActions defined in
+ * ActionManager
  *
  * @author Neutroni
  */
@@ -108,7 +111,7 @@ public class CustomCommand implements ChatCommand {
 
     @Override
     public void respond(Member member, Message message, TextChannel textChannel) {
-        final String response = this.actionManager.processActions(message,action);
+        final String response = this.actionManager.processActions(message, action);
         textChannel.sendMessage(response).queue();
     }
 

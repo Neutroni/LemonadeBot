@@ -41,6 +41,7 @@ import net.dv8tion.jda.core.entities.User;
 import org.apache.logging.log4j.LogManager;
 
 /**
+ * CommandProvider providing commands that use both database and commandparsing
  *
  * @author Neutroni
  */

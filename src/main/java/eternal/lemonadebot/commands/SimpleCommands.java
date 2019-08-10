@@ -40,6 +40,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
+ * CommandProvider for commands that only require command parser and do not do
+ * database operations directly
  *
  * @author Neutroni
  */

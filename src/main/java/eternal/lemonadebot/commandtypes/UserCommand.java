@@ -26,6 +26,7 @@ package eternal.lemonadebot.commandtypes;
 import eternal.lemonadebot.messages.CommandPermission;
 
 /**
+ * Abstract class to provide quick way of writing commands that anyone can use
  *
  * @author Neutroni
  */

@@ -32,6 +32,8 @@ import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
 
 /**
+ * Class that holds actions for custom commands and how to substitute given
+ * templace with its actual content
  *
  * @author Neutroni
  */

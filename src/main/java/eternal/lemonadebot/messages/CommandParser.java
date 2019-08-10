@@ -38,6 +38,7 @@ import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
 
 /**
+ * Various utility functions for parsing command from messages
  *
  * @author Neutroni
  */

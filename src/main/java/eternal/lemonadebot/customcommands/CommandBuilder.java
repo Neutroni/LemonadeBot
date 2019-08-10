@@ -26,6 +26,7 @@ package eternal.lemonadebot.customcommands;
 import eternal.lemonadebot.database.DatabaseManager;
 
 /**
+ * Builder for custom commands
  *
  * @author Neutroni
  */

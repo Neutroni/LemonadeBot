@@ -32,6 +32,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
+ * Main class of the bot, initializes database and connects to discord
  *
  * @author Neutroni
  */
@@ -52,7 +53,7 @@ public class LemonadeBot {
         }
         try (final DatabaseManager DB = new DatabaseManager()) {
             //If owner id was provided initialize database
-            if(args.length == 2){
+            if (args.length == 2) {
                 DB.initializeDatabase(args[1]);
             }
             final JDA jda = new JDABuilder(args[0]).build();
