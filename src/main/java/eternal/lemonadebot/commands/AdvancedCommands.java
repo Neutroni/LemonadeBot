@@ -61,8 +61,8 @@ public class AdvancedCommands implements CommandProvider {
     /**
      * Constructor
      *
-     * @param db
-     * @param cp
+     * @param db Database for commands to use
+     * @param cp commands parser for getting command arguments
      */
     public AdvancedCommands(DatabaseManager db, CommandParser cp) {
         this.DATABASE = db;

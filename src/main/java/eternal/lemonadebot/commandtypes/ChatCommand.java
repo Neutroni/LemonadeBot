@@ -52,7 +52,7 @@ public interface ChatCommand {
     /**
      * Which roles have permssion to run this command
      *
-     * @return
+     * @return CommandPermission needed to run this command
      */
     public CommandPermission getPermission();
 
