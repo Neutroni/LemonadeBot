@@ -27,9 +27,9 @@ import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.messages.CommandPermission;
 import java.util.Objects;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.TextChannel;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
  * User defined commands that take template as input and when run return the

@@ -24,9 +24,9 @@
 package eternal.lemonadebot.commandtypes;
 
 import eternal.lemonadebot.messages.CommandPermission;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.TextChannel;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
  * Interface all commands must implement

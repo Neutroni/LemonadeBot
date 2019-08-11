@@ -27,8 +27,8 @@ import eternal.lemonadebot.database.DatabaseException;
 import eternal.lemonadebot.database.DatabaseManager;
 import java.util.Optional;
 import javax.security.auth.login.LoginException;
-import net.dv8tion.jda.core.JDA;
-import net.dv8tion.jda.core.JDABuilder;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.JDABuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

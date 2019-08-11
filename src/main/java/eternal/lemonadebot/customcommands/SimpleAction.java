@@ -26,7 +26,7 @@ package eternal.lemonadebot.customcommands;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import net.dv8tion.jda.core.entities.Message;
+import net.dv8tion.jda.api.entities.Message;
 
 /**
  * Class that holds substitutions for custom command templates

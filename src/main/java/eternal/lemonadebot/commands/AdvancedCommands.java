@@ -1,5 +1,4 @@
-/*
- * The MIT License
+/* The MIT License
  *
  * Copyright 2019 Neutroni.
  *
@@ -34,10 +33,10 @@ import eternal.lemonadebot.messages.CommandPermission;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.TextChannel;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.User;
 
 /**
  * CommandProvider providing commands that use both database and commandparsing

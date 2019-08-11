@@ -30,17 +30,17 @@ import eternal.lemonadebot.messages.CommandParser;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import net.dv8tion.jda.core.entities.ChannelType;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.Role;
-import net.dv8tion.jda.core.entities.TextChannel;
-import net.dv8tion.jda.core.events.ShutdownEvent;
-import net.dv8tion.jda.core.events.guild.GuildJoinEvent;
-import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.core.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.entities.ChannelType;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.events.ShutdownEvent;
+import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
+import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -172,7 +172,7 @@ public class MessageListener extends ListenerAdapter {
 
                 final String roleName = otherGuild.getName();
                 final List<Role> roles = guild.getRolesByName(roleName, false);
-                guild.getController().addRolesToMember(member, roles).queue((t) -> {
+                guild.modifyMemberRoles(member, roles, null).queue((t) -> {
                     //Success
                     textChannel.sendMessage("Welcome to our guild discord " + member.getNickname()
                             + "You have been assigned role based on other guild you are also on, "

@@ -31,11 +31,11 @@ import eternal.lemonadebot.messages.CommandMatcher;
 import eternal.lemonadebot.messages.CommandParser;
 import java.util.List;
 import java.util.Optional;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.Role;
-import net.dv8tion.jda.core.entities.TextChannel;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -71,8 +71,8 @@ public class SimpleCommands implements CommandProvider {
     public List<ChatCommand> getCommands() {
         return COMMANDS;
     }
-    
-        private class ShutdownCommand extends OwnerCommand {
+
+    private class ShutdownCommand extends OwnerCommand {
 
         @Override
         public String getCommand() {
@@ -202,7 +202,7 @@ public class SimpleCommands implements CommandProvider {
                     continue;
                 }
                 final List<Role> roles = textChannel.getGuild().getRolesByName(guildName, false);
-                textChannel.getGuild().getController().addRolesToMember(sender, roles).queue((t) -> {
+                textChannel.getGuild().modifyMemberRoles(sender, roles, null).queue((t) -> {
                     //Success
                     textChannel.sendMessage("Role assigned succesfully").queue();
                 }, (t) -> {
