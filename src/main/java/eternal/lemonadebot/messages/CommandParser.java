@@ -36,6 +36,8 @@ import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Various utility functions for parsing command from messages
@@ -43,6 +45,8 @@ import net.dv8tion.jda.core.entities.User;
  * @author Neutroni
  */
 public class CommandParser {
+
+    private static final Logger LOGGER = LogManager.getLogger();
 
     private final DatabaseManager DATABASE;
     private final CommandPattern PATTERN;
@@ -94,6 +98,12 @@ public class CommandParser {
         if (command.isPresent()) {
             return command;
         }
+        
+        //Log the message if debug is enabled
+        LOGGER.debug(() -> {
+            return "Found command: " + commandName + " in " + message.getContentRaw();
+        });
+        
         //Check if we find custom command by that name
         final Optional<CustomCommand> custom = getCustomCommand(commandName);
         if (custom.isPresent()) {
@@ -225,7 +235,7 @@ public class CommandParser {
                         break;
                 }
             }
-            
+
             //Construct the list of commands
             final StringBuilder sb = new StringBuilder();
             if (printDefault) {

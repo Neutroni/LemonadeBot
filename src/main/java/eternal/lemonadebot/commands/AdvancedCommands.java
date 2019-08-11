@@ -38,7 +38,6 @@ import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
-import org.apache.logging.log4j.LogManager;
 
 /**
  * CommandProvider providing commands that use both database and commandparsing
@@ -46,8 +45,6 @@ import org.apache.logging.log4j.LogManager;
  * @author Neutroni
  */
 public class AdvancedCommands implements CommandProvider {
-
-    private static final org.apache.logging.log4j.Logger LOGGER = LogManager.getLogger();
 
     private final List<ChatCommand> COMMANDS = List.of(
             new AdminManagmentCommand(),

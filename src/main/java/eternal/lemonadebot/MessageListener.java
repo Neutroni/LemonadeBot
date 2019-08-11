@@ -50,7 +50,7 @@ import org.apache.logging.log4j.Logger;
  * @author Neutroni
  */
 public class MessageListener extends ListenerAdapter {
-    
+
     private static final Logger LOGGER = LogManager.getLogger();
     private final CommandParser commandParser;
     private final DatabaseManager DATABASE;
@@ -91,7 +91,7 @@ public class MessageListener extends ListenerAdapter {
         if (action.isEmpty()) {
             return;
         }
-        
+
         //React to command
         final ChatCommand ca = action.get();
         final Member member = event.getMember();
@@ -99,14 +99,14 @@ public class MessageListener extends ListenerAdapter {
             ca.respond(member, message, textChannel);
         }
     }
-    
+
     private String getRuleChannelMessage(Guild g) {
         //Only this guild, direct to rule channel
         final Optional<String> rco = this.DATABASE.getRuleChannelID();
         if (rco.isEmpty()) {
             return "";
         }
-        
+
         final String rcsnowflake = rco.get();
         final TextChannel ruleChannel = g.getTextChannelById(rcsnowflake);
         if (ruleChannel == null) {
@@ -114,9 +114,9 @@ public class MessageListener extends ListenerAdapter {
         }
         final String rcmention = ruleChannel.getAsMention();
         return " please check the guild rules over at " + rcmention;
-        
+
     }
-    
+
     private void sendDefaultMessage(TextChannel textChannel, Member member) {
         textChannel.sendMessage("Welcome to our guild discord " + member.getNickname()
                 + getRuleChannelMessage(textChannel.getGuild())).queue();
@@ -152,12 +152,12 @@ public class MessageListener extends ListenerAdapter {
                 //This and another guild, try to get role for them based on other guild
                 final List<Guild> mutableGuilds = new ArrayList<>(mutualGuilds);
                 mutableGuilds.remove(guild);
-                
+
                 if (mutableGuilds.size() != 1) {
                     sendDefaultMessage(textChannel, member);
                     return;
                 }
-                
+
                 final Guild otherGuild = mutableGuilds.get(0);
                 final Member otherGuildmember = otherGuild.getMember(member.getUser());
                 if (otherGuildmember == null) {
@@ -169,7 +169,7 @@ public class MessageListener extends ListenerAdapter {
                     sendDefaultMessage(textChannel, member);
                     return;
                 }
-                
+
                 final String roleName = otherGuild.getName();
                 final List<Role> roles = guild.getRolesByName(roleName, false);
                 guild.getController().addRolesToMember(member, roles).queue((t) -> {
@@ -183,9 +183,9 @@ public class MessageListener extends ListenerAdapter {
                 });
                 break;
             }
-            
+
             default: {
-                //More guild, ask them to use role command
+                //More guilds, ask them to use role command
                 textChannel.sendMessage("Welcome to our guild discord " + member.getNickname() + "\n"
                         + "You apper to be on multiple guilds and as such I can't find a role for you, "
                         + "use command \"role\" to assing a role based on other guild you are also on.").queue();
@@ -211,7 +211,7 @@ public class MessageListener extends ListenerAdapter {
                 DATABASE.addChannel(channel);
                 channel.sendMessage("Hello everyone I'm a new bot here, nice to meet you all").queue();
             } catch (DatabaseException ex) {
-                LOGGER.error("Adding default listen channel failed",ex);
+                LOGGER.error("Adding default listen channel failed", ex);
             }
         }
     }

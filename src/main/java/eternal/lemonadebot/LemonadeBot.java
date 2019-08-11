@@ -38,7 +38,7 @@ import org.apache.logging.log4j.Logger;
  * @author Neutroni
  */
 public class LemonadeBot {
-
+    
     private static final Logger LOGGER = LogManager.getLogger();
 
     /**
@@ -47,14 +47,16 @@ public class LemonadeBot {
      * @param args command line arguments
      */
     public static void main(String[] args) {
+        LOGGER.debug("Bot starting up");
         //Check that user provided api key
         if (args.length < 1) {
-            LOGGER.error("No api key provided, quitting");
+            LOGGER.fatal("No api key provided, quitting");
             System.exit(Returnvalue.MISSING_API_KEY.getValue());
         }
         //If owner id was provided initialize database
         final Optional<String> ownerID;
         if (args.length == 2) {
+            LOGGER.debug("Found ownerid to initialize database with: " + args[1]);
             ownerID = Optional.of(args[1]);
         } else {
             ownerID = Optional.empty();
@@ -63,13 +65,17 @@ public class LemonadeBot {
         //Load database and initialize JDA
         try {
             final DatabaseManager DB = new DatabaseManager(ownerID);
+            LOGGER.debug("Connected to database succefully");
             final JDA jda = new JDABuilder(args[0]).build();
             jda.addEventListener(new MessageListener(DB));
+            LOGGER.debug("Startup succesfull");
         } catch (DatabaseException ex) {
-            LOGGER.error("Failed to connect to database",ex);
+            LOGGER.fatal("Failed to connect to database during startup");
+            LOGGER.trace("Stack trace:", ex);
             System.exit(Returnvalue.DATABASE_FAILED.getValue());
         } catch (LoginException ex) {
-            LOGGER.error("Login failed",ex);
+            LOGGER.fatal("Login failed");
+            LOGGER.trace("Stack trace:", ex);
             System.exit(Returnvalue.LOGIN_FAILED.getValue());
         }
     }
