@@ -46,7 +46,7 @@ public class DatabaseManager implements AutoCloseable {
     private static final Logger LOGGER = LogManager.getLogger();
 
     //SQLite database
-    private final String DB_LOCATION = "database.db";
+    private final String DB_LOCATION;
     private final SQLiteManager DB;
 
     // Caching database data
@@ -67,10 +67,13 @@ public class DatabaseManager implements AutoCloseable {
      *
      * @param ownerID Id of the bot owner, if present used to initialize
      * database
+     * @param databaseLocation location for the database
      * @throws DatabaseException if database connection failed
      */
-    public DatabaseManager(Optional<String> ownerID) throws DatabaseException {
+    public DatabaseManager(Optional<String> ownerID, Optional<String> databaseLocation) throws DatabaseException {
         try {
+            //Create database connection
+            this.DB_LOCATION = databaseLocation.orElse("database.db");
             this.DB = new SQLiteManager(DB_LOCATION);
 
             //Check if DB needs to be initialized

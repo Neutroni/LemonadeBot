@@ -26,9 +26,16 @@ package eternal.lemonadebot;
 import eternal.lemonadebot.database.DatabaseException;
 import eternal.lemonadebot.database.DatabaseManager;
 import java.util.Optional;
+import java.util.logging.Level;
 import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,23 +55,36 @@ public class LemonadeBot {
      */
     public static void main(String[] args) {
         LOGGER.debug("Bot starting up");
-        //Check that user provided api key
-        if (args.length < 1) {
-            LOGGER.fatal("No api key provided, quitting");
-            System.exit(Returnvalue.MISSING_API_KEY.getValue());
-        }
-        //If owner id was provided initialize database
-        final Optional<String> ownerID;
-        if (args.length == 2) {
-            LOGGER.debug("Found ownerid to initialize database with: " + args[1]);
-            ownerID = Optional.of(args[1]);
-        } else {
-            ownerID = Optional.empty();
-        }
-
-        //Load database and initialize JDA
+        
         try {
-            final DatabaseManager DB = new DatabaseManager(ownerID);
+            //Parse command line arguments
+            final Options options = new Options();
+            options.addRequiredOption("k", "key", true, "Discord api key");
+            options.addOption("h", "help", false, "Prints this message");
+            options.addOption("d", "database", true, "Database location");
+            options.addOption("o", "owner", true, "Id of the bot owner");
+            
+            final HelpFormatter formatter = new HelpFormatter();
+            final CommandLineParser parser = new DefaultParser();
+            final CommandLine cmd = parser.parse(options, args);
+
+            //Check if we should print help
+            if (cmd.hasOption("h")) {
+                formatter.printHelp("bot", options);
+                System.exit(Returnvalue.SUCCESS.getValue());
+            }
+
+            //Check that user provided api key
+            if (!cmd.hasOption("k")) {
+                LOGGER.fatal("No api key provided, quitting");
+                System.exit(Returnvalue.MISSING_API_KEY.getValue());
+            }
+
+            //Get optionals of arguments
+            final Optional<String> databaseLocation = Optional.ofNullable(cmd.getOptionValue("d"));
+            final Optional<String> ownerID = Optional.ofNullable(cmd.getOptionValue("o"));
+            
+            final DatabaseManager DB = new DatabaseManager(ownerID, databaseLocation);
             LOGGER.debug("Connected to database succefully");
             final JDA jda = new JDABuilder(args[0]).build();
             jda.addEventListener(new MessageListener(DB));
@@ -77,6 +97,9 @@ public class LemonadeBot {
             LOGGER.fatal("Login failed");
             LOGGER.trace("Stack trace:", ex);
             System.exit(Returnvalue.LOGIN_FAILED.getValue());
+        } catch (ParseException ex) {
+            LOGGER.fatal("Command line argument parsing failed");
+            LOGGER.trace("Stack trace:", ex);
         }
     }
 }

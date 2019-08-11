@@ -31,6 +31,10 @@ package eternal.lemonadebot;
 public enum Returnvalue {
 
     /**
+     * If program exited normally
+     */
+    SUCCESS(0),
+    /**
      * If no api key was provided
      */
     MISSING_API_KEY(1),
