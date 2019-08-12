@@ -98,12 +98,12 @@ public class CommandParser {
         if (command.isPresent()) {
             return command;
         }
-        
+
         //Log the message if debug is enabled
         LOGGER.debug(() -> {
             return "Found command: " + commandName + " in " + message.getContentRaw();
         });
-        
+
         //Check if we find custom command by that name
         final Optional<CustomCommand> custom = getCustomCommand(commandName);
         if (custom.isPresent()) {
@@ -134,7 +134,7 @@ public class CommandParser {
      * @return Optional containing the action if found, empty if not found
      */
     public Optional<CustomCommand> getCustomCommand(String name) {
-        for (CustomCommand c : DATABASE.getCommands()) {
+        for (CustomCommand c : DATABASE.getCommandBuilder().getItems()) {
             if (name.equals(c.getCommand())) {
                 return Optional.of(c);
             }
@@ -159,7 +159,7 @@ public class CommandParser {
      * @param member user to check
      * @return List of permissions
      */
-    public List<CommandPermission> getPermissions(Member member) {
+    private List<CommandPermission> getPermissions(Member member) {
         final User user = member.getUser();
         final List<CommandPermission> cp = new ArrayList<>();
         if (DATABASE.isOwner(user)) {
@@ -185,6 +185,23 @@ public class CommandParser {
      */
     public boolean hasPermission(Member member, ChatCommand command) {
         return getPermissions(member).contains(command.getPermission());
+    }
+
+    /**
+     * Check if user has permission to manage content owned by other member
+     *
+     * @param user User trying to do an action that modifies content
+     * @param owner owner of the content
+     * @return true if user has permission
+     */
+    public boolean hasPermission(User user, User owner) {
+        if (user.equals(owner)) {
+            return true;
+        }
+        if (DATABASE.isAdmin(user) && !DATABASE.isAdmin(owner)) {
+            return true;
+        }
+        return DATABASE.isOwner(user);
     }
 
     /**
@@ -248,7 +265,7 @@ public class CommandParser {
             }
             if (printCustom) {
                 sb.append("Custom commands:\n");
-                for (CustomCommand c : DATABASE.getCommands()) {
+                for (CustomCommand c : DATABASE.getCommandBuilder().getItems()) {
                     if (hasPermission(member, c)) {
                         sb.append(' ').append(c.getCommand()).append('\n');
                     }

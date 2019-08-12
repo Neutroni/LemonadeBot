@@ -201,7 +201,7 @@ public class MessageListener extends ListenerAdapter {
      */
     @Override
     public void onGuildJoin(GuildJoinEvent event) {
-        if (DATABASE.getChannelIds().isEmpty()) {
+        if (DATABASE.getChannels().isEmpty()) {
             try {
                 final TextChannel channel = event.getGuild().getDefaultChannel();
                 if (channel == null) {

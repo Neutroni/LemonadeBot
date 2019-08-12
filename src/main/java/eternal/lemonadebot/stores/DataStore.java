@@ -21,48 +21,66 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.customcommands;
+package eternal.lemonadebot.stores;
 
-import eternal.lemonadebot.database.DatabaseManager;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
- * Builder for custom commands
  *
  * @author Neutroni
+ * @param <T> Type of data this store stores
  */
-public class CommandBuilder {
+public class DataStore<T> {
 
-    private final ActionManager actionManager = new ActionManager();
-    private final DatabaseManager DATABASE;
+    private final List<T> items = new ArrayList<>();
 
     /**
-     * Constructor
+     * Stores item with this store
      *
-     * @param db database to use
+     * @param item item to store
+     * @return true if item was added, false otherwise
      */
-    public CommandBuilder(DatabaseManager db) {
-        this.DATABASE = db;
+    public boolean add(T item) {
+        synchronized (this) {
+            if (this.items.contains(item)) {
+                return false;
+            }
+            return this.items.add(item);
+        }
     }
 
     /**
-     * Builds a custom command
+     * Remove item from this store
      *
-     * @param key key for command
-     * @param pattern pattern for command
-     * @param owner owner fo the command
-     * @return the new custom command
+     * @param item item to remove
+     * @return true if item was removed
      */
-    public CustomCommand build(String key, String pattern, String owner) {
-        return new CustomCommand(DATABASE, actionManager, key, pattern, owner);
+    public boolean remove(T item) {
+        synchronized (this) {
+            return this.items.remove(item);
+        }
     }
 
     /**
-     * Gets the action manager used to build commands
+     * Check if this datastore contains give item
      *
-     * @return ActionManager
+     * @param item item to find
+     * @return true if found
      */
-    public ActionManager getActionManager() {
-        return this.actionManager;
+    public boolean hasItem(T item) {
+        synchronized (this) {
+            return this.items.contains(item);
+        }
     }
 
+    /**
+     * Get the items this store has
+     *
+     * @return Unmodifiable list of items stored in this store
+     */
+    public List<T> getItems() {
+        return Collections.unmodifiableList(this.items);
+    }
 }

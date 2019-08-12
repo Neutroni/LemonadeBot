@@ -23,14 +23,17 @@
  */
 package eternal.lemonadebot.database;
 
-import eternal.lemonadebot.customcommands.CommandBuilder;
 import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.messages.CommandPermission;
+import eternal.lemonadebot.stores.CommandStore;
+import eternal.lemonadebot.stores.DataStore;
+import eternal.lemonadebot.stores.Event;
+import eternal.lemonadebot.stores.EventStore;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Level;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
 import org.apache.logging.log4j.LogManager;
@@ -53,14 +56,14 @@ public class DatabaseManager implements AutoCloseable {
     private final String ownerID;
     private volatile Optional<String> commandPrefix;
     private volatile Optional<String> ruleChannelID;
-    private final List<String> channels;
-    private final List<String> admins;
-
-    //Custom commands
-    private final CommandBuilder commandBuilder;
     private volatile CommandPermission permissionManageCommands = CommandPermission.MEMBER;
     private volatile CommandPermission permissionUseCommands = CommandPermission.USER;
-    private final List<CustomCommand> customCommands = Collections.synchronizedList(new ArrayList<>());
+
+    //Stores
+    private final EventStore eventStore;
+    private final DataStore<String> adminStore;
+    private final DataStore<String> channelStore;
+    private final CommandStore commandStore;
 
     /**
      * Creates a connection to a database
@@ -92,24 +95,26 @@ public class DatabaseManager implements AutoCloseable {
             this.commandPrefix = DB.loadSetting(ConfigKey.COMMAND_PREFIX.name());
             this.ruleChannelID = DB.loadSetting(ConfigKey.RULE_CHANNEL.name());
 
-            //Load
+            //Load permissions
             loadManagePerm();
             loadUsePerm();
 
-            //Load listen channels and admins
-            this.channels = DB.loadChannels();
-            this.admins = DB.loadAdmins();
+            //Load admins
+            this.adminStore = new DataStore<>();
+            DB.loadAdmins(adminStore);
+
+            //Load listening channels
+            this.channelStore = new DataStore<>();
+            DB.loadChannels(channelStore);
 
             //Load commands
-            this.commandBuilder = new CommandBuilder(this);
-            final List<String[]> commands = DB.loadCommands();
-            for (String[] arr : commands) {
-                if (arr.length != 3) {
-                    throw new DatabaseException("Database provided command in wrong format");
-                }
-                final CustomCommand command = this.commandBuilder.build(arr[0], arr[1], arr[2]);
-                this.customCommands.add(command);
-            }
+            this.commandStore = new CommandStore(this);
+            DB.loadCommands(this.commandStore);
+
+            //Load events
+            this.eventStore = new EventStore();
+            DB.loadEvents(this.eventStore);
+
         } catch (SQLException ex) {
             LOGGER.error("Failure creating DatabaseManager", ex);
             throw new DatabaseException(ex);
@@ -121,8 +126,8 @@ public class DatabaseManager implements AutoCloseable {
      *
      * @return CommandBuilder
      */
-    public CommandBuilder getCommandBuilder() {
-        return this.commandBuilder;
+    public CommandStore getCommandBuilder() {
+        return this.commandStore;
     }
 
     /**
@@ -179,7 +184,9 @@ public class DatabaseManager implements AutoCloseable {
         try {
             this.DB.close();
         } catch (SQLException ex) {
-            LOGGER.error("Closing database connection failed", ex);
+            LOGGER.error("Closing database connection failed");
+            LOGGER.warn(ex.getMessage());
+            LOGGER.trace("Stack trace:", ex);
             throw new DatabaseException(ex);
         }
     }
@@ -194,7 +201,9 @@ public class DatabaseManager implements AutoCloseable {
         try {
             DB.initialize(ownerID);
         } catch (SQLException ex) {
-            LOGGER.error("Initializing database failed", ex);
+            LOGGER.error("Initializing database failed");
+            LOGGER.warn(ex.getMessage());
+            LOGGER.trace("Stack trace:", ex);
             throw new DatabaseException(ex);
         }
     }
@@ -219,7 +228,9 @@ public class DatabaseManager implements AutoCloseable {
         try {
             DB.updateSetting(ConfigKey.COMMAND_PREFIX.name(), prefix);
         } catch (SQLException ex) {
-            LOGGER.error("Failed to store command prefix", ex);
+            LOGGER.error("Failed to store command prefix");
+            LOGGER.warn(ex.getMessage());
+            LOGGER.trace("Stack trace:", ex);
             throw new DatabaseException(ex);
         }
     }
@@ -233,20 +244,20 @@ public class DatabaseManager implements AutoCloseable {
      */
     public boolean addCommand(CustomCommand command) throws DatabaseException {
         //Check if we alredy know this command
-        boolean cached = this.customCommands.contains(command);
-        //If command is new add to list of commands
-        if (!cached) {
-            cached = this.customCommands.add(command);
-        }
+        boolean added = this.commandStore.add(command);
         try {
-            if (!DB.hasCommand(command.getCommand())) {
-                DB.addCommand(command.getCommand(), command.getAction(), command.getOwner());
+            synchronized (this.commandStore) {
+                if (!DB.hasCommand(command.getCommand())) {
+                    DB.addCommand(command.getCommand(), command.getAction(), command.getOwner());
+                }
             }
         } catch (SQLException ex) {
-            LOGGER.error("Adding command to database failed", ex);
+            LOGGER.error("Adding command to database failed");
+            LOGGER.warn(ex.getMessage());
+            LOGGER.trace("Stack trace:", ex);
             throw new DatabaseException(ex);
         }
-        return cached;
+        return added;
     }
 
     /**
@@ -258,23 +269,18 @@ public class DatabaseManager implements AutoCloseable {
      * @throws DatabaseException if database connection fails
      */
     public boolean removeCommand(CustomCommand command) throws DatabaseException {
-        boolean removed = this.customCommands.remove(command);
+        boolean removed = this.commandStore.remove(command);
         try {
-            removed = DB.removeCommand(command.getCommand()) > 0;
+            synchronized (this.commandStore) {
+                removed = DB.removeCommand(command.getCommand()) > 0;
+            }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to remove command from database", ex);
+            LOGGER.error("Failed to remove command from database");
+            LOGGER.warn(ex.getMessage());
+            LOGGER.trace("Stack trace:", ex);
             throw new DatabaseException(ex);
         }
         return removed;
-    }
-
-    /**
-     * Gets the current custom commands
-     *
-     * @return list of custom commands
-     */
-    public List<CustomCommand> getCommands() {
-        return Collections.unmodifiableList(this.customCommands);
     }
 
     /**
@@ -296,20 +302,22 @@ public class DatabaseManager implements AutoCloseable {
     public boolean addChannel(TextChannel channel) throws DatabaseException {
         final String id = channel.getId();
         //Store in cache
-        boolean cached = this.channels.contains(id);
-        if (!cached) {
-            cached = this.channels.add(id);
-        }
+        boolean added = this.channelStore.add(id);
+
         //Add channel to database
         try {
-            if (!DB.hasChannel(id)) {
-                DB.addChannel(id);
+            synchronized (this.channelStore) {
+                if (!DB.hasChannel(id)) {
+                    DB.addChannel(id);
+                }
             }
         } catch (SQLException ex) {
-            LOGGER.error("Adding new channel failed", ex);
+            LOGGER.error("Adding new channel failed");
+            LOGGER.warn(ex.getMessage());
+            LOGGER.trace("Stack trace:", ex);
             throw new DatabaseException(ex);
         }
-        return cached;
+        return added;
     }
 
     /**
@@ -320,11 +328,15 @@ public class DatabaseManager implements AutoCloseable {
      * @throws DatabaseException if removing channel from database failed
      */
     public boolean removeChannel(String id) throws DatabaseException {
-        boolean removed = this.channels.remove(id);
+        boolean removed = this.channelStore.remove(id);
         try {
-            removed = DB.removeChannel(id) > 0;
+            synchronized (this.channelStore) {
+                removed = DB.removeChannel(id) > 0;
+            }
         } catch (SQLException ex) {
-            LOGGER.error("Removing channel failed", ex);
+            LOGGER.error("Removing channel failed");
+            LOGGER.warn(ex.getMessage());
+            LOGGER.trace("Stack trace:", ex);
             throw new DatabaseException(ex);
         }
         return removed;
@@ -337,7 +349,7 @@ public class DatabaseManager implements AutoCloseable {
      * @return true if we listen on channel, false otherwise
      */
     public boolean watchingChannel(TextChannel channel) {
-        return this.channels.contains(channel.getId());
+        return this.channelStore.hasItem(channel.getId());
     }
 
     /**
@@ -345,8 +357,8 @@ public class DatabaseManager implements AutoCloseable {
      *
      * @return List of channels ids
      */
-    public List<String> getChannelIds() {
-        return Collections.unmodifiableList(this.channels);
+    public List<String> getChannels() {
+        return this.channelStore.getItems();
     }
 
     /**
@@ -358,17 +370,19 @@ public class DatabaseManager implements AutoCloseable {
      */
     public boolean addAdmin(User user) throws DatabaseException {
         final String id = user.getId();
-        boolean added = this.admins.contains(id);
-        if (!added) {
-            added = this.admins.add(id);
-        }
+        boolean added = this.adminStore.add(id);
+
         //Add admin to database
         try {
-            if (!DB.hasAdmin(id)) {
-                this.DB.addAdmin(id);
+            synchronized (this.adminStore) {
+                if (!DB.hasAdmin(id)) {
+                    this.DB.addAdmin(id);
+                }
             }
         } catch (SQLException ex) {
-            LOGGER.error("Adding admin to database failed", ex);
+            LOGGER.error("Adding admin to database failed");
+            LOGGER.warn(ex.getMessage());
+            LOGGER.trace("Stack trace:", ex);
             throw new DatabaseException(ex);
         }
         return added;
@@ -383,14 +397,17 @@ public class DatabaseManager implements AutoCloseable {
      * @throws DatabaseException if database connection fails
      */
     public boolean removeAdmin(String id) throws DatabaseException {
-
-        boolean removed = this.admins.remove(id);
+        boolean removed = this.adminStore.remove(id);
         //Going to database even if user is not admin,
         //because database might be in different state if remove failed before
         try {
-            removed = DB.removeAdmin(id) > 0;
+            synchronized (this.adminStore) {
+                removed = DB.removeAdmin(id) > 0;
+            }
         } catch (SQLException ex) {
-            LOGGER.error("Removing admin from database failed", ex);
+            LOGGER.error("Removing admin from database failed");
+            LOGGER.warn(ex.getMessage());
+            LOGGER.trace("Stack trace:", ex);
             throw new DatabaseException(ex);
         }
         return removed;
@@ -403,16 +420,16 @@ public class DatabaseManager implements AutoCloseable {
      * @return is the user an admin
      */
     public boolean isAdmin(User user) {
-        return this.admins.contains(user.getId());
+        return this.adminStore.hasItem(user.getId());
     }
 
     /**
-     * Gets the list of admins
+     * Gets array of admin ids
      *
-     * @return List of admin ids
+     * @return Array of admin ids
      */
     public List<String> getAdminIds() {
-        return Collections.unmodifiableList(this.admins);
+        return this.adminStore.getItems();
     }
 
     /**
@@ -441,5 +458,130 @@ public class DatabaseManager implements AutoCloseable {
      */
     public CommandPermission getCommandManagePermission() {
         return this.permissionManageCommands;
+    }
+
+    /**
+     * Add event to database
+     *
+     * @param event event to add
+     * @return true if event exists
+     * @throws DatabaseException if database connection failed
+     */
+    public boolean addEvent(Event event) throws DatabaseException {
+        boolean added = this.eventStore.add(event);
+
+        //Add event to database
+        try {
+            if (!DB.hasEvent(event.getName())) {
+                this.DB.addEvent(event.getName(), event.getOwner());
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("Adding event to database failed");
+            LOGGER.warn(ex.getMessage());
+            LOGGER.trace("Stack trace:", ex);
+            throw new DatabaseException(ex);
+        }
+        return added;
+    }
+
+    /**
+     * Removes event from database
+     *
+     * @param event evet to remove
+     * @return true if remove
+     * @throws DatabaseException
+     */
+    public boolean removeEvent(Event event) throws DatabaseException {
+        boolean removed = this.eventStore.remove(event);
+        //Going to database even if user is not admin,
+        //because database might be in different state if remove failed before
+        try {
+            removed = DB.removeEvent(event.getName()) > 0;
+        } catch (SQLException ex) {
+            LOGGER.error("Removing event from database failed");
+            LOGGER.warn(ex.getMessage());
+            LOGGER.trace("Stack trace:", ex);
+            throw new DatabaseException(ex);
+        }
+        return removed;
+    }
+
+    /**
+     * Join event
+     *
+     * @param member member to add to event
+     * @param event
+     * @return true if join was succesfull, false otherwise
+     * @throws DatabaseException if database connection failed
+     */
+    public boolean joinEvent(Member member, Event event) throws DatabaseException {
+        boolean joined = event.join(member.getId());
+        try {
+            synchronized (this.eventStore) {
+                if (!DB.hasAttended(event.getName(), member.getId())) {
+                    DB.joinEvent(event.getName(), member.getId());
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("Joining event failed");
+            LOGGER.warn(ex.getMessage());
+            LOGGER.trace("Stack trace:", ex);
+            throw new DatabaseException(ex);
+        }
+        return joined;
+    }
+
+    /**
+     * Leave event
+     *
+     * @param member member to remove from event
+     * @param event event to add member to
+     * @return true if left event succesfully
+     * @throws DatabaseException if leaving failed
+     */
+    public boolean leaveEvent(Member member, Event event) throws DatabaseException {
+        boolean left = event.leave(member.getId());
+        try {
+            synchronized (this.eventStore) {
+                if (DB.hasAttended(event.getName(), member.getId())) {
+                    left = DB.leaveEvent(event.getName(), member.getId());
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("Leaving event failed");
+            LOGGER.warn(ex.getMessage());
+            LOGGER.trace("Stack trace:", ex);
+            throw new DatabaseException(ex);
+        }
+        return left;
+    }
+
+    /**
+     * Get eventbuilder
+     *
+     * @return EventBuilder
+     */
+    public EventStore getEventBuilder() {
+        return this.eventStore;
+    }
+
+    /**
+     * Clears all members from event
+     * @param event event to remove all members from
+     * @throws DatabaseException
+     */
+    public void clearEvent(Event event) throws DatabaseException {
+        event.clear();
+        synchronized (this.eventStore) {
+            try {
+                DB.clearEvent(event.getName());
+            } catch (SQLException ex) {
+                LOGGER.error("Clearing event failed");
+                LOGGER.warn(ex.getMessage());
+                LOGGER.trace("Stack trace:", ex);
+                throw new DatabaseException(ex);
+            }
+        }
+
     }
 }

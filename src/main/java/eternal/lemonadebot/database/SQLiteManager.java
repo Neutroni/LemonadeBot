@@ -23,15 +23,16 @@
  */
 package eternal.lemonadebot.database;
 
+import eternal.lemonadebot.customcommands.CustomCommand;
+import eternal.lemonadebot.stores.CommandStore;
+import eternal.lemonadebot.stores.DataStore;
+import eternal.lemonadebot.stores.EventStore;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -188,52 +189,47 @@ class SQLiteManager implements AutoCloseable {
     /**
      * Returns a synchronized list of channels we listen on
      *
-     * @return List of watched channel ids
-     * @throws java.sql.SQLException
+     * @param channels DataStore to save channels to
+     * @throws SQLException if database connection fails
      */
-    List<String> loadChannels() throws SQLException {
-        final List<String> channels = Collections.synchronizedList(new ArrayList<>());
+    void loadChannels(DataStore<String> channels) throws SQLException {
         final String query = "SELECT id FROM Channels;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
                 channels.add(rs.getString("id"));
             }
         }
-        return channels;
     }
 
     /**
      * Returns synchronized list of admins
      *
-     * @return List of admin ids
+     * @param admins DataStore to save admins to
      * @throws SQLException if database connection fails
      */
-    List<String> loadAdmins() throws SQLException {
-        final List<String> admins = Collections.synchronizedList(new ArrayList<>());
+    void loadAdmins(DataStore<String> admins) throws SQLException {
         final String query = "SELECT id FROM Admins;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
                 admins.add(rs.getString("id"));
             }
         }
-        return admins;
     }
 
     /**
-     * Return list of command parts
+     * Builds custom commands and adds to give builder
      *
-     * @return Custom commands as string components
-     * @throws SQLException if Database command failed
+     * @param builder Builder to build custom commands with
+     * @throws SQLException if Database connection failed
      */
-    List<String[]> loadCommands() throws SQLException {
-        final List<String[]> admins = Collections.synchronizedList(new ArrayList<>());
+    void loadCommands(CommandStore builder) throws SQLException {
         final String query = "SELECT name,value,owner FROM Commands;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
-                admins.add(new String[]{rs.getString("name"), rs.getString("value"), rs.getString("owner")});
+                final CustomCommand newCommand = builder.build(rs.getString("name"), rs.getString("value"), rs.getString("owner"));
+                builder.add(newCommand);
             }
         }
-        return admins;
     }
 
     /**
@@ -247,12 +243,16 @@ class SQLiteManager implements AutoCloseable {
         final String ADMINS = "CREATE TABLE Admins(id TEXT PRIMARY KEY NOT NULL);";
         final String CHANNELS = "CREATE TABLE Channels(id TEXT PRIMRY KEY NOT NULL);";
         final String COMMANDS = "CREATE TABLE Commands(name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL, owner TEXT NOT NULL);";
+        final String EVENTS = "CREATE TABLE Events(name TEXT PRIMARY KEY NOT NULL, owner TEXT NOT NULL)";
+        final String EVENT_MEMBERS = "CREATE TABLE Attendees(event REFERENCES Events(name) ON DELETE CASCADE, member TEXT NOT NULL, PRIMARY KEY (event,member));";
         final String INSERT = "INSERT INTO Options(name,value) VALUES(?,?);";
         try (Statement st = conn.createStatement()) {
             st.addBatch(CONFIG);
             st.addBatch(ADMINS);
             st.addBatch(CHANNELS);
             st.addBatch(COMMANDS);
+            st.addBatch(EVENTS);
+            st.addBatch(EVENT_MEMBERS);
             st.executeBatch();
         }
         try (PreparedStatement ps = conn.prepareStatement(INSERT)) {
@@ -321,6 +321,82 @@ class SQLiteManager implements AutoCloseable {
             }
         }
         return false;
+    }
+
+    /**
+     *
+     * @param name
+     * @param owner
+     * @return
+     * @throws SQLException
+     */
+    boolean addEvent(String name, String owner) throws SQLException {
+        return false;
+    }
+
+    /**
+     *
+     * @param name
+     * @return
+     * @throws SQLException
+     */
+    int removeEvent(String name) throws SQLException {
+        return 0;
+    }
+
+    /**
+     *
+     * @param name
+     * @return
+     * @throws SQLException
+     */
+    boolean hasEvent(String name) throws SQLException {
+        return false;
+    }
+
+    /**
+     *
+     * @param eventBuilder
+     * @throws SQLException
+     */
+    void loadEvents(EventStore eventBuilder) throws SQLException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    /**
+     *
+     * @param name
+     * @param id
+     * @throws SQLException
+     */
+    void joinEvent(String name, String id) throws SQLException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    /**
+     *
+     * @param name
+     * @param id
+     * @return
+     * @throws SQLException
+     */
+    boolean hasAttended(String name, String id) throws SQLException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    /**
+     *
+     * @param name
+     * @param id
+     * @return
+     * @throws SQLException
+     */
+    boolean leaveEvent(String name, String id) throws SQLException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    void clearEvent(String name) throws  SQLException{
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }
