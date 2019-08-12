@@ -125,7 +125,7 @@ public class AdvancedCommands implements CommandProvider {
                     break;
                 }
                 case "join": {
-                    final Optional<Event> oldEvent = DATABASE.getEventBuilder().getEvent(eventName);
+                    final Optional<Event> oldEvent = DATABASE.getEventStore().getEvent(eventName);
                     if (oldEvent.isEmpty()) {
                         textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                         return;
@@ -143,7 +143,7 @@ public class AdvancedCommands implements CommandProvider {
                     break;
                 }
                 case "leave": {
-                    final Optional<Event> oldEvent = DATABASE.getEventBuilder().getEvent(eventName);
+                    final Optional<Event> oldEvent = DATABASE.getEventStore().getEvent(eventName);
                     if (oldEvent.isEmpty()) {
                         textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                         return;
@@ -161,7 +161,7 @@ public class AdvancedCommands implements CommandProvider {
                     break;
                 }
                 case "delete": {
-                    final Optional<Event> oldEvent = DATABASE.getEventBuilder().getEvent(eventName);
+                    final Optional<Event> oldEvent = DATABASE.getEventStore().getEvent(eventName);
                     if (oldEvent.isEmpty()) {
                         textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                         return;
@@ -195,7 +195,7 @@ public class AdvancedCommands implements CommandProvider {
                     break;
                 }
                 case "members": {
-                    final Optional<Event> oldEvent = DATABASE.getEventBuilder().getEvent(eventName);
+                    final Optional<Event> oldEvent = DATABASE.getEventStore().getEvent(eventName);
                     if (oldEvent.isEmpty()) {
                         textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                         return;
@@ -220,7 +220,7 @@ public class AdvancedCommands implements CommandProvider {
                     break;
                 }
                 case "clear": {
-                    final Optional<Event> oldEvent = DATABASE.getEventBuilder().getEvent(eventName);
+                    final Optional<Event> oldEvent = DATABASE.getEventStore().getEvent(eventName);
                     if (oldEvent.isEmpty()) {
                         textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                         return;
@@ -239,7 +239,7 @@ public class AdvancedCommands implements CommandProvider {
                     break;
                 }
                 case "list": {
-                    final List<Event> events = DATABASE.getEventBuilder().getItems();
+                    final List<Event> events = DATABASE.getEventStore().getItems();
                     if (events.isEmpty()) {
                         textChannel.sendMessage("No event defined").queue();
                         return;

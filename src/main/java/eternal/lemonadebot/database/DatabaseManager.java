@@ -488,7 +488,7 @@ public class DatabaseManager implements AutoCloseable {
      *
      * @param event evet to remove
      * @return true if remove
-     * @throws DatabaseException
+     * @throws DatabaseException if database connection failed
      */
     public boolean removeEvent(Event event) throws DatabaseException {
         boolean removed = this.eventStore.remove(event);
@@ -509,7 +509,7 @@ public class DatabaseManager implements AutoCloseable {
      * Join event
      *
      * @param member member to add to event
-     * @param event
+     * @param event event to join
      * @return true if join was succesfull, false otherwise
      * @throws DatabaseException if database connection failed
      */
@@ -558,9 +558,9 @@ public class DatabaseManager implements AutoCloseable {
     /**
      * Get eventbuilder
      *
-     * @return EventBuilder
+     * @return EventStore
      */
-    public EventStore getEventBuilder() {
+    public EventStore getEventStore() {
         return this.eventStore;
     }
 
@@ -568,7 +568,7 @@ public class DatabaseManager implements AutoCloseable {
      * Clears all members from event
      *
      * @param event event to remove all members from
-     * @throws DatabaseException
+     * @throws DatabaseException if database connection failed
      */
     public void clearEvent(Event event) throws DatabaseException {
         event.clear();

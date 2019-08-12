@@ -27,8 +27,6 @@ import eternal.lemonadebot.customcommands.ActionManager;
 import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.stores.DataStore;
 import eternal.lemonadebot.database.DatabaseManager;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Builder for custom commands
