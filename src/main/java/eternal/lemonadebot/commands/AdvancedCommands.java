@@ -28,16 +28,14 @@ import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.database.DatabaseException;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.stores.Event;
 import eternal.lemonadebot.messages.CommandMatcher;
 import eternal.lemonadebot.messages.CommandParser;
 import eternal.lemonadebot.messages.CommandPermission;
+import eternal.lemonadebot.stores.Event;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -403,7 +401,7 @@ public class AdvancedCommands implements CommandProvider {
 
                     //Check if any channels were mentioned
                     if (mentioned.isEmpty()) {
-                        textChannel.sendMessage("mention channels you want to add").queue();
+                        textChannel.sendMessage("Mention channels you want to add").queue();
                         return;
                     }
 

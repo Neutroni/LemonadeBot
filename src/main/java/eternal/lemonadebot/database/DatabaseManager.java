@@ -32,7 +32,6 @@ import eternal.lemonadebot.stores.EventStore;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
-import java.util.logging.Level;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
@@ -544,7 +543,7 @@ public class DatabaseManager implements AutoCloseable {
         try {
             synchronized (this.eventStore) {
                 if (DB.hasAttended(event.getName(), member.getId())) {
-                    left = DB.leaveEvent(event.getName(), member.getId());
+                    left = DB.leaveEvent(event.getName(), member.getId()) > 0;
                 }
             }
         } catch (SQLException ex) {
@@ -567,6 +566,7 @@ public class DatabaseManager implements AutoCloseable {
 
     /**
      * Clears all members from event
+     *
      * @param event event to remove all members from
      * @throws DatabaseException
      */

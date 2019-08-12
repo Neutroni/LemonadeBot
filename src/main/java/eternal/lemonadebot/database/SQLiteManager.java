@@ -26,6 +26,7 @@ package eternal.lemonadebot.database;
 import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.stores.CommandStore;
 import eternal.lemonadebot.stores.DataStore;
+import eternal.lemonadebot.stores.Event;
 import eternal.lemonadebot.stores.EventStore;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -244,7 +245,7 @@ class SQLiteManager implements AutoCloseable {
         final String CHANNELS = "CREATE TABLE Channels(id TEXT PRIMRY KEY NOT NULL);";
         final String COMMANDS = "CREATE TABLE Commands(name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL, owner TEXT NOT NULL);";
         final String EVENTS = "CREATE TABLE Events(name TEXT PRIMARY KEY NOT NULL, owner TEXT NOT NULL)";
-        final String EVENT_MEMBERS = "CREATE TABLE Attendees(event REFERENCES Events(name) ON DELETE CASCADE, member TEXT NOT NULL, PRIMARY KEY (event,member));";
+        final String EVENT_MEMBERS = "CREATE TABLE EventMembers(event REFERENCES Events(name) ON DELETE CASCADE, member TEXT NOT NULL, PRIMARY KEY (event,member));";
         final String INSERT = "INSERT INTO Options(name,value) VALUES(?,?);";
         try (Statement st = conn.createStatement()) {
             st.addBatch(CONFIG);
@@ -271,7 +272,7 @@ class SQLiteManager implements AutoCloseable {
      * @throws java.sql.SQLException if database connection fails
      */
     boolean hasCommand(String key) throws SQLException {
-        final String query = "SELECT name FROM Commands WHERE name = ?";
+        final String query = "SELECT name FROM Commands WHERE name = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, key);
             try (ResultSet rs = ps.executeQuery()) {
@@ -291,7 +292,7 @@ class SQLiteManager implements AutoCloseable {
      * @throws SQLException if database connection fails
      */
     boolean hasChannel(String id) throws SQLException {
-        final String query = "SELECT id FROM Channels WHERE id = ?";
+        final String query = "SELECT id FROM Channels WHERE id = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -311,7 +312,7 @@ class SQLiteManager implements AutoCloseable {
      * @throws SQLException if database connection fails
      */
     boolean hasAdmin(String id) throws SQLException {
-        final String query = "SELECT id FROM Admins WHERE id = ?";
+        final String query = "SELECT id FROM Admins WHERE id = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -324,79 +325,140 @@ class SQLiteManager implements AutoCloseable {
     }
 
     /**
+     * Add event to database
      *
-     * @param name
-     * @param owner
-     * @return
-     * @throws SQLException
+     * @param name Name of the event
+     * @param owner Owner of the event
+     * @throws SQLException If database connection failed
      */
-    boolean addEvent(String name, String owner) throws SQLException {
-        return false;
+    void addEvent(String name, String owner) throws SQLException {
+        final String query = "INSERT INTO Events(name,owner) VALUES(?,?);";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, name);
+            ps.setString(2, owner);
+            ps.executeUpdate();
+        }
     }
 
     /**
+     * Remove event from database
      *
-     * @param name
-     * @return
-     * @throws SQLException
+     * @param name name of the event
+     * @return true if event was removed succesfully
+     * @throws SQLException if database connection failed
      */
     int removeEvent(String name) throws SQLException {
-        return 0;
+        final String query = "DELETE FROM Events Where name = ?;";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, name);
+            return ps.executeUpdate();
+        }
     }
 
     /**
+     * Check if event exists in database
      *
-     * @param name
-     * @return
-     * @throws SQLException
+     * @param name name of the event
+     * @return true if event was found
+     * @throws SQLException if database connection failed
      */
     boolean hasEvent(String name) throws SQLException {
+        final String query = "SELECT name FROM Events WHERE name=?;";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, name);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
     /**
+     * Load event from database
      *
-     * @param eventBuilder
-     * @throws SQLException
+     * @param store EventStore to add events to
+     * @throws SQLException if database connection failed
      */
-    void loadEvents(EventStore eventBuilder) throws SQLException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    void loadEvents(EventStore store) throws SQLException {
+        final String query = "SELECT name,owner FROM Events;";
+        try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
+            while (rs.next()) {
+                store.add(new Event(rs.getString("name"), rs.getString("owner")));
+            }
+        }
     }
 
     /**
+     * Add user to event
      *
-     * @param name
-     * @param id
-     * @throws SQLException
+     * @param name name of event
+     * @param id id of the user
+     * @throws SQLException if database connection failed or tried to join event
+     * that doesn't exist
      */
     void joinEvent(String name, String id) throws SQLException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        final String query = "INSERT INTO EventMembers(event,member) VALUES(?,?);";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, name);
+            ps.setString(2, id);
+            ps.executeUpdate();
+        }
     }
 
     /**
+     * Check if user is a member of event
      *
-     * @param name
-     * @param id
-     * @return
+     * @param name name of event
+     * @param id id of the user
+     * @return true if user is a mamber of the event
      * @throws SQLException
      */
     boolean hasAttended(String name, String id) throws SQLException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        final String query = "SELECT event FROM EventMembers WHERE event = ? AND member = ?;";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, name);
+            ps.setString(2, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
+     * Remove user from event
      *
-     * @param name
-     * @param id
-     * @return
-     * @throws SQLException
+     * @param name name of the event
+     * @param id id of the user
+     * @return 1 if user was removed from event, 0 if user could not be found
+     * @throws SQLException if database connection failed
      */
-    boolean leaveEvent(String name, String id) throws SQLException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    int leaveEvent(String name, String id) throws SQLException {
+        final String query = "DELETE FROM EventMembers WHERE event = ? AND member = ?;";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, name);
+            ps.setString(2, id);
+            return ps.executeUpdate();
+        }
     }
 
-    void clearEvent(String name) throws  SQLException{
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    /**
+     * Remove all members from event
+     *
+     * @param name name of event
+     * @return Number of members removed from event
+     * @throws SQLException if database connction failed
+     */
+    int clearEvent(String name) throws SQLException {
+        final String query = "DELETE FROM Events WHERE name = ?;";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, name);
+            return ps.executeUpdate();
+        }
     }
 
 }
