@@ -113,7 +113,7 @@ public class SimpleCommands implements CommandProvider {
             if (opt.isPresent()) {
                 final ChatCommand com = opt.get();
                 if (commandParser.hasPermission(member, com)) {
-                    textChannel.sendMessage(com.getCommand() + " - " + com.getHelp()).queue();
+                    textChannel.sendMessage(com.getCommand() + '\n' + com.getHelp()).queue();
                 } else {
                     textChannel.sendMessage("You do not have permission to run that command, as such no help was provided").queue();
                 }

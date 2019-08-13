@@ -112,7 +112,13 @@ public class AdvancedCommands implements CommandProvider {
             switch (opts[0]) {
                 case "create": {
                     try {
-                        final Event newEvent = new Event(eventName, sender.getId());
+                        final String description;
+                        if (opts.length == 3) {
+                            description = opts[2];
+                        } else {
+                            description = "No description";
+                        }
+                        final Event newEvent = new Event(eventName, description, sender.getId());
                         if (DATABASE.addEvent(newEvent)) {
                             textChannel.sendMessage("Event created succesfully").queue();
                             return;
@@ -246,7 +252,7 @@ public class AdvancedCommands implements CommandProvider {
                     }
                     final StringBuilder sb = new StringBuilder("Events:\n");
                     for (Event e : events) {
-                        sb.append(' ').append(e.getName()).append('\n');
+                        sb.append(' ').append(e.getName()).append(" - ").append(e.getDescription()).append('\n');
                     }
                     textChannel.sendMessage(sb.toString()).queue();
                     break;

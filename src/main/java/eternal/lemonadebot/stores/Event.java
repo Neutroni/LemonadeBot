@@ -34,6 +34,7 @@ import java.util.Set;
 public class Event {
 
     private final String name;
+    private final String description;
     private final String ownerID;
     private final Set<String> members = Collections.synchronizedSet(new HashSet<>());
 
@@ -41,10 +42,12 @@ public class Event {
      * Constructor
      *
      * @param name name of the event
+     * @param description description for the event
      * @param owner owner of the event
      */
-    public Event(String name, String owner) {
+    public Event(String name, String description, String owner) {
         this.name = name;
+        this.description = description;
         this.ownerID = owner;
         this.members.add(ownerID);
     }
@@ -92,6 +95,15 @@ public class Event {
      */
     public String getName() {
         return this.name;
+    }
+
+    /**
+     * Get the description of this event
+     *
+     * @return description for this event
+     */
+    public String getDescription() {
+        return this.description;
     }
 
     /**

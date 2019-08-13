@@ -4,6 +4,7 @@
 #Netbean
 nbactions.xml
 nb-configuration.xml
+nbactions-release-profile.xml
 
 #Logfile
 logfile.log

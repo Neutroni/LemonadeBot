@@ -42,7 +42,7 @@ import java.util.Optional;
  * @author Neutroni
  */
 class SQLiteManager implements AutoCloseable {
-
+    
     private final Connection conn;
 
     /**
@@ -54,7 +54,7 @@ class SQLiteManager implements AutoCloseable {
     SQLiteManager(String filename) throws SQLException {
         this.conn = DriverManager.getConnection("jdbc:sqlite:" + filename);
     }
-
+    
     @Override
     public void close() throws SQLException {
         this.conn.close();
@@ -244,7 +244,7 @@ class SQLiteManager implements AutoCloseable {
         final String ADMINS = "CREATE TABLE Admins(id TEXT PRIMARY KEY NOT NULL);";
         final String CHANNELS = "CREATE TABLE Channels(id TEXT PRIMRY KEY NOT NULL);";
         final String COMMANDS = "CREATE TABLE Commands(name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL, owner TEXT NOT NULL);";
-        final String EVENTS = "CREATE TABLE Events(name TEXT PRIMARY KEY NOT NULL, owner TEXT NOT NULL)";
+        final String EVENTS = "CREATE TABLE Events(name TEXT PRIMARY KEY NOT NULL, description TEXT NOT NULL, owner TEXT NOT NULL)";
         final String EVENT_MEMBERS = "CREATE TABLE EventMembers(event REFERENCES Events(name) ON DELETE CASCADE, member TEXT NOT NULL, PRIMARY KEY (event,member));";
         final String INSERT = "INSERT INTO Options(name,value) VALUES(?,?);";
         try (Statement st = conn.createStatement()) {
@@ -261,7 +261,7 @@ class SQLiteManager implements AutoCloseable {
             ps.setString(2, ownerID);
             ps.executeUpdate();
         }
-
+        
     }
 
     /**
@@ -328,14 +328,16 @@ class SQLiteManager implements AutoCloseable {
      * Add event to database
      *
      * @param name Name of the event
+     * @param description description for the event
      * @param owner Owner of the event
      * @throws SQLException If database connection failed
      */
-    void addEvent(String name, String owner) throws SQLException {
-        final String query = "INSERT INTO Events(name,owner) VALUES(?,?);";
+    void addEvent(String name, String description, String owner) throws SQLException {
+        final String query = "INSERT INTO Events(name,description,owner) VALUES(?,?,?);";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, name);
-            ps.setString(2, owner);
+            ps.setString(2, description);
+            ps.setString(3, owner);
             ps.executeUpdate();
         }
     }
@@ -382,10 +384,10 @@ class SQLiteManager implements AutoCloseable {
      * @throws SQLException if database connection failed
      */
     void loadEvents(EventStore store) throws SQLException {
-        final String query = "SELECT name,owner FROM Events;";
+        final String query = "SELECT name,description,owner FROM Events;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
-                store.add(new Event(rs.getString("name"), rs.getString("owner")));
+                store.add(new Event(rs.getString("name"), rs.getString("description"), rs.getString("owner")));
             }
         }
     }
@@ -460,5 +462,5 @@ class SQLiteManager implements AutoCloseable {
             return ps.executeUpdate();
         }
     }
-
+    
 }

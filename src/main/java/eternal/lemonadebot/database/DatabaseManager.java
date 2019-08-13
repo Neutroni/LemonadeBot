@@ -471,8 +471,10 @@ public class DatabaseManager implements AutoCloseable {
 
         //Add event to database
         try {
-            if (!DB.hasEvent(event.getName())) {
-                this.DB.addEvent(event.getName(), event.getOwner());
+            synchronized (this.eventStore) {
+                if (!DB.hasEvent(event.getName())) {
+                    this.DB.addEvent(event.getName(), event.getDescription(), event.getOwner());
+                }
             }
         } catch (SQLException ex) {
             LOGGER.error("Adding event to database failed");
@@ -495,7 +497,9 @@ public class DatabaseManager implements AutoCloseable {
         //Going to database even if user is not admin,
         //because database might be in different state if remove failed before
         try {
-            removed = DB.removeEvent(event.getName()) > 0;
+            synchronized (this.eventStore) {
+                removed = DB.removeEvent(event.getName()) > 0;
+            }
         } catch (SQLException ex) {
             LOGGER.error("Removing event from database failed");
             LOGGER.warn(ex.getMessage());
