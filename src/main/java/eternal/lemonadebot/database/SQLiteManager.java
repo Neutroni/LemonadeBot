@@ -42,7 +42,7 @@ import java.util.Optional;
  * @author Neutroni
  */
 class SQLiteManager implements AutoCloseable {
-    
+
     private final Connection conn;
 
     /**
@@ -54,7 +54,7 @@ class SQLiteManager implements AutoCloseable {
     SQLiteManager(String filename) throws SQLException {
         this.conn = DriverManager.getConnection("jdbc:sqlite:" + filename);
     }
-    
+
     @Override
     public void close() throws SQLException {
         this.conn.close();
@@ -261,7 +261,7 @@ class SQLiteManager implements AutoCloseable {
             ps.setString(2, ownerID);
             ps.executeUpdate();
         }
-        
+
     }
 
     /**
@@ -462,5 +462,5 @@ class SQLiteManager implements AutoCloseable {
             return ps.executeUpdate();
         }
     }
-    
+
 }
