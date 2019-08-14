@@ -65,7 +65,7 @@ public class ActionManager {
 
                 final StringBuilder mentionMessage = new StringBuilder();
                 for (int i = 0; i < mentions.size(); i++) {
-                    final String nickName = mentions.get(i).getNickname();
+                    final String nickName = mentions.get(i).getEffectiveName();
                     mentionMessage.append(nickName);
                     if (i < mentionedMembers.size() - 1) {
                         mentionMessage.append(' ');

@@ -122,7 +122,7 @@ public class MessageListener extends ListenerAdapter {
     }
 
     private void sendDefaultMessage(TextChannel textChannel, Member member) {
-        textChannel.sendMessage("Welcome to our guild discord " + member.getNickname()
+        textChannel.sendMessage("Welcome to our guild discord " + member.getEffectiveName()
                 + getRuleChannelMessage(textChannel.getGuild())).queue();
     }
 
@@ -181,7 +181,7 @@ public class MessageListener extends ListenerAdapter {
                 final List<Role> roles = guild.getRolesByName(roleName, false);
                 guild.modifyMemberRoles(member, roles, null).queue((t) -> {
                     //Success
-                    textChannel.sendMessage("Welcome to our guild discord " + member.getNickname()
+                    textChannel.sendMessage("Welcome to our guild discord " + member.getEffectiveName()
                             + "You have been assigned role based on other guild you are also on, "
                             + "if you believe this is error please contact guild lead.").queue();
                 }, (t) -> {
@@ -193,7 +193,7 @@ public class MessageListener extends ListenerAdapter {
 
             default: {
                 //More guilds, ask them to use role command
-                textChannel.sendMessage("Welcome to our guild discord " + member.getNickname() + "\n"
+                textChannel.sendMessage("Welcome to our guild discord " + member.getEffectiveName()+ "\n"
                         + "You apper to be on multiple guilds and as such I can't find a role for you, "
                         + "use command \"role\" to assing a role based on other guild you are also on.").queue();
                 break;

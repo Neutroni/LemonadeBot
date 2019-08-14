@@ -37,12 +37,16 @@ import java.util.Optional;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
  * @author Neutroni
  */
 class CommandManagmentCommand implements ChatCommand {
+
+    private static final Logger LOGGER = LogManager.getLogger();
 
     private final CommandManager commandParser;
     private final CustomCommandManager commandManager;
@@ -110,6 +114,10 @@ class CommandManagmentCommand implements ChatCommand {
                         }
                     } catch (SQLException ex) {
                         textChannel.sendMessage("Found old command by that name in memory but adding it to database failed.").queue();
+
+                        LOGGER.error("Failure to add custom command to database");
+                        LOGGER.warn(ex.getMessage());
+                        LOGGER.trace("Stack trace", ex);
                     }
                     return;
                 }
@@ -124,6 +132,10 @@ class CommandManagmentCommand implements ChatCommand {
                         }
                     } catch (SQLException ex) {
                         textChannel.sendMessage("Adding command to database failed, added to temporary memory that will be lost on reboot").queue();
+                        
+                        LOGGER.error("Failure to add custom command");
+                        LOGGER.warn(ex.getMessage());
+                        LOGGER.trace("Stack trace", ex);
                     }
                 }
                 break;
@@ -157,10 +169,15 @@ class CommandManagmentCommand implements ChatCommand {
                         }
                     } catch (SQLException ex) {
                         textChannel.sendMessage("Removing command from database failed, removed from temporary memory command will be back after reboot").queue();
+                        
+                        LOGGER.error("Failure to remove custom command");
+                        LOGGER.warn(ex.getMessage());
+                        LOGGER.trace("Stack trace", ex);
                     }
                     return;
                 }
-                textChannel.sendMessage("You do not have permission to remove that command, " + "only owner of the command and people with admin rights can delete commands").queue();
+                textChannel.sendMessage("You do not have permission to remove that command, "
+                        + "only owner of the command and people with admin rights can delete commands").queue();
                 break;
             }
             case "list": {
@@ -172,7 +189,7 @@ class CommandManagmentCommand implements ChatCommand {
                     if (creator == null) {
                         creatorName = "Unkown";
                     } else {
-                        creatorName = creator.getNickname();
+                        creatorName = creator.getEffectiveName();
                     }
                     sb.append(c.getCommand()).append(" by ").append(creatorName);
                 }

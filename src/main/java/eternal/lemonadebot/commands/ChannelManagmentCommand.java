@@ -33,12 +33,16 @@ import java.util.List;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
  * @author Neutroni
  */
 class ChannelManagmentCommand extends OwnerCommand {
+
+    private static final Logger LOGGER = LogManager.getLogger();
 
     private final CommandManager commandParser;
     private final ChannelManager channels;
@@ -94,6 +98,10 @@ class ChannelManagmentCommand extends OwnerCommand {
                     } catch (SQLException ex) {
                         sb.append("Database error adding channel ").append(channel.getName());
                         sb.append(" will listen on channel until next reboot unless added succesfully to database\n");
+
+                        LOGGER.error("Failure to add channel");
+                        LOGGER.warn(ex.getMessage());
+                        LOGGER.trace("Stack trace", ex);
                     }
                 }
                 textChannel.sendMessage(sb.toString()).queue();
@@ -116,6 +124,10 @@ class ChannelManagmentCommand extends OwnerCommand {
                     } catch (SQLException ex) {
                         sb.append("Database error removing channel ").append(channel.getName());
                         sb.append(" Will not listen on channel until next reboot unless removed succesfully from database\n");
+
+                        LOGGER.error("Failure to remove channel");
+                        LOGGER.warn(ex.getMessage());
+                        LOGGER.trace("Stack trace", ex);
                     }
                 }
                 textChannel.sendMessage(sb.toString()).queue();
@@ -136,6 +148,10 @@ class ChannelManagmentCommand extends OwnerCommand {
                             }
                         } catch (SQLException ex) {
                             sb.append("Database failure in removing channel from database\n");
+
+                            LOGGER.error("Failure to remove channel while listing channels");
+                            LOGGER.warn(ex.getMessage());
+                            LOGGER.trace("Stack trace", ex);
                         }
                         continue;
                     }

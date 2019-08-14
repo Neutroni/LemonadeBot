@@ -108,13 +108,17 @@ class EventCommand extends UserCommand {
                     }
                     textChannel.sendMessage("Event with that name alredy exists").queue();
                 } catch (SQLException ex) {
-                    textChannel.sendMessage("Database error adding event, " + "add again once database issue is fixed to make add persist after reboot").queue();
+                    textChannel.sendMessage("Database error adding event, "
+                            + "add again once database issue is fixed to make add persist after reboot").queue();
+                    LOGGER.error("Failure to create event");
+                    LOGGER.warn(ex.getMessage());
+                    LOGGER.trace("Stack trace", ex);
                 }
                 break;
             }
             case "join": {
                 if (opts.length == 1) {
-                    textChannel.sendMessage("Provide name of the event to create").queue();
+                    textChannel.sendMessage("Provide name of the event to join").queue();
                     return;
                 }
                 final String eventName = opts[1];
@@ -132,12 +136,16 @@ class EventCommand extends UserCommand {
                     textChannel.sendMessage("You have alredy joined that event").queue();
                 } catch (SQLException ex) {
                     textChannel.sendMessage("Database error joining event, " + "join again once database issue is fixed to make joining persist after reboot").queue();
+
+                    LOGGER.error("Failure to join event");
+                    LOGGER.warn(ex.getMessage());
+                    LOGGER.trace("Stack trace", ex);
                 }
                 break;
             }
             case "leave": {
                 if (opts.length == 1) {
-                    textChannel.sendMessage("Provide name of the event to create").queue();
+                    textChannel.sendMessage("Provide name of the event to leave").queue();
                     return;
                 }
                 final String eventName = opts[1];
@@ -154,13 +162,17 @@ class EventCommand extends UserCommand {
                     }
                     textChannel.sendMessage("You have not joined that event").queue();
                 } catch (SQLException ex) {
-                    textChannel.sendMessage("Database error leaving event, " + "leave again once database issue is fixed to make leave persist after reboot").queue();
+                    textChannel.sendMessage("Database error leaving event, "
+                            + "leave again once database issue is fixed to make leave persist after reboot").queue();
+                    LOGGER.error("Failure to leave event");
+                    LOGGER.warn(ex.getMessage());
+                    LOGGER.trace("Stack trace", ex);
                 }
                 break;
             }
             case "delete": {
                 if (opts.length == 1) {
-                    textChannel.sendMessage("Provide name of the event to create").queue();
+                    textChannel.sendMessage("Provide name of the event to delete").queue();
                     return;
                 }
                 final String eventName = opts[1];
@@ -190,13 +202,18 @@ class EventCommand extends UserCommand {
                         textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                     }
                 } catch (SQLException ex) {
-                    textChannel.sendMessage("Database error removing event, " + "remove again once issue is fixed to make remove persistent").queue();
+                    textChannel.sendMessage("Database error removing event, "
+                            + "remove again once issue is fixed to make remove persistent").queue();
+
+                    LOGGER.error("Failure to create event");
+                    LOGGER.warn(ex.getMessage());
+                    LOGGER.trace("Stack trace", ex);
                 }
                 break;
             }
             case "members": {
                 if (opts.length == 1) {
-                    textChannel.sendMessage("Provide name of the event to create").queue();
+                    textChannel.sendMessage("Provide name of the event to show members for").queue();
                     return;
                 }
                 final String eventName = opts[1];
@@ -218,17 +235,21 @@ class EventCommand extends UserCommand {
                             sb.append("Succesfully removed missing member from event\n");
                         } catch (SQLException ex) {
                             sb.append("Database error removing member from event\n");
+
+                            LOGGER.error("Failure to remove member from event");
+                            LOGGER.warn(ex.getMessage());
+                            LOGGER.trace("Stack trace", ex);
                         }
                         continue;
                     }
-                    sb.append(' ').append(m.getNickname()).append('\n');
+                    sb.append(' ').append(m.getEffectiveName()).append('\n');
                 }
                 textChannel.sendMessage(sb.toString()).queue();
                 break;
             }
             case "clear": {
                 if (opts.length == 1) {
-                    textChannel.sendMessage("Provide name of the event to create").queue();
+                    textChannel.sendMessage("Provide name of the event to clear").queue();
                     return;
                 }
                 final String eventName = opts[1];
@@ -248,6 +269,10 @@ class EventCommand extends UserCommand {
                     textChannel.sendMessage("Succesfully cleared the event").queue();
                 } catch (SQLException ex) {
                     textChannel.sendMessage("Database error clearing event, " + "clear again once the issue is ").queue();
+
+                    LOGGER.error("Failure to clear event");
+                    LOGGER.warn(ex.getMessage());
+                    LOGGER.trace("Stack trace", ex);
                 }
                 break;
             }
