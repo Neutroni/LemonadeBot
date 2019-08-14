@@ -196,6 +196,7 @@ class CommandManagmentCommand implements ChatCommand {
                 if (coms.isEmpty()) {
                     sb.append("No custom commands");
                 }
+                textChannel.sendMessage(sb.toString()).queue();
                 break;
             }
             case "keys": {
