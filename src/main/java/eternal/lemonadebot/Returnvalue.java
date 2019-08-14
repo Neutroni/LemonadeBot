@@ -33,26 +33,18 @@ public enum Returnvalue {
     /**
      * If program exited normally
      */
-    SUCCESS(0),
+    SUCCESS,
     /**
      * If no api key was provided
      */
-    MISSING_API_KEY(1),
+    MISSING_API_KEY,
     /**
      * If database connection could not be established
      */
-    DATABASE_FAILED(2),
+    DATABASE_FAILED,
     /**
      * If login to discord faild
      */
-    LOGIN_FAILED(3);
-    private final int VALUE;
+    LOGIN_FAILED;
 
-    private Returnvalue(int value) {
-        this.VALUE = value;
-    }
-
-    public int getValue() {
-        return this.VALUE;
-    }
 }

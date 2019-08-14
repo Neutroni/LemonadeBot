@@ -70,13 +70,13 @@ public class LemonadeBot {
             //Check if we should print help
             if (cmd.hasOption("h")) {
                 formatter.printHelp("bot", options);
-                System.exit(Returnvalue.SUCCESS.getValue());
+                System.exit(Returnvalue.SUCCESS.ordinal());
             }
 
             //Check that user provided api key
             if (!cmd.hasOption("k")) {
                 LOGGER.fatal("No api key provided, quitting");
-                System.exit(Returnvalue.MISSING_API_KEY.getValue());
+                System.exit(Returnvalue.MISSING_API_KEY.ordinal());
             }
 
             //Get optionals of arguments
@@ -91,11 +91,11 @@ public class LemonadeBot {
         } catch (DatabaseException ex) {
             LOGGER.fatal("Failed to connect to database during startup");
             LOGGER.trace("Stack trace:", ex);
-            System.exit(Returnvalue.DATABASE_FAILED.getValue());
+            System.exit(Returnvalue.DATABASE_FAILED.ordinal());
         } catch (LoginException ex) {
             LOGGER.fatal("Login failed");
             LOGGER.trace("Stack trace:", ex);
-            System.exit(Returnvalue.LOGIN_FAILED.getValue());
+            System.exit(Returnvalue.LOGIN_FAILED.ordinal());
         } catch (ParseException ex) {
             LOGGER.fatal("Command line argument parsing failed");
             LOGGER.trace("Stack trace:", ex);
