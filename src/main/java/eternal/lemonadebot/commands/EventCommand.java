@@ -225,7 +225,7 @@ class EventCommand extends UserCommand {
                 }
                 final Event event = opt.get();
                 final List<String> memberIds = event.getMembers();
-                final StringBuilder sb = new StringBuilder();
+                final StringBuilder sb = new StringBuilder("Members for the event: " + eventName + "\n");
                 for (String id : memberIds) {
                     final Member m = textChannel.getGuild().getMemberById(id);
                     if (m == null) {

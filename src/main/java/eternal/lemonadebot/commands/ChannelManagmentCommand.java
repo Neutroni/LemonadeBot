@@ -135,7 +135,7 @@ class ChannelManagmentCommand extends OwnerCommand {
             }
             case "list": {
                 final List<String> channelIds = channels.getChannels();
-                final StringBuilder sb = new StringBuilder();
+                final StringBuilder sb = new StringBuilder("Channels:\n");
                 for (String id : channelIds) {
                     final TextChannel channel = textChannel.getGuild().getTextChannelById(id);
                     if (channel == null) {
