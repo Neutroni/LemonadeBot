@@ -191,7 +191,7 @@ class CommandManagmentCommand implements ChatCommand {
                     } else {
                         creatorName = creator.getEffectiveName();
                     }
-                    sb.append(c.getCommand()).append(" by ").append(creatorName);
+                    sb.append(c.getCommand()).append(" by ").append(creatorName).append('\n');
                 }
                 if (coms.isEmpty()) {
                     sb.append("No custom commands");
