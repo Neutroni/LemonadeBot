@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2019 joonas.
+ * Copyright 2019 Neutroni.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,24 +24,24 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.OwnerCommand;
+import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
-import eternal.lemonadebot.messages.CommandParser;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
  *
- * @author joonas
+ * @author Neutroni
  */
 class PrefixCommand extends OwnerCommand {
-    private final CommandParser commandParser;
+    private final CommandManager commandParser;
 
     /**
      * Constructor
      * @param parser parser to parse commands with
      */
-    PrefixCommand(CommandParser parser) {
+    PrefixCommand(CommandManager parser) {
         this.commandParser = parser;
     }
 

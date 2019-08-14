@@ -23,9 +23,8 @@
  */
 package eternal.lemonadebot;
 
-import eternal.lemonadebot.database.DatabaseException;
 import eternal.lemonadebot.database.DatabaseManager;
-import java.util.Optional;
+import java.sql.SQLException;
 import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -79,16 +78,29 @@ public class LemonadeBot {
                 System.exit(Returnvalue.MISSING_API_KEY.ordinal());
             }
 
-            //Get optionals of arguments
-            final Optional<String> databaseLocation = Optional.ofNullable(cmd.getOptionValue("d"));
-            final Optional<String> ownerID = Optional.ofNullable(cmd.getOptionValue("o"));
+            //Get database location
+            final String databaseLocation;
+            if(cmd.hasOption("d")){
+                databaseLocation = cmd.getOptionValue("d");
+            } else {
+                databaseLocation = "database.db";
+            }
             
-            final DatabaseManager DB = new DatabaseManager(ownerID, databaseLocation);
+            //Connect to the database
+            final DatabaseManager DB = new DatabaseManager(databaseLocation);
             LOGGER.debug("Connected to database succefully");
+
+            //Check if database should be initialized
+            if (cmd.hasOption("o")) {
+                LOGGER.debug("Initializing database");
+                final String ownerID = cmd.getOptionValue("o");
+                DB.initialize(ownerID);
+            }
+            
             final JDA jda = new JDABuilder(cmd.getOptionValue("k")).build();
             jda.addEventListener(new MessageListener(DB));
             LOGGER.debug("Startup succesfull");
-        } catch (DatabaseException ex) {
+        } catch (SQLException ex) {
             LOGGER.fatal("Failed to connect to database during startup");
             LOGGER.trace("Stack trace:", ex);
             System.exit(Returnvalue.DATABASE_FAILED.ordinal());

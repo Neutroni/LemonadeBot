@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2019 joonas.
+ * Copyright 2019 Neutroni.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,25 +25,28 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.database.DatabaseException;
+import eternal.lemonadebot.database.ConfigManager;
+import eternal.lemonadebot.database.CustomCommandManager;
 import eternal.lemonadebot.database.DatabaseManager;
+import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
-import eternal.lemonadebot.messages.CommandParser;
 import eternal.lemonadebot.messages.CommandPermission;
+import java.sql.SQLException;
+import java.util.List;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.entities.User;
 
 /**
  *
- * @author joonas
+ * @author Neutroni
  */
 class CommandManagmentCommand implements ChatCommand {
 
-    private final CommandParser commandParser;
-    private final DatabaseManager DATABASE;
+    private final CommandManager commandParser;
+    private final CustomCommandManager commandManager;
+    private final ConfigManager configManager;
 
     /**
      * Constructor
@@ -51,9 +54,10 @@ class CommandManagmentCommand implements ChatCommand {
      * @param parser parser to parse arguments with
      * @param db database to store custom commands in
      */
-    CommandManagmentCommand(CommandParser parser, DatabaseManager db) {
+    CommandManagmentCommand(CommandManager parser, DatabaseManager db) {
         this.commandParser = parser;
-        this.DATABASE = db;
+        this.commandManager = db.getCustomCommands();
+        this.configManager = db.getConfig();
     }
 
     @Override
@@ -63,16 +67,22 @@ class CommandManagmentCommand implements ChatCommand {
 
     @Override
     public String getHelp() {
-        return "add - adds a new custom command\n" + "remove - removes custom command\n" + "keys - shows list of keys command can contain" + "Syntax for custom commands:\n" + "{key} substitute part of command with action use parameter keys to see all keys\n" + "| Include other outcomes to command, all options have equal chance";
+        return " add - adds a new custom command\n"
+                + " remove - removes custom command\n"
+                + " keys - shows list of keys command can contain\n"
+                + " list - show list of custom commands\n"
+                + "Syntax for custom commands:\n"
+                + " {key} substitute part of command with action use parameter keys to see all keys\n"
+                + " | Include other outcomes to command, all options have equal chance";
     }
 
     @Override
     public CommandPermission getPermission() {
-        return DATABASE.getCommandManagePermission();
+        return configManager.getEditPermission();
     }
 
     @Override
-    public synchronized void respond(Member sender, Message message, TextChannel textChannel) {
+    public void respond(Member sender, Message message, TextChannel textChannel) {
         final CommandMatcher m = commandParser.getCommandMatcher(message);
         final String[] opt = m.getArguments(2);
         if (opt.length == 0) {
@@ -90,29 +100,29 @@ class CommandManagmentCommand implements ChatCommand {
                     return;
                 }
                 final String name = opt[1];
-                final Optional<CustomCommand> oldCommand = commandParser.getCustomCommand(name);
+                final Optional<CustomCommand> oldCommand = commandManager.getCommand(name);
                 if (oldCommand.isPresent()) {
                     try {
-                        if (DATABASE.addCommand(oldCommand.get())) {
+                        if (commandManager.addCommand(oldCommand.get())) {
                             textChannel.sendMessage("Found old command by that name in memory, succesfully added it to database").queue();
                         } else {
                             textChannel.sendMessage("Command with that name alredy exists, " + "if you want to edit command remove old one first, " + "otherwise provide different name for the command").queue();
                         }
-                    } catch (DatabaseException ex) {
+                    } catch (SQLException ex) {
                         textChannel.sendMessage("Found old command by that name in memory but adding it to database failed.").queue();
                     }
                     return;
                 }
                 final String newValue = opt[2];
-                final CustomCommand newAction = DATABASE.getCommandBuilder().build(name, newValue, message.getAuthor().getId());
+                final CustomCommand newAction = this.commandManager.build(name, newValue, message.getAuthor().getId());
                 {
                     try {
-                        if (DATABASE.addCommand(newAction)) {
+                        if (this.commandManager.addCommand(newAction)) {
                             textChannel.sendMessage("Command added succesfully").queue();
                         } else {
                             textChannel.sendMessage("Command alredy exists, propably a database error").queue();
                         }
-                    } catch (DatabaseException ex) {
+                    } catch (SQLException ex) {
                         textChannel.sendMessage("Adding command to database failed, added to temporary memory that will be lost on reboot").queue();
                     }
                 }
@@ -124,28 +134,28 @@ class CommandManagmentCommand implements ChatCommand {
                     return;
                 }
                 final String name = opt[1];
-                final Optional<CustomCommand> optCommand = commandParser.getCustomCommand(name);
+                final Optional<CustomCommand> optCommand = commandManager.getCommand(name);
                 if (optCommand.isEmpty()) {
                     textChannel.sendMessage("No such command as " + name).queue();
                     return;
                 }
                 final CustomCommand command = optCommand.get();
-                final User commandOwner = textChannel.getJDA().getUserById(command.getOwner());
+                final Member commandOwner = textChannel.getGuild().getMemberById(command.getOwner());
                 //Check if user has permission to remove the command
                 final boolean hasPermission;
                 if (commandOwner == null) {
-                    hasPermission = DATABASE.isAdmin(sender.getUser()) || DATABASE.isOwner(sender.getUser());
+                    hasPermission = (commandParser.getRank(sender).ordinal() >= CommandPermission.ADMIN.ordinal());
                 } else {
-                    hasPermission = commandParser.hasPermission(sender.getUser(), commandOwner);
+                    hasPermission = commandParser.hasPermission(sender, commandOwner);
                 }
                 if (hasPermission) {
                     try {
-                        if (DATABASE.removeCommand(command)) {
+                        if (commandManager.removeCommand(command)) {
                             textChannel.sendMessage("Command removed succesfully").queue();
                         } else {
                             textChannel.sendMessage("Command was alredy removed, propably a database error").queue();
                         }
-                    } catch (DatabaseException ex) {
+                    } catch (SQLException ex) {
                         textChannel.sendMessage("Removing command from database failed, removed from temporary memory command will be back after reboot").queue();
                     }
                     return;
@@ -153,8 +163,26 @@ class CommandManagmentCommand implements ChatCommand {
                 textChannel.sendMessage("You do not have permission to remove that command, " + "only owner of the command and people with admin rights can delete commands").queue();
                 break;
             }
+            case "list": {
+                final List<CustomCommand> coms = this.commandManager.getCommands();
+                final StringBuilder sb = new StringBuilder("Commands:\n");
+                for (CustomCommand c : coms) {
+                    final Member creator = textChannel.getGuild().getMemberById(c.getOwner());
+                    final String creatorName;
+                    if (creator == null) {
+                        creatorName = "Unkown";
+                    } else {
+                        creatorName = creator.getNickname();
+                    }
+                    sb.append(c.getCommand()).append(" by ").append(creatorName);
+                }
+                if (coms.isEmpty()) {
+                    sb.append("No custom commands");
+                }
+                break;
+            }
             case "keys": {
-                textChannel.sendMessage(DATABASE.getCommandBuilder().getActionManager().getHelp()).queue();
+                textChannel.sendMessage(commandManager.getActionManager().getHelp()).queue();
                 break;
             }
             default:

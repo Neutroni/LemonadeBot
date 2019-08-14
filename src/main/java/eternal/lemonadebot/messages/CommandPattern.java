@@ -23,8 +23,8 @@
  */
 package eternal.lemonadebot.messages;
 
-import eternal.lemonadebot.database.DatabaseException;
 import eternal.lemonadebot.database.DatabaseManager;
+import java.sql.SQLException;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
@@ -49,7 +49,7 @@ class CommandPattern {
      */
     CommandPattern(DatabaseManager db) {
         this.DATABASE = db;
-        final Optional<String> opt = DATABASE.getCommandPrefix();
+        final Optional<String> opt = DATABASE.getConfig().getCommandPrefix();
         if (opt.isPresent()) {
             final String prefix = opt.get();
             updatePattern(prefix);
@@ -88,9 +88,9 @@ class CommandPattern {
     boolean setPrefix(String prefix) {
         try {
             updatePattern(prefix);
-            DATABASE.setCommandPrefix(prefix);
+            DATABASE.getConfig().setCommandPrefix(prefix);
             return true;
-        } catch (DatabaseException ex) {
+        } catch (SQLException ex) {
             LOGGER.error(ex);
         }
         return false;

@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2019 joonas.
+ * Copyright 2019 Neutroni.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,22 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.stores;
+package eternal.lemonadebot.database;
 
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
  *
- * @author joonas
+ * @author Neutroni
  */
 public class Event {
 
     private final String name;
     private final String description;
     private final String ownerID;
-    private final Set<String> members = Collections.synchronizedSet(new HashSet<>());
+    private final Set<String> members = new HashSet<>();
 
     /**
      * Constructor
@@ -58,8 +58,10 @@ public class Event {
      * @param member member id who wants to join
      * @return true if succesfully joined, false otherwise
      */
-    public boolean join(String member) {
-        return this.members.add(name);
+    boolean join(String member) {
+        synchronized (this) {
+            return this.members.add(name);
+        }
     }
 
     /**
@@ -68,15 +70,19 @@ public class Event {
      * @param member member who wants to leave
      * @return true if left event succesfully, false otherwise
      */
-    public boolean leave(String member) {
-        return this.members.remove(member);
+    boolean leave(String member) {
+        synchronized (this) {
+            return this.members.remove(member);
+        }
     }
 
     /**
      * Clears the list of joined people
      */
-    public void clear() {
-        this.members.clear();
+    void clear() {
+        synchronized(this){
+            this.members.clear();
+        }
     }
 
     /**
@@ -84,8 +90,8 @@ public class Event {
      *
      * @return list of member idsF
      */
-    public Set<String> getMembers() {
-        return Collections.unmodifiableSet(this.members);
+    public List<String> getMembers() {
+        return List.copyOf(this.members);
     }
 
     /**

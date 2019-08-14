@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2019 joonas.
+ * Copyright 2019 Neutroni.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,7 @@ import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
  *
- * @author joonas
+ * @author Neutroni
  */
 class ShutdownCommand extends OwnerCommand {
     

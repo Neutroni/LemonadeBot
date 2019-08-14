@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2019 joonas.
+ * Copyright 2019 Neutroni.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,27 +24,31 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.UserCommand;
-import eternal.lemonadebot.database.DatabaseException;
 import eternal.lemonadebot.database.DatabaseManager;
+import eternal.lemonadebot.database.Event;
+import eternal.lemonadebot.database.EventManager;
+import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
-import eternal.lemonadebot.messages.CommandParser;
-import eternal.lemonadebot.stores.Event;
+import eternal.lemonadebot.messages.CommandPermission;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.entities.User;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
- * @author joonas
+ * @author Neutroni
  */
 class EventCommand extends UserCommand {
 
-    private final CommandParser commandParser;
-    private final DatabaseManager DATABASE;
+    private static final Logger LOGGER = LogManager.getLogger();
+
+    private final CommandManager commandParser;
+    private final EventManager events;
 
     /**
      * Constructor
@@ -52,9 +56,9 @@ class EventCommand extends UserCommand {
      * @param parser parser to use for parsing commands
      * @param db database to store events in
      */
-    EventCommand(CommandParser parser, DatabaseManager db) {
+    EventCommand(CommandManager parser, DatabaseManager db) {
         this.commandParser = parser;
-        this.DATABASE = db;
+        this.events = db.getEvents();
     }
 
     @Override
@@ -64,24 +68,32 @@ class EventCommand extends UserCommand {
 
     @Override
     public String getHelp() {
-        return "create - create new event, you will join the event automatically\n" + "join - join an event\n" + "leave - leave an event\n" + "delete - deletes an event\n" + "members - list members for event\n" + "clear - clears event member list\n" + "list - list events";
+        return "create - create new event, you will join the event automatically\n"
+                + "join - join an event\n"
+                + "leave - leave an event\n"
+                + "delete - deletes an event\n"
+                + "members - list members for event\n"
+                + "clear - clears event member list\n"
+                + "list - list events";
     }
 
     @Override
-    public synchronized void respond(Member sender, Message message, TextChannel textChannel) {
+    public void respond(Member sender, Message message, TextChannel textChannel) {
         final CommandMatcher matcher = commandParser.getCommandMatcher(message);
         final String[] opts = matcher.getArguments(2);
         if (opts.length == 0) {
             textChannel.sendMessage("Provide operation to perform, check help for possible operations").queue();
             return;
         }
-        if (opts.length == 1) {
-            textChannel.sendMessage("Provide name of the event to operate on").queue();
-            return;
-        }
-        final String eventName = opts[1];
+
         switch (opts[0]) {
             case "create": {
+                if (opts.length == 1) {
+                    textChannel.sendMessage("Provide name of the event to create").queue();
+                    return;
+                }
+                final String eventName = opts[1];
+
                 try {
                     final String description;
                     if (opts.length == 3) {
@@ -90,96 +102,121 @@ class EventCommand extends UserCommand {
                         description = "No description";
                     }
                     final Event newEvent = new Event(eventName, description, sender.getId());
-                    if (DATABASE.addEvent(newEvent)) {
+                    if (events.addEvent(newEvent)) {
                         textChannel.sendMessage("Event created succesfully").queue();
                         return;
                     }
                     textChannel.sendMessage("Event with that name alredy exists").queue();
-                } catch (DatabaseException ex) {
+                } catch (SQLException ex) {
                     textChannel.sendMessage("Database error adding event, " + "add again once database issue is fixed to make add persist after reboot").queue();
                 }
                 break;
             }
             case "join": {
-                final Optional<Event> oldEvent = DATABASE.getEventStore().getEvent(eventName);
+                if (opts.length == 1) {
+                    textChannel.sendMessage("Provide name of the event to create").queue();
+                    return;
+                }
+                final String eventName = opts[1];
+
+                final Optional<Event> oldEvent = events.getEvent(eventName);
                 if (oldEvent.isEmpty()) {
                     textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                     return;
                 }
                 try {
-                    if (DATABASE.joinEvent(sender, oldEvent.get())) {
+                    if (events.joinEvent(oldEvent.get(), sender)) {
                         textChannel.sendMessage("Succesfully joined event").queue();
                         return;
                     }
                     textChannel.sendMessage("You have alredy joined that event").queue();
-                } catch (DatabaseException ex) {
+                } catch (SQLException ex) {
                     textChannel.sendMessage("Database error joining event, " + "join again once database issue is fixed to make joining persist after reboot").queue();
                 }
                 break;
             }
             case "leave": {
-                final Optional<Event> oldEvent = DATABASE.getEventStore().getEvent(eventName);
+                if (opts.length == 1) {
+                    textChannel.sendMessage("Provide name of the event to create").queue();
+                    return;
+                }
+                final String eventName = opts[1];
+
+                final Optional<Event> oldEvent = events.getEvent(eventName);
                 if (oldEvent.isEmpty()) {
                     textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                     return;
                 }
                 try {
-                    if (DATABASE.leaveEvent(sender, oldEvent.get())) {
+                    if (events.leaveEvent(oldEvent.get(), sender.getId())) {
                         textChannel.sendMessage("Succesfully left event").queue();
                         return;
                     }
                     textChannel.sendMessage("You have not joined that event").queue();
-                } catch (DatabaseException ex) {
+                } catch (SQLException ex) {
                     textChannel.sendMessage("Database error leaving event, " + "leave again once database issue is fixed to make leave persist after reboot").queue();
                 }
                 break;
             }
             case "delete": {
-                final Optional<Event> oldEvent = DATABASE.getEventStore().getEvent(eventName);
+                if (opts.length == 1) {
+                    textChannel.sendMessage("Provide name of the event to create").queue();
+                    return;
+                }
+                final String eventName = opts[1];
+
+                final Optional<Event> oldEvent = events.getEvent(eventName);
                 if (oldEvent.isEmpty()) {
                     textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                     return;
                 }
                 final Event event = oldEvent.get();
                 //Check if user has permission to remove the event
-                final User eventOwner = textChannel.getJDA().getUserById(event.getOwner());
+                final Member eventOwner = textChannel.getGuild().getMemberById(event.getOwner());
                 final boolean hasPermission;
                 if (eventOwner == null) {
-                    hasPermission = DATABASE.isAdmin(sender.getUser()) || DATABASE.isOwner(sender.getUser());
+                    hasPermission = (commandParser.getRank(sender).ordinal() >= CommandPermission.ADMIN.ordinal());
                 } else {
-                    hasPermission = commandParser.hasPermission(sender.getUser(), eventOwner);
+                    hasPermission = commandParser.hasPermission(sender, eventOwner);
                 }
                 if (!hasPermission) {
                     textChannel.sendMessage("You do not have permission to remove that event, " + "only the event owner and admins can remove events").queue();
                     return;
                 }
                 try {
-                    if (DATABASE.removeEvent(oldEvent.get())) {
+                    if (events.removeEvent(oldEvent.get())) {
                         textChannel.sendMessage("Event succesfully removed").queue();
                     } else {
                         textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                     }
-                } catch (DatabaseException ex) {
+                } catch (SQLException ex) {
                     textChannel.sendMessage("Database error removing event, " + "remove again once issue is fixed to make remove persistent").queue();
                 }
                 break;
             }
             case "members": {
-                final Optional<Event> oldEvent = DATABASE.getEventStore().getEvent(eventName);
-                if (oldEvent.isEmpty()) {
+                if (opts.length == 1) {
+                    textChannel.sendMessage("Provide name of the event to create").queue();
+                    return;
+                }
+                final String eventName = opts[1];
+
+                final Optional<Event> opt = this.events.getEvent(eventName);
+                if (opt.isEmpty()) {
                     textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                     return;
                 }
-                final Set<String> memberIds = oldEvent.get().getMembers();
+                final Event event = opt.get();
+                final List<String> memberIds = event.getMembers();
                 final StringBuilder sb = new StringBuilder();
                 for (String id : memberIds) {
                     final Member m = textChannel.getGuild().getMemberById(id);
                     if (m == null) {
                         sb.append("Found user in event members who could not be found, removing from event\n");
                         try {
-                            DATABASE.leaveEvent(m, oldEvent.get());
+                            events.leaveEvent(event, id);
                             sb.append("Succesfully removed missing member from event\n");
-                        } catch (DatabaseException ex) {
+                        } catch (SQLException ex) {
                             sb.append("Database error removing member from event\n");
                         }
                         continue;
@@ -190,32 +227,38 @@ class EventCommand extends UserCommand {
                 break;
             }
             case "clear": {
-                final Optional<Event> oldEvent = DATABASE.getEventStore().getEvent(eventName);
-                if (oldEvent.isEmpty()) {
+                if (opts.length == 1) {
+                    textChannel.sendMessage("Provide name of the event to create").queue();
+                    return;
+                }
+                final String eventName = opts[1];
+
+                final Optional<Event> opt = this.events.getEvent(eventName);
+                if (opt.isEmpty()) {
                     textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                     return;
                 }
-                if (!oldEvent.get().getOwner().equals(sender.getId())) {
+                final Event event = opt.get();
+                if (!event.getOwner().equals(sender.getId())) {
                     textChannel.sendMessage("Only the owner of the event can clear it.").queue();
                     return;
                 }
                 try {
-                    DATABASE.clearEvent(oldEvent.get());
+                    events.clearEvent(event);
                     textChannel.sendMessage("Succesfully cleared the event").queue();
-                } catch (DatabaseException ex) {
+                } catch (SQLException ex) {
                     textChannel.sendMessage("Database error clearing event, " + "clear again once the issue is ").queue();
                 }
                 break;
             }
             case "list": {
-                final List<Event> events = DATABASE.getEventStore().getItems();
-                if (events.isEmpty()) {
-                    textChannel.sendMessage("No event defined").queue();
-                    return;
-                }
+                final List<Event> ev = this.events.getEvents();
                 final StringBuilder sb = new StringBuilder("Events:\n");
-                for (Event e : events) {
+                for (Event e : ev) {
                     sb.append(' ').append(e.getName()).append(" - ").append(e.getDescription()).append('\n');
+                }
+                if (ev.isEmpty()) {
+                    sb.append("No events found.");
                 }
                 textChannel.sendMessage(sb.toString()).queue();
                 break;

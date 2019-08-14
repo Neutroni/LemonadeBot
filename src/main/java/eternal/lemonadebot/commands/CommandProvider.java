@@ -25,8 +25,9 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.messages.CommandParser;
+import eternal.lemonadebot.messages.CommandManager;
 import java.util.List;
+import java.util.Optional;
 
 /**
  *
@@ -42,8 +43,31 @@ public class CommandProvider {
      * @param parser parser for commands to use
      * @param db database for commands to use
      */
-    public CommandProvider(CommandParser parser, DatabaseManager db) {
-        this.commands = List.of(new AdminManagmentCommand(parser, db));
+    public CommandProvider(CommandManager parser, DatabaseManager db) {
+        this.commands = List.of(
+                new HelpCommand(parser, this, db),
+                new EventCommand(parser, db),
+                new ChannelManagmentCommand(parser, db),
+                new CommandManagmentCommand(parser, db),
+                new PrefixCommand(parser),
+                new RoleCommand(parser),
+                new ShutdownCommand()
+        );
+    }
+
+    /**
+     * Get command by name
+     *
+     * @param name command name to search action for
+     * @return Optional containing the action if found, empty if not found
+     */
+    public Optional<ChatCommand> getCommand(String name) {
+        for (ChatCommand c : this.commands) {
+            if (name.equals(c.getCommand())) {
+                return Optional.of(c);
+            }
+        }
+        return Optional.empty();
     }
 
     /**

@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2019 joonas.
+ * Copyright 2019 Neutroni.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,8 +26,10 @@ package eternal.lemonadebot.commands;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.customcommands.CustomCommand;
+import eternal.lemonadebot.database.CustomCommandManager;
+import eternal.lemonadebot.database.DatabaseManager;
+import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
-import eternal.lemonadebot.messages.CommandParser;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -35,19 +37,24 @@ import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
  *
- * @author joonas
+ * @author Neutroni
  */
 class HelpCommand extends UserCommand {
 
-    private final CommandParser commandParser;
+    private final CommandManager commandParser;
+    private final CommandProvider commands;
+    private final CustomCommandManager customCommands;
 
     /**
      * Constructor
      *
      * @param parser parser to use
+     * @param provider CommandProvider to search commands in
      */
-    HelpCommand(CommandParser parser) {
+    HelpCommand(CommandManager parser, CommandProvider provider, DatabaseManager db) {
         this.commandParser = parser;
+        this.commands = provider;
+        this.customCommands = db.getCustomCommands();
     }
 
     @Override
@@ -56,25 +63,34 @@ class HelpCommand extends UserCommand {
     }
 
     @Override
-    public void respond(Member member, Message message, TextChannel textChannel) {
+    public void respond(Member sender, Message message, TextChannel textChannel) {
         final CommandMatcher m = commandParser.getCommandMatcher(message);
         final String[] options = m.getArguments(1);
         if (options.length == 0) {
-            textChannel.sendMessage("Provide command to search help for, use commands for list of commands.").queue();
+            listCommands(sender, textChannel);
             return;
         }
         final String name = options[0];
-        final Optional<ChatCommand> opt = commandParser.getCommand(name);
+        listHelp(sender, textChannel, name);
+    }
+
+    @Override
+    public String getHelp() {
+        return "Prints help message for command.";
+    }
+
+    private void listHelp(Member sender, TextChannel textChannel, String name) {
+        final Optional<ChatCommand> opt = commands.getCommand(name);
         if (opt.isPresent()) {
             final ChatCommand com = opt.get();
-            if (commandParser.hasPermission(member, com)) {
+            if (commandParser.hasPermission(sender, com)) {
                 textChannel.sendMessage(com.getCommand() + '\n' + com.getHelp()).queue();
             } else {
                 textChannel.sendMessage("You do not have permission to run that command, as such no help was provided").queue();
             }
             return;
         }
-        final Optional<CustomCommand> custom = commandParser.getCustomCommand(name);
+        final Optional<CustomCommand> custom = customCommands.getCommand(name);
         if (custom.isPresent()) {
             final CustomCommand com = custom.get();
             textChannel.sendMessage("User defined custom command, see command \"custom\" for details.").queue();
@@ -83,9 +99,18 @@ class HelpCommand extends UserCommand {
         textChannel.sendMessage("No such command: " + name).queue();
     }
 
-    @Override
-    public String getHelp() {
-        return "Prints help message for command.";
+    private void listCommands(Member sender, TextChannel textChannel) {
+
+        //Construct the list of commands
+        final StringBuilder sb = new StringBuilder();
+
+        sb.append("Commands:\n");
+        for (ChatCommand c : commands.getCommands()) {
+            if (commandParser.hasPermission(sender, c)) {
+                sb.append(' ').append(c.getCommand()).append('\n');
+            }
+        }
+        textChannel.sendMessage(sb.toString()).queue();
     }
 
 }

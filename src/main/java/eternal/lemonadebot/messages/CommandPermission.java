@@ -30,21 +30,21 @@ package eternal.lemonadebot.messages;
  */
 public enum CommandPermission {
     /**
-     * Command only owner can run
+     * Commands anyone can run
      */
-    OWNER("Owner of this bot"),
-    /**
-     * Command admins can run
-     */
-    ADMIN("Admin of this bot"),
+    USER("User"),
     /**
      * Command members can run
      */
     MEMBER("Member on this server"),
     /**
-     * Commands anyone can run
+     * Command admins can run
      */
-    USER("User");
+    ADMIN("Admin on the server"),
+    /**
+     * Command only owner can run
+     */
+    OWNER("Owner of this bot");
 
     private final String desc;
 

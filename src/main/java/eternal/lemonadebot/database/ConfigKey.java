@@ -28,7 +28,7 @@ package eternal.lemonadebot.database;
  *
  * @author Neutroni
  */
-public enum ConfigKey {
+enum ConfigKey {
     /**
      * Key to store bot owner id with in DB
      */

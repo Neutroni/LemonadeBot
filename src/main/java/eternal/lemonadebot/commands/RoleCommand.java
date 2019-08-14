@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2019 joonas.
+ * Copyright 2019 Neutroni.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.messages.CommandMatcher;
-import eternal.lemonadebot.messages.CommandParser;
+import eternal.lemonadebot.messages.CommandManager;
 import java.util.List;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -37,20 +37,20 @@ import org.apache.logging.log4j.Logger;
 
 /**
  *
- * @author joonas
+ * @author Neutroni
  */
 class RoleCommand extends UserCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final CommandParser commandParser;
+    private final CommandManager commandParser;
 
     /**
      * Constructor
      *
      * @param parser command parser to parse commands with
      */
-    RoleCommand(CommandParser parser) {
+    RoleCommand(CommandManager parser) {
         this.commandParser = parser;
     }
 

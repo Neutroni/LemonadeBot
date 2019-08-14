@@ -24,9 +24,10 @@
 package eternal.lemonadebot;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.database.DatabaseException;
+import eternal.lemonadebot.database.ChannelManager;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.messages.CommandParser;
+import eternal.lemonadebot.messages.CommandManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -52,8 +53,10 @@ import org.apache.logging.log4j.Logger;
 public class MessageListener extends ListenerAdapter {
 
     private static final Logger LOGGER = LogManager.getLogger();
-    private final CommandParser commandParser;
+
     private final DatabaseManager DATABASE;
+    private final CommandManager commandManager;
+    private final ChannelManager channelManager;
 
     /**
      * Constructor
@@ -62,7 +65,8 @@ public class MessageListener extends ListenerAdapter {
      */
     public MessageListener(DatabaseManager db) {
         this.DATABASE = db;
-        this.commandParser = new CommandParser(db);
+        this.channelManager = db.getChannels();
+        this.commandManager = new CommandManager(db);
     }
 
     /**
@@ -81,13 +85,13 @@ public class MessageListener extends ListenerAdapter {
         }
         //Check if we are listening on this channel
         final TextChannel textChannel = event.getTextChannel();
-        if (!DATABASE.watchingChannel(textChannel)) {
+        if (!channelManager.hasChannel(textChannel)) {
             return;
         }
 
         //Check if message is a command
         final Message message = event.getMessage();
-        final Optional<ChatCommand> action = commandParser.getAction(message);
+        final Optional<ChatCommand> action = commandManager.getAction(message);
         if (action.isEmpty()) {
             return;
         }
@@ -95,14 +99,14 @@ public class MessageListener extends ListenerAdapter {
         //React to command
         final ChatCommand ca = action.get();
         final Member member = event.getMember();
-        if (commandParser.hasPermission(member, ca)) {
+        if (commandManager.hasPermission(member, ca)) {
             ca.respond(member, message, textChannel);
         }
     }
 
     private String getRuleChannelMessage(Guild g) {
         //Only this guild, direct to rule channel
-        final Optional<String> rco = this.DATABASE.getRuleChannelID();
+        final Optional<String> rco = DATABASE.getConfig().getRuleChannelID();
         if (rco.isEmpty()) {
             return "";
         }
@@ -131,17 +135,20 @@ public class MessageListener extends ListenerAdapter {
     public void onGuildMemberJoin(GuildMemberJoinEvent event) {
         final Guild guild = event.getGuild();
         final TextChannel textChannel = guild.getDefaultChannel();
-        final Member member = event.getMember();
+
+        //Check if we can find the channel they were directed to
         if (textChannel == null) {
             LOGGER.error("Can't determine the default channel for guild: " + guild.getName());
             return;
         }
+
         //Check if we should react on this channel
-        if (!DATABASE.watchingChannel(textChannel)) {
+        if (!channelManager.hasChannel(textChannel)) {
             return;
         }
 
         //Get the correct rule message based on wheter they come from another guild
+        final Member member = event.getMember();
         final List<Guild> mutualGuilds = member.getUser().getMutualGuilds();
         switch (mutualGuilds.size()) {
             case 1: {
@@ -201,16 +208,17 @@ public class MessageListener extends ListenerAdapter {
      */
     @Override
     public void onGuildJoin(GuildJoinEvent event) {
-        if (DATABASE.getChannels().isEmpty()) {
+        final ChannelManager chm = DATABASE.getChannels();
+        if (chm.isEmpty()) {
             try {
                 final TextChannel channel = event.getGuild().getDefaultChannel();
                 if (channel == null) {
                     LOGGER.error("Cant find a default channel");
                     return;
                 }
-                DATABASE.addChannel(channel);
+                chm.addChannel(channel);
                 channel.sendMessage("Hello everyone I'm a new bot here, nice to meet you all").queue();
-            } catch (DatabaseException ex) {
+            } catch (SQLException ex) {
                 LOGGER.error("Adding default listen channel failed", ex);
             }
         }
@@ -225,7 +233,7 @@ public class MessageListener extends ListenerAdapter {
     public void onShutdown(ShutdownEvent event) {
         try {
             DATABASE.close();
-        } catch (DatabaseException ex) {
+        } catch (SQLException ex) {
             LOGGER.error("Shutting down database connection failed", ex);
         }
         LOGGER.info("Shutting down");

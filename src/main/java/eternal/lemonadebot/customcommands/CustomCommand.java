@@ -24,7 +24,7 @@
 package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.database.DatabaseManager;
+import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.messages.CommandPermission;
 import java.util.Objects;
 import net.dv8tion.jda.api.entities.Member;
@@ -40,7 +40,7 @@ import net.dv8tion.jda.api.entities.TextChannel;
  */
 public class CustomCommand implements ChatCommand {
 
-    private final DatabaseManager DB;
+    private final ConfigManager manager;
     private final ActionManager actionManager;
 
     private final String command;
@@ -50,14 +50,14 @@ public class CustomCommand implements ChatCommand {
     /**
      * Constructor
      *
-     * @param db Database to fetch permission from
+     * @param commands CustomCommandManager to get command permissions from
      * @param actions SimpleActions to replace action templates with
      * @param command command this is activeted by
      * @param action action template
      * @param owner who created this command
      */
-    public CustomCommand(DatabaseManager db, ActionManager actions, String command, String action, String owner) {
-        this.DB = db;
+    public CustomCommand(ConfigManager commands, ActionManager actions, String command, String action, String owner) {
+        this.manager = commands;
         this.actionManager = actions;
         this.command = command;
         this.action = action;
@@ -122,6 +122,6 @@ public class CustomCommand implements ChatCommand {
 
     @Override
     public CommandPermission getPermission() {
-        return DB.getCommandUsePermission();
+        return manager.getEditPermission();
     }
 }
