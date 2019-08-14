@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2019 Neutroni.
+ * Copyright 2019 joonas.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,36 +23,31 @@
  */
 package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.messages.CommandParser;
-import java.util.List;
+import eternal.lemonadebot.commandtypes.OwnerCommand;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
  *
- * @author Neutroni
+ * @author joonas
  */
-public class CommandProvider {
-
-    private final List<ChatCommand> commands;
-
-    /**
-     * Constructor
-     *
-     * @param parser parser for commands to use
-     * @param db database for commands to use
-     */
-    public CommandProvider(CommandParser parser, DatabaseManager db) {
-        this.commands = List.of(new AdminManagmentCommand(parser, db));
+class ShutdownCommand extends OwnerCommand {
+    
+    @Override
+    public String getCommand() {
+        return "shutdown";
     }
 
-    /**
-     * Get the commands
-     *
-     * @return List of commands
-     */
-    public List<ChatCommand> getCommands() {
-        return this.commands;
+    @Override
+    public String getHelp() {
+        return "Shuts the bot down";
     }
 
+    @Override
+    public void respond(Member sender, Message message, TextChannel textChannel) {
+        textChannel.sendMessage("Shutting down").queue();
+        message.getJDA().shutdown();
+    }
+    
 }

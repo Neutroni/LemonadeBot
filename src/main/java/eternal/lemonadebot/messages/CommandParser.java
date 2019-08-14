@@ -23,8 +23,7 @@
  */
 package eternal.lemonadebot.messages;
 
-import eternal.lemonadebot.commands.AdvancedCommands;
-import eternal.lemonadebot.commands.SimpleCommands;
+import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.customcommands.CustomCommand;
@@ -51,9 +50,8 @@ public class CommandParser {
     private final DatabaseManager DATABASE;
     private final CommandPattern PATTERN;
 
-    //Command managers
-    private final AdvancedCommands advancedCommands;
-    private final SimpleCommands simpleCommands;
+    //Built in commands
+    private final CommandProvider commandProvider;
 
     //List of commands
     private final List<ChatCommand> commands = new ArrayList<>();
@@ -70,13 +68,10 @@ public class CommandParser {
         //Add help command
         this.commands.add(new ListCommands());
 
-        //Command providers
-        this.advancedCommands = new AdvancedCommands(db, this);
-        this.simpleCommands = new SimpleCommands(this);
-
         //Load commands
-        this.commands.addAll(advancedCommands.getCommands());
-        this.commands.addAll(simpleCommands.getCommands());
+        this.commandProvider = new CommandProvider(this, db);
+        this.commands.addAll(commandProvider.getCommands());
+
     }
 
     /**
