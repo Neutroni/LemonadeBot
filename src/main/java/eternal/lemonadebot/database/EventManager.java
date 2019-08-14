@@ -67,7 +67,7 @@ public class EventManager {
 
             //Add to database
             final String query = "INSERT INTO Events(name,description,owner) VALUES(?,?,?);";
-            if (hasEvent(event.getName())) {
+            if (!hasEvent(event.getName())) {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
                     ps.setString(1, event.getName());
                     ps.setString(2, event.getDescription());
