@@ -46,7 +46,7 @@ public class ActionManager {
             new SimpleAction("{coin}", "Flips a coin", (Message message, String input) -> {
                 return COIN_SIDES[rng.nextInt(2)];
             }),
-            new SimpleAction("{d6}", "Rolls a dice", (Message message, String input) -> {
+            new SimpleAction("{d6}", "Rolls a die", (Message message, String input) -> {
                 final int roll = rng.nextInt(6) + 1;
                 return "" + roll;
             }),

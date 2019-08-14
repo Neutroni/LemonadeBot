@@ -76,7 +76,10 @@ class HelpCommand extends UserCommand {
 
     @Override
     public String getHelp() {
-        return "Prints help message for command.";
+        return "Syntax: help [command]\n"
+                + "help without arguments shows list of commands.\n"
+                + "help [command] shows help for [command].\n"
+                + "[] indicates optional arguments, <> nessessary one.";
     }
 
     private void listHelp(Member sender, TextChannel textChannel, String name) {
@@ -84,7 +87,7 @@ class HelpCommand extends UserCommand {
         if (opt.isPresent()) {
             final ChatCommand com = opt.get();
             if (commandParser.hasPermission(sender, com)) {
-                textChannel.sendMessage(com.getCommand() + '\n' + com.getHelp()).queue();
+                textChannel.sendMessage(com.getHelp()).queue();
             } else {
                 textChannel.sendMessage("You do not have permission to run that command, as such no help was provided").queue();
             }
@@ -93,7 +96,7 @@ class HelpCommand extends UserCommand {
         final Optional<CustomCommand> custom = customCommands.getCommand(name);
         if (custom.isPresent()) {
             final CustomCommand com = custom.get();
-            textChannel.sendMessage("User defined custom command, see command \"custom\" for details.").queue();
+            textChannel.sendMessage("User defined custom command, see command \"help custom\" for details.").queue();
             return;
         }
         textChannel.sendMessage("No such command: " + name).queue();

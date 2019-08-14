@@ -61,7 +61,8 @@ class RoleCommand extends UserCommand {
 
     @Override
     public String getHelp() {
-        return "Assign role to yourself based on other guild you also are in";
+        return "Syntax: role <role>\n"
+                + "Assign <role> to yourself based on other guild you also are in";
     }
 
     @Override

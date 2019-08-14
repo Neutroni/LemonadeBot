@@ -68,13 +68,17 @@ class EventCommand extends UserCommand {
 
     @Override
     public String getHelp() {
-        return "create - create new event, you will join the event automatically\n"
-                + "join - join an event\n"
-                + "leave - leave an event\n"
-                + "delete - deletes an event\n"
-                + "members - list members for event\n"
-                + "clear - clears event member list\n"
-                + "list - list events";
+        return "Syntax: event <action> <name> [description]\n"
+                + "<action> can be one of the following:\n"
+                + "  create - create new event, you will join the event automatically\n"
+                + "  delete - deletes an event\n"
+                + "  join - join an event\n"
+                + "  leave - leave an event\n"
+                + "  members - list members for event\n"
+                + "  clear - clears event member list\n"
+                + "  list - list active events\n"
+                + "<name> is the name of the event\n"
+                + "[description] description for the event";
     }
 
     @Override

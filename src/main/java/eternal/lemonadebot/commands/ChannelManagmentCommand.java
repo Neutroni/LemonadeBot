@@ -65,9 +65,11 @@ class ChannelManagmentCommand extends OwnerCommand {
 
     @Override
     public String getHelp() {
-        return "add - adds channel by mention\n"
-                + "remove - removes channel by mention\n"
-                + "list - lists channels";
+        return "Syntax: channel <action>\n"
+                + "<action> can be one of the following:\n"
+                + "  add - start listening on mentioned channels\n"
+                + "  remove - stop listening on mentioned channels\n"
+                + "  list - lists channels we listen on";
     }
 
     @Override

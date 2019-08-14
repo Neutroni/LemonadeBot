@@ -71,13 +71,17 @@ class CommandManagmentCommand implements ChatCommand {
 
     @Override
     public String getHelp() {
-        return " add - adds a new custom command\n"
-                + " remove - removes custom command\n"
-                + " keys - shows list of keys command can contain\n"
-                + " list - show list of custom commands\n"
+        return " Syntax: custom <action> [name] [template]"
+                + "<action> can be one of the following:\n"
+                + "  add - adds a new custom command\n"
+                + "  remove - removes custom command\n"
+                + "  keys - shows list of keys command can contain\n"
+                + "  list - show list of custom commands\n"
+                + "[name] name for custom command"
+                + "[template] template for custom command, see below for syntax"
                 + "Syntax for custom commands:\n"
-                + " {key} substitute part of command with action use parameter keys to see all keys\n"
-                + " | Include other outcomes to command, all options have equal chance";
+                + "  {key} substitute part of command with action, see \"custom keys\" to see all keys\n"
+                + "  | Include other outcomes to command, all options have equal chance";
     }
 
     @Override

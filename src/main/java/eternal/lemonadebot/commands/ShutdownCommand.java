@@ -41,7 +41,8 @@ class ShutdownCommand extends OwnerCommand {
 
     @Override
     public String getHelp() {
-        return "Shuts the bot down";
+        return "Syntax: shutdown\n"
+                + "Shuts down the bot";
     }
 
     @Override
