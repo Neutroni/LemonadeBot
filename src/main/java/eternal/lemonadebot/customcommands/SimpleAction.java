@@ -38,7 +38,7 @@ public class SimpleAction {
     private final String key;
     private final String helpText;
     private final Pattern pattern;
-    private final BiFunction<Message, String, String> function;
+    private final BiFunction<Message, Matcher, String> function;
 
     /**
      * Constructor
@@ -47,10 +47,10 @@ public class SimpleAction {
      * @param help help text for this action
      * @param func function this action executes
      */
-    public SimpleAction(String key, String help, BiFunction<Message, String, String> func) {
+    public SimpleAction(String key, String help, BiFunction<Message, Matcher, String> func) {
         this.key = key;
         this.helpText = help;
-        this.pattern = Pattern.compile(Pattern.quote(key));
+        this.pattern = Pattern.compile(key);
         this.function = func;
     }
 
@@ -89,7 +89,7 @@ public class SimpleAction {
      * @param s match to replace
      * @return replacement string
      */
-    public String getValue(Message m, String s) {
+    public String getValue(Message m, Matcher s) {
         return this.function.apply(m, s);
     }
 }

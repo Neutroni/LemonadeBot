@@ -43,18 +43,23 @@ public class ActionManager {
     private final String[] COIN_SIDES = new String[]{"heads", "tails"};
 
     private final List<SimpleAction> actions = List.of(
-            new SimpleAction("{coin}", "Flips a coin", (Message message, String input) -> {
+            new SimpleAction("{coin}", "Flips a coin", (Message message, Matcher input) -> {
                 return COIN_SIDES[rng.nextInt(2)];
             }),
-            new SimpleAction("{d6}", "Rolls a die", (Message message, String input) -> {
+            new SimpleAction("{d6}", "Rolls a die", (Message message, Matcher input) -> {
                 final int roll = rng.nextInt(6) + 1;
                 return "" + roll;
             }),
-            new SimpleAction("{d20}", "Rolls a d20", (Message message, String input) -> {
+            new SimpleAction("{d20}", "Rolls a d20", (Message message, Matcher input) -> {
                 final int roll = rng.nextInt(20) + 1;
                 return "" + roll;
             }),
-            new SimpleAction("{mentions}", "Lists the mentioned users", (Message message, String input) -> {
+            new SimpleAction("{rng (\\d+),(\\d+)}", "Generate random number between the two inputs. Syntax {rng start,end}", (Message t, Matcher u) -> {
+                final int start = Integer.parseInt(u.group(1));
+                final int end = Integer.parseInt(u.group(2));
+                return "" + (rng.nextInt(end) + start);
+            }),
+            new SimpleAction("{mentions}", "Lists the mentioned users", (Message message, Matcher input) -> {
                 if (!message.isFromType(ChannelType.TEXT)) {
                     return "";
                 }
@@ -91,7 +96,7 @@ public class ActionManager {
             final StringBuilder sb = new StringBuilder();
 
             while (m.find()) {
-                final String replacement = s.getValue(message, m.group());
+                final String replacement = s.getValue(message, m);
                 m.appendReplacement(sb, replacement);
             }
             m.appendTail(sb);

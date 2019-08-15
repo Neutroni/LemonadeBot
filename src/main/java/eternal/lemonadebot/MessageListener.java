@@ -147,7 +147,7 @@ public class MessageListener extends ListenerAdapter {
 
         //Check if we should react on this channel
         if (!channelManager.hasChannel(textChannel)) {
-            LOGGER.debug("Not greeting because not listening on the channel");
+            LOGGER.debug("Not greeting because not listening on the channelw");
             return;
         }
 
