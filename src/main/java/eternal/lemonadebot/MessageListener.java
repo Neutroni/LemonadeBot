@@ -51,9 +51,9 @@ import org.apache.logging.log4j.Logger;
  * @author Neutroni
  */
 public class MessageListener extends ListenerAdapter {
-
+    
     private static final Logger LOGGER = LogManager.getLogger();
-
+    
     private final DatabaseManager DATABASE;
     private final CommandManager commandManager;
     private final ChannelManager channelManager;
@@ -103,14 +103,14 @@ public class MessageListener extends ListenerAdapter {
             ca.respond(member, message, textChannel);
         }
     }
-
+    
     private String getRuleChannelMessage(Guild g) {
         //Only this guild, direct to rule channel
         final Optional<String> rco = DATABASE.getConfig().getRuleChannelID();
         if (rco.isEmpty()) {
             return "";
         }
-
+        
         final String rcsnowflake = rco.get();
         final TextChannel ruleChannel = g.getTextChannelById(rcsnowflake);
         if (ruleChannel == null) {
@@ -118,9 +118,9 @@ public class MessageListener extends ListenerAdapter {
         }
         final String rcmention = ruleChannel.getAsMention();
         return " please check the guild rules over at " + rcmention;
-
+        
     }
-
+    
     private void sendDefaultMessage(TextChannel textChannel, Member member) {
         textChannel.sendMessage("Welcome to our guild discord " + member.getEffectiveName()
                 + getRuleChannelMessage(textChannel.getGuild())).queue();
@@ -134,21 +134,24 @@ public class MessageListener extends ListenerAdapter {
     @Override
     public void onGuildMemberJoin(GuildMemberJoinEvent event) {
         final Guild guild = event.getGuild();
-        final TextChannel textChannel = guild.getDefaultChannel();
+        final Member member = event.getMember();
+        final TextChannel textChannel = guild.getSystemChannel();
+        
+        LOGGER.debug("New member: " + member.getEffectiveName());
 
-        //Check if we can find the channel they were directed to
+        //Check if we have a channel to greet them on
         if (textChannel == null) {
-            LOGGER.error("Can't determine the default channel for guild: " + guild.getName());
+            LOGGER.debug("Not greeting because greeting is disabled in discord settings");
             return;
         }
 
         //Check if we should react on this channel
         if (!channelManager.hasChannel(textChannel)) {
+            LOGGER.debug("Not greeting because not listening on the channel");
             return;
         }
 
         //Get the correct rule message based on wheter they come from another guild
-        final Member member = event.getMember();
         final List<Guild> mutualGuilds = member.getUser().getMutualGuilds();
         switch (mutualGuilds.size()) {
             case 1: {
@@ -159,12 +162,12 @@ public class MessageListener extends ListenerAdapter {
                 //This and another guild, try to get role for them based on other guild
                 final List<Guild> mutableGuilds = new ArrayList<>(mutualGuilds);
                 mutableGuilds.remove(guild);
-
+                
                 if (mutableGuilds.size() != 1) {
                     sendDefaultMessage(textChannel, member);
                     return;
                 }
-
+                
                 final Guild otherGuild = mutableGuilds.get(0);
                 final Member otherGuildmember = otherGuild.getMember(member.getUser());
                 if (otherGuildmember == null) {
@@ -176,7 +179,7 @@ public class MessageListener extends ListenerAdapter {
                     sendDefaultMessage(textChannel, member);
                     return;
                 }
-
+                
                 final String roleName = otherGuild.getName();
                 final List<Role> roles = guild.getRolesByName(roleName, false);
                 guild.modifyMemberRoles(member, roles, null).queue((t) -> {
@@ -190,10 +193,10 @@ public class MessageListener extends ListenerAdapter {
                 });
                 break;
             }
-
+            
             default: {
                 //More guilds, ask them to use role command
-                textChannel.sendMessage("Welcome to our guild discord " + member.getEffectiveName()+ "\n"
+                textChannel.sendMessage("Welcome to our guild discord " + member.getEffectiveName() + "\n"
                         + "You apper to be on multiple guilds and as such I can't find a role for you, "
                         + "use command \"role\" to assing a role based on other guild you are also on.").queue();
                 break;
