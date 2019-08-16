@@ -107,8 +107,8 @@ public class DatabaseManager implements AutoCloseable {
         final String CONFIG = "CREATE TABLE Options(name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);";
         final String CHANNELS = "CREATE TABLE Channels(id TEXT PRIMRY KEY NOT NULL);";
         final String COMMANDS = "CREATE TABLE Commands(name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL, owner TEXT NOT NULL);";
-        final String EVENTS = "CREATE TABLE Events(name TEXT PRIMARY KEY NOT NULL, description TEXT NOT NULL, owner TEXT NOT NULL)";
-        final String EVENT_MEMBERS = "CREATE TABLE EventMembers(event REFERENCES Events(name) ON DELETE CASCADE, member TEXT NOT NULL, PRIMARY KEY (event,member));";
+        final String EVENTS = "CREATE TABLE Events(name TEXT PRIMARY KEY NOT NULL, description TEXT NOT NULL, owner INTEGER NOT NULL)";
+        final String EVENT_MEMBERS = "CREATE TABLE EventMembers(event REFERENCES Events(name) ON DELETE CASCADE, member INTEGER NOT NULL, PRIMARY KEY (event,member));";
         final String INSERT = "INSERT INTO Options(name,value) VALUES(?,?);";
         try (Statement st = conn.createStatement()) {
             st.addBatch(CONFIG);

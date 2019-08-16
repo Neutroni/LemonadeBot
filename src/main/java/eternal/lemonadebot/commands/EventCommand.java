@@ -105,7 +105,7 @@ class EventCommand extends UserCommand {
                     } else {
                         description = "No description";
                     }
-                    final Event newEvent = new Event(eventName, description, sender.getId());
+                    final Event newEvent = new Event(eventName, description, sender.getIdLong());
                     if (!events.addEvent(newEvent)) {
                         textChannel.sendMessage("Event with that name alredy exists").queue();
                         return;
@@ -164,7 +164,7 @@ class EventCommand extends UserCommand {
                     return;
                 }
                 try {
-                    if (events.leaveEvent(oldEvent.get(), sender.getId())) {
+                    if (events.leaveEvent(oldEvent.get(), sender.getIdLong())) {
                         textChannel.sendMessage("Succesfully left event").queue();
                         return;
                     }
@@ -232,9 +232,9 @@ class EventCommand extends UserCommand {
                     return;
                 }
                 final Event event = opt.get();
-                final List<String> memberIds = event.getMembers();
+                final List<Long> memberIds = event.getMembers();
                 final StringBuilder sb = new StringBuilder("Members for the event: " + eventName + "\n");
-                for (String id : memberIds) {
+                for (Long id : memberIds) {
                     final Member m = textChannel.getGuild().getMemberById(id);
                     if (m == null) {
                         sb.append("Found user in event members who could not be found, removing from event\n");
@@ -271,7 +271,7 @@ class EventCommand extends UserCommand {
                     return;
                 }
                 final Event event = opt.get();
-                if (!event.getOwner().equals(sender.getId())) {
+                if (event.getOwner() != sender.getIdLong()) {
                     textChannel.sendMessage("Only the owner of the event can clear it.").queue();
                     return;
                 }

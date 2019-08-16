@@ -71,7 +71,7 @@ public class EventManager {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
                     ps.setString(1, event.getName());
                     ps.setString(2, event.getDescription());
-                    ps.setString(3, event.getOwner());
+                    ps.setLong(3, event.getOwner());
                     return ps.executeUpdate() > 0;
                 }
             }
@@ -151,7 +151,7 @@ public class EventManager {
         final String query = "SELECT name,description,owner FROM Events;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
-                final Event ev = new Event(rs.getString("name"), rs.getString("description"), rs.getString("owner"));
+                final Event ev = new Event(rs.getString("name"), rs.getString("description"), rs.getLong("owner"));
                 loadMembers(ev);
                 events.add(ev);
             }
@@ -164,7 +164,7 @@ public class EventManager {
             ps.setString(1, event.getName());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    event.join(rs.getString("member"));
+                    event.join(rs.getLong("member"));
                 }
             }
         }
@@ -181,11 +181,11 @@ public class EventManager {
      */
     public boolean joinEvent(Event event, Member member) throws SQLException {
         synchronized (this) {
-            final boolean joined = event.join(member.getId());
+            final boolean joined = event.join(member.getIdLong());
 
             //Add to database
             final String query = "INSERT INTO EventMembers(event,member) VALUES(?,?);";
-            if (!hasAttended(event.getName(), member.getId())) {
+            if (!hasAttended(event.getName(), member.getIdLong())) {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
                     ps.setString(1, event.getName());
                     ps.setString(2, member.getId());
@@ -205,11 +205,11 @@ public class EventManager {
      * @return true if user is a mamber of the event
      * @throws SQLException
      */
-    private boolean hasAttended(String name, String id) throws SQLException {
+    private boolean hasAttended(String name, long id) throws SQLException {
         final String query = "SELECT event FROM EventMembers WHERE event = ? AND member = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, name);
-            ps.setString(2, id);
+            ps.setLong(2, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return true;
@@ -227,7 +227,7 @@ public class EventManager {
      * @return true if user was removed from event
      * @throws SQLException if database connection failed
      */
-    public boolean leaveEvent(Event event, String id) throws SQLException {
+    public boolean leaveEvent(Event event, long id) throws SQLException {
         synchronized (this) {
             final boolean left = event.leave(id);
 
@@ -236,7 +236,7 @@ public class EventManager {
             if (hasAttended(event.getName(), id)) {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
                     ps.setString(1, event.getName());
-                    ps.setString(2, id);
+                    ps.setLong(2, id);
                     return ps.executeUpdate() > 0;
                 }
             }

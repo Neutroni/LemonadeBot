@@ -35,8 +35,8 @@ public class Event {
 
     private final String name;
     private final String description;
-    private final String ownerID;
-    private final Set<String> members = new HashSet<>();
+    private final long ownerID;
+    private final Set<Long> members = new HashSet<>();
 
     /**
      * Constructor
@@ -45,7 +45,7 @@ public class Event {
      * @param description description for the event
      * @param owner owner of the event
      */
-    public Event(String name, String description, String owner) {
+    public Event(String name, String description, long owner) {
         this.name = name;
         this.description = description;
         this.ownerID = owner;
@@ -57,7 +57,7 @@ public class Event {
      * @param member member id who wants to join
      * @return true if succesfully joined, false otherwise
      */
-    boolean join(String member) {
+    boolean join(long member) {
         synchronized (this) {
             return this.members.add(member);
         }
@@ -69,7 +69,7 @@ public class Event {
      * @param member member who wants to leave
      * @return true if left event succesfully, false otherwise
      */
-    boolean leave(String member) {
+    boolean leave(long member) {
         synchronized (this) {
             return this.members.remove(member);
         }
@@ -90,7 +90,7 @@ public class Event {
      *
      * @return list of member idsF
      */
-    public List<String> getMembers() {
+    public List<Long> getMembers() {
         return List.copyOf(this.members);
     }
 
@@ -117,7 +117,7 @@ public class Event {
      *
      * @return owner id
      */
-    public String getOwner() {
+    public long getOwner() {
         return this.ownerID;
     }
 
