@@ -35,7 +35,6 @@ import net.dv8tion.jda.api.entities.Message;
  */
 public class SimpleAction {
 
-    private final String key;
     private final String helpText;
     private final Pattern pattern;
     private final BiFunction<Message, Matcher, String> function;
@@ -43,24 +42,14 @@ public class SimpleAction {
     /**
      * Constructor
      *
-     * @param key key for this action
+     * @param pattern pattern string for this action
      * @param help help text for this action
      * @param func function this action executes
      */
-    public SimpleAction(String key, String help, BiFunction<Message, Matcher, String> func) {
-        this.key = key;
+    public SimpleAction(String pattern, String help, BiFunction<Message, Matcher, String> func) {
+        this.pattern = Pattern.compile(pattern);
         this.helpText = help;
-        this.pattern = Pattern.compile(key);
         this.function = func;
-    }
-
-    /**
-     * Key to activate this action with
-     *
-     * @return key for this action
-     */
-    public String getKey() {
-        return this.key;
     }
 
     /**
