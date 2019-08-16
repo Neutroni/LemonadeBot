@@ -75,7 +75,7 @@ public class EventManager {
                     return ps.executeUpdate() > 0;
                 }
             }
-
+            
             return added;
         }
     }
@@ -151,7 +151,21 @@ public class EventManager {
         final String query = "SELECT name,description,owner FROM Events;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
-                events.add(new Event(rs.getString("name"), rs.getString("description"), rs.getString("owner")));
+                final Event ev = new Event(rs.getString("name"), rs.getString("description"), rs.getString("owner"));
+                loadMembers(ev);
+                events.add(ev);
+            }
+        }
+    }
+    
+    private void loadMembers(Event event) throws SQLException{
+        final String query = "SELECT member FROM EventMembers WHERE event = ?;";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, event.getName());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    event.join(rs.getString("member"));
+                }
             }
         }
     }

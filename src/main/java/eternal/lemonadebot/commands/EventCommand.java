@@ -106,11 +106,15 @@ class EventCommand extends UserCommand {
                         description = "No description";
                     }
                     final Event newEvent = new Event(eventName, description, sender.getId());
-                    if (events.addEvent(newEvent)) {
-                        textChannel.sendMessage("Event created succesfully").queue();
+                    if (!events.addEvent(newEvent)) {
+                        textChannel.sendMessage("Event with that name alredy exists").queue();
                         return;
                     }
-                    textChannel.sendMessage("Event with that name alredy exists").queue();
+                    if(!events.joinEvent(newEvent, sender)){
+                        textChannel.sendMessage("Event created but failed to join the event").queue();
+                        return;
+                    }
+                    textChannel.sendMessage("Event created succesfully").queue();
                 } catch (SQLException ex) {
                     textChannel.sendMessage("Database error adding event, "
                             + "add again once database issue is fixed to make add persist after reboot").queue();
@@ -247,6 +251,9 @@ class EventCommand extends UserCommand {
                         continue;
                     }
                     sb.append(' ').append(m.getEffectiveName()).append('\n');
+                }
+                if(memberIds.isEmpty()){
+                    sb.append("No one has joined the event yet.");
                 }
                 textChannel.sendMessage(sb.toString()).queue();
                 break;

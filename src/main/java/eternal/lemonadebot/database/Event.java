@@ -49,7 +49,6 @@ public class Event {
         this.name = name;
         this.description = description;
         this.ownerID = owner;
-        this.members.add(ownerID);
     }
 
     /**
@@ -60,7 +59,7 @@ public class Event {
      */
     boolean join(String member) {
         synchronized (this) {
-            return this.members.add(name);
+            return this.members.add(member);
         }
     }
 
@@ -82,6 +81,7 @@ public class Event {
     void clear() {
         synchronized(this){
             this.members.clear();
+            this.members.add(this.ownerID);
         }
     }
 
