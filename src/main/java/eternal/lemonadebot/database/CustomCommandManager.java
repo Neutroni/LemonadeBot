@@ -69,7 +69,7 @@ public class CustomCommandManager {
      * @param owner owner fo the command
      * @return the new custom command
      */
-    public CustomCommand build(String key, String pattern, String owner) {
+    public CustomCommand build(String key, String pattern, long owner) {
         return new CustomCommand(this.configManager, this.actionManager, key, pattern, owner);
     }
 
@@ -99,7 +99,7 @@ public class CustomCommandManager {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
                     ps.setString(1, command.getCommand());
                     ps.setString(2, command.getAction());
-                    ps.setString(3, command.getOwner());
+                    ps.setLong(3, command.getOwner());
                     return ps.executeUpdate() > 0;
                 }
             }
@@ -177,7 +177,7 @@ public class CustomCommandManager {
         final String query = "SELECT name,value,owner FROM Commands;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
-                final CustomCommand newCommand = build(rs.getString("name"), rs.getString("value"), rs.getString("owner"));
+                final CustomCommand newCommand = build(rs.getString("name"), rs.getString("value"), rs.getLong("owner"));
                 this.commands.add(newCommand);
             }
         }

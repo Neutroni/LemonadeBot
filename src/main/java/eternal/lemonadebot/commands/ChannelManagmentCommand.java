@@ -118,7 +118,7 @@ class ChannelManagmentCommand extends OwnerCommand {
                 final StringBuilder sb = new StringBuilder();
                 for (TextChannel channel : mentions) {
                     try {
-                        if (channels.removeChannel(channel.getId())) {
+                        if (channels.removeChannel(channel.getIdLong())) {
                             sb.append("Succesfully stopped listening on channel ").append(channel.getName()).append('\n');
                         } else {
                             sb.append("Was not listening on channel ").append(channel.getName()).append('\n');
@@ -136,9 +136,9 @@ class ChannelManagmentCommand extends OwnerCommand {
                 break;
             }
             case "list": {
-                final List<String> channelIds = channels.getChannels();
+                final List<Long> channelIds = channels.getChannels();
                 final StringBuilder sb = new StringBuilder("Channels:\n");
-                for (String id : channelIds) {
+                for (Long id : channelIds) {
                     final TextChannel channel = textChannel.getGuild().getTextChannelById(id);
                     if (channel == null) {
                         sb.append("Channel in database which could not be found, removing from listened channels\n");

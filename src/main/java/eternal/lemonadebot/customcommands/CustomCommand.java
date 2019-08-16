@@ -26,7 +26,6 @@ package eternal.lemonadebot.customcommands;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.messages.CommandPermission;
-import java.util.Objects;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -45,7 +44,7 @@ public class CustomCommand implements ChatCommand {
 
     private final String command;
     private final String action;
-    private final String owner;
+    private final long owner;
 
     /**
      * Constructor
@@ -56,7 +55,7 @@ public class CustomCommand implements ChatCommand {
      * @param action action template
      * @param owner who created this command
      */
-    public CustomCommand(ConfigManager commands, ActionManager actions, String command, String action, String owner) {
+    public CustomCommand(ConfigManager commands, ActionManager actions, String command, String action, long owner) {
         this.manager = commands;
         this.actionManager = actions;
         this.command = command;
@@ -83,7 +82,7 @@ public class CustomCommand implements ChatCommand {
      *
      * @return ID of the owner
      */
-    public String getOwner() {
+    public long getOwner() {
         return this.owner;
     }
 
@@ -104,9 +103,7 @@ public class CustomCommand implements ChatCommand {
 
     @Override
     public int hashCode() {
-        int hash = 3;
-        hash = 83 * hash + Objects.hashCode(this.command);
-        return hash;
+        return this.command.hashCode();
     }
 
     @Override

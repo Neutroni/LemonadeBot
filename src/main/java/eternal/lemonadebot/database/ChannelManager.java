@@ -40,7 +40,7 @@ import net.dv8tion.jda.api.entities.TextChannel;
 public class ChannelManager {
 
     private final Connection conn;
-    private final Set<String> channels = new HashSet<>();
+    private final Set<Long> channels = new HashSet<>();
 
     /**
      * Constructor
@@ -58,7 +58,7 @@ public class ChannelManager {
      *
      * @return list of channel ids
      */
-    public List<String> getChannels() {
+    public List<Long> getChannels() {
         return List.copyOf(this.channels);
     }
 
@@ -71,11 +71,11 @@ public class ChannelManager {
      */
     public boolean addChannel(TextChannel channel) throws SQLException {
         synchronized (this) {
-            boolean added = this.channels.add(channel.getId());
+            boolean added = this.channels.add(channel.getIdLong());
 
             //Add to database
             final String query = "INSERT INTO Channels(id) VALUES (?);";
-            if (!hasChannel(channel.getId())) {
+            if (!hasChannel(channel.getIdLong())) {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
                     ps.setString(1, channel.getId());
                     return ps.executeUpdate() > 0;
@@ -92,7 +92,7 @@ public class ChannelManager {
      * @return number of removed channels
      * @throws SQLException if database connection failed
      */
-    public boolean removeChannel(String id) throws SQLException {
+    public boolean removeChannel(Long id) throws SQLException {
         synchronized (this) {
             boolean removed = this.channels.remove(id);
 
@@ -100,7 +100,7 @@ public class ChannelManager {
             final String query = "DELETE FROM Channels WHERE id = ?;";
             if (hasChannel(id)) {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
-                    ps.setString(1, id);
+                    ps.setLong(1, id);
                     return ps.executeUpdate() > 0;
                 }
             }
@@ -117,7 +117,7 @@ public class ChannelManager {
      */
     public boolean hasChannel(TextChannel channel) {
         synchronized (this) {
-            return this.channels.contains(channel.getId());
+            return this.channels.contains(channel.getIdLong());
         }
     }
 
@@ -128,10 +128,10 @@ public class ChannelManager {
      * @return true if channel was found, false otherwise
      * @throws SQLException if database connection fails
      */
-    private boolean hasChannel(String id) throws SQLException {
+    private boolean hasChannel(Long id) throws SQLException {
         final String query = "SELECT id FROM Channels WHERE id = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setString(1, id);
+            ps.setLong(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return true;
@@ -151,7 +151,7 @@ public class ChannelManager {
         final String query = "SELECT id FROM Channels;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
-                this.channels.add(rs.getString("id"));
+                this.channels.add(rs.getLong("id"));
             }
         }
     }

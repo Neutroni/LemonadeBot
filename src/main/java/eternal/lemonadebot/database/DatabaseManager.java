@@ -100,17 +100,19 @@ public class DatabaseManager implements AutoCloseable {
     /**
      * Creates the database for the bot
      *
+     * @param dbLocation location for database
      * @param ownerID ID of the bot owner
      * @throws SQLException if database connection fails
      */
-    public void initialize(String ownerID) throws SQLException {
+    public static void initialize(String dbLocation, String ownerID) throws SQLException {
+        final Connection connection = DriverManager.getConnection("jdbc:sqlite:" + dbLocation);
         final String CONFIG = "CREATE TABLE Options(name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);";
-        final String CHANNELS = "CREATE TABLE Channels(id TEXT PRIMRY KEY NOT NULL);";
-        final String COMMANDS = "CREATE TABLE Commands(name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL, owner TEXT NOT NULL);";
+        final String CHANNELS = "CREATE TABLE Channels(id INTEGER PRIMARY KEY NOT NULL);";
+        final String COMMANDS = "CREATE TABLE Commands(name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL, owner INTEGER NOT NULL);";
         final String EVENTS = "CREATE TABLE Events(name TEXT PRIMARY KEY NOT NULL, description TEXT NOT NULL, owner INTEGER NOT NULL)";
         final String EVENT_MEMBERS = "CREATE TABLE EventMembers(event REFERENCES Events(name) ON DELETE CASCADE, member INTEGER NOT NULL, PRIMARY KEY (event,member));";
         final String INSERT = "INSERT INTO Options(name,value) VALUES(?,?);";
-        try (Statement st = conn.createStatement()) {
+        try (Statement st = connection.createStatement()) {
             st.addBatch(CONFIG);
             st.addBatch(CHANNELS);
             st.addBatch(COMMANDS);
@@ -118,7 +120,7 @@ public class DatabaseManager implements AutoCloseable {
             st.addBatch(EVENT_MEMBERS);
             st.executeBatch();
         }
-        try (PreparedStatement ps = conn.prepareStatement(INSERT)) {
+        try (PreparedStatement ps = connection.prepareStatement(INSERT)) {
             ps.setString(1, ConfigKey.OWNER_ID.name());
             ps.setString(2, ownerID);
             ps.executeUpdate();

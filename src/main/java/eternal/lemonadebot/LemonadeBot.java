@@ -43,7 +43,7 @@ import org.apache.logging.log4j.Logger;
  * @author Neutroni
  */
 public class LemonadeBot {
-    
+
     private static final Logger LOGGER = LogManager.getLogger();
 
     /**
@@ -53,7 +53,7 @@ public class LemonadeBot {
      */
     public static void main(String[] args) {
         LOGGER.debug("Bot starting up");
-        
+
         try {
             //Parse command line arguments
             final Options options = new Options();
@@ -61,7 +61,7 @@ public class LemonadeBot {
             options.addOption("h", "help", false, "Prints this message");
             options.addOption("d", "database", true, "Database location");
             options.addOption("o", "owner", true, "Id of the bot owner");
-            
+
             final HelpFormatter formatter = new HelpFormatter();
             final CommandLineParser parser = new DefaultParser();
             final CommandLine cmd = parser.parse(options, args);
@@ -80,23 +80,23 @@ public class LemonadeBot {
 
             //Get database location
             final String databaseLocation;
-            if(cmd.hasOption("d")){
+            if (cmd.hasOption("d")) {
                 databaseLocation = cmd.getOptionValue("d");
             } else {
                 databaseLocation = "database.db";
             }
-            
-            //Connect to the database
-            final DatabaseManager DB = new DatabaseManager(databaseLocation);
-            LOGGER.debug("Connected to database succefully");
 
             //Check if database should be initialized
             if (cmd.hasOption("o")) {
                 LOGGER.debug("Initializing database");
                 final String ownerID = cmd.getOptionValue("o");
-                DB.initialize(ownerID);
+                DatabaseManager.initialize(databaseLocation, ownerID);
             }
-            
+
+            //Connect to the database
+            final DatabaseManager DB = new DatabaseManager(databaseLocation);
+            LOGGER.debug("Connected to database succefully");
+
             final JDA jda = new JDABuilder(cmd.getOptionValue("k")).build();
             jda.addEventListener(new MessageListener(DB));
             LOGGER.debug("Startup succesfull");

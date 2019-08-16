@@ -126,7 +126,7 @@ class CommandManagmentCommand implements ChatCommand {
                     return;
                 }
                 final String newValue = opt[2];
-                final CustomCommand newAction = this.commandManager.build(name, newValue, message.getAuthor().getId());
+                final CustomCommand newAction = this.commandManager.build(name, newValue, message.getAuthor().getIdLong());
                 {
                     try {
                         if (this.commandManager.addCommand(newAction)) {
