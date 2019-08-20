@@ -48,7 +48,6 @@ public class ConfigManager {
     //Data
     private final String ownerID;
     private volatile Optional<String> commandPrefix;
-    private volatile Optional<String> ruleChannelID;
     private volatile CommandPermission runPermission = CommandPermission.USER;
     private volatile CommandPermission editPermission = CommandPermission.MEMBER;
 
@@ -67,9 +66,8 @@ public class ConfigManager {
         }
         this.ownerID = optOwner.get();
 
-        //Load optionals
+        //Load command prefix
         this.commandPrefix = loadSetting(ConfigKey.COMMAND_PREFIX.name());
-        this.ruleChannelID = loadSetting(ConfigKey.RULE_CHANNEL.name());
 
         //Load permissions
         loadUsePerm();
@@ -146,15 +144,6 @@ public class ConfigManager {
      */
     public CommandPermission getUsePermission() {
         return this.runPermission;
-    }
-
-    /**
-     * Get the rule channel id
-     *
-     * @return optional of the rule channel id
-     */
-    public Optional<String> getRuleChannelID() {
-        return this.ruleChannelID;
     }
 
     /**

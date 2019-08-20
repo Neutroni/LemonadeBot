@@ -34,10 +34,6 @@ enum ConfigKey {
      */
     OWNER_ID,
     /**
-     * Key to store rule channel id with in DB
-     */
-    RULE_CHANNEL,
-    /**
      * Key to store command prefix with in DB
      */
     COMMAND_PREFIX,

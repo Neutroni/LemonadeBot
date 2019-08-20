@@ -104,26 +104,23 @@ public class MessageListener extends ListenerAdapter {
         }
     }
 
-    private String getRuleChannelMessage(Guild g) {
-        //Only this guild, direct to rule channel
-        final Optional<String> rco = DATABASE.getConfig().getRuleChannelID();
-        if (rco.isEmpty()) {
-            return "";
-        }
-
-        final String rcsnowflake = rco.get();
-        final TextChannel ruleChannel = g.getTextChannelById(rcsnowflake);
-        if (ruleChannel == null) {
-            return "";
-        }
-        final String rcmention = ruleChannel.getAsMention();
-        return " please check the guild rules over at " + rcmention;
-
-    }
-
+    /**
+     * Send default greeting when new person joins
+     *
+     * @param textChannel TextChannel to send greeting on
+     * @param member Member who joined
+     */
     private void sendDefaultMessage(TextChannel textChannel, Member member) {
-        textChannel.sendMessage("Welcome to our guild discord " + member.getEffectiveName()
-                + getRuleChannelMessage(textChannel.getGuild())).queue();
+        final TextChannel ruleChannel = textChannel.getGuild().getDefaultChannel();
+        final String ruleMessage;
+        if (ruleChannel == null) {
+            ruleMessage = "";
+        } else {
+            ruleMessage = " to get access to rest of the channels please check rules over at " + ruleChannel.getAsMention();
+        }
+        textChannel.sendMessage("Welcome to our guild discord "
+                + member.getEffectiveName()
+                + ruleMessage).queue();
     }
 
     /**
@@ -153,54 +150,47 @@ public class MessageListener extends ListenerAdapter {
 
         //Get the correct rule message based on wheter they come from another guild
         final List<Guild> mutualGuilds = member.getUser().getMutualGuilds();
-        switch (mutualGuilds.size()) {
-            case 1: {
+        if (mutualGuilds.size() < 2) {
+            //Only this guild
+            sendDefaultMessage(textChannel, member);
+        } else if (mutualGuilds.size() == 2) {
+            //This and another guild, try to get role for them based on other guild
+            final List<Guild> mutableGuilds = new ArrayList<>(mutualGuilds);
+            mutableGuilds.remove(guild);
+
+            if (mutableGuilds.size() != 1) {
                 sendDefaultMessage(textChannel, member);
                 return;
             }
-            case 2: {
-                //This and another guild, try to get role for them based on other guild
-                final List<Guild> mutableGuilds = new ArrayList<>(mutualGuilds);
-                mutableGuilds.remove(guild);
 
-                if (mutableGuilds.size() != 1) {
-                    sendDefaultMessage(textChannel, member);
-                    return;
-                }
-
-                final Guild otherGuild = mutableGuilds.get(0);
-                final Member otherGuildmember = otherGuild.getMember(member.getUser());
-                if (otherGuildmember == null) {
-                    sendDefaultMessage(textChannel, member);
-                    return;
-                }
-                final List<Role> otherGuildRoles = otherGuildmember.getRoles();
-                if (otherGuildRoles.isEmpty()) {
-                    sendDefaultMessage(textChannel, member);
-                    return;
-                }
-
-                final String roleName = otherGuild.getName();
-                final List<Role> roles = guild.getRolesByName(roleName, false);
-                guild.modifyMemberRoles(member, roles, null).queue((t) -> {
-                    //Success
-                    textChannel.sendMessage("Welcome to our guild discord " + member.getEffectiveName()
-                            + "You have been assigned role based on other guild you are also on, "
-                            + "if you believe this is error please contact guild lead.").queue();
-                }, (t) -> {
-                    //Failure
-                    sendDefaultMessage(textChannel, member);
-                });
-                break;
+            final Guild otherGuild = mutableGuilds.get(0);
+            final Member otherGuildmember = otherGuild.getMember(member.getUser());
+            if (otherGuildmember == null) {
+                sendDefaultMessage(textChannel, member);
+                return;
+            }
+            final List<Role> otherGuildRoles = otherGuildmember.getRoles();
+            if (otherGuildRoles.isEmpty()) {
+                sendDefaultMessage(textChannel, member);
+                return;
             }
 
-            default: {
-                //More guilds, ask them to use role command
-                textChannel.sendMessage("Welcome to our guild discord " + member.getEffectiveName() + "\n"
-                        + "You apper to be on multiple guilds and as such I can't find a role for you, "
-                        + "use command \"role\" to assing a role based on other guild you are also on.").queue();
-                break;
-            }
+            final String roleName = otherGuild.getName();
+            final List<Role> roles = guild.getRolesByName(roleName, false);
+            guild.modifyMemberRoles(member, roles, null).queue((t) -> {
+                //Success
+                textChannel.sendMessage("Welcome to our guild discord " + member.getEffectiveName()
+                        + "You have been assigned role based on other guild you are also on, "
+                        + "if you believe this is error please contact guild lead.").queue();
+            }, (t) -> {
+                //Failure
+                sendDefaultMessage(textChannel, member);
+            });
+        } else {
+            //More guilds, ask them to use role command
+            textChannel.sendMessage("Welcome to our guild discord " + member.getEffectiveName() + "\n"
+                    + "You apper to be on multiple guilds and as such I can't find a role for you, "
+                    + "use command \"role\" to assing a role based on other guild you are also on.").queue();
         }
     }
 
@@ -211,15 +201,14 @@ public class MessageListener extends ListenerAdapter {
      */
     @Override
     public void onGuildJoin(GuildJoinEvent event) {
-        final ChannelManager chm = DATABASE.getChannels();
-        if (chm.isEmpty()) {
+        if (channelManager.isEmpty()) {
             try {
                 final TextChannel channel = event.getGuild().getSystemChannel();
                 if (channel == null) {
                     LOGGER.error("Joined a guild for first time but cant find a channel to start listening on");
                     return;
                 }
-                chm.addChannel(channel);
+                channelManager.addChannel(channel);
                 channel.sendMessage("Hello everyone I'm a new bot here, nice to meet you all").queue();
             } catch (SQLException ex) {
                 LOGGER.error("Adding default listen channel failed", ex);
