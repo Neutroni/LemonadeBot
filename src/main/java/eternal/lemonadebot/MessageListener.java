@@ -166,11 +166,13 @@ public class MessageListener extends ListenerAdapter {
             final Guild otherGuild = mutableGuilds.get(0);
             final Member otherGuildmember = otherGuild.getMember(member.getUser());
             if (otherGuildmember == null) {
+                //Has left other server somehow
                 sendDefaultMessage(textChannel, member);
                 return;
             }
             final List<Role> otherGuildRoles = otherGuildmember.getRoles();
             if (otherGuildRoles.isEmpty()) {
+                //Not a member on other server
                 sendDefaultMessage(textChannel, member);
                 return;
             }

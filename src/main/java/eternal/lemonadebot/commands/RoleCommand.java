@@ -84,6 +84,11 @@ class RoleCommand extends UserCommand {
             if (!g.getName().equals(guildName)) {
                 continue;
             }
+            final Member otherMember = g.getMember(sender.getUser());
+            if(otherMember == null){
+                textChannel.sendMessage("You do not have any roles on that server, as such no role was given").queue();
+                return;
+            }
             final List<Role> roles = textChannel.getGuild().getRolesByName(guildName, false);
             textChannel.getGuild().modifyMemberRoles(sender, roles, null).queue((t) -> {
                 //Success
