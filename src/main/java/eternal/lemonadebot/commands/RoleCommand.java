@@ -78,18 +78,49 @@ class RoleCommand extends UserCommand {
             textChannel.sendMessage("Please provide guild name you want the role for").queue();
             return;
         }
+
+        //Name of the guild user wants role for
         final String guildName = parameters[0];
+
+        //Ignore current server
+        final Guild currentGuild = textChannel.getGuild();
+        if (currentGuild.getName().equals(guildName)) {
+            textChannel.sendMessage("Can't assign role for current server, check rules if you want member status.").queue();
+            return;
+        }
+
+        //Guilds we share with the user
         final List<Guild> mutualGuilds = sender.getUser().getMutualGuilds();
+
+        //Get names of the mutual guilds
+        final StringBuilder possibleRoleNames = new StringBuilder("Possible guilds:\n");
+
+        //Find and assign role
         for (Guild g : mutualGuilds) {
             if (!g.getName().equals(guildName)) {
+                possibleRoleNames.append(g.getName()).append('\n');
                 continue;
             }
+
+            //Make sure they are a member on the other server
             final Member otherMember = g.getMember(sender.getUser());
-            if(otherMember == null){
+            if (otherMember == null) {
+                textChannel.sendMessage("Did you leave the server while I wasn't looking? Could not find you on that server").queue();
+                return;
+            }
+            if (otherMember.getRoles().isEmpty()) {
                 textChannel.sendMessage("You do not have any roles on that server, as such no role was given").queue();
                 return;
             }
+
+            //Find the role for given guild
             final List<Role> roles = textChannel.getGuild().getRolesByName(guildName, false);
+            if (roles.isEmpty()) {
+                textChannel.sendMessage("It appears we do not have a role for that server yet, please contact admin to fix").queue();
+                return;
+            }
+
+            //Assign found role to the sender, this could assign multiple roles if there is multiple roles with same name
             textChannel.getGuild().modifyMemberRoles(sender, roles, null).queue((t) -> {
                 //Success
                 textChannel.sendMessage("Role assigned succesfully").queue();
@@ -100,7 +131,9 @@ class RoleCommand extends UserCommand {
             });
             return;
         }
-        textChannel.sendMessage("Could not find a guild named: " + guildName).queue();
+
+        //Did not find the guild, show list of found guilds
+        textChannel.sendMessage("Could not find a guild named: " + guildName + possibleRoleNames).queue();
     }
 
 }
