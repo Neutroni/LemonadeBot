@@ -23,10 +23,10 @@
  */
 package eternal.lemonadebot.customcommands;
 
+import eternal.lemonadebot.messages.CommandMatcher;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import net.dv8tion.jda.api.entities.Message;
 
 /**
  * Class that holds substitutions for custom command templates
@@ -37,7 +37,7 @@ public class SimpleAction {
 
     private final String helpText;
     private final Pattern pattern;
-    private final BiFunction<Message, Matcher, String> function;
+    private final BiFunction<CommandMatcher, Matcher, String> function;
 
     /**
      * Constructor
@@ -46,7 +46,7 @@ public class SimpleAction {
      * @param help help text for this action
      * @param func function this action executes
      */
-    public SimpleAction(String pattern, String help, BiFunction<Message, Matcher, String> func) {
+    public SimpleAction(String pattern, String help, BiFunction<CommandMatcher, Matcher, String> func) {
         this.pattern = Pattern.compile(pattern);
         this.helpText = help;
         this.function = func;
@@ -78,7 +78,7 @@ public class SimpleAction {
      * @param s match to replace
      * @return replacement string
      */
-    public String getValue(Message m, Matcher s) {
+    public String getValue(CommandMatcher m, Matcher s) {
         return this.function.apply(m, s);
     }
 }

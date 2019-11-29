@@ -25,7 +25,6 @@ package eternal.lemonadebot.database;
 
 import eternal.lemonadebot.customcommands.ActionManager;
 import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.messages.CommandManager;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

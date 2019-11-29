@@ -25,7 +25,6 @@ package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
-import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import eternal.lemonadebot.messages.CommandPermission;
 
@@ -108,7 +107,7 @@ public class CustomCommand implements ChatCommand {
 
     @Override
     public void respond(CommandMatcher match) {
-        final String response = this.actionManager.processActions(match.getMessage(), action);
+        final String response = this.actionManager.processActions(match, action);
         match.getMessage().getChannel().sendMessage(response).queue();
     }
 

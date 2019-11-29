@@ -23,6 +23,7 @@
  */
 package eternal.lemonadebot.customcommands;
 
+import eternal.lemonadebot.messages.CommandMatcher;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -43,26 +44,31 @@ public class ActionManager {
     private final String[] COIN_SIDES = new String[]{"heads", "tails"};
 
     private final List<SimpleAction> actions = List.of(
-            new SimpleAction("\\{coin\\}", "{coin} - Flips a coin.", (Message message, Matcher input) -> {
+            new SimpleAction("\\{coin\\}", "{coin} - Flips a coin.", (CommandMatcher message, Matcher input) -> {
                 return COIN_SIDES[rng.nextInt(2)];
             }),
-            new SimpleAction("\\{d6\\}", "{d6} - Rolls a die.", (Message message, Matcher input) -> {
+            new SimpleAction("\\{d6\\}", "{d6} - Rolls a die.", (CommandMatcher message, Matcher input) -> {
                 final int roll = rng.nextInt(6) + 1;
                 return "" + roll;
             }),
-            new SimpleAction("\\{d20\\}", "{d20} - Rolls a d20.", (Message message, Matcher input) -> {
+            new SimpleAction("\\{d20\\}", "{d20} - Rolls a d20.", (CommandMatcher message, Matcher input) -> {
                 final int roll = rng.nextInt(20) + 1;
                 return "" + roll;
             }),
-            new SimpleAction("\\{rng (\\d+),(\\d+)\\}", "{rng x,y} - Generate random number between the two inputs.", (Message t, Matcher u) -> {
+            new SimpleAction("\\{rng (\\d+),(\\d+)\\}", "{rng x,y} - Generate random number between the two inputs.", (CommandMatcher t, Matcher u) -> {
                 final int start = Integer.parseInt(u.group(1));
                 final int end = Integer.parseInt(u.group(2));
                 return "" + (rng.nextInt(end) + start);
             }),
-            new SimpleAction("\\{message\\}", "Use the input as part of the reply", (Message message, Matcher input) -> {
-                return "";
+            new SimpleAction("\\{message\\}", "{message} Use the input as part of the reply", (CommandMatcher message, Matcher input) -> {
+                final String[] messageText = message.getArguments(1);
+                if (messageText.length == 0) {
+                    return "";
+                }
+                return messageText[0];
             }),
-            new SimpleAction("\\{mentions\\}", "{mentions} - Lists the mentioned users", (Message message, Matcher input) -> {
+            new SimpleAction("\\{mentions\\}", "{mentions} - Lists the mentioned users", (CommandMatcher matcher, Matcher input) -> {
+                final Message message = matcher.getMessage();
                 if (!message.isFromType(ChannelType.TEXT)) {
                     return "";
                 }
@@ -89,7 +95,7 @@ public class ActionManager {
      * @param action Action template string
      * @return Response string
      */
-    public String processActions(Message message, String action) {
+    public String processActions(CommandMatcher message, String action) {
         final String[] parts = action.split("\\|");
         String response = parts[rng.nextInt(parts.length)];
 
