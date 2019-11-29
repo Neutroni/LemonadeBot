@@ -23,10 +23,8 @@
  */
 package eternal.lemonadebot.commandtypes;
 
+import eternal.lemonadebot.messages.CommandMatcher;
 import eternal.lemonadebot.messages.CommandPermission;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
  * Interface all commands must implement
@@ -59,9 +57,7 @@ public interface ChatCommand {
     /**
      * Responds to a message
      *
-     * @param sender Member who sent the message
      * @param message Message contents
-     * @param textChannel Channel the message was sent on
      */
-    public void respond(Member sender, Message message, TextChannel textChannel);
+    public void respond(CommandMatcher message);
 }

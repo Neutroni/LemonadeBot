@@ -23,12 +23,15 @@
  */
 package eternal.lemonadebot.messages;
 
+import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.CustomCommandManager;
 import eternal.lemonadebot.database.DatabaseManager;
+import java.sql.SQLException;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -44,11 +47,12 @@ public class CommandManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
+    //Command matching
     private final ConfigManager configManager;
-    private final CommandPattern commandPattern;
+    private volatile Pattern commandPattern;
 
     //Commands
-    private final eternal.lemonadebot.commands.CommandProvider commandProvider;
+    private final CommandProvider commandProvider;
     private final CustomCommandManager customCommands;
 
     /**
@@ -58,21 +62,29 @@ public class CommandManager {
      */
     public CommandManager(DatabaseManager db) {
         this.configManager = db.getConfig();
-        this.commandPattern = new CommandPattern(db);
+
+        //Load command pattern from configmanager
+        final Optional<String> opt = this.configManager.getCommandPrefix();
+
+        if (opt.isPresent()) {
+            final String prefix = opt.get();
+            updatePattern(prefix);
+        } else {
+            updatePattern("!");
+        }
 
         //Load commands
-        this.commandProvider = new eternal.lemonadebot.commands.CommandProvider(this, db);
+        this.commandProvider = new CommandProvider(this, db);
         this.customCommands = db.getCustomCommands();
     }
 
     /**
      * Get the action for command
      *
-     * @param message message to find command for
+     * @param m Matcher to find command for
      * @return CommandAction or Option.empty if command was not found
      */
-    public Optional<ChatCommand> getAction(Message message) {
-        final CommandMatcher m = getCommandMatcher(message);
+    public Optional<ChatCommand> getAction(CommandMatcher m) {
         final Optional<String> name = m.getCommand();
         if (name.isEmpty()) {
             return Optional.empty();
@@ -87,7 +99,7 @@ public class CommandManager {
 
         //Log the message if debug is enabled
         LOGGER.debug(() -> {
-            return "Found command: " + commandName + " in " + message.getContentRaw();
+            return "Found command: " + commandName + " in " + m.getMessage().getContentRaw();
         });
 
         //Check if we find custom command by that name
@@ -101,12 +113,11 @@ public class CommandManager {
     /**
      * Match of command elements
      *
-     * @param message Message to parse
+     * @param msg Message to parse
      * @return Mathcher for the message
      */
-    public CommandMatcher getCommandMatcher(Message message) {
-        final String text = message.getContentRaw();
-        return commandPattern.getCommandMatcher(text);
+    public CommandMatcher getCommandMatcher(Message msg) {
+        return new CommandMatcher(this.commandPattern, msg);
     }
 
     /**
@@ -158,13 +169,30 @@ public class CommandManager {
     }
 
     /**
+     * Updates command pattern
+     *
+     * @param prefix
+     */
+    private void updatePattern(String prefix) {
+        //Start of match, optionally @numericID, prefix, match group 2 is command
+        this.commandPattern = Pattern.compile("^(@\\d+ )?" + Pattern.quote(prefix) + "(\\w+) ?");
+    }
+
+    /**
      * Sets the commands prefix
      *
-     * @param newPrefix prefix to use
+     * @param prefix prefix to use
      * @return was storing prefix in database succesfull
      */
-    public boolean setPrefix(String newPrefix) {
-        return commandPattern.setPrefix(newPrefix);
+    public boolean setPrefix(String prefix) {
+        try {
+            updatePattern(prefix);
+            this.configManager.setCommandPrefix(prefix);
+            return true;
+        } catch (SQLException ex) {
+            LOGGER.error(ex);
+        }
+        return false;
     }
 
 }

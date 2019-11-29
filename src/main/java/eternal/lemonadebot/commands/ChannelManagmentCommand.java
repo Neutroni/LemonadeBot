@@ -32,6 +32,7 @@ import java.sql.SQLException;
 import java.util.List;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -73,11 +74,13 @@ class ChannelManagmentCommand extends OwnerCommand {
     }
 
     @Override
-    public void respond(Member sender, Message message, TextChannel textChannel) {
-        final CommandMatcher matcher = commandParser.getCommandMatcher(message);
+    public void respond(CommandMatcher matcher) {
+        final Message message = matcher.getMessage();
+        final MessageChannel textChannel = message.getChannel();
+        
         final String[] opts = matcher.getArguments(1);
         if (opts.length == 0) {
-            textChannel.sendMessage("Provide operation to perform, check help for possible operations").queue();
+            matcher.getMessage().getChannel().sendMessage("Provide operation to perform, check help for possible operations").queue();
             return;
         }
         final String action = opts[0];
@@ -110,7 +113,7 @@ class ChannelManagmentCommand extends OwnerCommand {
                 break;
             }
             case "remove": {
-                final List<TextChannel> mentions = message.getMentionedChannels();
+                final List<TextChannel> mentions = matcher.getMessage().getMentionedChannels();
                 if (mentions.isEmpty()) {
                     textChannel.sendMessage("Mention channels you want to stop listening on").queue();
                     return;
@@ -139,7 +142,7 @@ class ChannelManagmentCommand extends OwnerCommand {
                 final List<Long> channelIds = channels.getChannels();
                 final StringBuilder sb = new StringBuilder("Channels:\n");
                 for (Long id : channelIds) {
-                    final TextChannel channel = textChannel.getGuild().getTextChannelById(id);
+                    final TextChannel channel = message.getGuild().getTextChannelById(id);
                     if (channel == null) {
                         sb.append("Channel in database which could not be found, removing from listened channels\n");
                         try {

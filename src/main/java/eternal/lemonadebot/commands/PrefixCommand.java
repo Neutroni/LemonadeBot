@@ -26,9 +26,7 @@ package eternal.lemonadebot.commands;
 import eternal.lemonadebot.commandtypes.OwnerCommand;
 import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.MessageChannel;
 
 /**
  *
@@ -57,21 +55,21 @@ class PrefixCommand extends OwnerCommand {
     }
 
     @Override
-    public void respond(Member member, Message message, TextChannel textChannel) {
-        final CommandMatcher m = commandParser.getCommandMatcher(message);
-        final String[] options = m.getArguments(1);
+    public void respond(CommandMatcher matcher) {
+        final MessageChannel messageChannel = matcher.getMessage().getChannel();
+        final String[] options = matcher.getArguments(1);
         //Check if user provide prefix
         if (options.length == 0) {
-            textChannel.sendMessage("Provide a prefix to set commandprefix to.").queue();
+            messageChannel.sendMessage("Provide a prefix to set commandprefix to.").queue();
             return;
         }
         //Update the prefix
         final String newPrefix = options[0];
         final boolean updateSuccess = commandParser.setPrefix(newPrefix);
         if (updateSuccess) {
-            textChannel.sendMessage("Updated prefix succesfully to: " + newPrefix).queue();
+            messageChannel.sendMessage("Updated prefix succesfully to: " + newPrefix).queue();
         } else {
-            textChannel.sendMessage("Storing prefix in DB failed, will still use new prefix until reboot, re-issue command once DB issue is fixed.").queue();
+            messageChannel.sendMessage("Storing prefix in DB failed, will still use new prefix until reboot, re-issue command once DB issue is fixed.").queue();
         }
     }
     

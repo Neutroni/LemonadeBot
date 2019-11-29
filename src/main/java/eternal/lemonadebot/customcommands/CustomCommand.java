@@ -25,10 +25,9 @@ package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
+import eternal.lemonadebot.messages.CommandManager;
+import eternal.lemonadebot.messages.CommandMatcher;
 import eternal.lemonadebot.messages.CommandPermission;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
  * User defined commands that take template as input and when run return the
@@ -49,8 +48,9 @@ public class CustomCommand implements ChatCommand {
     /**
      * Constructor
      *
-     * @param commands CustomCommandManager to get command permissions from
+     * @param commands CommandManager to get command permissions from
      * @param actions SimpleActions to replace action templates with
+     * @param commandParser parser to use for parsing commands
      * @param command command this is activeted by
      * @param action action template
      * @param owner who created this command
@@ -107,9 +107,9 @@ public class CustomCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(Member member, Message message, TextChannel textChannel) {
-        final String response = this.actionManager.processActions(message, action);
-        textChannel.sendMessage(response).queue();
+    public void respond(CommandMatcher match) {
+        final String response = this.actionManager.processActions(match.getMessage(), action);
+        match.getMessage().getChannel().sendMessage(response).queue();
     }
 
     @Override

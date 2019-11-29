@@ -27,6 +27,7 @@ import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import java.util.List;
+import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -66,13 +67,21 @@ class RoleCommand extends UserCommand {
     }
 
     @Override
-    public void respond(Member sender, Message message, TextChannel textChannel) {
+    public void respond(CommandMatcher matcher) {
+        final Optional<TextChannel> optChannel = matcher.getTextChannel();
+        final Optional<Member> optMember = matcher.getMember();
+        if (optChannel.isEmpty() || optMember.isEmpty()) {
+            matcher.getMessageChannel().sendMessage("Commands are specific to discord servers and must be edited on one").queue();
+            return;
+        }
+        final TextChannel textChannel = optChannel.get();
+        final Member sender = optMember.get();
+        
         final List<Role> currentRoles = sender.getRoles();
         if (currentRoles.size() > 0) {
             textChannel.sendMessage("You cannot assign role to yourself using this command if you alredy have a role").queue();
             return;
         }
-        final CommandMatcher matcher = commandParser.getCommandMatcher(message);
         final String[] parameters = matcher.getArguments(1);
         if (parameters.length == 0) {
             textChannel.sendMessage("Please provide guild name you want the role for").queue();

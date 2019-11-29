@@ -27,6 +27,7 @@ import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ChannelManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.messages.CommandManager;
+import eternal.lemonadebot.messages.CommandMatcher;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +42,7 @@ import net.dv8tion.jda.api.events.ShutdownEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,23 +77,27 @@ public class MessageListener extends ListenerAdapter {
      * @param event message info
      */
     @Override
-    public void onMessageReceived(MessageReceivedEvent event) {
+    public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
+        //Don't reply to bots
         if (event.getAuthor().isBot()) {
             return;
         }
-        //Only listen on textchannels for now
-        if (!event.isFromType(ChannelType.TEXT)) {
+        
+        //Don't reply to webhook messages
+        if(event.isWebhookMessage()){
             return;
         }
+        
         //Check if we are listening on this channel
-        final TextChannel textChannel = event.getTextChannel();
+        final TextChannel textChannel = event.getChannel();
         if (!channelManager.hasChannel(textChannel)) {
             return;
         }
 
         //Check if message is a command
         final Message message = event.getMessage();
-        final Optional<ChatCommand> action = commandManager.getAction(message);
+        final CommandMatcher cmdmatch = commandManager.getCommandMatcher(message);
+        final Optional<ChatCommand> action = commandManager.getAction(cmdmatch);
         if (action.isEmpty()) {
             return;
         }
@@ -100,7 +106,7 @@ public class MessageListener extends ListenerAdapter {
         final ChatCommand ca = action.get();
         final Member member = event.getMember();
         if (commandManager.hasPermission(member, ca)) {
-            ca.respond(member, message, textChannel);
+            ca.respond(cmdmatch);
         }
     }
 

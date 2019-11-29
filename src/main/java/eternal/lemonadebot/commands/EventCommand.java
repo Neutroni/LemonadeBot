@@ -82,8 +82,16 @@ class EventCommand extends UserCommand {
     }
 
     @Override
-    public void respond(Member sender, Message message, TextChannel textChannel) {
-        final CommandMatcher matcher = commandParser.getCommandMatcher(message);
+    public void respond(CommandMatcher matcher) {
+        final Optional<TextChannel> optChannel = matcher.getTextChannel();
+        final Optional<Member> optMember = matcher.getMember();
+        if (optChannel.isEmpty() || optMember.isEmpty()) {
+            matcher.getMessageChannel().sendMessage("Commands are specific to discord servers and must be edited on one").queue();
+            return;
+        }
+        final TextChannel textChannel = optChannel.get();
+        final Member sender = optMember.get();
+        
         final String[] opts = matcher.getArguments(2);
         if (opts.length == 0) {
             textChannel.sendMessage("Provide operation to perform, check help for possible operations").queue();

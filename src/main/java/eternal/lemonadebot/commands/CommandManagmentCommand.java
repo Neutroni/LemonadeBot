@@ -35,7 +35,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -90,9 +89,16 @@ class CommandManagmentCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(Member sender, Message message, TextChannel textChannel) {
-        final CommandMatcher m = commandParser.getCommandMatcher(message);
-        final String[] opt = m.getArguments(2);
+    public void respond(CommandMatcher matcher) {
+        final Optional<TextChannel> optChannel = matcher.getTextChannel();
+        final Optional<Member> optMember = matcher.getMember();
+        if (optChannel.isEmpty() || optMember.isEmpty()) {
+            matcher.getMessageChannel().sendMessage("Commands are specific to discord servers and must be edited on one").queue();
+            return;
+        }
+        final TextChannel textChannel = optChannel.get();
+        final Member sender = optMember.get();
+        final String[] opt = matcher.getArguments(2);
         if (opt.length == 0) {
             textChannel.sendMessage("Provide operation to perform," + " check help for possible operations").queue();
             return;
@@ -126,7 +132,7 @@ class CommandManagmentCommand implements ChatCommand {
                     return;
                 }
                 final String newValue = opt[2];
-                final CustomCommand newAction = this.commandManager.build(name, newValue, message.getAuthor().getIdLong());
+                final CustomCommand newAction = this.commandManager.build(name, newValue, matcher.getMessage().getAuthor().getIdLong());
                 {
                     try {
                         if (this.commandManager.addCommand(newAction)) {
@@ -136,7 +142,7 @@ class CommandManagmentCommand implements ChatCommand {
                         }
                     } catch (SQLException ex) {
                         textChannel.sendMessage("Adding command to database failed, added to temporary memory that will be lost on reboot").queue();
-                        
+
                         LOGGER.error("Failure to add custom command");
                         LOGGER.warn(ex.getMessage());
                         LOGGER.trace("Stack trace", ex);
@@ -173,7 +179,7 @@ class CommandManagmentCommand implements ChatCommand {
                         }
                     } catch (SQLException ex) {
                         textChannel.sendMessage("Removing command from database failed, removed from temporary memory command will be back after reboot").queue();
-                        
+
                         LOGGER.error("Failure to remove custom command");
                         LOGGER.warn(ex.getMessage());
                         LOGGER.trace("Stack trace", ex);

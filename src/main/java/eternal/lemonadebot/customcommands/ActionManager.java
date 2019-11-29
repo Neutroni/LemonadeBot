@@ -59,6 +59,9 @@ public class ActionManager {
                 final int end = Integer.parseInt(u.group(2));
                 return "" + (rng.nextInt(end) + start);
             }),
+            new SimpleAction("\\{message\\}", "Use the input as part of the reply", (Message message, Matcher input) -> {
+                return "";
+            }),
             new SimpleAction("\\{mentions\\}", "{mentions} - Lists the mentioned users", (Message message, Matcher input) -> {
                 if (!message.isFromType(ChannelType.TEXT)) {
                     return "";

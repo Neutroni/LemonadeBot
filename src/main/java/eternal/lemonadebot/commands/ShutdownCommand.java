@@ -24,8 +24,10 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.OwnerCommand;
+import eternal.lemonadebot.messages.CommandMatcher;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
@@ -46,8 +48,10 @@ class ShutdownCommand extends OwnerCommand {
     }
 
     @Override
-    public void respond(Member sender, Message message, TextChannel textChannel) {
-        textChannel.sendMessage("Shutting down").queue();
+    public void respond(CommandMatcher matcher) {
+        final Message message = matcher.getMessage();
+        final MessageChannel messageChannel = message.getChannel();
+        messageChannel.sendMessage("Shutting down").queue();
         message.getJDA().shutdown();
     }
     

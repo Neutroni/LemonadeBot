@@ -32,7 +32,6 @@ import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
@@ -63,9 +62,17 @@ class HelpCommand extends UserCommand {
     }
 
     @Override
-    public void respond(Member sender, Message message, TextChannel textChannel) {
-        final CommandMatcher m = commandParser.getCommandMatcher(message);
-        final String[] options = m.getArguments(1);
+    public void respond(CommandMatcher matcher) {
+        final Optional<TextChannel> optChannel = matcher.getTextChannel();
+        final Optional<Member> optMember = matcher.getMember();
+        if (optChannel.isEmpty() || optMember.isEmpty()) {
+            matcher.getMessageChannel().sendMessage("Commands are specific to discord servers and must be edited on one").queue();
+            return;
+        }
+        final TextChannel textChannel = optChannel.get();
+        final Member sender = optMember.get();
+        
+        final String[] options = matcher.getArguments(1);
         if (options.length == 0) {
             listCommands(sender, textChannel);
             return;
