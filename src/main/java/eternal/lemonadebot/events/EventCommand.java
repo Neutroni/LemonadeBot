@@ -21,11 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.commands;
+package eternal.lemonadebot.events;
 
 import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.database.Event;
 import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
@@ -42,12 +41,12 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-class EventCommand extends UserCommand {
+public class EventCommand extends UserCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final CommandManager commandParser;
-    private final EventManager events;
+    private final EventManager eventManager;
 
     /**
      * Constructor
@@ -55,9 +54,9 @@ class EventCommand extends UserCommand {
      * @param parser parser to use for parsing commands
      * @param db database to store events in
      */
-    EventCommand(CommandManager parser, DatabaseManager db) {
+    public EventCommand(CommandManager parser, DatabaseManager db) {
         this.commandParser = parser;
-        this.events = db.getEvents();
+        this.eventManager = db.getEvents();
     }
 
     @Override
@@ -90,10 +89,10 @@ class EventCommand extends UserCommand {
         }
         final TextChannel textChannel = optChannel.get();
         final Member sender = optMember.get();
-        
+
         final String[] opts = matcher.getArguments(2);
         if (opts.length == 0) {
-            textChannel.sendMessage("Provide operation to perform, check help for possible operations.").queue();
+            textChannel.sendMessage("Provide action to perform, check help for possible actions.").queue();
             return;
         }
 
@@ -113,11 +112,11 @@ class EventCommand extends UserCommand {
                         description = "No description";
                     }
                     final Event newEvent = new Event(eventName, description, sender.getIdLong());
-                    if (!events.addEvent(newEvent)) {
+                    if (!eventManager.addEvent(newEvent)) {
                         textChannel.sendMessage("Event with that name alredy exists.").queue();
                         return;
                     }
-                    if(!events.joinEvent(newEvent, sender)){
+                    if (!eventManager.joinEvent(newEvent, sender)) {
                         textChannel.sendMessage("Event created but failed to join the event.").queue();
                         return;
                     }
@@ -138,13 +137,13 @@ class EventCommand extends UserCommand {
                 }
                 final String eventName = opts[1];
 
-                final Optional<Event> oldEvent = events.getEvent(eventName);
+                final Optional<Event> oldEvent = eventManager.getEvent(eventName);
                 if (oldEvent.isEmpty()) {
                     textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                     return;
                 }
                 try {
-                    if (events.joinEvent(oldEvent.get(), sender)) {
+                    if (eventManager.joinEvent(oldEvent.get(), sender)) {
                         textChannel.sendMessage("Succesfully joined event").queue();
                         return;
                     }
@@ -165,13 +164,13 @@ class EventCommand extends UserCommand {
                 }
                 final String eventName = opts[1];
 
-                final Optional<Event> oldEvent = events.getEvent(eventName);
+                final Optional<Event> oldEvent = eventManager.getEvent(eventName);
                 if (oldEvent.isEmpty()) {
                     textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                     return;
                 }
                 try {
-                    if (events.leaveEvent(oldEvent.get(), sender.getIdLong())) {
+                    if (eventManager.leaveEvent(oldEvent.get(), sender.getIdLong())) {
                         textChannel.sendMessage("Succesfully left event").queue();
                         return;
                     }
@@ -192,7 +191,7 @@ class EventCommand extends UserCommand {
                 }
                 final String eventName = opts[1];
 
-                final Optional<Event> oldEvent = events.getEvent(eventName);
+                final Optional<Event> oldEvent = eventManager.getEvent(eventName);
                 if (oldEvent.isEmpty()) {
                     textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                     return;
@@ -211,16 +210,16 @@ class EventCommand extends UserCommand {
                     return;
                 }
                 try {
-                    if (events.removeEvent(oldEvent.get())) {
+                    if (eventManager.removeEvent(oldEvent.get())) {
                         textChannel.sendMessage("Event succesfully removed").queue();
-                    } else {
-                        textChannel.sendMessage("Could not find event with name: " + eventName).queue();
+                        return;
                     }
+                    textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                 } catch (SQLException ex) {
                     textChannel.sendMessage("Database error removing event, "
                             + "remove again once issue is fixed to make remove persistent").queue();
 
-                    LOGGER.error("Failure to create event");
+                    LOGGER.error("Failure to remove event");
                     LOGGER.warn(ex.getMessage());
                     LOGGER.trace("Stack trace", ex);
                 }
@@ -233,7 +232,7 @@ class EventCommand extends UserCommand {
                 }
                 final String eventName = opts[1];
 
-                final Optional<Event> opt = this.events.getEvent(eventName);
+                final Optional<Event> opt = this.eventManager.getEvent(eventName);
                 if (opt.isEmpty()) {
                     textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                     return;
@@ -246,7 +245,7 @@ class EventCommand extends UserCommand {
                     if (m == null) {
                         sb.append("Found user in event members who could not be found, removing from event\n");
                         try {
-                            events.leaveEvent(event, id);
+                            eventManager.leaveEvent(event, id);
                             sb.append("Succesfully removed missing member from event\n");
                         } catch (SQLException ex) {
                             sb.append("Database error removing member from event\n");
@@ -259,7 +258,7 @@ class EventCommand extends UserCommand {
                     }
                     sb.append(' ').append(m.getEffectiveName()).append('\n');
                 }
-                if(memberIds.isEmpty()){
+                if (memberIds.isEmpty()) {
                     sb.append("No one has joined the event yet.");
                 }
                 textChannel.sendMessage(sb.toString()).queue();
@@ -272,7 +271,7 @@ class EventCommand extends UserCommand {
                 }
                 final String eventName = opts[1];
 
-                final Optional<Event> opt = this.events.getEvent(eventName);
+                final Optional<Event> opt = this.eventManager.getEvent(eventName);
                 if (opt.isEmpty()) {
                     textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                     return;
@@ -283,7 +282,7 @@ class EventCommand extends UserCommand {
                     return;
                 }
                 try {
-                    events.clearEvent(event);
+                    eventManager.clearEvent(event);
                     textChannel.sendMessage("Succesfully cleared the event").queue();
                 } catch (SQLException ex) {
                     textChannel.sendMessage("Database error clearing event, " + "clear again once the issue is ").queue();
@@ -295,7 +294,7 @@ class EventCommand extends UserCommand {
                 break;
             }
             case "list": {
-                final List<Event> ev = this.events.getEvents();
+                final List<Event> ev = this.eventManager.getEvents();
                 final StringBuilder sb = new StringBuilder("Events:\n");
                 for (Event e : ev) {
                     sb.append(' ').append(e.getName()).append(" - ").append(e.getDescription()).append('\n');

@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.database;
+package eternal.lemonadebot.events;
 
 import java.util.HashSet;
 import java.util.List;
@@ -57,7 +57,7 @@ public class Event {
      * @param member member id who wants to join
      * @return true if succesfully joined, false otherwise
      */
-    boolean join(long member) {
+    public boolean join(long member) {
         synchronized (this) {
             return this.members.add(member);
         }
@@ -69,7 +69,7 @@ public class Event {
      * @param member member who wants to leave
      * @return true if left event succesfully, false otherwise
      */
-    boolean leave(long member) {
+    public boolean leave(long member) {
         synchronized (this) {
             return this.members.remove(member);
         }
@@ -78,7 +78,7 @@ public class Event {
     /**
      * Clears the list of joined people
      */
-    void clear() {
+    public void clear() {
         synchronized(this){
             this.members.clear();
             this.members.add(this.ownerID);

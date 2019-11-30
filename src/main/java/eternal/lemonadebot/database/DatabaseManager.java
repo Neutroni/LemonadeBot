@@ -41,6 +41,7 @@ public class DatabaseManager implements AutoCloseable {
     private final ChannelManager channels;
     private final CustomCommandManager commands;
     private final EventManager events;
+    private final RemainderManager remainders;
 
     /**
      * Constructor
@@ -54,6 +55,7 @@ public class DatabaseManager implements AutoCloseable {
         this.channels = new ChannelManager(conn);
         this.commands = new CustomCommandManager(conn, config);
         this.events = new EventManager(conn);
+        this.remainders = new RemainderManager(conn, this.events);
     }
 
     @Override
@@ -98,6 +100,15 @@ public class DatabaseManager implements AutoCloseable {
     }
 
     /**
+     * Get the remainder manager
+     *
+     * @return RemainderManager
+     */
+    public RemainderManager getRemainders() {
+        return this.remainders;
+    }
+
+    /**
      * Creates the database for the bot
      *
      * @param dbLocation location for database
@@ -110,7 +121,17 @@ public class DatabaseManager implements AutoCloseable {
         final String CHANNELS = "CREATE TABLE Channels(id INTEGER PRIMARY KEY NOT NULL);";
         final String COMMANDS = "CREATE TABLE Commands(name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL, owner INTEGER NOT NULL);";
         final String EVENTS = "CREATE TABLE Events(name TEXT PRIMARY KEY NOT NULL, description TEXT NOT NULL, owner INTEGER NOT NULL)";
-        final String EVENT_MEMBERS = "CREATE TABLE EventMembers(event REFERENCES Events(name) ON DELETE CASCADE, member INTEGER NOT NULL, PRIMARY KEY (event,member));";
+        final String EVENT_MEMBERS = "CREATE TABLE EventMembers("
+                + "event REFERENCES Events(name) ON DELETE CASCADE,"
+                + "member INTEGER NOT NULL,"
+                + "PRIMARY KEY (event,member));";
+        final String REMAINDERS = "CREATE TABLE Remainders("
+                + "name TEXT PRIMARY KEY NOT NULL,"
+                + "event REFERENCES Events(name) ON DELETE CASCADE,"
+                + "day, TEXT NOT NULL,"
+                + "time TEXT NOT NULL,"
+                + "mention TEXT NOT NULL,"
+                + "channel INTEGER NOT NULL)";
         final String INSERT = "INSERT INTO Options(name,value) VALUES(?,?);";
         try (Statement st = connection.createStatement()) {
             st.addBatch(CONFIG);
@@ -118,6 +139,7 @@ public class DatabaseManager implements AutoCloseable {
             st.addBatch(COMMANDS);
             st.addBatch(EVENTS);
             st.addBatch(EVENT_MEMBERS);
+            st.addBatch(REMAINDERS);
             st.executeBatch();
         }
         try (PreparedStatement ps = connection.prepareStatement(INSERT)) {

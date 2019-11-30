@@ -94,6 +94,10 @@ public class MusicCommand implements ChatCommand {
             }
             case "pause": {
                 pauseTrack(textChannel);
+                break;
+            }
+            default: {
+                textChannel.sendMessage("Unkown operation: " + arguments[0]).queue();
             }
         }
     }
@@ -162,7 +166,6 @@ public class MusicCommand implements ChatCommand {
 
     private void play(Guild guild, GuildMusicManager musicManager, AudioTrack track) {
         connectToFirstVoiceChannel(guild.getAudioManager());
-
         musicManager.scheduler.queue(track);
     }
 
