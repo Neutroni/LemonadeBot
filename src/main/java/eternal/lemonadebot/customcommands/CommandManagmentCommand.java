@@ -21,10 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.commands;
+package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.CustomCommandManager;
 import eternal.lemonadebot.database.DatabaseManager;
@@ -43,7 +42,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-class CommandManagmentCommand implements ChatCommand {
+public class CommandManagmentCommand implements ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -57,7 +56,7 @@ class CommandManagmentCommand implements ChatCommand {
      * @param parser parser to parse arguments with
      * @param db database to store custom commands in
      */
-    CommandManagmentCommand(CommandManager parser, DatabaseManager db) {
+    public CommandManagmentCommand(CommandManager parser, DatabaseManager db) {
         this.commandParser = parser;
         this.commandManager = db.getCustomCommands();
         this.configManager = db.getConfig();

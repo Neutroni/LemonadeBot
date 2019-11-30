@@ -24,8 +24,10 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
+import eternal.lemonadebot.customcommands.CommandManagmentCommand;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.messages.CommandManager;
+import eternal.lemonadebot.music.MusicCommand;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,7 +53,8 @@ public class CommandProvider {
                 new CommandManagmentCommand(parser, db),
                 new PrefixCommand(parser),
                 new RoleCommand(parser),
-                new ShutdownCommand()
+                new ShutdownCommand(),
+                new MusicCommand(parser)
         );
     }
 

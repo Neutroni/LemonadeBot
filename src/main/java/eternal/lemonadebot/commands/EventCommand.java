@@ -85,7 +85,7 @@ class EventCommand extends UserCommand {
         final Optional<TextChannel> optChannel = matcher.getTextChannel();
         final Optional<Member> optMember = matcher.getMember();
         if (optChannel.isEmpty() || optMember.isEmpty()) {
-            matcher.getMessageChannel().sendMessage("Commands are specific to discord servers and must be edited on one").queue();
+            matcher.getMessageChannel().sendMessage("Commands are specific to discord servers and must be edited on one.").queue();
             return;
         }
         final TextChannel textChannel = optChannel.get();
@@ -93,14 +93,14 @@ class EventCommand extends UserCommand {
         
         final String[] opts = matcher.getArguments(2);
         if (opts.length == 0) {
-            textChannel.sendMessage("Provide operation to perform, check help for possible operations").queue();
+            textChannel.sendMessage("Provide operation to perform, check help for possible operations.").queue();
             return;
         }
 
         switch (opts[0]) {
             case "create": {
                 if (opts.length == 1) {
-                    textChannel.sendMessage("Provide name of the event to create").queue();
+                    textChannel.sendMessage("Provide name of the event to create.").queue();
                     return;
                 }
                 final String eventName = opts[1];
@@ -114,11 +114,11 @@ class EventCommand extends UserCommand {
                     }
                     final Event newEvent = new Event(eventName, description, sender.getIdLong());
                     if (!events.addEvent(newEvent)) {
-                        textChannel.sendMessage("Event with that name alredy exists").queue();
+                        textChannel.sendMessage("Event with that name alredy exists.").queue();
                         return;
                     }
                     if(!events.joinEvent(newEvent, sender)){
-                        textChannel.sendMessage("Event created but failed to join the event").queue();
+                        textChannel.sendMessage("Event created but failed to join the event.").queue();
                         return;
                     }
                     textChannel.sendMessage("Event created succesfully").queue();
