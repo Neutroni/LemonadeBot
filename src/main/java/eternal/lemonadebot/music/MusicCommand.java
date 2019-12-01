@@ -166,6 +166,7 @@ public class MusicCommand implements ChatCommand {
     private void pauseTrack(TextChannel textChannel) {
         GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
         musicManager.player.setPaused(true);
+        textChannel.sendMessage("Playback paused").queue();
     }
 
     private void play(Guild guild, GuildMusicManager musicManager, AudioTrack track) {
@@ -190,16 +191,19 @@ public class MusicCommand implements ChatCommand {
     private void unPauseTrack(TextChannel textChannel) {
         GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
         musicManager.player.setPaused(false);
+        textChannel.sendMessage("Playback resumed").queue();
     }
 
     /**
      * Stop audio playback and clear queue
+     *
      * @param textChannel channel for request
      */
     private void stopTrack(TextChannel textChannel) {
         GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
         musicManager.player.stopTrack();
         musicManager.scheduler.clearPlaylist();
+        textChannel.sendMessage("Playback stopped and playlist cleared").queue();
     }
 
 }

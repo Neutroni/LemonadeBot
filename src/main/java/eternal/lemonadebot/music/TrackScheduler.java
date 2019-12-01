@@ -75,9 +75,10 @@ class TrackScheduler extends AudioEventAdapter {
     }
 
     /**
-     * Clear te playlist
+     * Clear te playlist and disconnect from voice
      */
     void clearPlaylist() {
         this.queue.clear();
+        this.manager.closeAudioConnection();
     }
 }
