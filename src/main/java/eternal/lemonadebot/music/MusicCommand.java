@@ -143,7 +143,7 @@ public class MusicCommand implements ChatCommand {
         GuildMusicManager musicManager = musicManagers.get(guildId);
 
         if (musicManager == null) {
-            musicManager = new GuildMusicManager(playerManager);
+            musicManager = new GuildMusicManager(playerManager, guild.getAudioManager());
             musicManagers.put(guildId, musicManager);
         }
 

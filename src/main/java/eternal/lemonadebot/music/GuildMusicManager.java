@@ -5,6 +5,7 @@ package eternal.lemonadebot.music;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
+import net.dv8tion.jda.api.managers.AudioManager;
 
 /**
  *
@@ -25,10 +26,11 @@ class GuildMusicManager {
      * Creates a player and a track scheduler.
      *
      * @param manager Audio player manager to use for creating the player.
+     * @param audioManager Audiomanager to close at the end of play
      */
-    GuildMusicManager(AudioPlayerManager manager) {
+    GuildMusicManager(AudioPlayerManager manager, AudioManager audioManager) {
         player = manager.createPlayer();
-        scheduler = new TrackScheduler(player);
+        scheduler = new TrackScheduler(player,audioManager);
         player.addListener(scheduler);
     }
 

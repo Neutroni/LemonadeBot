@@ -9,6 +9,7 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import net.dv8tion.jda.api.managers.AudioManager;
 
 /**
  *
@@ -17,13 +18,16 @@ import java.util.concurrent.LinkedBlockingQueue;
 class TrackScheduler extends AudioEventAdapter {
 
     private final AudioPlayer player;
+    private final AudioManager manager;
     private final BlockingQueue<AudioTrack> queue;
 
     /**
      * @param player The audio player this scheduler uses
+     * @param manager Manager to stop at the end of playlist
      */
-    TrackScheduler(AudioPlayer player) {
+    TrackScheduler(AudioPlayer player, AudioManager manager) {
         this.player = player;
+        this.manager = manager;
         this.queue = new LinkedBlockingQueue<>();
     }
 
@@ -52,16 +56,19 @@ class TrackScheduler extends AudioEventAdapter {
     }
 
     /**
+     * Called when track ends
      *
-     * @param player
-     * @param track
-     * @param endReason
+     * @param player player
+     * @param track track that ended
+     * @param endReason why end
      */
     @Override
     public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason) {
         // Only start the next track if the end reason is suitable for it (FINISHED or LOAD_FAILED)
         if (endReason.mayStartNext) {
             nextTrack();
+        } else {
+            this.manager.closeAudioConnection();
         }
     }
 }
