@@ -96,6 +96,10 @@ public class MusicCommand implements ChatCommand {
                 pauseTrack(textChannel);
                 break;
             }
+            case "stop": {
+                stopTrack(textChannel);
+                break;
+            }
             default: {
                 textChannel.sendMessage("Unkown operation: " + arguments[0]).queue();
             }
@@ -178,9 +182,24 @@ public class MusicCommand implements ChatCommand {
         }
     }
 
+    /**
+     * Resume audio playback
+     *
+     * @param textChannel channel for the request
+     */
     private void unPauseTrack(TextChannel textChannel) {
         GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
         musicManager.player.setPaused(false);
+    }
+
+    /**
+     * Stop audio playback and clear queue
+     * @param textChannel channel for request
+     */
+    private void stopTrack(TextChannel textChannel) {
+        GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
+        musicManager.player.stopTrack();
+        musicManager.scheduler.clearPlaylist();
     }
 
 }
