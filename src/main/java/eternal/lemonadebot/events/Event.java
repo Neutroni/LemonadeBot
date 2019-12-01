@@ -79,7 +79,7 @@ public class Event {
      * Clears the list of joined people
      */
     public void clear() {
-        synchronized(this){
+        synchronized (this) {
             this.members.clear();
             this.members.add(this.ownerID);
         }

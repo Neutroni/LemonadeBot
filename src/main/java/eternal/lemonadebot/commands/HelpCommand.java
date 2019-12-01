@@ -71,7 +71,7 @@ class HelpCommand extends UserCommand {
         }
         final TextChannel textChannel = optChannel.get();
         final Member sender = optMember.get();
-        
+
         final String[] options = matcher.getArguments(1);
         if (options.length == 0) {
             listCommands(sender, textChannel);

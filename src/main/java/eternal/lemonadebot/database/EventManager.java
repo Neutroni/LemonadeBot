@@ -76,7 +76,7 @@ public class EventManager {
                     return ps.executeUpdate() > 0;
                 }
             }
-            
+
             return added;
         }
     }
@@ -158,8 +158,8 @@ public class EventManager {
             }
         }
     }
-    
-    private void loadMembers(Event event) throws SQLException{
+
+    private void loadMembers(Event event) throws SQLException {
         final String query = "SELECT member FROM EventMembers WHERE event = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, event.getName());

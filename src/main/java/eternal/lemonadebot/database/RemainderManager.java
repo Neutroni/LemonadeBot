@@ -95,7 +95,7 @@ public class RemainderManager {
                 }
             }
             //If timer was just added att to 
-            if(added){
+            if (added) {
                 this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
             }
             return added;
@@ -138,7 +138,7 @@ public class RemainderManager {
                 final String remainderName = rs.getString("name");
                 final String eventName = rs.getString("event");
                 final Optional<Event> optEvent = this.eventManager.getEvent(eventName);
-                if(optEvent.isEmpty()){
+                if (optEvent.isEmpty()) {
                     LOGGER.error("Malformed remainder with missing event" + eventName);
                     continue;
                 }

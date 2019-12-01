@@ -33,7 +33,7 @@ import net.dv8tion.jda.api.entities.MessageChannel;
  * @author Neutroni
  */
 class ShutdownCommand extends OwnerCommand {
-    
+
     @Override
     public String getCommand() {
         return "shutdown";
@@ -52,5 +52,5 @@ class ShutdownCommand extends OwnerCommand {
         messageChannel.sendMessage("Shutting down").queue();
         message.getJDA().shutdown();
     }
-    
+
 }

@@ -80,12 +80,12 @@ public class MessageListener extends ListenerAdapter {
         if (event.getAuthor().isBot()) {
             return;
         }
-        
+
         //Don't reply to webhook messages
-        if(event.isWebhookMessage()){
+        if (event.isWebhookMessage()) {
             return;
         }
-        
+
         //Check if we are listening on this channel
         final TextChannel textChannel = event.getChannel();
         if (!channelManager.hasChannel(textChannel)) {

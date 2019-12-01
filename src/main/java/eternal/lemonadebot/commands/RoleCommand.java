@@ -75,7 +75,7 @@ class RoleCommand extends UserCommand {
         }
         final TextChannel textChannel = optChannel.get();
         final Member sender = optMember.get();
-        
+
         final List<Role> currentRoles = sender.getRoles();
         if (currentRoles.size() > 0) {
             textChannel.sendMessage("You cannot assign role to yourself using this command if you alredy have a role").queue();

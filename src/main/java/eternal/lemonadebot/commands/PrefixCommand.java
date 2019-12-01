@@ -33,10 +33,12 @@ import net.dv8tion.jda.api.entities.MessageChannel;
  * @author Neutroni
  */
 class PrefixCommand extends OwnerCommand {
+
     private final CommandManager commandParser;
 
     /**
      * Constructor
+     *
      * @param parser parser to parse commands with
      */
     PrefixCommand(CommandManager parser) {
@@ -72,5 +74,5 @@ class PrefixCommand extends OwnerCommand {
             messageChannel.sendMessage("Storing prefix in DB failed, will still use new prefix until reboot, re-issue command once DB issue is fixed.").queue();
         }
     }
-    
+
 }

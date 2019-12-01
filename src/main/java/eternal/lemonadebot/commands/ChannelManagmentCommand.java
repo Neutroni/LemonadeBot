@@ -76,7 +76,7 @@ class ChannelManagmentCommand extends OwnerCommand {
     public void respond(CommandMatcher matcher) {
         final Message message = matcher.getMessage();
         final MessageChannel textChannel = message.getChannel();
-        
+
         final String[] opts = matcher.getArguments(1);
         if (opts.length == 0) {
             matcher.getMessage().getChannel().sendMessage("Provide operation to perform, check help for possible operations").queue();
