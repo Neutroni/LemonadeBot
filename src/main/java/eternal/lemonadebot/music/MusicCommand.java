@@ -53,7 +53,7 @@ public class MusicCommand implements ChatCommand {
     @Override
     public String getHelp() {
         return "Syntax: music <action> [url]\n"
-                + "<action> can be either play, skip or pause\n"
+                + "<action> can be either play, skip, stop or pause\n"
                 + "[url] is the url of the music to play";
     }
 
