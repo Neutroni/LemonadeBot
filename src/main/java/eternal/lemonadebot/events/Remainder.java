@@ -29,8 +29,11 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Date;
+import java.util.List;
 import java.util.TimerTask;
 import net.dv8tion.jda.api.MessageBuilder;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
@@ -70,8 +73,28 @@ public class Remainder extends TimerTask {
      */
     @Override
     public void run() {
-        MessageBuilder mb = new MessageBuilder();
-        mb.append("");
+        MessageBuilder mb = new MessageBuilder(this.event.getDescription());
+        mb.append(" time");
+        switch (this.mentions) {
+            case HERE: {
+                final List<Role> roles = channel.getGuild().getRolesByName("here", true);
+                for (Role r : roles) {
+                    mb.append(' ');
+                    mb.append(r);
+                }
+                break;
+            }
+            case EVENT: {
+                for (long id : this.event.getMembers()) {
+                    final Member m = this.channel.getGuild().getMemberById(id);
+                    if (m != null) {
+                        mb.append(' ');
+                        mb.append(m);
+                    }
+                }
+                break;
+            }
+        }
 
         mb.sendTo(channel).queue();
     }
