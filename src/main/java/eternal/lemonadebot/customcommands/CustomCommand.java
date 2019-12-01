@@ -49,7 +49,6 @@ public class CustomCommand implements ChatCommand {
      *
      * @param commands CommandManager to get command permissions from
      * @param actions SimpleActions to replace action templates with
-     * @param commandParser parser to use for parsing commands
      * @param command command this is activeted by
      * @param action action template
      * @param owner who created this command

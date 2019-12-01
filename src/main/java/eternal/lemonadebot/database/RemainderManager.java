@@ -127,9 +127,10 @@ public class RemainderManager {
     }
 
     /**
+     * Load remainders from database
      *
-     * @param jda
-     * @throws SQLException
+     * @param jda JDA instance to use for initializing remainder timers
+     * @throws SQLException If database connection failed
      */
     public void loadRemainders(JDA jda) throws SQLException {
         final String query = "SELECT name,event,day,time,mention,channel FROM Remainders;";

@@ -56,7 +56,7 @@ public class RemainderCommand implements ChatCommand {
      *
      * @param db database to store remainders in
      */
-    RemainderCommand(DatabaseManager db) {
+    public RemainderCommand(DatabaseManager db) {
         this.remainderManager = db.getRemainders();
         this.eventManager = db.getEvents();
     }
