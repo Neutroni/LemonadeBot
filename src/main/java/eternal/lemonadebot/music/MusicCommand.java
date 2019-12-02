@@ -112,22 +112,22 @@ public class MusicCommand implements ChatCommand {
         playerManager.loadItemOrdered(musicManager, trackUrl, new AudioLoadResultHandler() {
             @Override
             public void trackLoaded(AudioTrack track) {
-                channel.sendMessage("Adding to queue " + track.getInfo().title).queue();
-
                 play(channel.getGuild(), musicManager, track);
+                channel.sendMessage("Adding to queue " + track.getInfo().title).queue();
             }
 
             @Override
             public void playlistLoaded(AudioPlaylist playlist) {
-                AudioTrack firstTrack = playlist.getSelectedTrack();
-
-                if (firstTrack == null) {
-                    firstTrack = playlist.getTracks().get(0);
+                //Playlist without track selected
+                if (playlist.getSelectedTrack() == null) {
+                    for (AudioTrack tr : playlist.getTracks()) {
+                        play(channel.getGuild(), musicManager, tr);
+                    }
+                    channel.sendMessage("Added playlist " + playlist.getName()).queue();
+                    return;
                 }
-
-                channel.sendMessage("Adding to queue " + firstTrack.getInfo().title + " (first track of playlist " + playlist.getName() + ")").queue();
-
-                play(channel.getGuild(), musicManager, firstTrack);
+                //Single track from playlist
+                trackLoaded(playlist.getSelectedTrack());
             }
 
             @Override
