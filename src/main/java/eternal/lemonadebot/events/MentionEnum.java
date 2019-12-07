@@ -72,7 +72,7 @@ public enum MentionEnum {
      * @param friendlyName Name to search for
      * @return Enum that matches the friendly name, ERROR if not found
      */
-    public MentionEnum getByName(String friendlyName) {
+    public static MentionEnum getByName(String friendlyName) {
         for (MentionEnum e : MentionEnum.values()) {
             if (e.getFriendlyName().equals(friendlyName)) {
                 return e;

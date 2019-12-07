@@ -120,5 +120,19 @@ public class Event {
     public long getOwner() {
         return this.ownerID;
     }
+    
+    @Override
+    public int hashCode(){
+        return this.name.hashCode();
+    }
+    
+    @Override
+    public boolean equals(Object other){
+        if(other instanceof Event){
+            Event otherEvent = (Event) other;
+            return this.name.equals(otherEvent.getName());
+        }
+        return false;
+    }
 
 }

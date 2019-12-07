@@ -35,6 +35,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
+import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -68,18 +69,17 @@ public class RemainderCommand implements ChatCommand {
 
     @Override
     public String getHelp() {
-        return "remainder <action> <name> [event] [mention] [day] [time]\n"
+        return "Syntax: remainder <action> <event> <day> <time> [mention]\n"
                 + "<action> can be one of the following:"
                 + "  create - create new remainder\n"
                 + "  delete - delete remainder\n"
-                + "<name> name of the remainder\n"
-                + "[event] event to use description from\n"
+                + "<event> event to use description from\n"
+                + "<day> day the remainder activates on\n"
+                + "<time> time of the remainder hh:mm\n"
                 + "[mention] can be on of the following:\n"
                 + "  none - do not mention anyone\n"
-                + "  here - ping @here\n"
+                + "  here - ping online people\n"
                 + "  members - ping all members of the event\n"
-                + "[day] day the remainder activates on\n"
-                + "[time] time of the remainder hh:mm\n"
                 + "Remainder will be activated on the channel it was created in";
     }
 
@@ -97,32 +97,31 @@ public class RemainderCommand implements ChatCommand {
         }
         final TextChannel textChannel = optChannel.get();
 
-        final String[] args = message.getArguments(6);
+        final String[] args = message.getArguments(5);
         if (args.length == 0) {
             textChannel.sendMessage("Provide action to perform, see help for possible actions").queue();
             return;
         }
         switch (args[0]) {
             case "create": {
-                if (args.length < 6) {
+                if (args.length < 5) {
                     textChannel.sendMessage("Missing arguments, see help for event").queue();
                     return;
                 }
-                final String reminderName = args[1];
-                final String eventName = args[2];
+                final String eventName = args[1];
                 final Optional<Event> optEvent = this.eventManager.getEvent(eventName);
                 if (optEvent.isEmpty()) {
                     textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                     return;
                 }
-                final String mentions = args[3];
-                final MentionEnum me = MentionEnum.valueOf(mentions);
+                final String mentions = args[2];
+                final MentionEnum me = MentionEnum.getByName(mentions);
                 if (me == MentionEnum.ERROR) {
                     textChannel.sendMessage("Unkown mention value: " + mentions + "\nSee help for available values for mentions").queue();
                     return;
                 }
-                final String reminderDay = args[4];
-                final String reminderTime = args[5];
+                final String reminderDay = args[3];
+                final String reminderTime = args[4];
                 DayOfWeek activationDay;
                 try {
                     activationDay = DayOfWeek.valueOf(reminderDay.toUpperCase());
@@ -138,10 +137,10 @@ public class RemainderCommand implements ChatCommand {
                     return;
                 }
 
-                final Remainder remainder = new Remainder(reminderName, textChannel, optEvent.get(), me, activationDay, activationTime);
+                final Remainder remainder = new Remainder(textChannel, optEvent.get(), me, activationDay, activationTime);
                 try {
                     if (!this.remainderManager.addRemainder(remainder)) {
-                        textChannel.sendMessage("Remainder with that name already exists.").queue();
+                        textChannel.sendMessage("Matching remainder already exists.").queue();
                         return;
                     }
                     textChannel.sendMessage("Remainder succesfully created").queue();
@@ -155,15 +154,17 @@ public class RemainderCommand implements ChatCommand {
                 break;
             }
             case "delete": {
-                if (args.length == 1) {
+                if (args.length < 4) {
                     textChannel.sendMessage("Provide the name of the remainder you want to delete").queue();
                     return;
                 }
-                final String name = args[1];
+                final String eventName = args[1];
+                final String remainderDay = args[2];
+                final String remainderTime = args[3];
                 //Get the remainder to delete
-                final Optional<Remainder> optRemainder = this.remainderManager.getRemainder(name);
+                final Optional<Remainder> optRemainder = this.remainderManager.getRemainder(eventName, remainderDay, remainderTime);
                 if (optRemainder.isEmpty()) {
-                    textChannel.sendMessage("Could not find remainder with name: " + name).queue();
+                    textChannel.sendMessage("Could not find such remainder").queue();
                     return;
                 }
                 try {
@@ -171,7 +172,7 @@ public class RemainderCommand implements ChatCommand {
                         textChannel.sendMessage("Remainder succesfully removed").queue();
                         return;
                     }
-                    textChannel.sendMessage("Could not find remainder with name: " + name).queue();
+                    textChannel.sendMessage("Could not find such remainder").queue();
                 } catch (SQLException ex) {
                     textChannel.sendMessage("Database error removing remainder, "
                             + "remove again once issue is fixed to make remove persistent").queue();
@@ -186,9 +187,12 @@ public class RemainderCommand implements ChatCommand {
                 final List<Remainder> ev = this.remainderManager.getRemainders();
                 final StringBuilder sb = new StringBuilder("Remainders:\n");
                 for (Remainder e : ev) {
-                    sb.append(' ').append(e.getName())
+                    //gdds sunday 17:00 on channel #general
+                    sb.append(e.getEvent().getName()).append(' ')
+                            .append(e.getDay().toString().toLowerCase()).append(' ').append(e.getTime())
                             .append(" on channel ").append(e.getChannel().getAsMention())
-                            .append(" on ").append(e.getDay()).append(" at ").append(e.getTime()).append('\n');
+                            .append('\n');
+
                 }
                 if (ev.isEmpty()) {
                     sb.append("No remainders found.");

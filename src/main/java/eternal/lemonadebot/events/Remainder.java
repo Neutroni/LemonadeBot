@@ -42,7 +42,6 @@ import net.dv8tion.jda.api.entities.TextChannel;
  */
 public class Remainder extends TimerTask {
 
-    private final String name;
     private final DayOfWeek day;
     private final LocalTime time;
     private final TextChannel channel;
@@ -52,15 +51,13 @@ public class Remainder extends TimerTask {
     /**
      * Constructor
      *
-     * @param name Name of the event
      * @param textChannel channel the message should be sent in
      * @param event event this remainder is for
      * @param mentions Who to mention in remainder messsage
      * @param day Weekday the reminder happens
      * @param time Time for remainder in UTC
      */
-    public Remainder(String name, TextChannel textChannel, Event event, MentionEnum mentions, DayOfWeek day, LocalTime time) {
-        this.name = name;
+    public Remainder(TextChannel textChannel, Event event, MentionEnum mentions, DayOfWeek day, LocalTime time) {
         this.channel = textChannel;
         this.event = event;
         this.mentions = mentions;
@@ -97,15 +94,6 @@ public class Remainder extends TimerTask {
         }
 
         mb.sendTo(channel).queue();
-    }
-
-    /**
-     * Get the name of this remainder
-     *
-     * @return name id for the remainder
-     */
-    public String getName() {
-        return this.name;
     }
 
     /**
@@ -161,6 +149,18 @@ public class Remainder extends TimerTask {
      */
     public TextChannel getChannel() {
         return this.channel;
+    }
+    
+    @Override
+    public boolean equals(Object other){
+        if(other instanceof Remainder){
+            Remainder otherRemainder = (Remainder) other;
+            final boolean sameEvent = this.event.getName().equals(otherRemainder.getEvent().getName());
+            final boolean sameDay = this.getDay().equals(otherRemainder.getDay());
+            final boolean sameTime = this.getTime().equals(otherRemainder.getTime());
+            return sameEvent && sameDay && sameTime;
+        }
+        return false;
     }
 
 }

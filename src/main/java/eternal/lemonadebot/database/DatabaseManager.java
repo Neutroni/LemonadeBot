@@ -126,12 +126,12 @@ public class DatabaseManager implements AutoCloseable {
                 + "member INTEGER NOT NULL,"
                 + "PRIMARY KEY (event,member));";
         final String REMAINDERS = "CREATE TABLE Remainders("
-                + "name TEXT PRIMARY KEY NOT NULL,"
                 + "event REFERENCES Events(name) ON DELETE CASCADE,"
                 + "day, TEXT NOT NULL,"
                 + "time TEXT NOT NULL,"
                 + "mention TEXT NOT NULL,"
-                + "channel INTEGER NOT NULL)";
+                + "channel INTEGER NOT NULL)"
+                + "PRIMARY KEY (event,day,time)";
         final String INSERT = "INSERT INTO Options(name,value) VALUES(?,?);";
         try (Statement st = connection.createStatement()) {
             st.addBatch(CONFIG);

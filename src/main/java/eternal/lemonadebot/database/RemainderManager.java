@@ -80,23 +80,26 @@ public class RemainderManager {
     public boolean addRemainder(Remainder remainder) throws SQLException {
         synchronized (this) {
             final boolean added = this.remainders.add(remainder);
-
-            //Add to database
-            final String query = "INSERT INTO Remainders(name,event,day,time,mention,channel) VALUES(?,?,?,?,?,?);";
-            if (!hasRemainder(remainder.getName())) {
-                try (PreparedStatement ps = conn.prepareStatement(query)) {
-                    ps.setString(1, remainder.getName());
-                    ps.setString(2, remainder.getEvent().getName());
-                    ps.setString(3, remainder.getDay().name());
-                    ps.setString(4, remainder.getTime().toString());
-                    ps.setString(5, remainder.getMentionMode().name());
-                    ps.setLong(6, remainder.getChannel().getIdLong());
-                    return ps.executeUpdate() > 0;
-                }
-            }
+            
             //If timer was just added att to 
             if (added) {
                 this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
+            }
+
+            //Add to database
+            final String query = "INSERT INTO Remainders(event,day,time,mention,channel) VALUES(?,?,?,?,?);";
+            final String eventName = remainder.getEvent().getName();
+            final String remainderDay = remainder.getDay().name();
+            final String remainderTime = remainder.getTime().toString();
+            if (!hasRemainder(eventName,remainderDay,remainderTime)) {
+                try (PreparedStatement ps = conn.prepareStatement(query)) {
+                    ps.setString(1, eventName);
+                    ps.setString(2, remainderDay);
+                    ps.setString(3, remainderTime);
+                    ps.setString(4, remainder.getMentionMode().name());
+                    ps.setLong(5, remainder.getChannel().getIdLong());
+                    return ps.executeUpdate() > 0;
+                }
             }
             return added;
         }
@@ -115,10 +118,15 @@ public class RemainderManager {
             final boolean removed = this.remainders.remove(remainder);
 
             //Remove from database
-            final String query = "DELETE FROM Remainders Where name = ?;";
-            if (hasRemainder(remainder.getName())) {
+            final String query = "DELETE FROM Remainders Where event = ? AND day = ? AND time = ?;";
+            final String eventName = remainder.getEvent().getName();
+            final String remainderDay = remainder.getDay().name();
+            final String remainderTime = remainder.getTime().toString();
+            if (hasRemainder(eventName, remainderDay,remainderTime)) {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
-                    ps.setString(1, remainder.getName());
+                    ps.setString(1, eventName);
+                    ps.setString(2, remainderDay);
+                    ps.setString(3, remainderTime);
                     return ps.executeUpdate() > 0;
                 }
             }
@@ -133,10 +141,9 @@ public class RemainderManager {
      * @throws SQLException If database connection failed
      */
     public void loadRemainders(JDA jda) throws SQLException {
-        final String query = "SELECT name,event,day,time,mention,channel FROM Remainders;";
+        final String query = "SELECT event,day,time,mention,channel FROM Remainders;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
-                final String remainderName = rs.getString("name");
                 final String eventName = rs.getString("event");
                 final Optional<Event> optEvent = this.eventManager.getEvent(eventName);
                 if (optEvent.isEmpty()) {
@@ -172,7 +179,7 @@ public class RemainderManager {
                 if (channel == null) {
                     LOGGER.warn("Channel for remainder in database that could not be found on server, id: " + remainderChannel);
                 }
-                final Remainder remainder = new Remainder(remainderName, channel, optEvent.get(), me, activationDay, activationTime);
+                final Remainder remainder = new Remainder(channel, optEvent.get(), me, activationDay, activationTime);
 
                 remainders.add(remainder);
                 this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
@@ -183,15 +190,24 @@ public class RemainderManager {
     /**
      * Get Reminder by name
      *
-     * @param name name of the reminder
+     * @param eventName name the remainder is for
+     * @param day remainder day
+     * @param time remainder time
      * @return Optional containing the remainder if found
      */
-    public Optional<Remainder> getRemainder(String name) {
+    public Optional<Remainder> getRemainder(String eventName, String day, String time) {
         synchronized (this) {
-            for (Remainder e : this.remainders) {
-                if (name.equals(e.getName())) {
-                    return Optional.of(e);
+            for (Remainder r : this.remainders) {
+                if (!r.getEvent().getName().equals(eventName)) {
+                    continue;
                 }
+                if(!r.getDay().toString().equals(eventName.toUpperCase())){
+                    continue;
+                }
+                if(!r.getTime().toString().equals(time.toUpperCase())){
+                    continue;
+                }
+                return Optional.of(r);
             }
         }
         return Optional.empty();
@@ -204,10 +220,12 @@ public class RemainderManager {
      * @return true if remainder is in database
      * @throws SQLException if database connection failed
      */
-    private boolean hasRemainder(String name) throws SQLException {
-        final String query = "SELECT name FROM Remainders WHERE name=?;";
+    private boolean hasRemainder(String eventName, String remainderDay, String remainderTime) throws SQLException {
+        final String query = "SELECT event FROM Remainders WHERE event=? AND day=? AND time=?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setString(1, name);
+            ps.setString(1, eventName);
+            ps.setString(2, remainderDay);
+            ps.setString(3, remainderTime);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return true;
