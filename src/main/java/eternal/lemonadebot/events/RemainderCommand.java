@@ -114,14 +114,7 @@ public class RemainderCommand implements ChatCommand {
                     textChannel.sendMessage("Could not find event with name: " + eventName).queue();
                     return;
                 }
-                final String mentions = args[2];
-                final MentionEnum me = MentionEnum.getByName(mentions);
-                if (me == MentionEnum.ERROR) {
-                    textChannel.sendMessage("Unkown mention value: " + mentions + "\nSee help for available values for mentions").queue();
-                    return;
-                }
-                final String reminderDay = args[3];
-                final String reminderTime = args[4];
+                final String reminderDay = args[2];
                 DayOfWeek activationDay;
                 try {
                     activationDay = DayOfWeek.valueOf(reminderDay.toUpperCase());
@@ -129,11 +122,18 @@ public class RemainderCommand implements ChatCommand {
                     textChannel.sendMessage("Day must be weekday written in full, for example, 'Sunday'").queue();
                     return;
                 }
+                final String reminderTime = args[3];
                 LocalTime activationTime;
                 try {
                     activationTime = LocalTime.parse(reminderTime);
                 } catch (DateTimeParseException e) {
                     textChannel.sendMessage("Unkown time: " + reminderTime + " provide time in format hh:mm").queue();
+                    return;
+                }
+                final String mentions = args[4];
+                final MentionEnum me = MentionEnum.getByName(mentions);
+                if (me == MentionEnum.ERROR) {
+                    textChannel.sendMessage("Unkown mention value: " + mentions + "\nSee help for available values for mentions").queue();
                     return;
                 }
 
