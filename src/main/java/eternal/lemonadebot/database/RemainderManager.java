@@ -201,7 +201,7 @@ public class RemainderManager {
                 if (!r.getEvent().getName().equals(eventName)) {
                     continue;
                 }
-                if (!r.getDay().toString().equals(eventName.toUpperCase())) {
+                if (!r.getDay().toString().equals(day.toUpperCase())) {
                     continue;
                 }
                 if (!r.getTime().toString().equals(time.toUpperCase())) {
