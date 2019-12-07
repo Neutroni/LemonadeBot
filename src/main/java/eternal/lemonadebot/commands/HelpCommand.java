@@ -31,7 +31,10 @@ import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import java.util.Optional;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
@@ -94,7 +97,10 @@ class HelpCommand extends UserCommand {
         if (opt.isPresent()) {
             final ChatCommand com = opt.get();
             if (commandParser.hasPermission(sender, com)) {
-                textChannel.sendMessage(com.getHelp()).queue();
+                final EmbedBuilder eb = new EmbedBuilder();
+                eb.setTitle("Help for command: " + com.getCommand());
+                eb.setDescription(com.getHelp());
+                textChannel.sendMessage(eb.build()).queue();
             } else {
                 textChannel.sendMessage("You do not have permission to run that command, as such no help was provided").queue();
             }
@@ -102,7 +108,6 @@ class HelpCommand extends UserCommand {
         }
         final Optional<CustomCommand> custom = customCommands.getCommand(name);
         if (custom.isPresent()) {
-            final CustomCommand com = custom.get();
             textChannel.sendMessage("User defined custom command, see command \"help custom\" for details.").queue();
             return;
         }
@@ -114,13 +119,18 @@ class HelpCommand extends UserCommand {
         //Construct the list of commands
         final StringBuilder sb = new StringBuilder();
 
-        sb.append("Commands:\n");
         for (ChatCommand c : commands.getCommands()) {
             if (commandParser.hasPermission(sender, c)) {
                 sb.append(' ').append(c.getCommand()).append('\n');
             }
         }
-        textChannel.sendMessage(sb.toString()).queue();
+        
+        
+        final EmbedBuilder eb = new EmbedBuilder();
+        eb.setTitle("Commands:");
+        eb.setDescription(sb.toString());
+
+        textChannel.sendMessage(eb.build()).queue();
     }
 
 }
