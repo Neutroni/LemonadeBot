@@ -32,9 +32,7 @@ import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import java.util.Optional;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
@@ -124,8 +122,7 @@ class HelpCommand extends UserCommand {
                 sb.append(' ').append(c.getCommand()).append('\n');
             }
         }
-        
-        
+
         final EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle("Commands:");
         eb.setDescription(sb.toString());

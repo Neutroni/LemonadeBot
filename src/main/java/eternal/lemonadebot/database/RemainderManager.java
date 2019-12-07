@@ -80,7 +80,7 @@ public class RemainderManager {
     public boolean addRemainder(Remainder remainder) throws SQLException {
         synchronized (this) {
             final boolean added = this.remainders.add(remainder);
-            
+
             //If timer was just added att to 
             if (added) {
                 this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
@@ -91,7 +91,7 @@ public class RemainderManager {
             final String eventName = remainder.getEvent().getName();
             final String remainderDay = remainder.getDay().name();
             final String remainderTime = remainder.getTime().toString();
-            if (!hasRemainder(eventName,remainderDay,remainderTime)) {
+            if (!hasRemainder(eventName, remainderDay, remainderTime)) {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
                     ps.setString(1, eventName);
                     ps.setString(2, remainderDay);
@@ -122,7 +122,7 @@ public class RemainderManager {
             final String eventName = remainder.getEvent().getName();
             final String remainderDay = remainder.getDay().name();
             final String remainderTime = remainder.getTime().toString();
-            if (hasRemainder(eventName, remainderDay,remainderTime)) {
+            if (hasRemainder(eventName, remainderDay, remainderTime)) {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
                     ps.setString(1, eventName);
                     ps.setString(2, remainderDay);
@@ -188,7 +188,7 @@ public class RemainderManager {
     }
 
     /**
-     * Get Reminder by name
+     * Get Reminder by with name,day and time
      *
      * @param eventName name the remainder is for
      * @param day remainder day
@@ -201,10 +201,10 @@ public class RemainderManager {
                 if (!r.getEvent().getName().equals(eventName)) {
                     continue;
                 }
-                if(!r.getDay().toString().equals(eventName.toUpperCase())){
+                if (!r.getDay().toString().equals(eventName.toUpperCase())) {
                     continue;
                 }
-                if(!r.getTime().toString().equals(time.toUpperCase())){
+                if (!r.getTime().toString().equals(time.toUpperCase())) {
                     continue;
                 }
                 return Optional.of(r);
@@ -216,7 +216,9 @@ public class RemainderManager {
     /**
      * Check if remainder exisits in database
      *
-     * @param name name of the remainder
+     * @param eventName name of the event
+     * @param remainderDay string presentation for the day
+     * @param remainderTime string presentation for the time
      * @return true if remainder is in database
      * @throws SQLException if database connection failed
      */

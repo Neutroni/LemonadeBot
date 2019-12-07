@@ -30,6 +30,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.TimerTask;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Member;
@@ -150,10 +151,19 @@ public class Remainder extends TimerTask {
     public TextChannel getChannel() {
         return this.channel;
     }
-    
+
     @Override
-    public boolean equals(Object other){
-        if(other instanceof Remainder){
+    public int hashCode() {
+        int hash = 3;
+        hash = 41 * hash + Objects.hashCode(this.day);
+        hash = 41 * hash + Objects.hashCode(this.time);
+        hash = 41 * hash + Objects.hashCode(this.event);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other instanceof Remainder) {
             Remainder otherRemainder = (Remainder) other;
             final boolean sameEvent = this.event.getName().equals(otherRemainder.getEvent().getName());
             final boolean sameDay = this.getDay().equals(otherRemainder.getDay());
