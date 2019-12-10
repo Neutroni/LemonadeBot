@@ -67,7 +67,7 @@ public class SimpleAction {
      * @param input input to match agains
      * @return matcher for input
      */
-    public Matcher getMatcher(String input) {
+    public Matcher getMatcher(CharSequence input) {
         return this.pattern.matcher(input);
     }
 

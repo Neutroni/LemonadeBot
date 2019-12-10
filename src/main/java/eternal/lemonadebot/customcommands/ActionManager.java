@@ -41,19 +41,12 @@ import net.dv8tion.jda.api.entities.Message;
 public class ActionManager {
 
     private final Random rng = new Random();
-    private final String[] COIN_SIDES = new String[]{"heads", "tails"};
 
     private final List<SimpleAction> actions = List.of(
-            new SimpleAction("\\{coin\\}", "{coin} - Flips a coin.", (CommandMatcher message, Matcher input) -> {
-                return COIN_SIDES[rng.nextInt(2)];
-            }),
-            new SimpleAction("\\{d6\\}", "{d6} - Rolls a die.", (CommandMatcher message, Matcher input) -> {
-                final int roll = rng.nextInt(6) + 1;
-                return "" + roll;
-            }),
-            new SimpleAction("\\{d20\\}", "{d20} - Rolls a d20.", (CommandMatcher message, Matcher input) -> {
-                final int roll = rng.nextInt(20) + 1;
-                return "" + roll;
+            new SimpleAction("\\{(.*(\\|.*)+)\\}", "{a|b} - Selects value spearated by | randomly", (CommandMatcher message, Matcher input) -> {
+                final String[] parts = input.group(1).split("\\|");
+                final String response = parts[rng.nextInt(parts.length)];
+                return "" + response;
             }),
             new SimpleAction("\\{rng (\\d+),(\\d+)\\}", "{rng x,y} - Generate random number between the two inputs.", (CommandMatcher t, Matcher u) -> {
                 final int start = Integer.parseInt(u.group(1));
@@ -95,16 +88,17 @@ public class ActionManager {
      * @param action Action template string
      * @return Response string
      */
-    public String processActions(CommandMatcher message, String action) {
-        final String[] parts = action.split("\\|");
-        String response = parts[rng.nextInt(parts.length)];
+    public CharSequence processActions(CommandMatcher message, String action) {
+        String response = action;
 
         //Process simple actions
         for (SimpleAction s : actions) {
+            //Check if 
             final Matcher m = s.getMatcher(response);
             final StringBuilder sb = new StringBuilder();
 
             while (m.find()) {
+                
                 final String replacement = s.getValue(message, m);
                 m.appendReplacement(sb, replacement);
             }

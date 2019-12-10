@@ -106,7 +106,7 @@ public class CustomCommand implements ChatCommand {
 
     @Override
     public void respond(CommandMatcher match) {
-        final String response = this.actionManager.processActions(match, action);
+        final CharSequence response = this.actionManager.processActions(match, action);
         match.getMessage().getChannel().sendMessage(response).queue();
     }
 
