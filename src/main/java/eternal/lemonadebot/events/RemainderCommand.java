@@ -35,7 +35,6 @@ import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
-import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -143,7 +142,8 @@ public class RemainderCommand implements ChatCommand {
                         textChannel.sendMessage("Matching remainder already exists.").queue();
                         return;
                     }
-                    textChannel.sendMessage("Remainder succesfully created").queue();
+                    final String firstActivation = remainder.getActivationDate().toString();
+                    textChannel.sendMessage("Remainder succesfully created.\n First activation at: " + firstActivation).queue();
                 } catch (SQLException ex) {
                     textChannel.sendMessage("Database error adding remainder, "
                             + "add again once database issue is fixed to make add persist after reboot").queue();
