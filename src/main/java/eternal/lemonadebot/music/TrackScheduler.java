@@ -9,6 +9,7 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.managers.AudioManager;
 
 /**
@@ -55,8 +56,23 @@ class TrackScheduler extends AudioEventAdapter {
         final AudioTrack track = queue.poll();
         player.startTrack(track, false);
         if (track == null) {
+            final Activity status = Activity.of(Activity.ActivityType.DEFAULT, "");
+            this.manager.getJDA().getPresence().setActivity(status);
             this.manager.closeAudioConnection();
         }
+    }
+
+    /**
+     *
+     * @param player
+     * @param track
+     */
+    @Override
+    public void onTrackStart(AudioPlayer player, AudioTrack track) {
+        final Activity status = Activity.of(Activity.ActivityType.DEFAULT, "Now playing: " + track.getInfo().title);
+        this.manager.getJDA().getPresence().setActivity(status);
+        super.onTrackStart(player, track);
+
     }
 
     /**
@@ -80,5 +96,15 @@ class TrackScheduler extends AudioEventAdapter {
     void clearPlaylist() {
         this.queue.clear();
         this.manager.closeAudioConnection();
+    }
+
+    /**
+     * Remove track from song queue
+     *
+     * @param track Track to remove
+     * @return true if removed
+     */
+    boolean skipTrack(AudioTrack track) {
+        return this.queue.remove(track);
     }
 }

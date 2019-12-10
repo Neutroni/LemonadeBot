@@ -1,6 +1,25 @@
 /*
- * Mostly Apache-2-0 Licenced from https://github.com/sedmelluq/lavaplayer
- * Functions relatinng to ChatCommand under MIT License
+ * The MIT License
+ *
+ * Copyright 2019 Neutroni.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package eternal.lemonadebot.music;
 
@@ -81,7 +100,7 @@ public class MusicCommand implements ChatCommand {
         switch (arguments[0]) {
             case "play": {
                 if (arguments.length < 2) {
-                    unPauseTrack(textChannel);
+                    resumeTrack(textChannel);
                     return;
                 }
                 final String url = arguments[1];
@@ -89,7 +108,11 @@ public class MusicCommand implements ChatCommand {
                 break;
             }
             case "skip": {
-                skipTrack(textChannel);
+                if (arguments.length < 2) {
+                    skipTrack(textChannel, null);
+                }
+                final String url = arguments[1];
+                skipTrack(textChannel, url);
                 break;
             }
             case "pause": {
@@ -156,11 +179,60 @@ public class MusicCommand implements ChatCommand {
         return musicManager;
     }
 
-    private void skipTrack(TextChannel textChannel) {
-        GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
-        musicManager.scheduler.nextTrack();
+    private void skipTrack(TextChannel channel, String trackUrl) {
+        GuildMusicManager musicManager = getGuildAudioPlayer(channel.getGuild());
 
-        textChannel.sendMessage("Skipped to next track.").queue();
+        //No url, skip current track
+        if (trackUrl == null) {
+            musicManager.scheduler.nextTrack();
+            channel.sendMessage("Skipped to next track.").queue();
+            return;
+        }
+
+        //Skip tracks from url
+        playerManager.loadItemOrdered(musicManager, trackUrl, new AudioLoadResultHandler() {
+            @Override
+            public void trackLoaded(AudioTrack track) {
+                musicManager.scheduler.skipTrack(track);
+                channel.sendMessage("Removed from queue " + track.getInfo().title).queue();
+            }
+
+            @Override
+            public void playlistLoaded(AudioPlaylist playlist) {
+                //Playlist without track selected
+                if (playlist.getSelectedTrack() == null) {
+                    boolean skipped = false;
+                    for (AudioTrack tr : playlist.getTracks()) {
+                        skipped = (skipped || musicManager.scheduler.skipTrack(tr));
+                    }
+                    if (skipped) {
+                        channel.sendMessage("Skipped songs in playlist " + playlist.getName()).queue();
+                    } else {
+                        channel.sendMessage("No songs to be skipped found").queue();
+                    }
+                    return;
+                }
+
+                //Single track from playlist
+                final AudioTrack selectedTrack = playlist.getSelectedTrack();
+                final boolean skipped = musicManager.scheduler.skipTrack(selectedTrack);
+                if (skipped) {
+                    channel.sendMessage("Skipped song " + playlist.getName()).queue();
+                } else {
+                    channel.sendMessage("Song not in queue, nothing skipped").queue();
+                }
+            }
+
+            @Override
+            public void noMatches() {
+                channel.sendMessage("Nothing found by " + trackUrl).queue();
+            }
+
+            @Override
+            public void loadFailed(FriendlyException exception) {
+                channel.sendMessage("Could not skip: " + exception.getMessage()).queue();
+            }
+        });
     }
 
     private void pauseTrack(TextChannel textChannel) {
@@ -188,7 +260,7 @@ public class MusicCommand implements ChatCommand {
      *
      * @param textChannel channel for the request
      */
-    private void unPauseTrack(TextChannel textChannel) {
+    private void resumeTrack(TextChannel textChannel) {
         GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
         musicManager.player.setPaused(false);
         textChannel.sendMessage("Playback resumed").queue();
