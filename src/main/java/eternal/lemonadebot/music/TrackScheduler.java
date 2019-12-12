@@ -7,6 +7,8 @@ import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import net.dv8tion.jda.api.entities.Activity;
@@ -106,5 +108,14 @@ class TrackScheduler extends AudioEventAdapter {
      */
     boolean skipTrack(AudioTrack track) {
         return this.queue.remove(track);
+    }
+
+    /**
+     * Get the current playlist
+     *
+     * @return Collection of AudioTracks
+     */
+    List<AudioTrack> getPlaylist() {
+        return new ArrayList<>(queue);
     }
 }

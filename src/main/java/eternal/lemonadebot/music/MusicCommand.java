@@ -35,6 +35,7 @@ import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import eternal.lemonadebot.messages.CommandPermission;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
@@ -72,7 +73,11 @@ public class MusicCommand implements ChatCommand {
     @Override
     public String getHelp() {
         return "Syntax: music <action> [url]\n"
-                + "<action> can be either play, skip, stop or pause\n"
+                + "<action> can be either play, skip, stop, pause or list\n"
+                + "  play adds song to the song queue or resumes play if paused\n"
+                + "  skip skips next song, songs by url, or songs in playlist provided\n"
+                + "  stop clears the playlist and stops music playback\n"
+                + "  list prints upcoming songs in playlist\n"
                 + "[url] is the url of the music to play";
     }
 
@@ -121,6 +126,10 @@ public class MusicCommand implements ChatCommand {
             }
             case "stop": {
                 stopTrack(textChannel);
+                break;
+            }
+            case "list": {
+                showPlaylist(textChannel);
                 break;
             }
             default: {
@@ -276,6 +285,26 @@ public class MusicCommand implements ChatCommand {
         musicManager.player.stopTrack();
         musicManager.scheduler.clearPlaylist();
         textChannel.sendMessage("Playback stopped and playlist cleared").queue();
+    }
+
+    /**
+     * Print the upcoming songs
+     *
+     * @param textChannel channel to respond on
+     */
+    private void showPlaylist(TextChannel textChannel) {
+        final GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
+        final List<AudioTrack> playlist = musicManager.scheduler.getPlaylist();
+        final int songsToPrint = (playlist.size() < 10 ? playlist.size() : 10);
+        final StringBuilder sb = new StringBuilder("Upcoming songs:\n");
+        for (int i = 0; i < songsToPrint; i++) {
+            sb.append(playlist.get(i).getInfo().title);
+            sb.append("\n");
+        }
+        if (songsToPrint == 0) {
+            sb.append("No songs in the playlist");
+        }
+        textChannel.sendMessage(sb.toString()).queue();
     }
 
 }
