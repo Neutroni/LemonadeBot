@@ -78,8 +78,9 @@ public class CommandManagmentCommand implements ChatCommand {
                 + "[name] name for custom command"
                 + "[template] template for custom command, see below for syntax"
                 + "Syntax for custom commands:\n"
-                + "  {key} substitute part of command with action, see \"custom keys\" to see all keys\n"
-                + "  | Include other outcomes to command, all options have equal chance";
+                + "  Text in the template will mostly be shown as is,\n"
+                + "  but you can use {key} to modify parts of the message.\n"
+                + "  See \"custom keys\" to see all keys\n";
     }
 
     @Override

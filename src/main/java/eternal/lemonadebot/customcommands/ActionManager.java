@@ -43,7 +43,7 @@ public class ActionManager {
     private final Random rng = new Random();
 
     private final List<SimpleAction> actions = List.of(
-            new SimpleAction("\\{(.*(\\|.*)+)\\}", "{a|b} - Selects value spearated by | randomly", (CommandMatcher message, Matcher input) -> {
+            new SimpleAction("\\{choice (.*(\\|.*)+)\\}", "{choice a|b} - Selects value separated by | randomly", (CommandMatcher message, Matcher input) -> {
                 final String[] parts = input.group(1).split("\\|");
                 final String response = parts[rng.nextInt(parts.length)];
                 return "" + response;
@@ -98,7 +98,7 @@ public class ActionManager {
             final StringBuilder sb = new StringBuilder();
 
             while (m.find()) {
-                
+
                 final String replacement = s.getValue(message, m);
                 m.appendReplacement(sb, replacement);
             }
