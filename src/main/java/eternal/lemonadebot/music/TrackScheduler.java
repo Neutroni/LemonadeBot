@@ -58,8 +58,7 @@ class TrackScheduler extends AudioEventAdapter {
         final AudioTrack track = queue.poll();
         player.startTrack(track, false);
         if (track == null) {
-            final Activity status = Activity.of(Activity.ActivityType.DEFAULT, "");
-            this.manager.getJDA().getPresence().setActivity(status);
+            this.manager.getJDA().getPresence().setActivity(null);
             this.manager.closeAudioConnection();
         }
     }
@@ -71,7 +70,7 @@ class TrackScheduler extends AudioEventAdapter {
      */
     @Override
     public void onTrackStart(AudioPlayer player, AudioTrack track) {
-        final Activity status = Activity.of(Activity.ActivityType.DEFAULT, "Now playing: " + track.getInfo().title);
+        final Activity status = Activity.listening(track.getInfo().title);
         this.manager.getJDA().getPresence().setActivity(status);
         super.onTrackStart(player, track);
 
