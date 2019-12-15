@@ -115,6 +115,7 @@ public class MusicCommand implements ChatCommand {
             case "skip": {
                 if (arguments.length < 2) {
                     skipTrack(textChannel, null);
+                    return;
                 }
                 final String url = arguments[1];
                 skipTrack(textChannel, url);
@@ -202,8 +203,12 @@ public class MusicCommand implements ChatCommand {
         playerManager.loadItemOrdered(musicManager, trackUrl, new AudioLoadResultHandler() {
             @Override
             public void trackLoaded(AudioTrack track) {
-                musicManager.scheduler.skipTrack(track);
-                channel.sendMessage("Removed from queue " + track.getInfo().title).queue();
+                if (musicManager.scheduler.skipTrack(track)) {
+                    channel.sendMessage("Removed from queue " + track.getInfo().title).queue();
+                } else {
+                    channel.sendMessage("Song not in the playlist").queue();
+                }
+
             }
 
             @Override
@@ -212,7 +217,9 @@ public class MusicCommand implements ChatCommand {
                 if (playlist.getSelectedTrack() == null) {
                     boolean skipped = false;
                     for (AudioTrack tr : playlist.getTracks()) {
-                        skipped = (skipped || musicManager.scheduler.skipTrack(tr));
+                        if (musicManager.scheduler.skipTrack(tr)) {
+                            skipped = true;
+                        }
                     }
                     if (skipped) {
                         channel.sendMessage("Skipped songs in playlist " + playlist.getName()).queue();

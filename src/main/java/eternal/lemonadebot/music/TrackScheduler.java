@@ -107,7 +107,14 @@ class TrackScheduler extends AudioEventAdapter {
      * @return true if removed
      */
     boolean skipTrack(AudioTrack track) {
-        return this.queue.remove(track);
+        boolean removed = false;
+        for(AudioTrack t: this.queue){
+            if(t.getIdentifier().equals(track.getIdentifier())){
+                this.queue.remove(t);
+                removed = true;
+            }
+        }
+        return removed;
     }
 
     /**
