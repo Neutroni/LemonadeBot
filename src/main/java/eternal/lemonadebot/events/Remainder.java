@@ -32,10 +32,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.TimerTask;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
@@ -43,9 +46,12 @@ import net.dv8tion.jda.api.entities.TextChannel;
  */
 public class Remainder extends TimerTask {
 
+    private static final Logger LOGGER = LogManager.getLogger();
+
+    private final JDA jda;
     private final DayOfWeek day;
     private final LocalTime time;
-    private final TextChannel channel;
+    private final long channelID;
     private final Event event;
     private final MentionEnum mentions;
 
@@ -59,7 +65,8 @@ public class Remainder extends TimerTask {
      * @param time Time for remainder in UTC
      */
     public Remainder(TextChannel textChannel, Event event, MentionEnum mentions, DayOfWeek day, LocalTime time) {
-        this.channel = textChannel;
+        this.jda = textChannel.getJDA();
+        this.channelID = textChannel.getIdLong();
         this.event = event;
         this.mentions = mentions;
         this.day = day;
@@ -71,6 +78,12 @@ public class Remainder extends TimerTask {
      */
     @Override
     public void run() {
+        LOGGER.debug("Event remainder started for event" + this.event.getName());
+        final TextChannel channel = this.jda.getTextChannelById(channelID);
+        if (channel == null) {
+            LOGGER.warn("Remainder for textchannel that does not exists, channel id:" + this.channelID);
+            return;
+        }
         MessageBuilder mb = new MessageBuilder(this.event.getDescription());
         mb.append(" time");
         switch (this.mentions) {
@@ -84,7 +97,7 @@ public class Remainder extends TimerTask {
             }
             case EVENT: {
                 for (long id : this.event.getMembers()) {
-                    final Member m = this.channel.getGuild().getMemberById(id);
+                    final Member m = channel.getGuild().getMemberById(id);
                     if (m != null) {
                         mb.append(' ');
                         mb.append(m);
@@ -95,6 +108,7 @@ public class Remainder extends TimerTask {
         }
 
         mb.sendTo(channel).queue();
+        LOGGER.debug("Message sent to channel " + channel.getName());
     }
 
     /**
@@ -144,12 +158,45 @@ public class Remainder extends TimerTask {
     }
 
     /**
-     * Get the text channel this remainder will appear in
+     * Get the ID for text channel this remainder will appear in
      *
      * @return TextChannel
      */
-    public TextChannel getChannel() {
-        return this.channel;
+    public long getChannel() {
+        return this.channelID;
+    }
+
+    /**
+     * Check if remainder is valid such as the channel for the remainder exists
+     *
+     * @return true if channel for remainder exists
+     */
+    public boolean isValid() {
+        return (this.jda.getTextChannelById(this.channelID) != null);
+    }
+
+    /**
+     * Get the string presentation of this remainder
+     *
+     * @return String of format name day time on channel channel
+     */
+    @Override
+    public String toString() {
+        final TextChannel channel = this.jda.getTextChannelById(channelID);
+        final StringBuilder sb = new StringBuilder();
+        if (channel == null) {
+            sb.append(this.event.getName()).append(' ')
+                    .append(this.day.toString().toLowerCase()).append(' ')
+                    .append(this.time.toString())
+                    .append("channel could not be found and remainder is inactive");
+            return sb.toString();
+        }
+        sb.append(this.event.getName()).append(' ')
+                .append(this.day.toString().toLowerCase()).append(' ')
+                .append(this.time.toString())
+                .append(" on channel ").append(channel.getAsMention());
+        //gdds sunday 17:00 on channel #general
+        return sb.toString();
     }
 
     @Override

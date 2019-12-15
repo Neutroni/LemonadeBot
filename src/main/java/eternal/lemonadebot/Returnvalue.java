@@ -45,6 +45,10 @@ public enum Returnvalue {
     /**
      * If login to discord faild
      */
-    LOGIN_FAILED;
+    LOGIN_FAILED,
+    /**
+     * If loading was interrupted
+     */
+    INTERRUPTED;
 
 }

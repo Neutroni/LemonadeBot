@@ -78,12 +78,14 @@ public class RemainderManager {
      * @throws SQLException If database connection failed
      */
     public boolean addRemainder(Remainder remainder) throws SQLException {
+        LOGGER.debug("Storing remainder for event" + remainder.getEvent().getName());
         synchronized (this) {
             final boolean added = this.remainders.add(remainder);
 
             //If timer was just added att to 
             if (added) {
                 this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
+                LOGGER.debug("Remainder scheluded for activation at " + remainder.getActivationDate().toString());
             }
 
             //Add to database
@@ -97,7 +99,7 @@ public class RemainderManager {
                     ps.setString(2, remainderDay);
                     ps.setString(3, remainderTime);
                     ps.setString(4, remainder.getMentionMode().name());
-                    ps.setLong(5, remainder.getChannel().getIdLong());
+                    ps.setLong(5, remainder.getChannel());
                     return ps.executeUpdate() > 0;
                 }
             }
@@ -141,6 +143,7 @@ public class RemainderManager {
      * @throws SQLException If database connection failed
      */
     public void loadRemainders(JDA jda) throws SQLException {
+        LOGGER.debug("Started loading remainders from database");
         final String query = "SELECT event,day,time,mention,channel FROM Remainders;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
@@ -182,7 +185,9 @@ public class RemainderManager {
                 final Remainder remainder = new Remainder(channel, optEvent.get(), me, activationDay, activationTime);
 
                 remainders.add(remainder);
+                LOGGER.debug("Remainder loaded for event " + remainder.getEvent().getName());
                 this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
+                LOGGER.debug("Remainder scheluded for activation at " + remainder.getActivationDate().toString());
             }
         }
     }

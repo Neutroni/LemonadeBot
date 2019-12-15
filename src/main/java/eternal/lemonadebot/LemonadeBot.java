@@ -98,6 +98,7 @@ public class LemonadeBot {
             LOGGER.debug("Connected to database succefully");
 
             final JDA jda = new JDABuilder(cmd.getOptionValue("k")).build();
+            jda.awaitReady();
             DB.getRemainders().loadRemainders(jda);
             jda.addEventListener(new MessageListener(DB));
             LOGGER.debug("Startup succesfull");
@@ -112,6 +113,10 @@ public class LemonadeBot {
         } catch (ParseException ex) {
             LOGGER.fatal("Command line argument parsing failed");
             LOGGER.trace("Stack trace:", ex);
+        } catch (InterruptedException ex) {
+            LOGGER.fatal("JDA loading interrupted");
+            LOGGER.trace("Stack trace:", ex);
+            System.exit(Returnvalue.INTERRUPTED.ordinal());
         }
     }
 }

@@ -30,11 +30,14 @@ import eternal.lemonadebot.database.RemainderManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import eternal.lemonadebot.messages.CommandPermission;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.TimeZone;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,6 +53,7 @@ public class RemainderCommand implements ChatCommand {
 
     private final RemainderManager remainderManager;
     private final EventManager eventManager;
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("EEEE MMMM dd HH:mm zzz", Locale.ENGLISH);
 
     /**
      * Constructor
@@ -59,6 +63,7 @@ public class RemainderCommand implements ChatCommand {
     public RemainderCommand(DatabaseManager db) {
         this.remainderManager = db.getRemainders();
         this.eventManager = db.getEvents();
+        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 
     @Override
@@ -142,7 +147,7 @@ public class RemainderCommand implements ChatCommand {
                         textChannel.sendMessage("Matching remainder already exists.").queue();
                         return;
                     }
-                    final String firstActivation = remainder.getActivationDate().toString();
+                    final String firstActivation = dateFormat.format(remainder.getActivationDate());
                     textChannel.sendMessage("Remainder succesfully created.\n First activation at: " + firstActivation).queue();
                 } catch (SQLException ex) {
                     textChannel.sendMessage("Database error adding remainder, "
@@ -186,13 +191,25 @@ public class RemainderCommand implements ChatCommand {
             case "list": {
                 final List<Remainder> ev = this.remainderManager.getRemainders();
                 final StringBuilder sb = new StringBuilder("Remainders:\n");
-                for (Remainder e : ev) {
-                    //gdds sunday 17:00 on channel #general
-                    sb.append(e.getEvent().getName()).append(' ')
-                            .append(e.getDay().toString().toLowerCase()).append(' ').append(e.getTime())
-                            .append(" on channel ").append(e.getChannel().getAsMention())
-                            .append('\n');
+                for (Remainder r : ev) {
+                    if (r.isValid()) {
+                        sb.append(r.toString()).append('\n');
+                        continue;
+                    }
+                    sb.append("Remainder in database that has no valid channel, removing");
+                    try {
+                        if (this.remainderManager.deleteRemainder(r)) {
+                            sb.append("Remainder removed succesfully\n");
+                        } else {
+                            sb.append("Remainder alreayd removed by someone else\n");
+                        }
+                    } catch (SQLException ex) {
+                        sb.append("Database failure in removing remainder from database\n");
 
+                        LOGGER.error("Failure to remove remainder while listing remainders");
+                        LOGGER.warn(ex.getMessage());
+                        LOGGER.trace("Stack trace", ex);
+                    }
                 }
                 if (ev.isEmpty()) {
                     sb.append("No remainders found.");
