@@ -58,15 +58,16 @@ public class Remainder extends TimerTask {
     /**
      * Constructor
      *
+     * @param jda JDA to use for getting channel
      * @param textChannel channel the message should be sent in
      * @param event event this remainder is for
      * @param mentions Who to mention in remainder messsage
      * @param day Weekday the reminder happens
      * @param time Time for remainder in UTC
      */
-    public Remainder(TextChannel textChannel, Event event, MentionEnum mentions, DayOfWeek day, LocalTime time) {
-        this.jda = textChannel.getJDA();
-        this.channelID = textChannel.getIdLong();
+    public Remainder(JDA jda, long textChannel, Event event, MentionEnum mentions, DayOfWeek day, LocalTime time) {
+        this.jda = jda;
+        this.channelID = textChannel;
         this.event = event;
         this.mentions = mentions;
         this.day = day;

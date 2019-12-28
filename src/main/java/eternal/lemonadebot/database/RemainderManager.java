@@ -41,7 +41,6 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -178,11 +177,7 @@ public class RemainderManager {
                     continue;
                 }
                 final long remainderChannel = rs.getLong("channel");
-                final TextChannel channel = jda.getTextChannelById(remainderChannel);
-                if (channel == null) {
-                    LOGGER.warn("Channel for remainder in database that could not be found on server, id: " + remainderChannel);
-                }
-                final Remainder remainder = new Remainder(channel, optEvent.get(), me, activationDay, activationTime);
+                final Remainder remainder = new Remainder(jda, remainderChannel, optEvent.get(), me, activationDay, activationTime);
 
                 remainders.add(remainder);
                 LOGGER.debug("Remainder loaded for event " + remainder.getEvent().getName());

@@ -108,119 +108,131 @@ public class RemainderCommand implements ChatCommand {
         }
         switch (args[0]) {
             case "create": {
-                if (args.length < 5) {
-                    textChannel.sendMessage("Missing arguments, see help for event").queue();
-                    return;
-                }
-                final String eventName = args[1];
-                final Optional<Event> optEvent = this.eventManager.getEvent(eventName);
-                if (optEvent.isEmpty()) {
-                    textChannel.sendMessage("Could not find event with name: " + eventName).queue();
-                    return;
-                }
-                final String reminderDay = args[2];
-                DayOfWeek activationDay;
-                try {
-                    activationDay = DayOfWeek.valueOf(reminderDay.toUpperCase());
-                } catch (IllegalArgumentException e) {
-                    textChannel.sendMessage("Day must be weekday written in full, for example, 'Sunday'").queue();
-                    return;
-                }
-                final String reminderTime = args[3];
-                LocalTime activationTime;
-                try {
-                    activationTime = LocalTime.parse(reminderTime);
-                } catch (DateTimeParseException e) {
-                    textChannel.sendMessage("Unkown time: " + reminderTime + " provide time in format hh:mm").queue();
-                    return;
-                }
-                final String mentions = args[4];
-                final MentionEnum me = MentionEnum.getByName(mentions);
-                if (me == MentionEnum.ERROR) {
-                    textChannel.sendMessage("Unkown mention value: " + mentions + "\nSee help for available values for mentions").queue();
-                    return;
-                }
-
-                final Remainder remainder = new Remainder(textChannel, optEvent.get(), me, activationDay, activationTime);
-                try {
-                    if (!this.remainderManager.addRemainder(remainder)) {
-                        textChannel.sendMessage("Matching remainder already exists.").queue();
-                        return;
-                    }
-                    final String firstActivation = dateFormat.format(remainder.getActivationDate());
-                    textChannel.sendMessage("Remainder succesfully created.\n First activation at: " + firstActivation).queue();
-                } catch (SQLException ex) {
-                    textChannel.sendMessage("Database error adding remainder, "
-                            + "add again once database issue is fixed to make add persist after reboot").queue();
-                    LOGGER.error("Failure to create remainder");
-                    LOGGER.warn(ex.getMessage());
-                    LOGGER.trace("Stack trace", ex);
-                }
+                createRemainder(args, textChannel);
                 break;
             }
             case "delete": {
-                if (args.length < 4) {
-                    textChannel.sendMessage("Provide the name of the remainder you want to delete").queue();
-                    return;
-                }
-                final String eventName = args[1];
-                final String remainderDay = args[2];
-                final String remainderTime = args[3];
-                //Get the remainder to delete
-                final Optional<Remainder> optRemainder = this.remainderManager.getRemainder(eventName, remainderDay, remainderTime);
-                if (optRemainder.isEmpty()) {
-                    textChannel.sendMessage("Could not find such remainder").queue();
-                    return;
-                }
-                try {
-                    if (this.remainderManager.deleteRemainder(optRemainder.get())) {
-                        textChannel.sendMessage("Remainder succesfully removed").queue();
-                        return;
-                    }
-                    textChannel.sendMessage("Could not find such remainder").queue();
-                } catch (SQLException ex) {
-                    textChannel.sendMessage("Database error removing remainder, "
-                            + "remove again once issue is fixed to make remove persistent").queue();
-
-                    LOGGER.error("Failure to delete remainder");
-                    LOGGER.warn(ex.getMessage());
-                    LOGGER.trace("Stack trace", ex);
-                }
+                deleteRemainder(args, textChannel);
                 break;
             }
             case "list": {
-                final List<Remainder> ev = this.remainderManager.getRemainders();
-                final StringBuilder sb = new StringBuilder("Remainders:\n");
-                for (Remainder r : ev) {
-                    if (r.isValid()) {
-                        sb.append(r.toString()).append('\n');
-                        continue;
-                    }
-                    sb.append("Remainder in database that has no valid channel, removing");
-                    try {
-                        if (this.remainderManager.deleteRemainder(r)) {
-                            sb.append("Remainder removed succesfully\n");
-                        } else {
-                            sb.append("Remainder alreayd removed by someone else\n");
-                        }
-                    } catch (SQLException ex) {
-                        sb.append("Database failure in removing remainder from database\n");
-
-                        LOGGER.error("Failure to remove remainder while listing remainders");
-                        LOGGER.warn(ex.getMessage());
-                        LOGGER.trace("Stack trace", ex);
-                    }
-                }
-                if (ev.isEmpty()) {
-                    sb.append("No remainders found.");
-                }
-                textChannel.sendMessage(sb.toString()).queue();
+                listRemainders(textChannel);
                 break;
             }
             default: {
                 textChannel.sendMessage("Unkown operation: " + args[0]).queue();
             }
         }
+    }
+
+    private void createRemainder(String[] args, TextChannel textChannel) {
+        if (args.length < 5) {
+            textChannel.sendMessage("Missing arguments, see help for event").queue();
+            return;
+        }
+        final String eventName = args[1];
+        final Optional<Event> optEvent = this.eventManager.getEvent(eventName);
+        if (optEvent.isEmpty()) {
+            textChannel.sendMessage("Could not find event with name: " + eventName).queue();
+            return;
+        }
+        final String reminderDay = args[2];
+        DayOfWeek activationDay;
+        try {
+            activationDay = DayOfWeek.valueOf(reminderDay.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            textChannel.sendMessage("Day must be weekday written in full, for example, 'Sunday'").queue();
+            return;
+        }
+        final String reminderTime = args[3];
+        LocalTime activationTime;
+        try {
+            activationTime = LocalTime.parse(reminderTime);
+        } catch (DateTimeParseException e) {
+            textChannel.sendMessage("Unkown time: " + reminderTime + " provide time in format hh:mm").queue();
+            return;
+        }
+        final String mentions = args[4];
+        final MentionEnum me = MentionEnum.getByName(mentions);
+        if (me == MentionEnum.ERROR) {
+            textChannel.sendMessage("Unkown mention value: " + mentions + "\nSee help for available values for mentions").queue();
+            return;
+        }
+
+        final Remainder remainder = new Remainder(textChannel.getJDA(), textChannel.getIdLong(), optEvent.get(), me, activationDay, activationTime);
+        try {
+            if (!this.remainderManager.addRemainder(remainder)) {
+                textChannel.sendMessage("Matching remainder already exists.").queue();
+                return;
+            }
+            final String firstActivation = dateFormat.format(remainder.getActivationDate());
+            textChannel.sendMessage("Remainder succesfully created.\n First activation at: " + firstActivation).queue();
+        } catch (SQLException ex) {
+            textChannel.sendMessage("Database error adding remainder, "
+                    + "add again once database issue is fixed to make add persist after reboot").queue();
+            LOGGER.error("Failure to create remainder");
+            LOGGER.warn(ex.getMessage());
+            LOGGER.trace("Stack trace", ex);
+        }
+    }
+
+    private void deleteRemainder(String[] args, TextChannel textChannel) {
+        if (args.length < 4) {
+            textChannel.sendMessage("Provide the name of the remainder you want to delete").queue();
+            return;
+        }
+        final String eventName = args[1];
+        final String remainderDay = args[2];
+        final String remainderTime = args[3];
+        //Get the remainder to delete
+        final Optional<Remainder> optRemainder = this.remainderManager.getRemainder(eventName, remainderDay, remainderTime);
+        if (optRemainder.isEmpty()) {
+            textChannel.sendMessage("Could not find such remainder").queue();
+            return;
+        }
+        try {
+            if (this.remainderManager.deleteRemainder(optRemainder.get())) {
+                textChannel.sendMessage("Remainder succesfully removed").queue();
+                return;
+            }
+            textChannel.sendMessage("Could not find such remainder").queue();
+        } catch (SQLException ex) {
+            textChannel.sendMessage("Database error removing remainder, "
+                    + "remove again once issue is fixed to make remove persistent").queue();
+
+            LOGGER.error("Failure to delete remainder");
+            LOGGER.warn(ex.getMessage());
+            LOGGER.trace("Stack trace", ex);
+        }
+    }
+
+    private void listRemainders(TextChannel textChannel) {
+        final List<Remainder> ev = this.remainderManager.getRemainders();
+        final StringBuilder sb = new StringBuilder("Remainders:\n");
+        for (Remainder r : ev) {
+            if (r.isValid()) {
+                sb.append(r.toString()).append('\n');
+                continue;
+            }
+            sb.append("Remainder in database that has no valid channel, removing");
+            try {
+                if (this.remainderManager.deleteRemainder(r)) {
+                    sb.append("Remainder removed succesfully\n");
+                } else {
+                    sb.append("Remainder alreayd removed by someone else\n");
+                }
+            } catch (SQLException ex) {
+                sb.append("Database failure in removing remainder from database\n");
+
+                LOGGER.error("Failure to remove remainder while listing remainders");
+                LOGGER.warn(ex.getMessage());
+                LOGGER.trace("Stack trace", ex);
+            }
+        }
+        if (ev.isEmpty()) {
+            sb.append("No remainders found.");
+        }
+        textChannel.sendMessage(sb.toString()).queue();
     }
 
 }
