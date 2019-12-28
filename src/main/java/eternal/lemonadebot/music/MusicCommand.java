@@ -31,7 +31,6 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import eternal.lemonadebot.messages.CommandPermission;
 import java.util.HashMap;
@@ -56,9 +55,8 @@ public class MusicCommand implements ChatCommand {
     /**
      * Constructor
      *
-     * @param parser Parser to use for parsing messages
      */
-    public MusicCommand(CommandManager parser) {
+    public MusicCommand() {
         this.playerManager = new DefaultAudioPlayerManager();
         AudioSourceManagers.registerRemoteSources(playerManager);
         AudioSourceManagers.registerLocalSource(playerManager);

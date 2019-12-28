@@ -98,18 +98,18 @@ public class CommandManagmentCommand implements ChatCommand {
         }
         final TextChannel textChannel = optChannel.get();
         final Member sender = optMember.get();
-        final String[] opt = matcher.getArguments(2);
-        if (opt.length == 0) {
+        final String[] arguments = matcher.getArguments(2);
+        if (arguments.length == 0) {
             textChannel.sendMessage("Provide operation to perform, check help for possible operations").queue();
             return;
         }
-        switch (opt[0]) {
+        switch (arguments[0]) {
             case "create": {
-                createCustomCommand(opt, textChannel, sender);
+                createCustomCommand(arguments, textChannel, sender);
                 break;
             }
             case "delete": {
-                deleteCustomCommand(opt, textChannel, sender);
+                deleteCustomCommand(arguments, textChannel, sender);
                 break;
             }
             case "list": {
@@ -121,28 +121,30 @@ public class CommandManagmentCommand implements ChatCommand {
                 break;
             }
             default:
-                textChannel.sendMessage("Unkown operation: " + opt[0]).queue();
+                textChannel.sendMessage("Unkown operation: " + arguments[0]).queue();
                 break;
         }
     }
 
-    private void createCustomCommand(String[] opt, TextChannel textChannel, Member sender) {
-        if (opt.length < 2) {
+    private void createCustomCommand(String[] arguments, TextChannel textChannel, Member sender) {
+        if (arguments.length < 2) {
             textChannel.sendMessage("Creating custom command requires a name for the command").queue();
             return;
         }
-        if (opt.length < 3) {
+        if (arguments.length < 3) {
             textChannel.sendMessage("Command must contain a template string for the response").queue();
             return;
         }
-        final String name = opt[1];
-        final Optional<CustomCommand> oldCommand = commandManager.getCommand(name);
+        final String commandName = arguments[1];
+        final Optional<CustomCommand> oldCommand = commandManager.getCommand(commandName);
         if (oldCommand.isPresent()) {
             try {
                 if (commandManager.addCommand(oldCommand.get())) {
                     textChannel.sendMessage("Found old command by that name in memory, succesfully added it to database").queue();
                 } else {
-                    textChannel.sendMessage("Command with that name alredy exists, " + "if you want to edit command remove old one first, " + "otherwise provide different name for the command").queue();
+                    textChannel.sendMessage("Command with that name alredy exists, "
+                            + "if you want to edit command remove old one first, "
+                            + "otherwise provide different name for the command").queue();
                 }
             } catch (SQLException ex) {
                 textChannel.sendMessage("Found old command by that name in memory but adding it to database failed.").queue();
@@ -153,8 +155,8 @@ public class CommandManagmentCommand implements ChatCommand {
             }
             return;
         }
-        final String newValue = opt[2];
-        final CustomCommand newAction = this.commandManager.build(name, newValue, sender.getIdLong());
+        final String commandTemplate = arguments[2];
+        final CustomCommand newAction = this.commandManager.build(commandName, commandTemplate, sender.getIdLong());
         {
             try {
                 if (this.commandManager.addCommand(newAction)) {
@@ -172,15 +174,15 @@ public class CommandManagmentCommand implements ChatCommand {
         }
     }
 
-    private void deleteCustomCommand(String[] opt, TextChannel textChannel, Member sender) {
-        if (opt.length < 2) {
+    private void deleteCustomCommand(String[] arguments, TextChannel textChannel, Member sender) {
+        if (arguments.length < 2) {
             textChannel.sendMessage("Deleting custom command requires a name of the the command to remove").queue();
             return;
         }
-        final String name = opt[1];
-        final Optional<CustomCommand> optCommand = commandManager.getCommand(name);
+        final String commandName = arguments[1];
+        final Optional<CustomCommand> optCommand = commandManager.getCommand(commandName);
         if (optCommand.isEmpty()) {
-            textChannel.sendMessage("No such command as " + name).queue();
+            textChannel.sendMessage("No such command as " + commandName).queue();
             return;
         }
         final CustomCommand command = optCommand.get();

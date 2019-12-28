@@ -101,18 +101,18 @@ public class RemainderCommand implements ChatCommand {
         }
         final TextChannel textChannel = optChannel.get();
 
-        final String[] args = message.getArguments(5);
-        if (args.length == 0) {
+        final String[] arguments = message.getArguments(5);
+        if (arguments.length == 0) {
             textChannel.sendMessage("Provide action to perform, see help for possible actions").queue();
             return;
         }
-        switch (args[0]) {
+        switch (arguments[0]) {
             case "create": {
-                createRemainder(args, textChannel);
+                createRemainder(arguments, textChannel);
                 break;
             }
             case "delete": {
-                deleteRemainder(args, textChannel);
+                deleteRemainder(arguments, textChannel);
                 break;
             }
             case "list": {
@@ -120,23 +120,23 @@ public class RemainderCommand implements ChatCommand {
                 break;
             }
             default: {
-                textChannel.sendMessage("Unkown operation: " + args[0]).queue();
+                textChannel.sendMessage("Unkown operation: " + arguments[0]).queue();
             }
         }
     }
 
-    private void createRemainder(String[] args, TextChannel textChannel) {
-        if (args.length < 5) {
+    private void createRemainder(String[] arguments, TextChannel textChannel) {
+        if (arguments.length < 5) {
             textChannel.sendMessage("Missing arguments, see help for event").queue();
             return;
         }
-        final String eventName = args[1];
+        final String eventName = arguments[1];
         final Optional<Event> optEvent = this.eventManager.getEvent(eventName);
         if (optEvent.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
             return;
         }
-        final String reminderDay = args[2];
+        final String reminderDay = arguments[2];
         DayOfWeek activationDay;
         try {
             activationDay = DayOfWeek.valueOf(reminderDay.toUpperCase());
@@ -144,7 +144,7 @@ public class RemainderCommand implements ChatCommand {
             textChannel.sendMessage("Day must be weekday written in full, for example, 'Sunday'").queue();
             return;
         }
-        final String reminderTime = args[3];
+        final String reminderTime = arguments[3];
         LocalTime activationTime;
         try {
             activationTime = LocalTime.parse(reminderTime);
@@ -152,7 +152,7 @@ public class RemainderCommand implements ChatCommand {
             textChannel.sendMessage("Unkown time: " + reminderTime + " provide time in format hh:mm").queue();
             return;
         }
-        final String mentions = args[4];
+        final String mentions = arguments[4];
         final MentionEnum me = MentionEnum.getByName(mentions);
         if (me == MentionEnum.ERROR) {
             textChannel.sendMessage("Unkown mention value: " + mentions + "\nSee help for available values for mentions").queue();
@@ -176,14 +176,14 @@ public class RemainderCommand implements ChatCommand {
         }
     }
 
-    private void deleteRemainder(String[] args, TextChannel textChannel) {
-        if (args.length < 4) {
+    private void deleteRemainder(String[] arguments, TextChannel textChannel) {
+        if (arguments.length < 4) {
             textChannel.sendMessage("Provide the name of the remainder you want to delete").queue();
             return;
         }
-        final String eventName = args[1];
-        final String remainderDay = args[2];
-        final String remainderTime = args[3];
+        final String eventName = arguments[1];
+        final String remainderDay = arguments[2];
+        final String remainderTime = arguments[3];
         //Get the remainder to delete
         final Optional<Remainder> optRemainder = this.remainderManager.getRemainder(eventName, remainderDay, remainderTime);
         if (optRemainder.isEmpty()) {

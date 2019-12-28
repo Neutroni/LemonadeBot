@@ -50,6 +50,7 @@ class HelpCommand extends UserCommand {
      *
      * @param parser parser to use
      * @param provider CommandProvider to search commands in
+     * @param db database to use for checking if command is custom command
      */
     HelpCommand(CommandManager parser, CommandProvider provider, DatabaseManager db) {
         this.commandParser = parser;

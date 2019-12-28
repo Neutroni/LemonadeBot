@@ -26,12 +26,11 @@ package eternal.lemonadebot.commands;
 import eternal.lemonadebot.commandtypes.OwnerCommand;
 import eternal.lemonadebot.database.ChannelManager;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,17 +43,14 @@ class ChannelManagmentCommand extends OwnerCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final CommandManager commandParser;
     private final ChannelManager channels;
 
     /**
      * Constructor
      *
-     * @param parser parser to parse command arguments with
      * @param db database to store channels in
      */
-    ChannelManagmentCommand(CommandManager parser, DatabaseManager db) {
-        this.commandParser = parser;
+    ChannelManagmentCommand(DatabaseManager db) {
         this.channels = db.getChannels();
     }
 
@@ -74,103 +70,120 @@ class ChannelManagmentCommand extends OwnerCommand {
 
     @Override
     public void respond(CommandMatcher matcher) {
+        final Optional<TextChannel> optChannel = matcher.getTextChannel();
+        if (optChannel.isEmpty()) {
+            matcher.getMessageChannel().sendMessage("Channels are specific to discord servers and must be edited on one").queue();
+            return;
+        }
+        final TextChannel textChannel = optChannel.get();
         final Message message = matcher.getMessage();
-        final MessageChannel textChannel = message.getChannel();
 
-        final String[] opts = matcher.getArguments(1);
-        if (opts.length == 0) {
+        final String[] arguments = matcher.getArguments(1);
+        if (arguments.length == 0) {
             matcher.getMessage().getChannel().sendMessage("Provide operation to perform, check help for possible operations").queue();
             return;
         }
-        final String action = opts[0];
+        final String action = arguments[0];
         switch (action) {
             case "add": {
-                final List<TextChannel> mentioned = message.getMentionedChannels();
-                //Check if any channels were mentioned
-                if (mentioned.isEmpty()) {
-                    textChannel.sendMessage("Mention channels you want to add").queue();
-                    return;
-                }
-                final StringBuilder sb = new StringBuilder();
-                for (TextChannel channel : mentioned) {
-                    try {
-                        if (channels.addChannel(channel)) {
-                            sb.append("Succesfully started listening on channel ").append(channel.getName()).append('\n');
-                        } else {
-                            sb.append("Was alredy listening on channel ").append(channel.getName()).append('\n');
-                        }
-                    } catch (SQLException ex) {
-                        sb.append("Database error adding channel ").append(channel.getName());
-                        sb.append(" will listen on channel until next reboot unless added succesfully to database\n");
-
-                        LOGGER.error("Failure to add channel");
-                        LOGGER.warn(ex.getMessage());
-                        LOGGER.trace("Stack trace", ex);
-                    }
-                }
-                textChannel.sendMessage(sb.toString()).queue();
+                addChannel(textChannel, message);
                 break;
             }
             case "remove": {
-                final List<TextChannel> mentions = matcher.getMessage().getMentionedChannels();
-                if (mentions.isEmpty()) {
-                    textChannel.sendMessage("Mention channels you want to stop listening on").queue();
-                    return;
-                }
-                final StringBuilder sb = new StringBuilder();
-                for (TextChannel channel : mentions) {
-                    try {
-                        if (channels.removeChannel(channel.getIdLong())) {
-                            sb.append("Succesfully stopped listening on channel ").append(channel.getName()).append('\n');
-                        } else {
-                            sb.append("Was not listening on channel ").append(channel.getName()).append('\n');
-                        }
-                    } catch (SQLException ex) {
-                        sb.append("Database error removing channel ").append(channel.getName());
-                        sb.append(" Will not listen on channel until next reboot unless removed succesfully from database\n");
-
-                        LOGGER.error("Failure to remove channel");
-                        LOGGER.warn(ex.getMessage());
-                        LOGGER.trace("Stack trace", ex);
-                    }
-                }
-                textChannel.sendMessage(sb.toString()).queue();
+                removeChannel(textChannel, message);
                 break;
             }
             case "list": {
-                final List<Long> channelIds = channels.getChannels();
-                final StringBuilder sb = new StringBuilder("Channels:\n");
-                for (Long id : channelIds) {
-                    final TextChannel channel = message.getGuild().getTextChannelById(id);
-                    if (channel == null) {
-                        sb.append("Channel in database which could not be found, removing from listened channels\n");
-                        try {
-                            if (channels.removeChannel(id)) {
-                                sb.append("Stopped listening on channel succesfully\n");
-                            } else {
-                                sb.append("Channel alredy removed by someone else\n");
-                            }
-                        } catch (SQLException ex) {
-                            sb.append("Database failure in removing channel from database\n");
-
-                            LOGGER.error("Failure to remove channel while listing channels");
-                            LOGGER.warn(ex.getMessage());
-                            LOGGER.trace("Stack trace", ex);
-                        }
-                        continue;
-                    }
-                    sb.append(channel.getName()).append('\n');
-                }
-                if (channelIds.isEmpty()) {
-                    sb.append("Not listening on any channels");
-                }
-                textChannel.sendMessage(sb.toString()).queue();
+                listChannels(textChannel);
                 break;
             }
             default: {
                 textChannel.sendMessage("Unkown action: " + action).queue();
             }
         }
+    }
+
+    private void addChannel(TextChannel textChannel, Message message) {
+        final List<TextChannel> mentioned = message.getMentionedChannels();
+        //Check if any channels were mentioned
+        if (mentioned.isEmpty()) {
+            textChannel.sendMessage("Mention channels you want to add").queue();
+            return;
+        }
+        final StringBuilder sb = new StringBuilder();
+        for (TextChannel channel : mentioned) {
+            try {
+                if (channels.addChannel(channel)) {
+                    sb.append("Succesfully started listening on channel ").append(channel.getName()).append('\n');
+                } else {
+                    sb.append("Was alredy listening on channel ").append(channel.getName()).append('\n');
+                }
+            } catch (SQLException ex) {
+                sb.append("Database error adding channel ").append(channel.getName());
+                sb.append(" will listen on channel until next reboot unless added succesfully to database\n");
+
+                LOGGER.error("Failure to add channel");
+                LOGGER.warn(ex.getMessage());
+                LOGGER.trace("Stack trace", ex);
+            }
+        }
+        textChannel.sendMessage(sb.toString()).queue();
+    }
+
+    private void removeChannel(TextChannel textChannel, Message message) {
+        final List<TextChannel> mentions = message.getMentionedChannels();
+        if (mentions.isEmpty()) {
+            textChannel.sendMessage("Mention channels you want to stop listening on").queue();
+            return;
+        }
+        final StringBuilder sb = new StringBuilder();
+        for (TextChannel channel : mentions) {
+            try {
+                if (channels.removeChannel(channel.getIdLong())) {
+                    sb.append("Succesfully stopped listening on channel ").append(channel.getName()).append('\n');
+                } else {
+                    sb.append("Was not listening on channel ").append(channel.getName()).append('\n');
+                }
+            } catch (SQLException ex) {
+                sb.append("Database error removing channel ").append(channel.getName());
+                sb.append(" Will not listen on channel until next reboot unless removed succesfully from database\n");
+
+                LOGGER.error("Failure to remove channel");
+                LOGGER.warn(ex.getMessage());
+                LOGGER.trace("Stack trace", ex);
+            }
+        }
+        textChannel.sendMessage(sb.toString()).queue();
+    }
+
+    private void listChannels(TextChannel textChannel) {
+        final List<Long> channelIds = channels.getChannels();
+        final StringBuilder sb = new StringBuilder("Channels:\n");
+        for (Long id : channelIds) {
+            final TextChannel channel = textChannel.getGuild().getTextChannelById(id);
+            if (channel == null) {
+                sb.append("Channel in database which could not be found, removing from listened channels\n");
+                try {
+                    if (channels.removeChannel(id)) {
+                        sb.append("Stopped listening on channel succesfully\n");
+                    } else {
+                        sb.append("Channel alredy removed by someone else\n");
+                    }
+                } catch (SQLException ex) {
+                    sb.append("Database failure in removing channel from database\n");
+
+                    LOGGER.error("Failure to remove channel while listing channels");
+                    LOGGER.warn(ex.getMessage());
+                    LOGGER.trace("Stack trace", ex);
+                }
+                continue;
+            }
+            sb.append(channel.getName()).append('\n');
+        }
+        if (channelIds.isEmpty()) {
+            sb.append("Not listening on any channels");
+        }
+        textChannel.sendMessage(sb.toString()).queue();
     }
 
 }

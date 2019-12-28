@@ -24,7 +24,6 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.UserCommand;
-import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import java.util.List;
 import java.util.Optional;
@@ -42,17 +41,6 @@ import org.apache.logging.log4j.Logger;
 class RoleCommand extends UserCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
-
-    private final CommandManager commandParser;
-
-    /**
-     * Constructor
-     *
-     * @param parser command parser to parse commands with
-     */
-    RoleCommand(CommandManager parser) {
-        this.commandParser = parser;
-    }
 
     @Override
     public String getCommand() {

@@ -51,12 +51,12 @@ public class CommandProvider {
         this.commands = List.of(
                 new HelpCommand(parser, this, db),
                 new EventCommand(parser, db),
-                new ChannelManagmentCommand(parser, db),
+                new ChannelManagmentCommand(db),
                 new CommandManagmentCommand(parser, db),
                 new PrefixCommand(parser),
-                new RoleCommand(parser),
+                new RoleCommand(),
                 new ShutdownCommand(),
-                new MusicCommand(parser),
+                new MusicCommand(),
                 new RemainderCommand(db)
         );
     }
