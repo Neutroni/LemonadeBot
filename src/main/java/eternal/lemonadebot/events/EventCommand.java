@@ -125,7 +125,7 @@ public class EventCommand extends UserCommand {
                 break;
             }
             case "list": {
-                listEvents(opts, textChannel);
+                listEvents(textChannel);
                 break;
             }
             default: {
@@ -343,7 +343,7 @@ public class EventCommand extends UserCommand {
         }
     }
 
-    private void listEvents(String[] opts, TextChannel textChannel) {
+    private void listEvents(TextChannel textChannel) {
         final List<Event> ev = this.eventManager.getEvents();
         final StringBuilder sb = new StringBuilder("Events:\n");
         for (Event e : ev) {
