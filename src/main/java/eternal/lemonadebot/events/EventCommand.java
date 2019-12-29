@@ -148,7 +148,7 @@ public class EventCommand extends UserCommand {
             } else {
                 description = "No description";
             }
-            final Event newEvent = new Event(eventName, description, sender.getIdLong());
+            final Event newEvent = new Event(eventName, description, sender, textChannel.getGuild());
             if (!eventManager.addEvent(newEvent)) {
                 textChannel.sendMessage("Event with that name alredy exists.").queue();
                 return;
@@ -174,7 +174,7 @@ public class EventCommand extends UserCommand {
         }
         final String eventName = opts[1];
 
-        final Optional<Event> oldEvent = eventManager.getEvent(eventName);
+        final Optional<Event> oldEvent = eventManager.getEvent(eventName, textChannel.getGuild());
         if (oldEvent.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
             return;
@@ -194,7 +194,7 @@ public class EventCommand extends UserCommand {
         }
         try {
             //Delete remainders for the event
-            for (Remainder r : this.remainderManager.getRemainders()) {
+            for (Remainder r : this.remainderManager.getRemainders(textChannel.getGuild())) {
                 if (event.equals(r.getEvent())) {
                     try {
                         this.remainderManager.deleteRemainder(r);
@@ -228,7 +228,7 @@ public class EventCommand extends UserCommand {
         }
         final String eventName = opts[1];
 
-        final Optional<Event> oldEvent = eventManager.getEvent(eventName);
+        final Optional<Event> oldEvent = eventManager.getEvent(eventName, textChannel.getGuild());
         if (oldEvent.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
             return;
@@ -255,7 +255,7 @@ public class EventCommand extends UserCommand {
         }
         final String eventName = opts[1];
 
-        final Optional<Event> oldEvent = eventManager.getEvent(eventName);
+        final Optional<Event> oldEvent = eventManager.getEvent(eventName, textChannel.getGuild());
         if (oldEvent.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
             return;
@@ -282,7 +282,7 @@ public class EventCommand extends UserCommand {
         }
         final String eventName = opts[1];
 
-        final Optional<Event> opt = this.eventManager.getEvent(eventName);
+        final Optional<Event> opt = this.eventManager.getEvent(eventName, textChannel.getGuild());
         if (opt.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
             return;
@@ -293,13 +293,11 @@ public class EventCommand extends UserCommand {
         for (Long id : memberIds) {
             final Member m = textChannel.getGuild().getMemberById(id);
             if (m == null) {
-                sb.append("Found user in event members who could not be found, removing from event\n");
+                LOGGER.warn("Found user in event members who could not be found, removing from event\n");
                 try {
                     eventManager.leaveEvent(event, id);
-                    sb.append("Succesfully removed missing member from event\n");
+                    LOGGER.info("Succesfully removed missing member from event\n");
                 } catch (SQLException ex) {
-                    sb.append("Database error removing member from event\n");
-
                     LOGGER.error("Failure to remove member from event");
                     LOGGER.warn(ex.getMessage());
                     LOGGER.trace("Stack trace", ex);
@@ -321,7 +319,7 @@ public class EventCommand extends UserCommand {
         }
         final String eventName = opts[1];
 
-        final Optional<Event> opt = this.eventManager.getEvent(eventName);
+        final Optional<Event> opt = this.eventManager.getEvent(eventName, textChannel.getGuild());
         if (opt.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
             return;
@@ -344,10 +342,12 @@ public class EventCommand extends UserCommand {
     }
 
     private void listEvents(TextChannel textChannel) {
-        final List<Event> ev = this.eventManager.getEvents();
+        final List<Event> ev = this.eventManager.getEvents(textChannel.getGuild());
         final StringBuilder sb = new StringBuilder("Events:\n");
         for (Event e : ev) {
-            sb.append(' ').append(e.getName()).append(" - ").append(e.getDescription()).append('\n');
+            if (e.getGuild() == textChannel.getGuild().getIdLong()) {
+                sb.append(' ').append(e.getName()).append(" - ").append(e.getDescription()).append('\n');
+            }
         }
         if (ev.isEmpty()) {
             sb.append("No events found.");

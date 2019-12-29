@@ -140,13 +140,19 @@ public class DatabaseManager implements AutoCloseable {
         final String PREFIXES = "CREATE TABLE Prefixes(guild INTEGER PRIMARY KEY NOT NULL, prefix TEXT NOT NULL)";
         final String CHANNELS = "CREATE TABLE Channels(id INTEGER PRIMARY KEY NOT NULL);";
         final String COMMANDS = "CREATE TABLE Commands(name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL, owner INTEGER NOT NULL);";
-        final String EVENTS = "CREATE TABLE Events(name TEXT PRIMARY KEY NOT NULL, description TEXT NOT NULL, owner INTEGER NOT NULL);";
+        final String EVENTS = "CREATE TABLE Events("
+                + "id INTEGER PRIMARY KEY,"
+                + "guild INTEGER NOT NULL,"
+                + "name TEXT NOT NULL,"
+                + "description TEXT NOT NULL,"
+                + "owner INTEGER NOT NULL,"
+                + "UNIQUE (guild,name));";
         final String EVENT_MEMBERS = "CREATE TABLE EventMembers("
-                + "event REFERENCES Events(name) ON DELETE CASCADE,"
+                + "FOREIGN KEY (event) REFERENCES Events(id) ON DELETE CASCADE,"
                 + "member INTEGER NOT NULL,"
                 + "PRIMARY KEY (event,member));";
         final String REMAINDERS = "CREATE TABLE Remainders("
-                + "event REFERENCES Events(name) ON DELETE CASCADE,"
+                + "FOREIGN KEY (event) REFERENCES Events(id) ON DELETE CASCADE,"
                 + "day TEXT NOT NULL,"
                 + "time TEXT NOT NULL,"
                 + "mention TEXT NOT NULL,"

@@ -29,17 +29,23 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
  * @author Neutroni
  */
 public class EventManager {
+
+    private static final Logger LOGGER = LogManager.getLogger();
 
     private final Connection conn;
     private final Set<Event> events = new HashSet<>();
@@ -67,13 +73,22 @@ public class EventManager {
             final boolean added = this.events.add(event);
 
             //Add to database
-            final String query = "INSERT INTO Events(name,description,owner) VALUES(?,?,?);";
-            if (!hasEvent(event.getName())) {
+            final String query = "INSERT INTO Events(guild,name,description,owner) VALUES(?,?,?,?);";
+            if (!hasEvent(event.getName(), event.getGuild())) {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
-                    ps.setString(1, event.getName());
-                    ps.setString(2, event.getDescription());
-                    ps.setLong(3, event.getOwner());
-                    return ps.executeUpdate() > 0;
+                    ps.setLong(1, event.getGuild());
+                    ps.setString(2, event.getName());
+                    ps.setString(3, event.getDescription());
+                    ps.setLong(4, event.getOwner());
+                    int rowCount = ps.executeUpdate();
+                    try (ResultSet rs = ps.getGeneratedKeys()) {
+                        if (rs.next()) {
+                            event.setID(rs.getLong("id"));
+                        } else {
+                            LOGGER.warn("Inserted Event into database but no eventID was generated");
+                        }
+                    }
+                    return (rowCount > 0);
                 }
             }
 
@@ -93,14 +108,14 @@ public class EventManager {
             final boolean removed = this.events.remove(event);
 
             //Remove from database
-            final String query = "DELETE FROM Events Where name = ?;";
-            if (hasEvent(event.getName())) {
+            final String query = "DELETE FROM Events Where guild = ? AND name = ?;";
+            if (hasEvent(event.getName(), event.getGuild())) {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
-                    ps.setString(1, event.getName());
+                    ps.setLong(1, event.getGuild());
+                    ps.setString(2, event.getName());
                     return ps.executeUpdate() > 0;
                 }
             }
-
             return removed;
         }
     }
@@ -109,9 +124,10 @@ public class EventManager {
      * Get event by name
      *
      * @param name name of the event
+     * @param guild guild the event is from
      * @return optional containing the event
      */
-    public Optional<Event> getEvent(String name) {
+    public Optional<Event> getEvent(String name, Guild guild) {
         synchronized (this) {
             for (Event e : this.events) {
                 if (name.equals(e.getName())) {
@@ -123,16 +139,35 @@ public class EventManager {
     }
 
     /**
+     * Get event by id
+     *
+     * @param eventID id for event
+     * @return optional containing the event
+     */
+    public Optional<Event> getEvent(long eventID) {
+        synchronized (this) {
+            for (Event e : this.events) {
+                if (eventID == e.getID()) {
+                    return Optional.of(e);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
      * Check if event exists in database
      *
      * @param name name of the event
+     * @param guildID id of the guild to find event for
      * @return true if event was found
      * @throws SQLException if database connection failed
      */
-    private boolean hasEvent(String name) throws SQLException {
-        final String query = "SELECT name FROM Events WHERE name=?;";
+    private boolean hasEvent(String name, long guildID) throws SQLException {
+        final String query = "SELECT name FROM Events WHERE name=? AND guild = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, name);
+            ps.setLong(2, guildID);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return true;
@@ -149,10 +184,10 @@ public class EventManager {
      * @throws SQLException if database connection failed
      */
     private void loadEvents() throws SQLException {
-        final String query = "SELECT name,description,owner FROM Events;";
+        final String query = "SELECT id,guild,name,description,owner FROM Events;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
-                final Event ev = new Event(rs.getString("name"), rs.getString("description"), rs.getLong("owner"));
+                final Event ev = new Event(rs.getLong("id"), rs.getString("name"), rs.getString("description"), rs.getLong("owner"), rs.getLong("guild"));
                 loadMembers(ev);
                 events.add(ev);
             }
@@ -186,9 +221,9 @@ public class EventManager {
 
             //Add to database
             final String query = "INSERT INTO EventMembers(event,member) VALUES(?,?);";
-            if (!hasAttended(event.getName(), member.getIdLong())) {
+            if (!hasAttended(event.getID(), member.getIdLong())) {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
-                    ps.setString(1, event.getName());
+                    ps.setLong(1, event.getID());
                     ps.setString(2, member.getId());
                     return ps.executeUpdate() > 0;
                 }
@@ -201,16 +236,16 @@ public class EventManager {
     /**
      * Check if user is a member of event
      *
-     * @param name name of event
-     * @param id id of the user
-     * @return true if user is a mamber of the event
+     * @param eventID id of event
+     * @param userID id of the user
+     * @return true if user is a member of the event
      * @throws SQLException
      */
-    private boolean hasAttended(String name, long id) throws SQLException {
+    private boolean hasAttended(long eventID, long userID) throws SQLException {
         final String query = "SELECT event FROM EventMembers WHERE event = ? AND member = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setString(1, name);
-            ps.setLong(2, id);
+            ps.setLong(1, eventID);
+            ps.setLong(2, userID);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return true;
@@ -224,20 +259,20 @@ public class EventManager {
      * Remove user from event
      *
      * @param event event to remove user from
-     * @param id id of the member to remove from event
+     * @param memberID id of the member to remove from event
      * @return true if user was removed from event
      * @throws SQLException if database connection failed
      */
-    public boolean leaveEvent(Event event, long id) throws SQLException {
+    public boolean leaveEvent(Event event, long memberID) throws SQLException {
         synchronized (this) {
-            final boolean left = event.leave(id);
+            final boolean left = event.leave(memberID);
 
             //Remove from database
             final String query = "DELETE FROM EventMembers WHERE event = ? AND member = ?;";
-            if (hasAttended(event.getName(), id)) {
+            if (hasAttended(event.getID(), memberID)) {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
-                    ps.setString(1, event.getName());
-                    ps.setLong(2, id);
+                    ps.setLong(1, event.getID());
+                    ps.setLong(2, memberID);
                     return ps.executeUpdate() > 0;
                 }
             }
@@ -257,10 +292,11 @@ public class EventManager {
             event.clear();
 
             //Remove from database
-            final String query = "DELETE FROM Events WHERE name = ?;";
+            final String query = "DELETE FROM EventMembers WHERE event = ?;";
             event.clear();
             try (PreparedStatement ps = conn.prepareStatement(query)) {
-                ps.setString(1, event.getName());
+                ps.setLong(1, event.getID());
+                ps.setLong(2, event.getGuild());
                 ps.executeUpdate();
             }
         }
@@ -269,11 +305,18 @@ public class EventManager {
     /**
      * Get list of events
      *
+     * @param guild Guild to get event for
      * @return list of events
      */
-    public List<Event> getEvents() {
+    public List<Event> getEvents(Guild guild) {
         synchronized (this) {
-            return List.copyOf(this.events);
+            final List<Event> guildEvents = new ArrayList<>();
+            for (Event e : this.events) {
+                if (e.getGuild() == guild.getIdLong()) {
+                    guildEvents.add(e);
+                }
+            }
+            return guildEvents;
         }
     }
 }

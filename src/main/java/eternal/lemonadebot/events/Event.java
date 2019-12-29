@@ -26,6 +26,8 @@ package eternal.lemonadebot.events;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 
 /**
  *
@@ -33,22 +35,63 @@ import java.util.Set;
  */
 public class Event {
 
+    private final long guildID;
     private final String name;
     private final String description;
     private final long ownerID;
     private final Set<Long> members = new HashSet<>();
+    private long eventID;
 
     /**
      * Constructor
      *
+     * Remember to set database id for this event when adding to database
+     *
      * @param name name of the event
      * @param description description for the event
      * @param owner owner of the event
+     * @param guild Guild the event belongs to
      */
-    public Event(String name, String description, long owner) {
+    public Event(String name, String description, Member owner, Guild guild) {
+        this.name = name;
+        this.description = description;
+        this.ownerID = owner.getIdLong();
+        this.guildID = guild.getIdLong();
+    }
+
+    /**
+     * Constructor
+     *
+     * @param id Database id for this event
+     * @param name Name for this event
+     * @param description Description for this event
+     * @param owner Owner id for this event
+     * @param guild Guild id for this event
+     */
+    public Event(long id, String name, String description, long owner, long guild) {
+        this.eventID = id;
         this.name = name;
         this.description = description;
         this.ownerID = owner;
+        this.guildID = guild;
+    }
+
+    /**
+     * Set the id this event uses in database
+     *
+     * @param id id for this event
+     */
+    public void setID(long id) {
+        this.eventID = id;
+    }
+
+    /**
+     * Get the id this event uses in database
+     *
+     * @return id for this event
+     */
+    public long getID() {
+        return this.eventID;
     }
 
     /**
@@ -120,15 +163,24 @@ public class Event {
     public long getOwner() {
         return this.ownerID;
     }
-    
+
+    /**
+     * Get the guild this event is from
+     *
+     * @return guild id
+     */
+    public long getGuild() {
+        return this.guildID;
+    }
+
     @Override
-    public int hashCode(){
+    public int hashCode() {
         return this.name.hashCode();
     }
-    
+
     @Override
-    public boolean equals(Object other){
-        if(other instanceof Event){
+    public boolean equals(Object other) {
+        if (other instanceof Event) {
             Event otherEvent = (Event) other;
             return this.name.equals(otherEvent.getName());
         }

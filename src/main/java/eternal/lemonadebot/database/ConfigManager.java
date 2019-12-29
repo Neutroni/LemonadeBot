@@ -42,7 +42,7 @@ import org.apache.logging.log4j.Logger;
  * @author Neutroni
  */
 public class ConfigManager {
-    
+
     private static final Logger LOGGER = LogManager.getLogger();
 
     //Database connection
@@ -235,5 +235,5 @@ public class ConfigManager {
             ps.executeUpdate();
         }
     }
-    
+
 }

@@ -131,7 +131,7 @@ public class RemainderCommand implements ChatCommand {
             return;
         }
         final String eventName = arguments[1];
-        final Optional<Event> optEvent = this.eventManager.getEvent(eventName);
+        final Optional<Event> optEvent = this.eventManager.getEvent(eventName, textChannel.getGuild());
         if (optEvent.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
             return;
@@ -185,7 +185,7 @@ public class RemainderCommand implements ChatCommand {
         final String remainderDay = arguments[2];
         final String remainderTime = arguments[3];
         //Get the remainder to delete
-        final Optional<Remainder> optRemainder = this.remainderManager.getRemainder(eventName, remainderDay, remainderTime);
+        final Optional<Remainder> optRemainder = this.remainderManager.getRemainder(eventName, remainderDay, remainderTime, textChannel.getGuild());
         if (optRemainder.isEmpty()) {
             textChannel.sendMessage("Could not find such remainder").queue();
             return;
@@ -207,7 +207,7 @@ public class RemainderCommand implements ChatCommand {
     }
 
     private void listRemainders(TextChannel textChannel) {
-        final List<Remainder> ev = this.remainderManager.getRemainders();
+        final List<Remainder> ev = this.remainderManager.getRemainders(textChannel.getGuild());
         final StringBuilder sb = new StringBuilder("Remainders:\n");
         for (Remainder r : ev) {
             if (r.isValid()) {

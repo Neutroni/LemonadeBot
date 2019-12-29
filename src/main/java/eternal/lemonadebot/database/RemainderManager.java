@@ -34,6 +34,7 @@ import java.sql.Statement;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +42,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -100,7 +102,7 @@ public class RemainderManager {
         synchronized (this) {
             final boolean added = this.remainders.add(remainder);
 
-            //If timer was just added att to 
+            //If timer was just added schedule the activation
             if (added) {
                 this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
                 LOGGER.debug("Remainder scheluded for activation at " + remainder.getActivationDate().toString());
@@ -108,16 +110,18 @@ public class RemainderManager {
 
             //Add to database
             final String query = "INSERT INTO Remainders(event,day,time,mention,channel) VALUES(?,?,?,?,?);";
-            final String eventName = remainder.getEvent().getName();
+            final long eventID = remainder.getEvent().getID();
             final String remainderDay = remainder.getDay().name();
             final String remainderTime = remainder.getTime().toString();
-            if (!hasRemainder(eventName, remainderDay, remainderTime)) {
+            final String mention = remainder.getMentionMode().name();
+            final long channel = remainder.getChannel();
+            if (!hasRemainder(eventID, remainderDay, remainderTime)) {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
-                    ps.setString(1, eventName);
+                    ps.setLong(1, eventID);
                     ps.setString(2, remainderDay);
                     ps.setString(3, remainderTime);
-                    ps.setString(4, remainder.getMentionMode().name());
-                    ps.setLong(5, remainder.getChannel());
+                    ps.setString(4, mention);
+                    ps.setLong(5, channel);
                     return ps.executeUpdate() > 0;
                 }
             }
@@ -139,12 +143,12 @@ public class RemainderManager {
 
             //Remove from database
             final String query = "DELETE FROM Remainders Where event = ? AND day = ? AND time = ?;";
-            final String eventName = remainder.getEvent().getName();
+            final long eventID = remainder.getEvent().getID();
             final String remainderDay = remainder.getDay().name();
             final String remainderTime = remainder.getTime().toString();
-            if (hasRemainder(eventName, remainderDay, remainderTime)) {
+            if (hasRemainder(eventID, remainderDay, remainderTime)) {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
-                    ps.setString(1, eventName);
+                    ps.setLong(1, eventID);
                     ps.setString(2, remainderDay);
                     ps.setString(3, remainderTime);
                     return ps.executeUpdate() > 0;
@@ -165,10 +169,10 @@ public class RemainderManager {
         final String query = "SELECT event,day,time,mention,channel FROM Remainders;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
-                final String eventName = rs.getString("event");
-                final Optional<Event> optEvent = this.eventManager.getEvent(eventName);
+                final long eventID = rs.getLong("event");
+                final Optional<Event> optEvent = this.eventManager.getEvent(eventID);
                 if (optEvent.isEmpty()) {
-                    LOGGER.error("Malformed remainder with missing event" + eventName);
+                    LOGGER.error("Malformed remainder with missing event" + eventID);
                     continue;
                 }
                 final String remainderDay = rs.getString("day");
@@ -212,9 +216,10 @@ public class RemainderManager {
      * @param eventName name the remainder is for
      * @param day remainder day
      * @param time remainder time
+     * @param guild guild to search remainders from
      * @return Optional containing the remainder if found
      */
-    public Optional<Remainder> getRemainder(String eventName, String day, String time) {
+    public Optional<Remainder> getRemainder(String eventName, String day, String time, Guild guild) {
         synchronized (this) {
             for (Remainder r : this.remainders) {
                 if (!r.getEvent().getName().equals(eventName)) {
@@ -226,6 +231,9 @@ public class RemainderManager {
                 if (!r.getTime().toString().equals(time.toUpperCase())) {
                     continue;
                 }
+                if (r.getEvent().getGuild() != guild.getIdLong()) {
+                    continue;
+                }
                 return Optional.of(r);
             }
         }
@@ -235,16 +243,16 @@ public class RemainderManager {
     /**
      * Check if remainder exisits in database
      *
-     * @param eventName name of the event
+     * @param eventId name of the event
      * @param remainderDay string presentation for the day
      * @param remainderTime string presentation for the time
      * @return true if remainder is in database
      * @throws SQLException if database connection failed
      */
-    private boolean hasRemainder(String eventName, String remainderDay, String remainderTime) throws SQLException {
+    private boolean hasRemainder(long eventId, String remainderDay, String remainderTime) throws SQLException {
         final String query = "SELECT event FROM Remainders WHERE event=? AND day=? AND time=?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setString(1, eventName);
+            ps.setLong(1, eventId);
             ps.setString(2, remainderDay);
             ps.setString(3, remainderTime);
             try (ResultSet rs = ps.executeQuery()) {
@@ -259,11 +267,18 @@ public class RemainderManager {
     /**
      * Get the list of remainders currently active
      *
+     * @param guild Guild to get remainder for
      * @return List of remainders
      */
-    public List<Remainder> getRemainders() {
+    public List<Remainder> getRemainders(Guild guild) {
         synchronized (this) {
-            return List.copyOf(this.remainders);
+            final List<Remainder> guildRemainders = new ArrayList<>();
+            for (Remainder r : this.remainders) {
+                if (r.getEvent().getGuild() == guild.getIdLong()) {
+                    guildRemainders.add(r);
+                }
+            }
+            return guildRemainders;
         }
     }
 
