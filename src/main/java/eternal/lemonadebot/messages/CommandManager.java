@@ -33,6 +33,8 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
@@ -163,15 +165,18 @@ public class CommandManager {
      * Check if user has permission to manage content owned by other member
      *
      * @param member User trying to do an action that modifies content
-     * @param owner owner of the content
+     * @param owner owner of the content, can be null
      * @return true if user has permission
      */
-    public boolean hasPermission(Member member, Member owner) {
+    public boolean hasPermission(@Nonnull Member member, @Nullable Member owner) {
         if (member.equals(owner)) {
             return true;
         }
         final CommandPermission senderRank = getRank(member);
-        if (senderRank.ordinal() == CommandPermission.ADMIN.ordinal()) {
+        if (owner == null) {
+            return (senderRank.ordinal() >= CommandPermission.ADMIN.ordinal());
+        }
+        if (senderRank == CommandPermission.ADMIN) {
             return getRank(owner).ordinal() < CommandPermission.ADMIN.ordinal();
         }
         return configManager.isOwner(member);

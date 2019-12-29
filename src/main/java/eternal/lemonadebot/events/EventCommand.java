@@ -180,18 +180,15 @@ public class EventCommand extends UserCommand {
             return;
         }
         final Event event = oldEvent.get();
+
         //Check if user has permission to remove the event
         final Member eventOwner = textChannel.getGuild().getMemberById(event.getOwner());
-        final boolean hasPermission;
-        if (eventOwner == null) {
-            hasPermission = (commandParser.getRank(sender).ordinal() >= CommandPermission.ADMIN.ordinal());
-        } else {
-            hasPermission = commandParser.hasPermission(sender, eventOwner);
-        }
+        final boolean hasPermission = commandParser.hasPermission(sender, eventOwner);
         if (!hasPermission) {
             textChannel.sendMessage("You do not have permission to remove that event, " + "only the event owner and admins can remove events").queue();
             return;
         }
+
         try {
             //Delete remainders for the event
             for (Remainder r : this.remainderManager.getRemainders(textChannel.getGuild())) {

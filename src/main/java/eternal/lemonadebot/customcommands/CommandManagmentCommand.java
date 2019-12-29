@@ -187,31 +187,29 @@ public class CommandManagmentCommand implements ChatCommand {
         }
         final CustomCommand command = optCommand.get();
         final Member commandOwner = textChannel.getGuild().getMemberById(command.getOwner());
-        //Check if user has permission to remove the command
-        final boolean hasPermission;
-        if (commandOwner == null) {
-            hasPermission = (commandParser.getRank(sender).ordinal() >= CommandPermission.ADMIN.ordinal());
-        } else {
-            hasPermission = commandParser.hasPermission(sender, commandOwner);
-        }
-        if (hasPermission) {
-            try {
-                if (commandManager.removeCommand(command)) {
-                    textChannel.sendMessage("Command deleted succesfully").queue();
-                } else {
-                    textChannel.sendMessage("Command was alredy deleted, propably a database error").queue();
-                }
-            } catch (SQLException ex) {
-                textChannel.sendMessage("Deleting command from database failed, deleted from temporary memory, command will be back after reboot").queue();
 
-                LOGGER.error("Failure to delete custom command");
-                LOGGER.warn(ex.getMessage());
-                LOGGER.trace("Stack trace", ex);
-            }
+        //Check if user has permission to remove the command
+        final boolean hasPermission = commandParser.hasPermission(sender, commandOwner);
+        if (!hasPermission) {
+            textChannel.sendMessage("You do not have permission to delete that command, "
+                    + "only the command owner and admins can delete commands").queue();
             return;
         }
-        textChannel.sendMessage("You do not have permission to delete that command, "
-                + "only owner of the command and people with admin rights can delete commands").queue();
+
+        //Delete the command
+        try {
+            if (commandManager.removeCommand(command)) {
+                textChannel.sendMessage("Command deleted succesfully").queue();
+                return;
+            }
+            textChannel.sendMessage("Command was alredy deleted, propably a database error").queue();
+        } catch (SQLException ex) {
+            textChannel.sendMessage("Deleting command from database failed, deleted from temporary memory, command will be back after reboot").queue();
+
+            LOGGER.error("Failure to delete custom command");
+            LOGGER.warn(ex.getMessage());
+            LOGGER.trace("Stack trace", ex);
+        }
     }
 
     private void listCustomCommands(TextChannel textChannel) {

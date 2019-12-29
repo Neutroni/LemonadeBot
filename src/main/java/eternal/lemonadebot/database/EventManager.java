@@ -80,7 +80,7 @@ public class EventManager {
                     ps.setString(2, event.getName());
                     ps.setString(3, event.getDescription());
                     ps.setLong(4, event.getOwner());
-                    int rowCount = ps.executeUpdate();
+                    final int rowCount = ps.executeUpdate();
                     try (ResultSet rs = ps.getGeneratedKeys()) {
                         if (rs.next()) {
                             event.setID(rs.getLong("id"));
