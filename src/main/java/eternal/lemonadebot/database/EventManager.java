@@ -296,7 +296,6 @@ public class EventManager {
             event.clear();
             try (PreparedStatement ps = conn.prepareStatement(query)) {
                 ps.setLong(1, event.getID());
-                ps.setLong(2, event.getGuild());
                 ps.executeUpdate();
             }
         }

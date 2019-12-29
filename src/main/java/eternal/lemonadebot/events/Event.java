@@ -25,6 +25,7 @@ package eternal.lemonadebot.events;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -175,16 +176,28 @@ public class Event {
 
     @Override
     public int hashCode() {
-        return this.name.hashCode();
+        int hash = 7;
+        hash = 89 * hash + (int) (this.guildID ^ (this.guildID >>> 32));
+        hash = 89 * hash + Objects.hashCode(this.name);
+        return hash;
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (other instanceof Event) {
-            Event otherEvent = (Event) other;
-            return this.name.equals(otherEvent.getName());
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
         }
-        return false;
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Event other = (Event) obj;
+        if (this.guildID != other.guildID) {
+            return false;
+        }
+        return Objects.equals(this.name, other.name);
     }
 
 }
