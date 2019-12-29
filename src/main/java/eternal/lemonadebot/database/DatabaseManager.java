@@ -139,7 +139,12 @@ public class DatabaseManager implements AutoCloseable {
         final String CONFIG = "CREATE TABLE Options(name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);";
         final String PREFIXES = "CREATE TABLE Prefixes(guild INTEGER PRIMARY KEY NOT NULL, prefix TEXT NOT NULL)";
         final String CHANNELS = "CREATE TABLE Channels(id INTEGER PRIMARY KEY NOT NULL);";
-        final String COMMANDS = "CREATE TABLE Commands(name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL, owner INTEGER NOT NULL);";
+        final String COMMANDS = "CREATE TABLE Commands("
+                + "guild INTEGER NOT NULL,"
+                + "name TEXT NOT NULL,"
+                + "value TEXT NOT NULL,"
+                + "owner INTEGER NOT NULL"
+                + "PRIMARY KEY (guild,name));";
         final String EVENTS = "CREATE TABLE Events("
                 + "id INTEGER PRIMARY KEY,"
                 + "guild INTEGER NOT NULL,"

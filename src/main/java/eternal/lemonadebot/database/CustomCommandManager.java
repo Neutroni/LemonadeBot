@@ -30,10 +30,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import net.dv8tion.jda.api.entities.Guild;
 
 /**
  * Builder for custom commands
@@ -67,10 +69,11 @@ public class CustomCommandManager {
      * @param key key for command
      * @param pattern pattern for command
      * @param owner owner fo the command
+     * @param guild guild the command is from
      * @return the new custom command
      */
-    public CustomCommand build(String key, String pattern, long owner) {
-        return new CustomCommand(this.configManager, this.actionManager, key, pattern, owner);
+    public CustomCommand build(String key, String pattern, long owner, long guild) {
+        return new CustomCommand(this.configManager, this.actionManager, key, pattern, owner, guild);
     }
 
     /**
@@ -94,12 +97,13 @@ public class CustomCommandManager {
             final boolean added = this.commands.add(command);
 
             //Add to database
-            final String query = "INSERT INTO Commands(name,value,owner) VALUES(?,?,?);";
-            if (!hasCommand(command.getCommand())) {
+            final String query = "INSERT INTO Commands(guild,name,value,owner) VALUES(?,?,?,?);";
+            if (!hasCommand(command.getCommand(), command.getGuild())) {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
-                    ps.setString(1, command.getCommand());
-                    ps.setString(2, command.getAction());
-                    ps.setLong(3, command.getOwner());
+                    ps.setLong(1, command.getGuild());
+                    ps.setString(2, command.getCommand());
+                    ps.setString(3, command.getAction());
+                    ps.setLong(4, command.getOwner());
                     return ps.executeUpdate() > 0;
                 }
             }
@@ -119,10 +123,11 @@ public class CustomCommandManager {
             boolean removed = this.commands.remove(command);
 
             //Remove from database
-            final String query = "DELETE FROM Commands WHERE name = ?;";
-            if (hasCommand(command.getCommand())) {
+            final String query = "DELETE FROM Commands WHERE name = ? AND guild = ?;";
+            if (hasCommand(command.getCommand(), command.getGuild())) {
                 try (PreparedStatement ps = conn.prepareStatement(query)) {
                     ps.setString(1, command.getCommand());
+                    ps.setLong(2, command.getGuild());
                     return ps.executeUpdate() > 0;
                 }
             }
@@ -135,14 +140,19 @@ public class CustomCommandManager {
      * Get command by name
      *
      * @param name name of the command
+     * @param guild guild to get command from
      * @return optional containing the command
      */
-    public Optional<CustomCommand> getCommand(String name) {
+    public Optional<CustomCommand> getCommand(String name, Guild guild) {
         synchronized (this) {
             for (CustomCommand c : this.commands) {
-                if (c.getCommand().equals(name)) {
-                    return Optional.of(c);
+                if (!c.getCommand().equals(name)) {
+                    continue;
                 }
+                if (c.getGuild() != guild.getIdLong()) {
+                    continue;
+                }
+                return Optional.of(c);
             }
         }
         return Optional.empty();
@@ -152,13 +162,15 @@ public class CustomCommandManager {
      * Check if custom commands exists in database
      *
      * @param key command to search for
+     * @param guildID guild to check command for
      * @return true if command was found, false otherwise
      * @throws java.sql.SQLException if database connection fails
      */
-    private boolean hasCommand(String key) throws SQLException {
-        final String query = "SELECT name FROM Commands WHERE name = ?;";
+    private boolean hasCommand(String key, long guildID) throws SQLException {
+        final String query = "SELECT name FROM Commands WHERE name = ? AND guild = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, key);
+            ps.setLong(2, guildID);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return true;
@@ -174,10 +186,10 @@ public class CustomCommandManager {
      * @throws SQLException if Database connection failed
      */
     private void loadCommands() throws SQLException {
-        final String query = "SELECT name,value,owner FROM Commands;";
+        final String query = "SELECT guild,name,value,owner FROM Commands;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
-                final CustomCommand newCommand = build(rs.getString("name"), rs.getString("value"), rs.getLong("owner"));
+                final CustomCommand newCommand = build(rs.getString("name"), rs.getString("value"), rs.getLong("owner"), rs.getLong("guild"));
                 this.commands.add(newCommand);
             }
         }
@@ -186,11 +198,18 @@ public class CustomCommandManager {
     /**
      * Get list of commands
      *
+     * @param guild Guild to get commands for
      * @return custom commands
      */
-    public List<CustomCommand> getCommands() {
+    public List<CustomCommand> getCommands(Guild guild) {
         synchronized (this) {
-            return List.copyOf(this.commands);
+            final List<CustomCommand> guildCommands = new ArrayList<>();
+            for (CustomCommand e : this.commands) {
+                if (e.getGuild() == guild.getIdLong()) {
+                    guildCommands.add(e);
+                }
+            }
+            return guildCommands;
         }
     }
 

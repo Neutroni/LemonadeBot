@@ -40,6 +40,7 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -105,8 +106,14 @@ public class CommandManager {
             return "Found command: " + commandName + " in " + cmdMatcher.getMessage().getContentRaw();
         });
 
+        final Optional<TextChannel> optChannel = cmdMatcher.getTextChannel();
+        if (optChannel.isEmpty()) {
+            return Optional.empty();
+        }
+        final Guild guild = optChannel.get().getGuild();
+
         //Check if we find custom command by that name
-        final Optional<CustomCommand> custom = customCommands.getCommand(commandName);
+        final Optional<CustomCommand> custom = customCommands.getCommand(commandName, guild);
         if (custom.isPresent()) {
             return Optional.of(custom.get());
         }

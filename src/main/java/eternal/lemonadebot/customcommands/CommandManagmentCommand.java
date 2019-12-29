@@ -136,7 +136,7 @@ public class CommandManagmentCommand implements ChatCommand {
             return;
         }
         final String commandName = arguments[1];
-        final Optional<CustomCommand> oldCommand = commandManager.getCommand(commandName);
+        final Optional<CustomCommand> oldCommand = commandManager.getCommand(commandName, textChannel.getGuild());
         if (oldCommand.isPresent()) {
             try {
                 if (commandManager.addCommand(oldCommand.get())) {
@@ -156,7 +156,7 @@ public class CommandManagmentCommand implements ChatCommand {
             return;
         }
         final String commandTemplate = arguments[2];
-        final CustomCommand newAction = this.commandManager.build(commandName, commandTemplate, sender.getIdLong());
+        final CustomCommand newAction = this.commandManager.build(commandName, commandTemplate, sender.getIdLong(), textChannel.getGuild().getIdLong());
         {
             try {
                 if (this.commandManager.addCommand(newAction)) {
@@ -180,7 +180,7 @@ public class CommandManagmentCommand implements ChatCommand {
             return;
         }
         final String commandName = arguments[1];
-        final Optional<CustomCommand> optCommand = commandManager.getCommand(commandName);
+        final Optional<CustomCommand> optCommand = commandManager.getCommand(commandName, textChannel.getGuild());
         if (optCommand.isEmpty()) {
             textChannel.sendMessage("No such command as " + commandName).queue();
             return;
@@ -213,7 +213,7 @@ public class CommandManagmentCommand implements ChatCommand {
     }
 
     private void listCustomCommands(TextChannel textChannel) {
-        final List<CustomCommand> coms = this.commandManager.getCommands();
+        final List<CustomCommand> coms = this.commandManager.getCommands(textChannel.getGuild());
         final StringBuilder sb = new StringBuilder("Commands:\n");
         for (CustomCommand c : coms) {
             final Member creator = textChannel.getGuild().getMemberById(c.getOwner());
