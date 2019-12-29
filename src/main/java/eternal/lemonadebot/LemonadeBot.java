@@ -93,13 +93,14 @@ public class LemonadeBot {
                 DatabaseManager.initialize(databaseLocation, ownerID);
             }
 
+            //Start loading JDA
+            final JDA jda = new JDABuilder(cmd.getOptionValue("k")).build();
+
             //Connect to the database
-            final DatabaseManager DB = new DatabaseManager(databaseLocation);
+            final DatabaseManager DB = new DatabaseManager(databaseLocation, jda);
             LOGGER.debug("Connected to database succefully");
 
-            final JDA jda = new JDABuilder(cmd.getOptionValue("k")).build();
-            jda.awaitReady();
-            DB.getRemainders().loadRemainders(jda);
+            //Start listening for messages
             jda.addEventListener(new MessageListener(DB));
             LOGGER.debug("Startup succesfull");
         } catch (SQLException ex) {

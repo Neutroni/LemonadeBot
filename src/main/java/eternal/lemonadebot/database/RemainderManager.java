@@ -53,6 +53,8 @@ public class RemainderManager {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final Connection conn;
+    private final JDA jda;
+
     private final Set<Remainder> remainders = new HashSet<>();
     private final Timer remainderTimer = new Timer();
     private final EventManager eventManager;
@@ -62,11 +64,28 @@ public class RemainderManager {
      *
      * @param conn database connectionF
      * @param em EventManager to fetch events from
+     * @param jda JDA to pass to remainders
      * @throws SQLException if loading events from database failed
      */
-    RemainderManager(Connection conn, EventManager em) throws SQLException {
+    RemainderManager(Connection conn, EventManager em, JDA jda) throws SQLException {
         this.conn = conn;
+        this.jda = jda;
         this.eventManager = em;
+        loadRemainders();
+    }
+
+    /**
+     * Builds remainder
+     *
+     * @param textChannel channel for remainder
+     * @param event event the remainder is for
+     * @param mentions who the remainder notifies
+     * @param day day for remainder
+     * @param time time for remainder
+     * @return new remainder
+     */
+    public Remainder build(long textChannel, Event event, MentionEnum mentions, DayOfWeek day, LocalTime time) {
+        return new Remainder(this.jda, textChannel, event, mentions, day, time);
     }
 
     /**
@@ -141,7 +160,7 @@ public class RemainderManager {
      * @param jda JDA instance to use for initializing remainder timers
      * @throws SQLException If database connection failed
      */
-    public void loadRemainders(JDA jda) throws SQLException {
+    private void loadRemainders() throws SQLException {
         LOGGER.debug("Started loading remainders from database");
         final String query = "SELECT event,day,time,mention,channel FROM Remainders;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
@@ -177,7 +196,7 @@ public class RemainderManager {
                     continue;
                 }
                 final long remainderChannel = rs.getLong("channel");
-                final Remainder remainder = new Remainder(jda, remainderChannel, optEvent.get(), me, activationDay, activationTime);
+                final Remainder remainder = build(remainderChannel, optEvent.get(), me, activationDay, activationTime);
 
                 remainders.add(remainder);
                 LOGGER.debug("Remainder loaded for event " + remainder.getEvent().getName());

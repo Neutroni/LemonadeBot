@@ -159,7 +159,7 @@ public class RemainderCommand implements ChatCommand {
             return;
         }
 
-        final Remainder remainder = new Remainder(textChannel.getJDA(), textChannel.getIdLong(), optEvent.get(), me, activationDay, activationTime);
+        final Remainder remainder = this.remainderManager.build(textChannel.getIdLong(), optEvent.get(), me, activationDay, activationTime);
         try {
             if (!this.remainderManager.addRemainder(remainder)) {
                 textChannel.sendMessage("Matching remainder already exists.").queue();
