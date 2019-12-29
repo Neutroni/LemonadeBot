@@ -30,6 +30,7 @@ import eternal.lemonadebot.messages.CommandMatcher;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
@@ -44,6 +45,7 @@ class ChannelManagmentCommand extends OwnerCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final ChannelManager channels;
+    private final JDA jda;
 
     /**
      * Constructor
@@ -52,6 +54,7 @@ class ChannelManagmentCommand extends OwnerCommand {
      */
     ChannelManagmentCommand(DatabaseManager db) {
         this.channels = db.getChannels();
+        this.jda = db.getJDA();
     }
 
     @Override
@@ -160,25 +163,23 @@ class ChannelManagmentCommand extends OwnerCommand {
         final List<Long> channelIds = channels.getChannels();
         final StringBuilder sb = new StringBuilder("Channels:\n");
         for (Long id : channelIds) {
-            final TextChannel channel = textChannel.getGuild().getTextChannelById(id);
-            if (channel == null) {
-                sb.append("Channel in database which could not be found, removing from listened channels\n");
+            final TextChannel listeningChannel = this.jda.getTextChannelById(id);
+            if (listeningChannel == null) {
+                LOGGER.warn("Channel in database which could not be found, removing from listened channels\n");
                 try {
-                    if (channels.removeChannel(id)) {
-                        sb.append("Stopped listening on channel succesfully\n");
-                    } else {
-                        sb.append("Channel alredy removed by someone else\n");
-                    }
+                    final boolean removed = channels.removeChannel(id);
+                    LOGGER.info("Status for removing channel " + id + ": " + removed);
                 } catch (SQLException ex) {
-                    sb.append("Database failure in removing channel from database\n");
-
                     LOGGER.error("Failure to remove channel while listing channels");
                     LOGGER.warn(ex.getMessage());
                     LOGGER.trace("Stack trace", ex);
                 }
                 continue;
             }
-            sb.append(channel.getName()).append('\n');
+            //Only print channels for current server
+            if (textChannel.getGuild().equals(listeningChannel.getGuild())) {
+                sb.append(listeningChannel.getName()).append('\n');
+            }
         }
         if (channelIds.isEmpty()) {
             sb.append("Not listening on any channels");
