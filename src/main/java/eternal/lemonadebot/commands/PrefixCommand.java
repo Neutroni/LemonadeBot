@@ -26,7 +26,8 @@ package eternal.lemonadebot.commands;
 import eternal.lemonadebot.commandtypes.OwnerCommand;
 import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
-import net.dv8tion.jda.api.entities.MessageChannel;
+import java.util.Optional;
+import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
  *
@@ -58,20 +59,28 @@ class PrefixCommand extends OwnerCommand {
 
     @Override
     public void respond(CommandMatcher matcher) {
-        final MessageChannel messageChannel = matcher.getMessage().getChannel();
-        final String[] options = matcher.getArguments(1);
-        //Check if user provide prefix
-        if (options.length == 0) {
-            messageChannel.sendMessage("Provide a prefix to set commandprefix to.").queue();
+        //Verify we are on a discord server and not a private chat
+        final Optional<TextChannel> optChannel = matcher.getTextChannel();
+        if (optChannel.isEmpty()) {
+            matcher.getMessageChannel().sendMessage("Command prefixes are specific to discord servers and must be edited on one").queue();
             return;
         }
+        final TextChannel textChannel = optChannel.get();
+
+        //Check if user provide prefix
+        final String[] options = matcher.getArguments(1);
+        if (options.length == 0) {
+            textChannel.sendMessage("Provide a prefix to set commandprefix to.").queue();
+            return;
+        }
+
         //Update the prefix
         final String newPrefix = options[0];
-        final boolean updateSuccess = commandParser.setPrefix(newPrefix);
+        final boolean updateSuccess = commandParser.setPrefix(newPrefix, textChannel.getGuild());
         if (updateSuccess) {
-            messageChannel.sendMessage("Updated prefix succesfully to: " + newPrefix).queue();
+            textChannel.sendMessage("Updated prefix succesfully to: " + newPrefix).queue();
         } else {
-            messageChannel.sendMessage("Storing prefix in DB failed, will still use new prefix until reboot, re-issue command once DB issue is fixed.").queue();
+            textChannel.sendMessage("Storing prefix in DB failed, will still use new prefix until reboot, re-issue command once DB issue is fixed.").queue();
         }
     }
 

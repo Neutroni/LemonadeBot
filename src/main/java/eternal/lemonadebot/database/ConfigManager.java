@@ -28,7 +28,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.HashMap;
 import java.util.Optional;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,7 +42,7 @@ import org.apache.logging.log4j.Logger;
  * @author Neutroni
  */
 public class ConfigManager {
-
+    
     private static final Logger LOGGER = LogManager.getLogger();
 
     //Database connection
@@ -47,7 +50,7 @@ public class ConfigManager {
 
     //Data
     private final String ownerID;
-    private volatile Optional<String> commandPrefix;
+    private final HashMap<Long, String> prefixMap = new HashMap<>();
     private volatile CommandPermission runPermission = CommandPermission.USER;
     private volatile CommandPermission editPermission = CommandPermission.MEMBER;
 
@@ -67,7 +70,7 @@ public class ConfigManager {
         this.ownerID = optOwner.get();
 
         //Load command prefix
-        this.commandPrefix = loadSetting(ConfigKey.COMMAND_PREFIX.name());
+        loadCommandPrefixes();
 
         //Load permissions
         loadUsePerm();
@@ -149,20 +152,22 @@ public class ConfigManager {
     /**
      * get command prefix
      *
-     * @return optional of command prefix
+     * @param guildID Guild to get prefix for
+     * @return command prefix for guild if found, '!' otherwise
      */
-    public Optional<String> getCommandPrefix() {
-        return this.commandPrefix;
+    public String getCommandPrefix(long guildID) {
+        return this.prefixMap.getOrDefault(guildID, "!");
     }
 
     /**
      * Set command prefix
      *
+     * @param guild Guild the prefix is for
      * @param prefix new command prefix
      * @throws SQLException if updating prefix failed
      */
-    public void setCommandPrefix(String prefix) throws SQLException {
-        updateSetting(ConfigKey.COMMAND_PREFIX.name(), prefix);
+    public void setCommandPrefix(Guild guild, String prefix) throws SQLException {
+        updatePrefix(guild.getIdLong(), prefix);
     }
 
     /**
@@ -201,4 +206,34 @@ public class ConfigManager {
         return Optional.empty();
     }
 
+    /**
+     * Load prefixces stored in database
+     *
+     * @throws SQLException if database connection failed
+     */
+    private void loadCommandPrefixes() throws SQLException {
+        final String query = "SELECT guild,prefix FROM Prefixes";
+        try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
+            while (rs.next()) {
+                this.prefixMap.put(rs.getLong("guild"), rs.getString("prefix"));
+            }
+        }
+    }
+
+    /**
+     * Update prefix for guild
+     *
+     * @param guildID Guild to update prefix for
+     * @param prefix prefix to set for guild
+     * @throws SQLException if database connection failed
+     */
+    private void updatePrefix(long guildID, String prefix) throws SQLException {
+        final String query = "INSERT OR REPLACE INTO Prefixes(guild,prefix) VALUES(?,?);";
+        try (final PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setLong(1, guildID);
+            ps.setString(2, prefix);
+            ps.executeUpdate();
+        }
+    }
+    
 }

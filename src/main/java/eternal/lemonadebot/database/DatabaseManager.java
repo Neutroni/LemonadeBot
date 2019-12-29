@@ -28,6 +28,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import net.dv8tion.jda.api.JDA;
 
 /**
  *
@@ -36,6 +37,7 @@ import java.sql.Statement;
 public class DatabaseManager implements AutoCloseable {
 
     private final Connection conn;
+    private final JDA jda;
 
     private final ConfigManager config;
     private final ChannelManager channels;
@@ -47,15 +49,23 @@ public class DatabaseManager implements AutoCloseable {
      * Constructor
      *
      * @param filename location of database
+     * @param jda JDA to pass to managers that need it
      * @throws SQLException if loading database fails
+     * @throws InterruptedException If jda loading was interrupted
      */
-    public DatabaseManager(String filename) throws SQLException {
+    public DatabaseManager(String filename, JDA jda) throws SQLException, InterruptedException {
         this.conn = DriverManager.getConnection("jdbc:sqlite:" + filename);
+        this.jda = jda;
+
+        //Load data from database that is not reliant on JDA
         this.config = new ConfigManager(conn);
         this.channels = new ChannelManager(conn);
         this.commands = new CustomCommandManager(conn, config);
         this.events = new EventManager(conn);
-        this.remainders = new RemainderManager(conn, this.events);
+
+        //Load data relying on JDA
+        jda.awaitReady();
+        this.remainders = new RemainderManager(conn, this.events, this.jda);
     }
 
     @Override
@@ -70,6 +80,15 @@ public class DatabaseManager implements AutoCloseable {
      */
     public ConfigManager getConfig() {
         return this.config;
+    }
+
+    /**
+     * Get the JDA that is used with the DB
+     *
+     * @return JDA instance
+     */
+    public JDA getJDA() {
+        return this.jda;
     }
 
     /**
@@ -118,6 +137,7 @@ public class DatabaseManager implements AutoCloseable {
     public static void initialize(String dbLocation, String ownerID) throws SQLException {
         final Connection connection = DriverManager.getConnection("jdbc:sqlite:" + dbLocation);
         final String CONFIG = "CREATE TABLE Options(name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);";
+        final String PREFIXES = "CREATE TABLE Prefixes(guild INTEGER PRIMARY KEY NOT NULL, prefix TEXT NOT NULL)";
         final String CHANNELS = "CREATE TABLE Channels(id INTEGER PRIMARY KEY NOT NULL);";
         final String COMMANDS = "CREATE TABLE Commands(name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL, owner INTEGER NOT NULL);";
         final String EVENTS = "CREATE TABLE Events(name TEXT PRIMARY KEY NOT NULL, description TEXT NOT NULL, owner INTEGER NOT NULL);";
@@ -135,6 +155,7 @@ public class DatabaseManager implements AutoCloseable {
         final String INSERT = "INSERT INTO Options(name,value) VALUES(?,?);";
         try (Statement st = connection.createStatement()) {
             st.addBatch(CONFIG);
+            st.addBatch(PREFIXES);
             st.addBatch(CHANNELS);
             st.addBatch(COMMANDS);
             st.addBatch(EVENTS);

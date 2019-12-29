@@ -30,9 +30,12 @@ import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.CustomCommandManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import org.apache.logging.log4j.LogManager;
@@ -49,7 +52,7 @@ public class CommandManager {
 
     //Command matching
     private final ConfigManager configManager;
-    private volatile Pattern commandPattern;
+    private final HashMap<Long, Pattern> commandPattern = new HashMap<>();
 
     //Commands
     private final CommandProvider commandProvider;
@@ -63,14 +66,12 @@ public class CommandManager {
     public CommandManager(DatabaseManager db) {
         this.configManager = db.getConfig();
 
-        //Load command pattern from configmanager
-        final Optional<String> opt = this.configManager.getCommandPrefix();
-
-        if (opt.isPresent()) {
-            final String prefix = opt.get();
-            updatePattern(prefix);
-        } else {
-            updatePattern("!");
+        //Load command patterns for all guilds
+        final JDA jda = db.getJDA();
+        for (Guild g : jda.getGuilds()) {
+            final long guildID = g.getIdLong();
+            final String prefix = this.configManager.getCommandPrefix(guildID);
+            this.commandPattern.put(guildID, getCommandPattern(prefix));
         }
 
         //Load commands
@@ -81,11 +82,11 @@ public class CommandManager {
     /**
      * Get the action for command
      *
-     * @param m Matcher to find command for
+     * @param cmdMatcher Matcher to find command for
      * @return CommandAction or Option.empty if command was not found
      */
-    public Optional<ChatCommand> getAction(CommandMatcher m) {
-        final Optional<String> name = m.getCommand();
+    public Optional<ChatCommand> getAction(CommandMatcher cmdMatcher) {
+        final Optional<String> name = cmdMatcher.getCommand();
         if (name.isEmpty()) {
             return Optional.empty();
         }
@@ -99,7 +100,7 @@ public class CommandManager {
 
         //Log the message if debug is enabled
         LOGGER.debug(() -> {
-            return "Found command: " + commandName + " in " + m.getMessage().getContentRaw();
+            return "Found command: " + commandName + " in " + cmdMatcher.getMessage().getContentRaw();
         });
 
         //Check if we find custom command by that name
@@ -113,11 +114,19 @@ public class CommandManager {
     /**
      * Match of command elements
      *
+     * @param guild Guild the message was sent in
      * @param msg Message to parse
-     * @return Mathcher for the message
+     * @return Matcher for the message
      */
-    public CommandMatcher getCommandMatcher(Message msg) {
-        return new CommandMatcher(this.commandPattern, msg);
+    public CommandMatcher getCommandMatcher(Guild guild, Message msg) {
+        final long guildID = guild.getIdLong();
+        if (this.commandPattern.containsKey(guildID)) {
+            return new CommandMatcher(this.commandPattern.get(guildID), msg);
+        }
+        //New guild
+        final Pattern newPattern = getCommandPattern(this.configManager.getCommandPrefix(guildID));
+        this.commandPattern.put(guildID, newPattern);
+        return new CommandMatcher(newPattern, msg);
     }
 
     /**
@@ -173,21 +182,22 @@ public class CommandManager {
      *
      * @param prefix
      */
-    private void updatePattern(String prefix) {
+    private Pattern getCommandPattern(String prefix) {
         //Start of match, optionally @numericID, prefix, match group 2 is command
-        this.commandPattern = Pattern.compile("^(@\\d+ )?" + Pattern.quote(prefix) + "(\\w+) ?");
+        return Pattern.compile("^(@\\d+ )?" + Pattern.quote(prefix) + "(\\w+) ?");
     }
 
     /**
      * Sets the commands prefix
      *
      * @param prefix prefix to use
+     * @param guild guild the prefix is for
      * @return was storing prefix in database succesfull
      */
-    public boolean setPrefix(String prefix) {
+    public boolean setPrefix(String prefix, Guild guild) {
         try {
-            updatePattern(prefix);
-            this.configManager.setCommandPrefix(prefix);
+            this.commandPattern.put(guild.getIdLong(), getCommandPattern(prefix));
+            this.configManager.setCommandPrefix(guild, prefix);
             return true;
         } catch (SQLException ex) {
             LOGGER.error(ex);

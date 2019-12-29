@@ -94,7 +94,7 @@ public class MessageListener extends ListenerAdapter {
 
         //Check if message is a command
         final Message message = event.getMessage();
-        final CommandMatcher cmdmatch = commandManager.getCommandMatcher(message);
+        final CommandMatcher cmdmatch = commandManager.getCommandMatcher(event.getGuild(), message);
         final Optional<ChatCommand> action = commandManager.getAction(cmdmatch);
         if (action.isEmpty()) {
             return;
@@ -148,7 +148,7 @@ public class MessageListener extends ListenerAdapter {
 
         //Check if we should react on this channel
         if (!channelManager.hasChannel(textChannel)) {
-            LOGGER.debug("Not greeting because not listening on the channelw");
+            LOGGER.debug("Not greeting because not listening on the channel");
             return;
         }
 
@@ -207,18 +207,22 @@ public class MessageListener extends ListenerAdapter {
      */
     @Override
     public void onGuildJoin(GuildJoinEvent event) {
-        if (channelManager.isEmpty()) {
-            try {
-                final TextChannel channel = event.getGuild().getSystemChannel();
-                if (channel == null) {
-                    LOGGER.error("Joined a guild for first time but cant find a channel to start listening on");
-                    return;
-                }
-                channelManager.addChannel(channel);
+        //Start listening on the default channel for the guild
+        final TextChannel channel = event.getGuild().getSystemChannel();
+        if (channel == null) {
+            LOGGER.error("Joined a guild for first time but cant find a channel to start listening on");
+            return;
+        }
+        //Store the channel in database
+        try {
+            channelManager.addChannel(channel);
+            if (channel.canTalk()) {
                 channel.sendMessage("Hello everyone I'm a new bot here, nice to meet you all").queue();
-            } catch (SQLException ex) {
-                LOGGER.error("Adding default listen channel failed", ex);
+            } else {
+                LOGGER.warn("Joined guild but can't chat, still listening");
             }
+        } catch (SQLException ex) {
+            LOGGER.error("Adding default listen channel failed", ex);
         }
     }
 
