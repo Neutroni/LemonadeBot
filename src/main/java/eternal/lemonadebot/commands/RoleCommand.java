@@ -27,6 +27,7 @@ import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.messages.CommandMatcher;
 import java.util.List;
 import java.util.Optional;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
@@ -55,6 +56,7 @@ class RoleCommand extends UserCommand {
 
     @Override
     public void respond(CommandMatcher matcher) {
+        //Check we are on a server
         final Optional<TextChannel> optChannel = matcher.getTextChannel();
         final Optional<Member> optMember = matcher.getMember();
         if (optChannel.isEmpty() || optMember.isEmpty()) {
@@ -62,8 +64,13 @@ class RoleCommand extends UserCommand {
             return;
         }
         final TextChannel textChannel = optChannel.get();
+        //Check that we can assign roles here
+        if (!textChannel.getGuild().getSelfMember().hasPermission(Permission.MANAGE_ROLES)) {
+            textChannel.sendMessage("It appears I can't assign roles here, if you think this is a mistake contact server adminstrators").queue();
+            return;
+        }
+        //Check persons doesn't already have a role
         final Member sender = optMember.get();
-
         final List<Role> currentRoles = sender.getRoles();
         if (currentRoles.size() > 0) {
             textChannel.sendMessage("You cannot assign role to yourself using this command if you alredy have a role").queue();
