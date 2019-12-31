@@ -51,10 +51,10 @@ public interface ChatCommand {
     /**
      * Which roles have permssion to run this command
      *
-     * @param guid Guild to check permission in
+     * @param guild Guild to check permission in
      * @return CommandPermission needed to run this command
      */
-    public CommandPermission getPermission(Guild guid);
+    public CommandPermission getPermission(Guild guild);
 
     /**
      * Responds to a message
