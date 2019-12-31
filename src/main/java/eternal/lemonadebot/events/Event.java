@@ -114,7 +114,9 @@ public class Event {
      * @return list of member idsF
      */
     public List<Long> getMembers() {
-        return List.copyOf(this.members);
+        synchronized (this) {
+            return List.copyOf(this.members);
+        }
     }
 
     /**
