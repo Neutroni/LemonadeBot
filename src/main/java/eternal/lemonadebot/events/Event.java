@@ -23,6 +23,7 @@
  */
 package eternal.lemonadebot.events;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -40,7 +41,7 @@ public class Event {
     private final String name;
     private final String description;
     private final long ownerID;
-    private final Set<Long> members = new HashSet<>();
+    private final Set<Long> members = Collections.synchronizedSet(new HashSet<>());
 
     /**
      * Constructor
@@ -81,9 +82,7 @@ public class Event {
      * @return true if succesfully joined, false otherwise
      */
     public boolean join(long member) {
-        synchronized (this) {
-            return this.members.add(member);
-        }
+        return this.members.add(member);
     }
 
     /**
@@ -93,19 +92,15 @@ public class Event {
      * @return true if left event succesfully, false otherwise
      */
     public boolean leave(long member) {
-        synchronized (this) {
-            return this.members.remove(member);
-        }
+        return this.members.remove(member);
     }
 
     /**
      * Clears the list of joined people
      */
     public void clear() {
-        synchronized (this) {
-            this.members.clear();
-            this.members.add(this.ownerID);
-        }
+        this.members.clear();
+        this.members.add(this.ownerID);
     }
 
     /**
@@ -114,9 +109,7 @@ public class Event {
      * @return list of member idsF
      */
     public List<Long> getMembers() {
-        synchronized (this) {
-            return List.copyOf(this.members);
-        }
+        return List.copyOf(this.members);
     }
 
     /**

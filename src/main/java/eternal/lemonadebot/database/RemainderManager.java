@@ -35,6 +35,7 @@ import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -57,7 +58,7 @@ public class RemainderManager {
     private final Connection conn;
     private final JDA jda;
 
-    private final Set<Remainder> remainders = new HashSet<>();
+    private final Set<Remainder> remainders = Collections.synchronizedSet(new HashSet<>());
     private final Timer remainderTimer = new Timer();
     private final EventManager eventManager;
 
@@ -99,14 +100,12 @@ public class RemainderManager {
      */
     public boolean addRemainder(Remainder remainder) throws SQLException {
         LOGGER.debug("Storing remainder for event" + remainder.getEvent().getName());
-        synchronized (this) {
-            final boolean added = this.remainders.add(remainder);
+        final boolean added = this.remainders.add(remainder);
 
-            //If timer was just added schedule the activation
-            if (added) {
-                this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
-                LOGGER.debug("Remainder scheluded for activation at " + remainder.getActivationDate().toString());
-            }
+        //If timer was just added schedule the activation
+        if (added) {
+            this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
+            LOGGER.debug("Remainder scheluded for activation at " + remainder.getActivationDate().toString());
         }
 
         //Add to database
@@ -136,10 +135,9 @@ public class RemainderManager {
      * @throws SQLException if database connection failed
      */
     public boolean deleteRemainder(Remainder remainder) throws SQLException {
-        synchronized (this) {
-            remainder.cancel();
-            this.remainders.remove(remainder);
-        }
+        remainder.cancel();
+        this.remainders.remove(remainder);
+
         //Remove from database
         final String query = "DELETE FROM Remainders Where guild = ? AND name = ? AND day = ? AND time = ?;";
         final long guildID = remainder.getEvent().getGuild();
@@ -219,22 +217,20 @@ public class RemainderManager {
      * @return Optional containing the remainder if found
      */
     public Optional<Remainder> getRemainder(String eventName, String day, String time, Guild guild) {
-        synchronized (this) {
-            for (Remainder r : this.remainders) {
-                if (!r.getEvent().getName().equals(eventName)) {
-                    continue;
-                }
-                if (!r.getDay().toString().equals(day.toUpperCase())) {
-                    continue;
-                }
-                if (!r.getTime().toString().equals(time.toUpperCase())) {
-                    continue;
-                }
-                if (r.getEvent().getGuild() != guild.getIdLong()) {
-                    continue;
-                }
-                return Optional.of(r);
+        for (Remainder r : this.remainders) {
+            if (!r.getEvent().getName().equals(eventName)) {
+                continue;
             }
+            if (!r.getDay().toString().equals(day.toUpperCase())) {
+                continue;
+            }
+            if (!r.getTime().toString().equals(time.toUpperCase())) {
+                continue;
+            }
+            if (r.getEvent().getGuild() != guild.getIdLong()) {
+                continue;
+            }
+            return Optional.of(r);
         }
         return Optional.empty();
     }
@@ -246,15 +242,13 @@ public class RemainderManager {
      * @return List of remainders
      */
     public List<Remainder> getRemainders(Guild guild) {
-        synchronized (this) {
-            final List<Remainder> guildRemainders = new ArrayList<>();
-            for (Remainder r : this.remainders) {
-                if (r.getEvent().getGuild() == guild.getIdLong()) {
-                    guildRemainders.add(r);
-                }
+        final List<Remainder> guildRemainders = new ArrayList<>();
+        for (Remainder r : this.remainders) {
+            if (r.getEvent().getGuild() == guild.getIdLong()) {
+                guildRemainders.add(r);
             }
-            return guildRemainders;
         }
+        return guildRemainders;
     }
 
 }

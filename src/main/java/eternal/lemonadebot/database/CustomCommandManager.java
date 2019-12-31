@@ -31,6 +31,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -45,7 +46,7 @@ import net.dv8tion.jda.api.entities.Guild;
 public class CustomCommandManager {
 
     private final Connection conn;
-    private final Set<CustomCommand> commands = new HashSet<>();
+    private final Set<CustomCommand> commands = Collections.synchronizedSet(new HashSet<>());
 
     private final ActionManager actionManager = new ActionManager();
     private final ConfigManager configManager;
@@ -93,9 +94,7 @@ public class CustomCommandManager {
      * @throws SQLException if database connection fails
      */
     public boolean addCommand(CustomCommand command) throws SQLException {
-        synchronized (this) {
-            this.commands.add(command);
-        }
+        this.commands.add(command);
 
         //Add to database
         final String query = "INSERT OR IGNORE INTO Commands(guild,name,value,owner) VALUES(?,?,?,?);";
@@ -116,9 +115,7 @@ public class CustomCommandManager {
      * @throws SQLException if database connection fails
      */
     public boolean removeCommand(CustomCommand command) throws SQLException {
-        synchronized (this) {
-            this.commands.remove(command);
-        }
+        this.commands.remove(command);
 
         //Remove from database
         final String query = "DELETE FROM Commands WHERE name = ? AND guild = ?;";
@@ -137,16 +134,14 @@ public class CustomCommandManager {
      * @return optional containing the command
      */
     public Optional<CustomCommand> getCommand(String name, Guild guild) {
-        synchronized (this) {
-            for (CustomCommand c : this.commands) {
-                if (!c.getCommand().equals(name)) {
-                    continue;
-                }
-                if (c.getGuild() != guild.getIdLong()) {
-                    continue;
-                }
-                return Optional.of(c);
+        for (CustomCommand c : this.commands) {
+            if (!c.getCommand().equals(name)) {
+                continue;
             }
+            if (c.getGuild() != guild.getIdLong()) {
+                continue;
+            }
+            return Optional.of(c);
         }
         return Optional.empty();
     }
@@ -174,11 +169,9 @@ public class CustomCommandManager {
      */
     public List<CustomCommand> getCommands(Guild guild) {
         final List<CustomCommand> guildCommands = new ArrayList<>();
-        synchronized (this) {
-            for (CustomCommand e : this.commands) {
-                if (e.getGuild() == guild.getIdLong()) {
-                    guildCommands.add(e);
-                }
+        for (CustomCommand e : this.commands) {
+            if (e.getGuild() == guild.getIdLong()) {
+                guildCommands.add(e);
             }
         }
         return guildCommands;

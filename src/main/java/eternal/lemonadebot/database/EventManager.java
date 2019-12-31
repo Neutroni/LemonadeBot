@@ -30,6 +30,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -44,7 +45,7 @@ import net.dv8tion.jda.api.entities.Member;
 public class EventManager {
 
     private final Connection conn;
-    private final Set<Event> events = new HashSet<>();
+    private final Set<Event> events = Collections.synchronizedSet(new HashSet<>());
 
     /**
      * Constructor
@@ -65,9 +66,7 @@ public class EventManager {
      * @throws SQLException If database connection failed
      */
     public boolean addEvent(Event event) throws SQLException {
-        synchronized (this) {
-            this.events.add(event);
-        }
+        this.events.add(event);
 
         //Add to database
         final String query = "INSERT OR IGNORE INTO Events(guild,name,description,owner) VALUES(?,?,?,?);";
@@ -78,7 +77,6 @@ public class EventManager {
             ps.setLong(4, event.getOwner());
             return ps.executeUpdate() > 0;
         }
-
     }
 
     /**
@@ -89,9 +87,8 @@ public class EventManager {
      * @throws SQLException if database connection failed
      */
     public boolean removeEvent(Event event) throws SQLException {
-        synchronized (this) {
-            this.events.remove(event);
-        }
+        this.events.remove(event);
+
         //Remove from database
         final String query = "DELETE FROM Events Where guild = ? AND name = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
@@ -120,16 +117,14 @@ public class EventManager {
      * @return optional containing the event
      */
     public Optional<Event> getEvent(String name, long guildID) {
-        synchronized (this) {
-            for (Event e : this.events) {
-                if (!name.equals(e.getName())) {
-                    continue;
-                }
-                if (guildID != e.getGuild()) {
-                    continue;
-                }
-                return Optional.of(e);
+        for (Event e : this.events) {
+            if (!name.equals(e.getName())) {
+                continue;
             }
+            if (guildID != e.getGuild()) {
+                continue;
+            }
+            return Optional.of(e);
         }
         return Optional.empty();
     }
@@ -233,14 +228,12 @@ public class EventManager {
      * @return list of events
      */
     public List<Event> getEvents(Guild guild) {
-        synchronized (this) {
-            final List<Event> guildEvents = new ArrayList<>();
-            for (Event e : this.events) {
-                if (e.getGuild() == guild.getIdLong()) {
-                    guildEvents.add(e);
-                }
+        final List<Event> guildEvents = new ArrayList<>();
+        for (Event e : this.events) {
+            if (e.getGuild() == guild.getIdLong()) {
+                guildEvents.add(e);
             }
-            return guildEvents;
         }
+        return guildEvents;
     }
 }

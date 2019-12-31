@@ -28,6 +28,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -40,7 +41,7 @@ import net.dv8tion.jda.api.entities.TextChannel;
 public class ChannelManager {
 
     private final Connection conn;
-    private final Set<Long> channels = new HashSet<>();
+    private final Set<Long> channels = Collections.synchronizedSet(new HashSet<>());
 
     /**
      * Constructor
@@ -70,9 +71,7 @@ public class ChannelManager {
      * @throws SQLException if database connection failed
      */
     public boolean addChannel(TextChannel channel) throws SQLException {
-        synchronized (this) {
-            this.channels.add(channel.getIdLong());
-        }
+        this.channels.add(channel.getIdLong());
 
         //Add to database
         final String query = "INSERT OR IGNORE INTO Channels(id) VALUES (?);";
@@ -90,10 +89,8 @@ public class ChannelManager {
      * @throws SQLException if database connection failed
      */
     public boolean removeChannel(Long id) throws SQLException {
-        synchronized (this) {
-            this.channels.remove(id);
-        }
-        
+        this.channels.remove(id);
+
         //Remove from database
         final String query = "DELETE FROM Channels WHERE id = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
@@ -109,9 +106,7 @@ public class ChannelManager {
      * @return true if channel was found
      */
     public boolean hasChannel(TextChannel channel) {
-        synchronized (this) {
-            return this.channels.contains(channel.getIdLong());
-        }
+        return this.channels.contains(channel.getIdLong());
     }
 
     /**
@@ -135,9 +130,7 @@ public class ChannelManager {
      * @return true if no channels are currently stored
      */
     public boolean isEmpty() {
-        synchronized (this) {
-            return this.channels.isEmpty();
-        }
+        return this.channels.isEmpty();
     }
 
 }
