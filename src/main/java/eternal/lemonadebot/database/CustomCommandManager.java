@@ -173,15 +173,15 @@ public class CustomCommandManager {
      * @return custom commands
      */
     public List<CustomCommand> getCommands(Guild guild) {
+        final List<CustomCommand> guildCommands = new ArrayList<>();
         synchronized (this) {
-            final List<CustomCommand> guildCommands = new ArrayList<>();
             for (CustomCommand e : this.commands) {
                 if (e.getGuild() == guild.getIdLong()) {
                     guildCommands.add(e);
                 }
             }
-            return guildCommands;
         }
+        return guildCommands;
     }
 
 }
