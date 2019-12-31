@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2020 Joonas Muhonen.
+ * Copyright 2020 Neutroni.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@ import net.dv8tion.jda.api.entities.MessageChannel;
 
 /**
  *
- * @author Joonas Muhonen
+ * @author Neutroni
  */
 public class PermissionCommand extends OwnerCommand {
 
