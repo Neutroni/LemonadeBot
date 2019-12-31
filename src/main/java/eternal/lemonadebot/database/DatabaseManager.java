@@ -36,7 +36,7 @@ import net.dv8tion.jda.api.JDA;
  */
 public class DatabaseManager implements AutoCloseable {
 
-    private static final String DATABASEVERSION = "1.0";
+    private static final String DATABASE_VERSION = "1.0";
 
     private final Connection conn;
     private final JDA jda;
@@ -77,7 +77,7 @@ public class DatabaseManager implements AutoCloseable {
      * @return Version string
      */
     static String getVersion() {
-        return DATABASEVERSION;
+        return DATABASE_VERSION;
     }
 
     /**
@@ -161,23 +161,22 @@ public class DatabaseManager implements AutoCloseable {
                 + "owner INTEGER NOT NULL"
                 + "PRIMARY KEY (guild,name));";
         final String EVENTS = "CREATE TABLE Events("
-                + "id INTEGER PRIMARY KEY,"
                 + "guild INTEGER NOT NULL,"
                 + "name TEXT NOT NULL,"
                 + "description TEXT NOT NULL,"
                 + "owner INTEGER NOT NULL,"
-                + "UNIQUE (guild,name));";
+                + "PRIMARY KEY (guild,name));";
         final String EVENT_MEMBERS = "CREATE TABLE EventMembers("
-                + "FOREIGN KEY (event) REFERENCES Events(id) ON DELETE CASCADE,"
+                + "FOREIGN KEY (guild, name) REFERENCES Events(guild, name) ON DELETE CASCADE,"
                 + "member INTEGER NOT NULL,"
-                + "PRIMARY KEY (event,member));";
+                + "PRIMARY KEY (guild,name,member));";
         final String REMAINDERS = "CREATE TABLE Remainders("
-                + "FOREIGN KEY (event) REFERENCES Events(id) ON DELETE CASCADE,"
+                + "FOREIGN KEY (guild,name) REFERENCES Events(guild, name) ON DELETE CASCADE,"
                 + "day TEXT NOT NULL,"
                 + "time TEXT NOT NULL,"
                 + "mention TEXT NOT NULL,"
                 + "channel INTEGER NOT NULL,"
-                + "PRIMARY KEY (event,day,time));";
+                + "PRIMARY KEY (guild,name,day,time));";
         final String INSERT = "INSERT INTO Options(name,value) VALUES(?,?);";
         try (Statement st = connection.createStatement()) {
             st.addBatch(CONFIG);
@@ -191,7 +190,7 @@ public class DatabaseManager implements AutoCloseable {
         }
         try (PreparedStatement ps = connection.prepareStatement(INSERT)) {
             ps.setString(1, ConfigKey.DATABASE_VERSION.name());
-            ps.setString(2, DATABASEVERSION);
+            ps.setString(2, DATABASE_VERSION);
             ps.executeUpdate();
         }
         try (PreparedStatement ps = connection.prepareStatement(INSERT)) {

@@ -41,7 +41,6 @@ public class Event {
     private final String description;
     private final long ownerID;
     private final Set<Long> members = new HashSet<>();
-    private long eventID;
 
     /**
      * Constructor
@@ -63,36 +62,16 @@ public class Event {
     /**
      * Constructor
      *
-     * @param id Database id for this event
      * @param name Name for this event
      * @param description Description for this event
      * @param owner Owner id for this event
      * @param guild Guild id for this event
      */
-    public Event(long id, String name, String description, long owner, long guild) {
-        this.eventID = id;
+    public Event(String name, String description, long owner, long guild) {
         this.name = name;
         this.description = description;
         this.ownerID = owner;
         this.guildID = guild;
-    }
-
-    /**
-     * Set the id this event uses in database
-     *
-     * @param id id for this event
-     */
-    public void setID(long id) {
-        this.eventID = id;
-    }
-
-    /**
-     * Get the id this event uses in database
-     *
-     * @return id for this event
-     */
-    public long getID() {
-        return this.eventID;
     }
 
     /**
