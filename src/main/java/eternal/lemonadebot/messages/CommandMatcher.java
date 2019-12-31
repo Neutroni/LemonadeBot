@@ -26,6 +26,7 @@ package eternal.lemonadebot.messages;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
@@ -128,5 +129,17 @@ public class CommandMatcher {
      */
     public MessageChannel getMessageChannel() {
         return this.message.getChannel();
+    }
+
+    /**
+     * Get the guild the message was sent in
+     *
+     * @return Guild
+     */
+    public Optional<Guild> getGuild() {
+        if (this.message.isFromGuild()) {
+            return Optional.of(this.message.getGuild());
+        }
+        return Optional.empty();
     }
 }

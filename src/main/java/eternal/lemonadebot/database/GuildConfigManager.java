@@ -171,4 +171,76 @@ public class GuildConfigManager {
         }
     }
 
+    /**
+     * Set the permission required to edit commands
+     *
+     * @param newEditPermission permission needed
+     * @return did update succeed
+     * @throws SQLException if database connection failed
+     */
+    public boolean setEditPermission(CommandPermission newEditPermission) throws SQLException {
+        this.commandEditPermission = newEditPermission;
+
+        final String query = "UPDATE Guilds SET commandEditPermission = ? WHERE guild = ?;";
+        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+            ps.setString(1, newEditPermission.name());
+            ps.setLong(2, this.guildID);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Set the permissiond required to use commands
+     *
+     * @param newRunPermission permission needed
+     * @return did update succeed
+     * @throws SQLException if database connection failed
+     */
+    public boolean setCommandRunPermission(CommandPermission newRunPermission) throws SQLException {
+        this.commandRunPermission = newRunPermission;
+
+        final String query = "UPDATE Guilds SET commandRunPermission = ? WHERE guild = ?;";
+        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+            ps.setString(1, newRunPermission.name());
+            ps.setLong(2, this.guildID);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Set the permission required to manage events
+     *
+     * @param newEventPermission permission needed
+     * @return did update succeed
+     * @throws SQLException if database connection failed
+     */
+    public boolean setEventPermission(CommandPermission newEventPermission) throws SQLException {
+        this.eventEditPermission = newEventPermission;
+
+        final String query = "UPDATE Guilds SET eventEditPermission = ? WHERE guild = ?;";
+        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+            ps.setString(1, newEventPermission.name());
+            ps.setLong(2, this.guildID);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Set the permission required to play music
+     *
+     * @param newMusicPermission permission needed
+     * @return did update succeed
+     * @throws SQLException if database connection failed
+     */
+    public boolean setPlayPermission(CommandPermission newMusicPermission) throws SQLException {
+        this.musicPlayPermission = newMusicPermission;
+
+        final String query = "UPDATE Guilds SET musicPlayPermission = ? WHERE guild = ?;";
+        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+            ps.setString(1, newMusicPermission.name());
+            ps.setLong(2, this.guildID);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
 }
