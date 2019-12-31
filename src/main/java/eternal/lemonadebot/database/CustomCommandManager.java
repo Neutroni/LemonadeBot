@@ -94,20 +94,17 @@ public class CustomCommandManager {
      */
     public boolean addCommand(CustomCommand command) throws SQLException {
         synchronized (this) {
-            final boolean added = this.commands.add(command);
+            this.commands.add(command);
+        }
 
-            //Add to database
-            final String query = "INSERT INTO Commands(guild,name,value,owner) VALUES(?,?,?,?);";
-            if (!hasCommand(command.getCommand(), command.getGuild())) {
-                try (PreparedStatement ps = conn.prepareStatement(query)) {
-                    ps.setLong(1, command.getGuild());
-                    ps.setString(2, command.getCommand());
-                    ps.setString(3, command.getAction());
-                    ps.setLong(4, command.getOwner());
-                    return ps.executeUpdate() > 0;
-                }
-            }
-            return added;
+        //Add to database
+        final String query = "INSERT OR IGNORE INTO Commands(guild,name,value,owner) VALUES(?,?,?,?);";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setLong(1, command.getGuild());
+            ps.setString(2, command.getCommand());
+            ps.setString(3, command.getAction());
+            ps.setLong(4, command.getOwner());
+            return ps.executeUpdate() > 0;
         }
     }
 
@@ -120,19 +117,15 @@ public class CustomCommandManager {
      */
     public boolean removeCommand(CustomCommand command) throws SQLException {
         synchronized (this) {
-            boolean removed = this.commands.remove(command);
+            this.commands.remove(command);
+        }
 
-            //Remove from database
-            final String query = "DELETE FROM Commands WHERE name = ? AND guild = ?;";
-            if (hasCommand(command.getCommand(), command.getGuild())) {
-                try (PreparedStatement ps = conn.prepareStatement(query)) {
-                    ps.setString(1, command.getCommand());
-                    ps.setLong(2, command.getGuild());
-                    return ps.executeUpdate() > 0;
-                }
-            }
-
-            return removed;
+        //Remove from database
+        final String query = "DELETE FROM Commands WHERE name = ? AND guild = ?;";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, command.getCommand());
+            ps.setLong(2, command.getGuild());
+            return ps.executeUpdate() > 0;
         }
     }
 
@@ -156,28 +149,6 @@ public class CustomCommandManager {
             }
         }
         return Optional.empty();
-    }
-
-    /**
-     * Check if custom commands exists in database
-     *
-     * @param key command to search for
-     * @param guildID guild to check command for
-     * @return true if command was found, false otherwise
-     * @throws java.sql.SQLException if database connection fails
-     */
-    private boolean hasCommand(String key, long guildID) throws SQLException {
-        final String query = "SELECT name FROM Commands WHERE name = ? AND guild = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setString(1, key);
-            ps.setLong(2, guildID);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     /**
