@@ -46,10 +46,10 @@ public class GuildConfigManager {
     //Stored values
     private final long guildID;
     private volatile Pattern commandPattern;
-    private volatile CommandPermission runPermission;
-    private volatile CommandPermission editPermission;
-    private volatile CommandPermission eventPermission;
-    private volatile CommandPermission playPermission;
+    private volatile CommandPermission commandRunPermission;
+    private volatile CommandPermission commandEditPermission;
+    private volatile CommandPermission eventEditPermission;
+    private volatile CommandPermission musicPlayPermission;
 
     /**
      * Constructor
@@ -69,7 +69,7 @@ public class GuildConfigManager {
      * @return CommandPermissions
      */
     public CommandPermission getEditPermission() {
-        return this.editPermission;
+        return this.commandEditPermission;
     }
 
     /**
@@ -77,8 +77,8 @@ public class GuildConfigManager {
      *
      * @return CommandPermissions
      */
-    public CommandPermission getUsePermission() {
-        return this.runPermission;
+    public CommandPermission getCommandRunPermission() {
+        return this.commandRunPermission;
     }
 
     /**
@@ -87,7 +87,7 @@ public class GuildConfigManager {
      * @return CommandPermission
      */
     public CommandPermission getEventPermission() {
-        return this.eventPermission;
+        return this.eventEditPermission;
     }
 
     /**
@@ -96,7 +96,7 @@ public class GuildConfigManager {
      * @return CommandPermission
      */
     public CommandPermission getPlayPermission() {
-        return this.playPermission;
+        return this.musicPlayPermission;
     }
 
     /**
@@ -141,28 +141,28 @@ public class GuildConfigManager {
             try (final ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     try {
-                        this.editPermission = CommandPermission.valueOf(rs.getString("commandEditPermission"));
+                        this.commandEditPermission = CommandPermission.valueOf(rs.getString("commandEditPermission"));
                     } catch (IllegalArgumentException e) {
                         LOGGER.error("Failed to load permissiond for editing commands, malformed enum value", e);
-                        this.editPermission = CommandPermission.ADMIN;
+                        this.commandEditPermission = CommandPermission.ADMIN;
                     }
                     try {
-                        this.runPermission = CommandPermission.valueOf(rs.getString("commandRunPermission"));
+                        this.commandRunPermission = CommandPermission.valueOf(rs.getString("commandRunPermission"));
                     } catch (IllegalArgumentException e) {
                         LOGGER.error("Failed to load permissiond for running commands, malformed enum value", e);
-                        this.runPermission = CommandPermission.MEMBER;
+                        this.commandRunPermission = CommandPermission.MEMBER;
                     }
                     try {
-                        this.eventPermission = CommandPermission.valueOf(rs.getString("eventEditPermission"));
+                        this.eventEditPermission = CommandPermission.valueOf(rs.getString("eventEditPermission"));
                     } catch (IllegalArgumentException e) {
                         LOGGER.error("Failed to load permissiond for editing events, malformed enum value", e);
-                        this.eventPermission = CommandPermission.ADMIN;
+                        this.eventEditPermission = CommandPermission.ADMIN;
                     }
                     try {
-                        this.playPermission = CommandPermission.valueOf(rs.getString("musicPlayPermission"));
+                        this.musicPlayPermission = CommandPermission.valueOf(rs.getString("musicPlayPermission"));
                     } catch (IllegalArgumentException e) {
                         LOGGER.error("Failed to load permissiond for playing music, malformed enum value", e);
-                        this.playPermission = CommandPermission.MEMBER;
+                        this.musicPlayPermission = CommandPermission.MEMBER;
                     }
                 }
             }

@@ -113,7 +113,7 @@ public class CustomCommand implements ChatCommand {
     @Override
     public CommandPermission getPermission(Guild guild) {
         final GuildConfigManager guildConf = this.manager.getGuildConfig(guild);
-        return guildConf.getUsePermission();
+        return guildConf.getCommandRunPermission();
     }
 
     @Override
