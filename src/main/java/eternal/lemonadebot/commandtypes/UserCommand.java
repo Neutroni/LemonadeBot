@@ -34,7 +34,7 @@ import net.dv8tion.jda.api.entities.Guild;
 public abstract class UserCommand implements ChatCommand {
 
     @Override
-    public CommandPermission getPermission(Guild guid) {
+    public CommandPermission getPermission(Guild guild) {
         return CommandPermission.USER;
     }
 }
