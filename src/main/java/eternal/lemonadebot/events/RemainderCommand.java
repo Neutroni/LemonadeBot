@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.TimeZone;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -88,7 +89,7 @@ public class RemainderCommand implements ChatCommand {
     }
 
     @Override
-    public CommandPermission getPermission() {
+    public CommandPermission getPermission(Guild guild) {
         return CommandPermission.ADMIN;
     }
 

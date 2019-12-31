@@ -36,6 +36,8 @@ import net.dv8tion.jda.api.JDA;
  */
 public class DatabaseManager implements AutoCloseable {
 
+    private static final String DATABASEVERSION = "1.0";
+
     private final Connection conn;
     private final JDA jda;
 
@@ -57,20 +59,25 @@ public class DatabaseManager implements AutoCloseable {
         this.conn = DriverManager.getConnection("jdbc:sqlite:" + filename);
         this.jda = jda;
 
-        //Load data from database that is not reliant on JDA
         this.config = new ConfigManager(conn);
         this.channels = new ChannelManager(conn);
         this.commands = new CustomCommandManager(conn, config);
         this.events = new EventManager(conn);
-
-        //Load data relying on JDA
-        jda.awaitReady();
         this.remainders = new RemainderManager(conn, this.events, this.jda);
     }
 
     @Override
     public void close() throws SQLException {
         this.conn.close();
+    }
+
+    /**
+     * Get the version of database in use
+     *
+     * @return Version string
+     */
+    static String getVersion() {
+        return DATABASEVERSION;
     }
 
     /**
@@ -137,12 +144,20 @@ public class DatabaseManager implements AutoCloseable {
     public static void initialize(String dbLocation, String ownerID) throws SQLException {
         final Connection connection = DriverManager.getConnection("jdbc:sqlite:" + dbLocation);
         final String CONFIG = "CREATE TABLE Options(name TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);";
-        final String PREFIXES = "CREATE TABLE Prefixes(guild INTEGER PRIMARY KEY NOT NULL, prefix TEXT NOT NULL)";
         final String CHANNELS = "CREATE TABLE Channels(id INTEGER PRIMARY KEY NOT NULL);";
+        final String GUILDCONF = "CREATE TABLE Guilds("
+                + "id INTEGER PRIMARY KEY NOT NULL,"
+                + "commandPrefix TEXT NOT NULL"
+                + "commandEditPermission TEXT NOT NULL,"
+                + "commandRunPermission TEXT NOT NULL,"
+                + "eventEditPermission TEXT NOT NULL,"
+                + "musicPlayPermission TEXT NOT NULL"
+                + "greetingTemplate TEXT NOT NULL"
+                + ");";
         final String COMMANDS = "CREATE TABLE Commands("
                 + "guild INTEGER NOT NULL,"
                 + "name TEXT NOT NULL,"
-                + "value TEXT NOT NULL,"
+                + "template TEXT NOT NULL,"
                 + "owner INTEGER NOT NULL"
                 + "PRIMARY KEY (guild,name));";
         final String EVENTS = "CREATE TABLE Events("
@@ -166,13 +181,18 @@ public class DatabaseManager implements AutoCloseable {
         final String INSERT = "INSERT INTO Options(name,value) VALUES(?,?);";
         try (Statement st = connection.createStatement()) {
             st.addBatch(CONFIG);
-            st.addBatch(PREFIXES);
             st.addBatch(CHANNELS);
+            st.addBatch(GUILDCONF);
             st.addBatch(COMMANDS);
             st.addBatch(EVENTS);
             st.addBatch(EVENT_MEMBERS);
             st.addBatch(REMAINDERS);
             st.executeBatch();
+        }
+        try (PreparedStatement ps = connection.prepareStatement(INSERT)) {
+            ps.setString(1, ConfigKey.DATABASE_VERSION.name());
+            ps.setString(2, DATABASEVERSION);
+            ps.executeUpdate();
         }
         try (PreparedStatement ps = connection.prepareStatement(INSERT)) {
             ps.setString(1, ConfigKey.OWNER_ID.name());

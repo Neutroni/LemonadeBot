@@ -25,6 +25,7 @@ package eternal.lemonadebot;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ChannelManager;
+import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
@@ -57,6 +58,7 @@ public class MessageListener extends ListenerAdapter {
     private final DatabaseManager DATABASE;
     private final CommandManager commandManager;
     private final ChannelManager channelManager;
+    private final ConfigManager configManager;
 
     /**
      * Constructor
@@ -65,8 +67,9 @@ public class MessageListener extends ListenerAdapter {
      */
     public MessageListener(DatabaseManager db) {
         this.DATABASE = db;
-        this.channelManager = db.getChannels();
         this.commandManager = new CommandManager(db);
+        this.channelManager = db.getChannels();
+        this.configManager = db.getConfig();
     }
 
     /**
@@ -207,6 +210,11 @@ public class MessageListener extends ListenerAdapter {
      */
     @Override
     public void onGuildJoin(GuildJoinEvent event) {
+        try {
+            this.configManager.addGuild(event.getGuild());
+        } catch (SQLException ex) {
+            LOGGER.error("Adding new guild to database failed", ex);
+        }
         //Start listening on the default channel for the guild
         final TextChannel channel = event.getGuild().getSystemChannel();
         if (channel == null) {

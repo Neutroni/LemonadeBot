@@ -30,6 +30,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -50,9 +51,8 @@ public class ConfigManager {
 
     //Data
     private final String ownerID;
-    private final HashMap<Long, String> prefixMap = new HashMap<>();
-    private volatile CommandPermission runPermission = CommandPermission.USER;
-    private volatile CommandPermission editPermission = CommandPermission.MEMBER;
+    private final String databaseVersion;
+    private final Map<Long, GuildConfigManager> guilds = new HashMap<>();
 
     /**
      * Constructor
@@ -63,62 +63,28 @@ public class ConfigManager {
      */
     ConfigManager(Connection connection) throws SQLException {
         this.conn = connection;
+
+        //Load ownerID
         final Optional<String> optOwner = loadSetting(ConfigKey.OWNER_ID.name());
         if (optOwner.isEmpty()) {
             throw new SQLException("Missing owner id");
         }
         this.ownerID = optOwner.get();
 
-        //Load command prefix
-        loadCommandPrefixes();
+        //Load database version
+        final Optional<String> optVersion = loadSetting(ConfigKey.DATABASE_VERSION.name());
+        if (optVersion.isEmpty()) {
+            throw new SQLException("Missing database version");
+        }
+        this.databaseVersion = optVersion.get();
 
-        //Load permissions
-        loadUsePerm();
-        loadManagePerm();
-    }
+        //Check if database version is correct
+        if (!DatabaseManager.getVersion().equals(this.databaseVersion)) {
+            throw new SQLException("Database version mismatch");
+        }
 
-    /**
-     * Loads the permission to use custom commands from DB
-     *
-     * @throws SQLException if databaseconnection failed
-     */
-    private void loadManagePerm() throws SQLException {
-        final Optional<String> opt = loadSetting(ConfigKey.CUSTOM_COMMAND_MANAGE.name());
-        if (opt.isEmpty()) {
-            LOGGER.info("No permission for managing custom commands defined in DB.");
-            LOGGER.info("Saving default value: " + this.editPermission.getDescription());
-            updateSetting(ConfigKey.CUSTOM_COMMAND_MANAGE.name(), this.editPermission.name());
-            return;
-        }
-        final String managePerm = opt.get();
-        try {
-            this.editPermission = CommandPermission.valueOf(managePerm);
-        } catch (IllegalArgumentException ex) {
-            LOGGER.error("Malformed command permission for custom commands: " + managePerm);
-            LOGGER.info("Using default value: " + this.editPermission.name());
-        }
-    }
-
-    /**
-     * Loads the permission to use custom commands from DB
-     *
-     * @throws SQLException if database connection failed
-     */
-    private void loadUsePerm() throws SQLException {
-        final Optional<String> opt = loadSetting(ConfigKey.CUSTOM_COMMAND_USE.name());
-        if (opt.isEmpty()) {
-            LOGGER.info("No permission for using custom commands defined in DB.");
-            LOGGER.info("Saving default value: " + this.runPermission.getDescription());
-            updateSetting(ConfigKey.CUSTOM_COMMAND_USE.name(), this.runPermission.name());
-            return;
-        }
-        final String usePerm = opt.get();
-        try {
-            this.runPermission = CommandPermission.valueOf(opt.get());
-        } catch (IllegalArgumentException ex) {
-            LOGGER.error("Malformed command permission for custom commands: " + usePerm);
-            LOGGER.info("Using default value: " + this.runPermission.name());
-        }
+        //Load list of known guilds
+        loadGuildList();
     }
 
     /**
@@ -129,61 +95,6 @@ public class ConfigManager {
      */
     public boolean isOwner(Member user) {
         return this.ownerID.equals(user.getId());
-    }
-
-    /**
-     * Get permission required to edit custom commands and events
-     *
-     * @return CommandPermissions
-     */
-    public CommandPermission getEditPermission() {
-        return this.editPermission;
-    }
-
-    /**
-     * Get permission to use custom commands and join events
-     *
-     * @return CommandPermissions
-     */
-    public CommandPermission getUsePermission() {
-        return this.runPermission;
-    }
-
-    /**
-     * get command prefix
-     *
-     * @param guildID Guild to get prefix for
-     * @return command prefix for guild if found, '!' otherwise
-     */
-    public String getCommandPrefix(long guildID) {
-        return this.prefixMap.getOrDefault(guildID, "!");
-    }
-
-    /**
-     * Set command prefix
-     *
-     * @param guild Guild the prefix is for
-     * @param prefix new command prefix
-     * @throws SQLException if updating prefix failed
-     */
-    public void setCommandPrefix(Guild guild, String prefix) throws SQLException {
-        updatePrefix(guild.getIdLong(), prefix);
-    }
-
-    /**
-     * Sets the value of setting
-     *
-     * @param key Key for setting
-     * @param value New value for setting
-     * @throws java.sql.SQLException
-     */
-    private void updateSetting(String key, String value) throws SQLException {
-        final String query = "UPDATE Options set value = ? WHERE name = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setString(1, key);
-            ps.setString(2, value);
-            ps.executeUpdate();
-        }
     }
 
     /**
@@ -206,33 +117,64 @@ public class ConfigManager {
         return Optional.empty();
     }
 
-    /**
-     * Load prefixces stored in database
-     *
-     * @throws SQLException if database connection failed
-     */
-    private void loadCommandPrefixes() throws SQLException {
-        final String query = "SELECT guild,prefix FROM Prefixes";
+    private void loadGuildList() throws SQLException {
+        final String query = "SELECT id FROM Guilds;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
-                this.prefixMap.put(rs.getLong("guild"), rs.getString("prefix"));
+                final long guildID = rs.getLong("id");
+                this.guilds.put(guildID, new GuildConfigManager(conn, guildID));
             }
         }
     }
 
     /**
-     * Update prefix for guild
+     * Add guild to database
      *
-     * @param guildID Guild to update prefix for
-     * @param prefix prefix to set for guild
+     * @param guild Guild to add
+     * @return true if add was succesfull
      * @throws SQLException if database connection failed
      */
-    private void updatePrefix(long guildID, String prefix) throws SQLException {
-        final String query = "INSERT OR REPLACE INTO Prefixes(guild,prefix) VALUES(?,?);";
+    public boolean addGuild(Guild guild) throws SQLException {
+        final String query = "INSERT INTO Guilds(id,commandPrefix,commandEditPermission,commandRunPermission,eventEditPermission,musicPlayPermission,greetingTemplate) VALUES (?,?,?,?,?,?);";
+        try (final PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setLong(1, guild.getIdLong());
+            ps.setString(2, "lemonbot#");
+            ps.setString(3, CommandPermission.ADMIN.name());
+            ps.setString(4, CommandPermission.MEMBER.name());
+            ps.setString(5, CommandPermission.ADMIN.name());
+            ps.setString(6, CommandPermission.MEMBER.name());
+            ps.setString(7, "Welcome to our discord {displayName}");
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Get configmanager for guild
+     *
+     * @param guild guild to get manager for
+     * @return GuildConfigManager
+     */
+    public GuildConfigManager getGuildConfig(Guild guild) {
+        return this.guilds.computeIfAbsent(guild.getIdLong(), (newGuildID) -> {
+            try {
+                if (!hasGuild(guild.getIdLong())) {
+                    addGuild(guild);
+                }
+            } catch (SQLException e) {
+                LOGGER.error("Error adding missing guild", e);
+            }
+            //Return guildConfigManager to the guild
+            return new GuildConfigManager(conn, newGuildID);
+        });
+    }
+
+    private boolean hasGuild(long guildID) throws SQLException{
+        final String query = "SELECT id FROM Guilds WHERE id = ?;";
         try (final PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, guildID);
-            ps.setString(2, prefix);
-            ps.executeUpdate();
+            try (final ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
         }
     }
 

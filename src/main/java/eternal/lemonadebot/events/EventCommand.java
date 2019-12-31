@@ -24,12 +24,13 @@
 package eternal.lemonadebot.events;
 
 import eternal.lemonadebot.commandtypes.UserCommand;
+import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.EventManager;
+import eternal.lemonadebot.database.GuildConfigManager;
 import eternal.lemonadebot.database.RemainderManager;
 import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
-import eternal.lemonadebot.messages.CommandPermission;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -49,6 +50,7 @@ public class EventCommand extends UserCommand {
     private final CommandManager commandParser;
     private final EventManager eventManager;
     private final RemainderManager remainderManager;
+    private final ConfigManager configManager;
 
     /**
      * Constructor
@@ -60,6 +62,7 @@ public class EventCommand extends UserCommand {
         this.commandParser = parser;
         this.eventManager = db.getEvents();
         this.remainderManager = db.getRemainders();
+        this.configManager = db.getConfig();
     }
 
     @Override
@@ -135,6 +138,11 @@ public class EventCommand extends UserCommand {
     }
 
     private void createEvent(String[] opts, TextChannel textChannel, Member sender) {
+        final GuildConfigManager guildConf = this.configManager.getGuildConfig(textChannel.getGuild());
+        if (!this.commandParser.hasPermission(sender, guildConf.getEditPermission())) {
+            textChannel.sendMessage("You do not have permission to create events").queue();
+            return;
+        }
         if (opts.length == 1) {
             textChannel.sendMessage("Provide name of the event to create.").queue();
             return;
@@ -168,6 +176,11 @@ public class EventCommand extends UserCommand {
     }
 
     private void deleteEvent(String[] opts, TextChannel textChannel, Member sender) {
+        final GuildConfigManager guildConf = this.configManager.getGuildConfig(textChannel.getGuild());
+        if (!this.commandParser.hasPermission(sender, guildConf.getEditPermission())) {
+            textChannel.sendMessage("You do not have permission to delete events").queue();
+            return;
+        }
         if (opts.length == 1) {
             textChannel.sendMessage("Provide name of the event to delete").queue();
             return;

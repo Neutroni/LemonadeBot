@@ -27,12 +27,14 @@ import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.CustomCommandManager;
 import eternal.lemonadebot.database.DatabaseManager;
+import eternal.lemonadebot.database.GuildConfigManager;
 import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import eternal.lemonadebot.messages.CommandPermission;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
@@ -84,8 +86,9 @@ public class CommandManagmentCommand implements ChatCommand {
     }
 
     @Override
-    public CommandPermission getPermission() {
-        return configManager.getEditPermission();
+    public CommandPermission getPermission(Guild guild) {
+        final GuildConfigManager guildConf = this.configManager.getGuildConfig(guild);
+        return guildConf.getEditPermission();
     }
 
     @Override

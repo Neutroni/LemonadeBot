@@ -24,8 +24,11 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.OwnerCommand;
-import eternal.lemonadebot.messages.CommandManager;
+import eternal.lemonadebot.database.ConfigManager;
+import eternal.lemonadebot.database.DatabaseManager;
+import eternal.lemonadebot.database.GuildConfigManager;
 import eternal.lemonadebot.messages.CommandMatcher;
+import java.sql.SQLException;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.TextChannel;
 
@@ -35,15 +38,15 @@ import net.dv8tion.jda.api.entities.TextChannel;
  */
 class PrefixCommand extends OwnerCommand {
 
-    private final CommandManager commandParser;
+    private final ConfigManager configManager;
 
     /**
      * Constructor
      *
-     * @param parser parser to parse commands with
+     * @param dataBase ConfigManager to handle prefix with
      */
-    PrefixCommand(CommandManager parser) {
-        this.commandParser = parser;
+    PrefixCommand(DatabaseManager dataBase) {
+        this.configManager = dataBase.getConfig();
     }
 
     @Override
@@ -76,12 +79,14 @@ class PrefixCommand extends OwnerCommand {
 
         //Update the prefix
         final String newPrefix = options[0];
-        final boolean updateSuccess = commandParser.setPrefix(newPrefix, textChannel.getGuild());
-        if (updateSuccess) {
+        final GuildConfigManager guildConf = this.configManager.getGuildConfig(textChannel.getGuild());
+        try {
+            guildConf.setCommandPrefix(newPrefix);
             textChannel.sendMessage("Updated prefix succesfully to: " + newPrefix).queue();
-        } else {
+        } catch (SQLException ex) {
             textChannel.sendMessage("Storing prefix in DB failed, will still use new prefix until reboot, re-issue command once DB issue is fixed.").queue();
         }
+
     }
 
 }

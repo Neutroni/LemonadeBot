@@ -34,15 +34,7 @@ enum ConfigKey {
      */
     OWNER_ID,
     /**
-     * Key to store command prefix with in DB
+     * Version of database this program uses
      */
-    COMMAND_PREFIX,
-    /**
-     * Wich group has permission to manage custom commands
-     */
-    CUSTOM_COMMAND_MANAGE,
-    /**
-     * Wihc group can use custom commands
-     */
-    CUSTOM_COMMAND_USE;
+    DATABASE_VERSION;
 }

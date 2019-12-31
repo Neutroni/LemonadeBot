@@ -29,13 +29,10 @@ import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.CustomCommandManager;
 import eternal.lemonadebot.database.DatabaseManager;
-import java.sql.SQLException;
-import java.util.HashMap;
+import eternal.lemonadebot.database.GuildConfigManager;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -55,7 +52,6 @@ public class CommandManager {
 
     //Command matching
     private final ConfigManager configManager;
-    private final HashMap<Long, Pattern> commandPattern = new HashMap<>();
 
     //Commands
     private final CommandProvider commandProvider;
@@ -68,14 +64,6 @@ public class CommandManager {
      */
     public CommandManager(DatabaseManager db) {
         this.configManager = db.getConfig();
-
-        //Load command patterns for all guilds
-        final JDA jda = db.getJDA();
-        for (Guild g : jda.getGuilds()) {
-            final long guildID = g.getIdLong();
-            final String prefix = this.configManager.getCommandPrefix(guildID);
-            this.commandPattern.put(guildID, getCommandPattern(prefix));
-        }
 
         //Load commands
         this.commandProvider = new CommandProvider(this, db);
@@ -128,14 +116,8 @@ public class CommandManager {
      * @return Matcher for the message
      */
     public CommandMatcher getCommandMatcher(Guild guild, Message msg) {
-        final long guildID = guild.getIdLong();
-        if (this.commandPattern.containsKey(guildID)) {
-            return new CommandMatcher(this.commandPattern.get(guildID), msg);
-        }
-        //New guild
-        final Pattern newPattern = getCommandPattern(this.configManager.getCommandPrefix(guildID));
-        this.commandPattern.put(guildID, newPattern);
-        return new CommandMatcher(newPattern, msg);
+        final GuildConfigManager guildConf = this.configManager.getGuildConfig(guild);
+        return new CommandMatcher(guildConf.getCommandPattern(), msg);
     }
 
     /**
@@ -165,7 +147,18 @@ public class CommandManager {
      * @return Does the person have permission
      */
     public boolean hasPermission(Member member, ChatCommand command) {
-        return getRank(member).ordinal() >= command.getPermission().ordinal();
+        return getRank(member).ordinal() >= command.getPermission(member.getGuild()).ordinal();
+    }
+
+    /**
+     * Check if member has required permission
+     *
+     * @param member Member to check
+     * @param requiredPermission permission needed
+     * @return true if user has permission
+     */
+    public boolean hasPermission(Member member, CommandPermission requiredPermission) {
+        return getRank(member).ordinal() >= requiredPermission.ordinal();
     }
 
     /**
@@ -187,34 +180,6 @@ public class CommandManager {
             return getRank(owner).ordinal() < CommandPermission.ADMIN.ordinal();
         }
         return configManager.isOwner(member);
-    }
-
-    /**
-     * Updates command pattern
-     *
-     * @param prefix
-     */
-    private Pattern getCommandPattern(String prefix) {
-        //Start of match, optionally @numericID, prefix, match group 2 is command
-        return Pattern.compile("^(@\\d+ )?" + Pattern.quote(prefix) + "(\\w+) ?");
-    }
-
-    /**
-     * Sets the commands prefix
-     *
-     * @param prefix prefix to use
-     * @param guild guild the prefix is for
-     * @return was storing prefix in database succesfull
-     */
-    public boolean setPrefix(String prefix, Guild guild) {
-        try {
-            this.commandPattern.put(guild.getIdLong(), getCommandPattern(prefix));
-            this.configManager.setCommandPrefix(guild, prefix);
-            return true;
-        } catch (SQLException ex) {
-            LOGGER.error(ex);
-        }
-        return false;
     }
 
 }

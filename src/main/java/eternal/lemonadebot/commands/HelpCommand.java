@@ -105,7 +105,7 @@ class HelpCommand extends UserCommand {
             }
             return;
         }
-        final Optional<CustomCommand> custom = customCommands.getCommand(name);
+        final Optional<CustomCommand> custom = customCommands.getCommand(name, textChannel.getGuild());
         if (custom.isPresent()) {
             textChannel.sendMessage("User defined custom command, see command \"help custom\" for details.").queue();
             return;

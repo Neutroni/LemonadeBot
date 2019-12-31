@@ -25,6 +25,7 @@ package eternal.lemonadebot.commandtypes;
 
 import eternal.lemonadebot.messages.CommandMatcher;
 import eternal.lemonadebot.messages.CommandPermission;
+import net.dv8tion.jda.api.entities.Guild;
 
 /**
  * Interface all commands must implement
@@ -50,9 +51,10 @@ public interface ChatCommand {
     /**
      * Which roles have permssion to run this command
      *
+     * @param guid Guild to check permission in
      * @return CommandPermission needed to run this command
      */
-    public CommandPermission getPermission();
+    public CommandPermission getPermission(Guild guid);
 
     /**
      * Responds to a message

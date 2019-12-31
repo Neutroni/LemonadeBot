@@ -25,9 +25,11 @@ package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
+import eternal.lemonadebot.database.GuildConfigManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import eternal.lemonadebot.messages.CommandPermission;
 import java.util.Objects;
+import net.dv8tion.jda.api.entities.Guild;
 
 /**
  * User defined commands that take template as input and when run return the
@@ -54,6 +56,7 @@ public class CustomCommand implements ChatCommand {
      * @param commandName command this is activeted by
      * @param actionTemplate action template
      * @param owner who created this command
+     * @param guild Guild that this CustomCommand is from
      */
     public CustomCommand(ConfigManager commands, ActionManager actions, String commandName, String actionTemplate, long owner, long guild) {
         this.manager = commands;
@@ -108,8 +111,9 @@ public class CustomCommand implements ChatCommand {
     }
 
     @Override
-    public CommandPermission getPermission() {
-        return manager.getEditPermission();
+    public CommandPermission getPermission(Guild guild) {
+        final GuildConfigManager guildConf = this.manager.getGuildConfig(guild);
+        return guildConf.getUsePermission();
     }
 
     @Override

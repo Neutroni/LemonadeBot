@@ -31,6 +31,9 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import eternal.lemonadebot.commandtypes.ChatCommand;
+import eternal.lemonadebot.database.ConfigManager;
+import eternal.lemonadebot.database.DatabaseManager;
+import eternal.lemonadebot.database.GuildConfigManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import eternal.lemonadebot.messages.CommandPermission;
 import java.util.HashMap;
@@ -51,12 +54,15 @@ public class MusicCommand implements ChatCommand {
 
     private final AudioPlayerManager playerManager;
     private final Map<Long, GuildMusicManager> musicManagers;
+    private final ConfigManager configManager;
 
     /**
      * Constructor
      *
+     * @param dataBase DataBase to get music playback permission from
      */
-    public MusicCommand() {
+    public MusicCommand(DatabaseManager dataBase) {
+        this.configManager = dataBase.getConfig();
         this.playerManager = new DefaultAudioPlayerManager();
         AudioSourceManagers.registerRemoteSources(playerManager);
         AudioSourceManagers.registerLocalSource(playerManager);
@@ -80,8 +86,9 @@ public class MusicCommand implements ChatCommand {
     }
 
     @Override
-    public CommandPermission getPermission() {
-        return CommandPermission.MEMBER;
+    public CommandPermission getPermission(Guild guild) {
+        final GuildConfigManager guildConf = this.configManager.getGuildConfig(guild);
+        return guildConf.getPlayPermission();
     }
 
     @Override

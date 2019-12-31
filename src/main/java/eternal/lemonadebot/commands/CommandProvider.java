@@ -53,10 +53,10 @@ public class CommandProvider {
                 new EventCommand(parser, db),
                 new ChannelManagmentCommand(db),
                 new CommandManagmentCommand(parser, db),
-                new PrefixCommand(parser),
+                new PrefixCommand(db),
                 new RoleCommand(),
                 new ShutdownCommand(),
-                new MusicCommand(),
+                new MusicCommand(db),
                 new RemainderCommand(db)
         );
     }
