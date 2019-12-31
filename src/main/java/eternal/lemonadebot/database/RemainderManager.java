@@ -107,27 +107,24 @@ public class RemainderManager {
                 this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
                 LOGGER.debug("Remainder scheluded for activation at " + remainder.getActivationDate().toString());
             }
+        }
 
-            //Add to database
-            final String query = "INSERT INTO Remainders(event,day,time,mention,channel) VALUES(?,?,?,?,?);";
-            final long guildID = remainder.getEvent().getGuild();
-            final String eventName = remainder.getEvent().getName();
-            final String remainderDay = remainder.getDay().name();
-            final String remainderTime = remainder.getTime().toString();
-            final String mention = remainder.getMentionMode().name();
-            final long channel = remainder.getChannel();
-            if (!hasRemainder(guildID,eventName, remainderDay, remainderTime)) {
-                try (PreparedStatement ps = conn.prepareStatement(query)) {
-                    ps.setLong(1, guildID);
-                    ps.setString(2, eventName);
-                    ps.setString(3, remainderDay);
-                    ps.setString(4, remainderTime);
-                    ps.setString(5, mention);
-                    ps.setLong(6, channel);
-                    return ps.executeUpdate() > 0;
-                }
-            }
-            return added;
+        //Add to database
+        final String query = "INSERT INTO Remainders(event,day,time,mention,channel) VALUES(?,?,?,?,?);";
+        final long guildID = remainder.getEvent().getGuild();
+        final String eventName = remainder.getEvent().getName();
+        final String remainderDay = remainder.getDay().name();
+        final String remainderTime = remainder.getTime().toString();
+        final String mention = remainder.getMentionMode().name();
+        final long channel = remainder.getChannel();
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setLong(1, guildID);
+            ps.setString(2, eventName);
+            ps.setString(3, remainderDay);
+            ps.setString(4, remainderTime);
+            ps.setString(5, mention);
+            ps.setLong(6, channel);
+            return ps.executeUpdate() > 0;
         }
     }
 
@@ -141,24 +138,21 @@ public class RemainderManager {
     public boolean deleteRemainder(Remainder remainder) throws SQLException {
         synchronized (this) {
             remainder.cancel();
-            final boolean removed = this.remainders.remove(remainder);
+            this.remainders.remove(remainder);
+        }
+        //Remove from database
+        final String query = "DELETE FROM Remainders Where guild = ? AND name = ? AND day = ? AND time = ?;";
+        final long guildID = remainder.getEvent().getGuild();
+        final String eventName = remainder.getEvent().getName();
+        final String remainderDay = remainder.getDay().name();
+        final String remainderTime = remainder.getTime().toString();
 
-            //Remove from database
-            final String query = "DELETE FROM Remainders Where guild = ? AND name = ? AND day = ? AND time = ?;";
-            final long guildID = remainder.getEvent().getGuild();
-            final String eventName = remainder.getEvent().getName();
-            final String remainderDay = remainder.getDay().name();
-            final String remainderTime = remainder.getTime().toString();
-            if (hasRemainder(guildID, eventName, remainderDay, remainderTime)) {
-                try (PreparedStatement ps = conn.prepareStatement(query)) {
-                    ps.setLong(1, guildID);
-                    ps.setString(2, eventName);
-                    ps.setString(3, remainderDay);
-                    ps.setString(4, remainderTime);
-                    return ps.executeUpdate() > 0;
-                }
-            }
-            return removed;
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setLong(1, guildID);
+            ps.setString(2, eventName);
+            ps.setString(3, remainderDay);
+            ps.setString(4, remainderTime);
+            return ps.executeUpdate() > 0;
         }
     }
 
@@ -243,32 +237,6 @@ public class RemainderManager {
             }
         }
         return Optional.empty();
-    }
-
-    /**
-     * Check if remainder exisits in database
-     *
-     * @param guildID id of the guild
-     * @param eventName name for the event
-     * @param remainderDay string presentation for the day
-     * @param remainderTime string presentation for the time
-     * @return true if remainder is in database
-     * @throws SQLException if database connection failed
-     */
-    private boolean hasRemainder(long guildID, String eventName, String remainderDay, String remainderTime) throws SQLException {
-        final String query = "SELECT name FROM Remainders WHERE guild = ? AND name = ? AND day = ? AND time = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setLong(1, guildID);
-            ps.setString(2, eventName);
-            ps.setString(3, remainderDay);
-            ps.setString(4, remainderTime);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     /**

@@ -71,17 +71,14 @@ public class ChannelManager {
      */
     public boolean addChannel(TextChannel channel) throws SQLException {
         synchronized (this) {
-            boolean added = this.channels.add(channel.getIdLong());
+            this.channels.add(channel.getIdLong());
+        }
 
-            //Add to database
-            final String query = "INSERT INTO Channels(id) VALUES (?);";
-            if (!hasChannel(channel.getIdLong())) {
-                try (PreparedStatement ps = conn.prepareStatement(query)) {
-                    ps.setString(1, channel.getId());
-                    return ps.executeUpdate() > 0;
-                }
-            }
-            return added;
+        //Add to database
+        final String query = "INSERT OR IGNORE INTO Channels(id) VALUES (?);";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, channel.getId());
+            return ps.executeUpdate() > 0;
         }
     }
 
@@ -94,18 +91,14 @@ public class ChannelManager {
      */
     public boolean removeChannel(Long id) throws SQLException {
         synchronized (this) {
-            boolean removed = this.channels.remove(id);
-
-            //Remove from database
-            final String query = "DELETE FROM Channels WHERE id = ?;";
-            if (hasChannel(id)) {
-                try (PreparedStatement ps = conn.prepareStatement(query)) {
-                    ps.setLong(1, id);
-                    return ps.executeUpdate() > 0;
-                }
-            }
-
-            return removed;
+            this.channels.remove(id);
+        }
+        
+        //Remove from database
+        final String query = "DELETE FROM Channels WHERE id = ?;";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setLong(1, id);
+            return ps.executeUpdate() > 0;
         }
     }
 
@@ -119,26 +112,6 @@ public class ChannelManager {
         synchronized (this) {
             return this.channels.contains(channel.getIdLong());
         }
-    }
-
-    /**
-     * Check if channel exists in database
-     *
-     * @param id channel to search for
-     * @return true if channel was found, false otherwise
-     * @throws SQLException if database connection fails
-     */
-    private boolean hasChannel(Long id) throws SQLException {
-        final String query = "SELECT id FROM Channels WHERE id = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setLong(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     /**
