@@ -30,7 +30,6 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.regex.Matcher;
 import net.dv8tion.jda.api.entities.ChannelType;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 
