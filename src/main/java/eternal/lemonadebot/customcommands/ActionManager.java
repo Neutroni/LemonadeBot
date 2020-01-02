@@ -26,9 +26,11 @@ package eternal.lemonadebot.customcommands;
 import eternal.lemonadebot.messages.CommandMatcher;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.regex.Matcher;
 import net.dv8tion.jda.api.entities.ChannelType;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 
@@ -48,13 +50,13 @@ public class ActionManager {
                 final String response = parts[rng.nextInt(parts.length)];
                 return "" + response;
             }),
-            new SimpleAction("\\{rng (\\d+),(\\d+)\\}", "{rng x,y} - Generate random number between the two inputs.", (CommandMatcher t, Matcher u) -> {
-                final int start = Integer.parseInt(u.group(1));
-                final int end = Integer.parseInt(u.group(2));
+            new SimpleAction("\\{rng (\\d+),(\\d+)\\}", "{rng x,y} - Generate random number between the two inputs.", (CommandMatcher message, Matcher input) -> {
+                final int start = Integer.parseInt(input.group(1));
+                final int end = Integer.parseInt(input.group(2));
                 return "" + (rng.nextInt(end) + start);
             }),
             new SimpleAction("\\{message\\}", "{message} Use the input as part of the reply", (CommandMatcher message, Matcher input) -> {
-                final String[] messageText = message.getArguments(1);
+                final String[] messageText = message.getArguments(0);
                 if (messageText.length == 0) {
                     return "";
                 }
@@ -79,6 +81,13 @@ public class ActionManager {
                     }
                 }
                 return mentionMessage.toString();
+            }),
+            new SimpleAction("\\{sender\\}", "{sender} - The name of the command sender", (CommandMatcher matcher, Matcher input) -> {
+                final Optional<Member> optMember = matcher.getMember();
+                if (optMember.isEmpty()) {
+                    return matcher.getMessage().getAuthor().getName();
+                }
+                return optMember.get().getEffectiveName();
             }));
 
     /**
@@ -100,7 +109,9 @@ public class ActionManager {
             while (m.find()) {
 
                 final String replacement = s.getValue(message, m);
-                m.appendReplacement(sb, replacement);
+                //To avoid referencing matcher groups replace with empty string and append the actual replacement
+                m.appendReplacement(sb, "");
+                sb.append(replacement);
             }
             m.appendTail(sb);
             response = sb.toString();
