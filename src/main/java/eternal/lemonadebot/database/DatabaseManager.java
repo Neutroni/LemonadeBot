@@ -152,7 +152,7 @@ public class DatabaseManager implements AutoCloseable {
                 + "commandRunPermission TEXT NOT NULL,"
                 + "eventEditPermission TEXT NOT NULL,"
                 + "musicPlayPermission TEXT NOT NULL"
-                + "greetingTemplate TEXT NOT NULL"
+                + "greetingTemplate TEXT"
                 + ");";
         final String COMMANDS = "CREATE TABLE Commands("
                 + "guild INTEGER NOT NULL,"

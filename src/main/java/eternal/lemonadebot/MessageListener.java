@@ -27,12 +27,14 @@ import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ChannelManager;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
+import eternal.lemonadebot.database.GuildConfigManager;
 import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -118,16 +120,17 @@ public class MessageListener extends ListenerAdapter {
      * @param member Member who joined
      */
     private void sendDefaultMessage(TextChannel textChannel, Member member) {
-        final TextChannel ruleChannel = textChannel.getGuild().getDefaultChannel();
-        final String ruleMessage;
-        if (ruleChannel == null) {
-            ruleMessage = "";
-        } else {
-            ruleMessage = " to get access to rest of the channels please check rules over at " + ruleChannel.getAsMention();
+        final GuildConfigManager guildConf = this.configManager.getGuildConfig(textChannel.getGuild());
+        final Optional<String> optTemplate = guildConf.getGreetingTemplate();
+        if(optTemplate.isEmpty()){
+            LOGGER.debug("Not greeting because greet template is not set");
+            return;
         }
-        textChannel.sendMessage("Welcome to our guild discord "
-                + member.getEffectiveName()
-                + ruleMessage).queue();
+        final String greetTemplate = optTemplate.get();
+        final MessageBuilder mb = new MessageBuilder(greetTemplate);  
+        mb.replace("{name}", member.getEffectiveName());
+        mb.replace("{mention}", member.getAsMention());
+        textChannel.sendMessage(mb.build()).queue();
     }
 
     /**

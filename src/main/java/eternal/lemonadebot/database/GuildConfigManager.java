@@ -28,6 +28,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,6 +47,7 @@ public class GuildConfigManager {
     //Stored values
     private final long guildID;
     private volatile Pattern commandPattern;
+    private volatile Optional<String> greetingTemplate;
     private volatile CommandPermission commandRunPermission;
     private volatile CommandPermission commandEditPermission;
     private volatile CommandPermission eventEditPermission;
@@ -60,7 +62,7 @@ public class GuildConfigManager {
     public GuildConfigManager(Connection connection, long guild) {
         this.conn = connection;
         this.guildID = guild;
-        loadPermissions();
+        loadValues();
     }
 
     /**
@@ -109,6 +111,15 @@ public class GuildConfigManager {
     }
 
     /**
+     * Get the template that should be used for greeting new members of guild
+     *
+     * @return String
+     */
+    public Optional<String> getGreetingTemplate() {
+        return this.greetingTemplate;
+    }
+
+    /**
      * Set command prefix
      *
      * @param prefix new command prefix
@@ -134,12 +145,20 @@ public class GuildConfigManager {
         return Pattern.compile("^(@\\d+ )?" + Pattern.quote(prefix) + "(\\w+) ?");
     }
 
-    private void loadPermissions() {
-        final String query = "SELECT  FROM Guilds WHERE id = ?;";
+    /**
+     * Load the values this guildconfig stores
+     */
+    private void loadValues() {
+        final String query = "SELECT prefix,greetingTemplate,commandEditPermission,commandRunPermission,eventEditPermission,musicPlayPermission FROM Guilds WHERE id = ?;";
         try (final PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try (final ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
+                    //Load command prefix
+                    setCommandPrefix(rs.getString("prefix"));
+                    //Load greeting template
+                    this.greetingTemplate = Optional.ofNullable(rs.getString("greetingTemplate"));
+                    //Load permissionds
                     try {
                         this.commandEditPermission = CommandPermission.valueOf(rs.getString("commandEditPermission"));
                     } catch (IllegalArgumentException e) {
@@ -167,7 +186,7 @@ public class GuildConfigManager {
                 }
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to load permissions from database", ex);
+            LOGGER.error("Failed to load guild config from database", ex);
         }
     }
 
@@ -238,6 +257,24 @@ public class GuildConfigManager {
         final String query = "UPDATE Guilds SET musicPlayPermission = ? WHERE guild = ?;";
         try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
             ps.setString(1, newMusicPermission.name());
+            ps.setLong(2, this.guildID);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Set the template used to greet new members with
+     *
+     * @param newTemplate Template string to use, null to disable greeting
+     * @return did update succeed
+     * @throws SQLException id database connection failed
+     */
+    public boolean setGreetingTemplate(String newTemplate) throws SQLException {
+        this.greetingTemplate = Optional.ofNullable(newTemplate);
+
+        final String query = "UPDATE Guilds SET greetingTemplate = ? WHERE guild = ?;";
+        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+            ps.setString(1, newTemplate);
             ps.setLong(2, this.guildID);
             return ps.executeUpdate() > 0;
         }
