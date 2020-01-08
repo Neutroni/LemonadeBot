@@ -28,7 +28,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 
 /**
@@ -37,7 +36,6 @@ import net.dv8tion.jda.api.entities.Member;
  */
 public class Event {
 
-    private final long guildID;
     private final String name;
     private final String description;
     private final long ownerID;
@@ -51,13 +49,11 @@ public class Event {
      * @param name name of the event
      * @param description description for the event
      * @param owner owner of the event
-     * @param guild Guild the event belongs to
      */
-    public Event(String name, String description, Member owner, Guild guild) {
+    public Event(String name, String description, Member owner) {
         this.name = name;
         this.description = description;
         this.ownerID = owner.getIdLong();
-        this.guildID = guild.getIdLong();
     }
 
     /**
@@ -66,13 +62,11 @@ public class Event {
      * @param name Name for this event
      * @param description Description for this event
      * @param owner Owner id for this event
-     * @param guild Guild id for this event
      */
-    public Event(String name, String description, long owner, long guild) {
+    public Event(String name, String description, long owner) {
         this.name = name;
         this.description = description;
         this.ownerID = owner;
-        this.guildID = guild;
     }
 
     /**
@@ -139,20 +133,10 @@ public class Event {
         return this.ownerID;
     }
 
-    /**
-     * Get the guild this event is from
-     *
-     * @return guild id
-     */
-    public long getGuild() {
-        return this.guildID;
-    }
-
     @Override
     public int hashCode() {
-        int hash = 7;
-        hash = 89 * hash + (int) (this.guildID ^ (this.guildID >>> 32));
-        hash = 89 * hash + Objects.hashCode(this.name);
+        int hash = 5;
+        hash = 79 * hash + Objects.hashCode(this.name);
         return hash;
     }
 
@@ -168,9 +152,6 @@ public class Event {
             return false;
         }
         final Event other = (Event) obj;
-        if (this.guildID != other.guildID) {
-            return false;
-        }
         return Objects.equals(this.name, other.name);
     }
 

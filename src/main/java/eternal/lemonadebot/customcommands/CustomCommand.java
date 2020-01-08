@@ -25,7 +25,6 @@ package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
-import eternal.lemonadebot.database.GuildConfigManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import eternal.lemonadebot.messages.CommandPermission;
 import java.util.Objects;
@@ -40,45 +39,42 @@ import net.dv8tion.jda.api.entities.Guild;
  */
 public class CustomCommand implements ChatCommand {
 
-    private final ConfigManager manager;
+    private final ConfigManager configManager;
     private final ActionManager actionManager;
 
-    private final String command;
-    private final String action;
+    private final String commandName;
+    private final String actionTemplate;
     private final long owner;
-    private final long guildID;
 
     /**
      * Constructor
      *
-     * @param commands CommandManager to get command permissions from
+     * @param configManager ConfigManager to get command permissions from
      * @param actions SimpleActions to replace action templates with
      * @param commandName command this is activeted by
      * @param actionTemplate action template
      * @param owner who created this command
-     * @param guild Guild that this CustomCommand is from
      */
-    public CustomCommand(ConfigManager commands, ActionManager actions, String commandName, String actionTemplate, long owner, long guild) {
-        this.manager = commands;
+    public CustomCommand(ConfigManager configManager, ActionManager actions, String commandName, String actionTemplate, long owner) {
+        this.configManager = configManager;
         this.actionManager = actions;
-        this.command = commandName;
-        this.action = actionTemplate;
+        this.commandName = commandName;
+        this.actionTemplate = actionTemplate;
         this.owner = owner;
-        this.guildID = guild;
     }
 
     @Override
     public String getCommand() {
-        return this.command;
+        return this.commandName;
     }
 
     /**
-     * Get the action this command performs
+     * Get the template for the action this command performs
      *
      * @return action String
      */
-    public String getAction() {
-        return this.action;
+    public String getTemplate() {
+        return this.actionTemplate;
     }
 
     /**
@@ -90,18 +86,9 @@ public class CustomCommand implements ChatCommand {
         return this.owner;
     }
 
-    /**
-     * Get the id this command is from
-     *
-     * @return guild id
-     */
-    public long getGuild() {
-        return this.guildID;
-    }
-
     @Override
     public void respond(CommandMatcher match) {
-        final CharSequence response = this.actionManager.processActions(match, action);
+        final CharSequence response = this.actionManager.processActions(match, actionTemplate);
         match.getMessage().getChannel().sendMessage(response).queue();
     }
 
@@ -112,15 +99,13 @@ public class CustomCommand implements ChatCommand {
 
     @Override
     public CommandPermission getPermission(Guild guild) {
-        final GuildConfigManager guildConf = this.manager.getGuildConfig(guild);
-        return guildConf.getCommandRunPermission();
+        return this.configManager.getCommandRunPermission();
     }
 
     @Override
     public int hashCode() {
-        int hash = 7;
-        hash = 61 * hash + Objects.hashCode(this.command);
-        hash = 61 * hash + (int) (this.guildID ^ (this.guildID >>> 32));
+        int hash = 5;
+        hash = 83 * hash + Objects.hashCode(this.commandName);
         return hash;
     }
 
@@ -136,10 +121,7 @@ public class CustomCommand implements ChatCommand {
             return false;
         }
         final CustomCommand other = (CustomCommand) obj;
-        if (this.guildID != other.guildID) {
-            return false;
-        }
-        return Objects.equals(this.command, other.command);
+        return Objects.equals(this.commandName, other.commandName);
     }
 
 }

@@ -26,8 +26,8 @@ package eternal.lemonadebot.commands;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.database.CustomCommandManager;
 import eternal.lemonadebot.database.DatabaseManager;
+import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import java.util.Optional;
@@ -43,19 +43,19 @@ class HelpCommand extends UserCommand {
 
     private final CommandManager commandParser;
     private final CommandProvider commands;
-    private final CustomCommandManager customCommands;
+    private final DatabaseManager db;
 
     /**
      * Constructor
      *
      * @param parser parser to use
      * @param provider CommandProvider to search commands in
-     * @param db database to use for checking if command is custom command
+     * @param database database to use for checking if command is custom command
      */
-    HelpCommand(CommandManager parser, CommandProvider provider, DatabaseManager db) {
+    HelpCommand(CommandManager parser, CommandProvider provider, DatabaseManager database) {
         this.commandParser = parser;
         this.commands = provider;
-        this.customCommands = db.getCustomCommands();
+        this.db = database;
     }
 
     @Override
@@ -105,7 +105,8 @@ class HelpCommand extends UserCommand {
             }
             return;
         }
-        final Optional<CustomCommand> custom = customCommands.getCommand(name, textChannel.getGuild());
+        final GuildDataStore data = this.db.getGuildData(sender.getGuild());
+        final Optional<CustomCommand> custom = data.getCustomCommands().getCommand(name);
         if (custom.isPresent()) {
             textChannel.sendMessage("User defined custom command, see command \"help custom\" for details.").queue();
             return;
@@ -114,7 +115,6 @@ class HelpCommand extends UserCommand {
     }
 
     private void listCommands(Member sender, TextChannel textChannel) {
-
         //Construct the list of commands
         final StringBuilder sb = new StringBuilder();
 

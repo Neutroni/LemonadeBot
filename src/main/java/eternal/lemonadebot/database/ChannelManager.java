@@ -27,12 +27,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import net.dv8tion.jda.api.entities.TextChannel;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
@@ -40,17 +41,21 @@ import net.dv8tion.jda.api.entities.TextChannel;
  */
 public class ChannelManager {
 
+    private static final Logger LOGGER = LogManager.getLogger();
+
     private final Connection conn;
+    private final long guildID;
     private final Set<Long> channels = Collections.synchronizedSet(new HashSet<>());
 
     /**
      * Constructor
      *
      * @param connetion database connection to use
-     * @throws SQLException If loading channels from database failed
+     * @param guildID ID of the guild this channelmanager stores channels for
      */
-    ChannelManager(Connection connetion) throws SQLException {
+    ChannelManager(Connection connetion, long guildID) {
         this.conn = connetion;
+        this.guildID = guildID;
         loadChannels();
     }
 
@@ -71,12 +76,14 @@ public class ChannelManager {
      * @throws SQLException if database connection failed
      */
     public boolean addChannel(TextChannel channel) throws SQLException {
+        LOGGER.debug("Storing channel in database: " + channel.getId());
         this.channels.add(channel.getIdLong());
 
         //Add to database
-        final String query = "INSERT OR IGNORE INTO Channels(id) VALUES (?);";
+        final String query = "INSERT OR IGNORE INTO Channels(id,guild) VALUES (?,?);";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setString(1, channel.getId());
+            ps.setLong(1, channel.getIdLong());
+            ps.setLong(2, channel.getGuild().getIdLong());
             return ps.executeUpdate() > 0;
         }
     }
@@ -89,6 +96,7 @@ public class ChannelManager {
      * @throws SQLException if database connection failed
      */
     public boolean removeChannel(Long id) throws SQLException {
+        LOGGER.debug("Removing channel from database: " + id);
         this.channels.remove(id);
 
         //Remove from database
@@ -115,22 +123,20 @@ public class ChannelManager {
      * @return List of channels
      * @throws SQLException if database connection fails
      */
-    private void loadChannels() throws SQLException {
-        final String query = "SELECT id FROM Channels;";
-        try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
-            while (rs.next()) {
-                this.channels.add(rs.getLong("id"));
+    private void loadChannels() {
+        final String query = "SELECT id FROM Channels WHERE guild = ?;";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setLong(1, this.guildID);
+            try (ResultSet rs = ps.executeQuery(query)) {
+                while (rs.next()) {
+                    this.channels.add(rs.getLong("id"));
+                }
             }
+        } catch (SQLException e) {
+            LOGGER.error("Loading channels from database failed");
+            LOGGER.warn(e.getMessage());
+            LOGGER.trace(e);
         }
-    }
-
-    /**
-     * Check if we store any channels
-     *
-     * @return true if no channels are currently stored
-     */
-    public boolean isEmpty() {
-        return this.channels.isEmpty();
     }
 
 }

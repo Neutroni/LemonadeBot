@@ -33,7 +33,6 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.database.GuildConfigManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import eternal.lemonadebot.messages.CommandPermission;
 import java.util.HashMap;
@@ -52,9 +51,18 @@ import net.dv8tion.jda.api.managers.AudioManager;
  */
 public class MusicCommand implements ChatCommand {
 
+    private static void connectToFirstVoiceChannel(AudioManager audioManager) {
+        if (!audioManager.isConnected() && !audioManager.isAttemptingToConnect()) {
+            for (VoiceChannel voiceChannel : audioManager.getGuild().getVoiceChannels()) {
+                audioManager.openAudioConnection(voiceChannel);
+                break;
+            }
+        }
+    }
+
     private final AudioPlayerManager playerManager;
     private final Map<Long, GuildMusicManager> musicManagers;
-    private final ConfigManager configManager;
+    private final DatabaseManager db;
 
     /**
      * Constructor
@@ -62,7 +70,7 @@ public class MusicCommand implements ChatCommand {
      * @param dataBase DataBase to get music playback permission from
      */
     public MusicCommand(DatabaseManager dataBase) {
-        this.configManager = dataBase.getConfig();
+        this.db = dataBase;
         this.playerManager = new DefaultAudioPlayerManager();
         AudioSourceManagers.registerRemoteSources(playerManager);
         AudioSourceManagers.registerLocalSource(playerManager);
@@ -87,7 +95,7 @@ public class MusicCommand implements ChatCommand {
 
     @Override
     public CommandPermission getPermission(Guild guild) {
-        final GuildConfigManager guildConf = this.configManager.getGuildConfig(guild);
+        final ConfigManager guildConf = this.db.getConfig(guild);
         return guildConf.getPlayPermission();
     }
 
@@ -265,15 +273,6 @@ public class MusicCommand implements ChatCommand {
     private void play(Guild guild, GuildMusicManager musicManager, AudioTrack track) {
         connectToFirstVoiceChannel(guild.getAudioManager());
         musicManager.scheduler.queue(track);
-    }
-
-    private static void connectToFirstVoiceChannel(AudioManager audioManager) {
-        if (!audioManager.isConnected() && !audioManager.isAttemptingToConnect()) {
-            for (VoiceChannel voiceChannel : audioManager.getGuild().getVoiceChannels()) {
-                audioManager.openAudioConnection(voiceChannel);
-                break;
-            }
-        }
     }
 
     /**

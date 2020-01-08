@@ -26,11 +26,11 @@ package eternal.lemonadebot.commands;
 import eternal.lemonadebot.commandtypes.OwnerCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.database.GuildConfigManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import java.sql.SQLException;
 import java.util.Optional;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.MessageChannel;
 
 /**
  *
@@ -38,15 +38,15 @@ import net.dv8tion.jda.api.entities.TextChannel;
  */
 class PrefixCommand extends OwnerCommand {
 
-    private final ConfigManager configManager;
+    private final DatabaseManager db;
 
     /**
      * Constructor
      *
-     * @param dataBase ConfigManager to handle prefix with
+     * @param database ConfigManager to handle prefix with
      */
-    PrefixCommand(DatabaseManager dataBase) {
-        this.configManager = dataBase.getConfig();
+    PrefixCommand(DatabaseManager database) {
+        this.db = database;
     }
 
     @Override
@@ -62,29 +62,31 @@ class PrefixCommand extends OwnerCommand {
 
     @Override
     public void respond(CommandMatcher matcher) {
+        final MessageChannel channel = matcher.getMessageChannel();
+
         //Verify we are on a discord server and not a private chat
-        final Optional<TextChannel> optChannel = matcher.getTextChannel();
-        if (optChannel.isEmpty()) {
-            matcher.getMessageChannel().sendMessage("Command prefixes are specific to discord servers and must be edited on one").queue();
+        final Optional<Guild> optGuild = matcher.getGuild();
+        if (optGuild.isEmpty()) {
+            channel.sendMessage("Command prefixes are specific to discord servers and must be edited on one").queue();
             return;
         }
-        final TextChannel textChannel = optChannel.get();
+        final Guild guild = optGuild.get();
 
         //Check if user provide prefix
         final String[] options = matcher.getArguments(1);
         if (options.length == 0) {
-            textChannel.sendMessage("Provide a prefix to set commandprefix to.").queue();
+            channel.sendMessage("Provide a prefix to set commandprefix to.").queue();
             return;
         }
 
         //Update the prefix
         final String newPrefix = options[0];
-        final GuildConfigManager guildConf = this.configManager.getGuildConfig(textChannel.getGuild());
+        final ConfigManager guildConf = this.db.getConfig(guild);
         try {
             guildConf.setCommandPrefix(newPrefix);
-            textChannel.sendMessage("Updated prefix succesfully to: " + newPrefix).queue();
+            channel.sendMessage("Updated prefix succesfully to: " + newPrefix).queue();
         } catch (SQLException ex) {
-            textChannel.sendMessage("Storing prefix in DB failed, will still use new prefix until reboot, re-issue command once DB issue is fixed.").queue();
+            channel.sendMessage("Storing prefix in DB failed, will still use new prefix until reboot, re-issue command once DB issue is fixed.").queue();
         }
 
     }

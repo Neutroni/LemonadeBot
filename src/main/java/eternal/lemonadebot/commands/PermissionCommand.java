@@ -26,7 +26,6 @@ package eternal.lemonadebot.commands;
 import eternal.lemonadebot.commandtypes.OwnerCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.database.GuildConfigManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import eternal.lemonadebot.messages.CommandPermission;
 import java.sql.SQLException;
@@ -40,10 +39,15 @@ import net.dv8tion.jda.api.entities.MessageChannel;
  */
 public class PermissionCommand extends OwnerCommand {
 
-    private final ConfigManager configManager;
+    private final DatabaseManager db;
 
-    PermissionCommand(DatabaseManager db) {
-        this.configManager = db.getConfig();
+    /**
+     * Constructor
+     *
+     * @param database database to use for storing permissions in
+     */
+    PermissionCommand(DatabaseManager database) {
+        this.db = database;
     }
 
     @Override
@@ -76,7 +80,7 @@ public class PermissionCommand extends OwnerCommand {
 
         //Parse arguments
         final Guild guild = optGuild.get();
-        final GuildConfigManager guildConf = this.configManager.getGuildConfig(guild);
+        final ConfigManager guildConf = this.db.getConfig(guild);
         switch (arguments[0]) {
             case "commandEdit": {
                 if (arguments.length == 0) {

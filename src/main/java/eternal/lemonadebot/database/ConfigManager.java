@@ -28,17 +28,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
+import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Manages bot configuration
  *
  * @author Neutroni
  */
@@ -49,132 +44,250 @@ public class ConfigManager {
     //Database connection
     private final Connection conn;
 
-    //Data
-    private final String ownerID;
-    private final String databaseVersion;
-    private final Map<Long, GuildConfigManager> guilds = new HashMap<>();
+    //Stored values
+    private final long guildID;
+    private volatile Pattern commandPattern;
+    private volatile Optional<String> greetingTemplate;
+    private volatile CommandPermission commandRunPermission;
+    private volatile CommandPermission commandEditPermission;
+    private volatile CommandPermission eventEditPermission;
+    private volatile CommandPermission musicPlayPermission;
 
     /**
      * Constructor
      *
-     * @param connection Database to store config in
-     * @throws SQLException If database connection failed or no bot owner found
-     * in db
+     * @param connection database connection to use
+     * @param guild Guild this config is for
      */
-    ConfigManager(Connection connection) throws SQLException {
+    ConfigManager(Connection connection, long guild) {
         this.conn = connection;
-
-        //Load ownerID
-        final Optional<String> optOwner = loadSetting(ConfigKey.OWNER_ID.name());
-        if (optOwner.isEmpty()) {
-            throw new SQLException("Missing owner id");
-        }
-        this.ownerID = optOwner.get();
-
-        //Load database version
-        final Optional<String> optVersion = loadSetting(ConfigKey.DATABASE_VERSION.name());
-        if (optVersion.isEmpty()) {
-            throw new SQLException("Missing database version");
-        }
-        this.databaseVersion = optVersion.get();
-
-        //Check if database version is correct
-        if (!DatabaseManager.getVersion().equals(this.databaseVersion)) {
-            throw new SQLException("Database version mismatch");
-        }
-
-        //Load list of known guilds
-        loadGuildList();
+        this.guildID = guild;
+        loadValues();
     }
 
     /**
-     * Check if user is the owner of this bot
+     * Get the id of the guild this confimanager stores settings for
      *
-     * @param user User to check
-     * @return true if the owner
+     * @return id of the guild
      */
-    public boolean isOwner(Member user) {
-        return this.ownerID.equals(user.getId());
+    public long getGuildID() {
+        return this.guildID;
     }
 
     /**
-     * Loads a setting from database
+     * Get permission required to edit custom commands and events
      *
-     * @param key Key to retrieve setting for
-     * @return Value for setting
-     * @throws java.sql.SQLException
+     * @return CommandPermissions
      */
-    private Optional<String> loadSetting(String key) throws SQLException {
-        final String query = "SELECT value FROM Options WHERE name = ?;";
-        try (final PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setString(1, key);
-            try (final ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(rs.getString("value"));
-                }
-            }
-        }
-        return Optional.empty();
+    public CommandPermission getEditPermission() {
+        return this.commandEditPermission;
     }
 
-    private void loadGuildList() throws SQLException {
-        final String query = "SELECT id FROM Guilds;";
-        try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
-            while (rs.next()) {
-                final long guildID = rs.getLong("id");
-                this.guilds.put(guildID, new GuildConfigManager(conn, guildID));
-            }
+    /**
+     * Get permission to use custom commands and join events
+     *
+     * @return CommandPermissions
+     */
+    public CommandPermission getCommandRunPermission() {
+        return this.commandRunPermission;
+    }
+
+    /**
+     * Get permissiond to create events
+     *
+     * @return CommandPermission
+     */
+    public CommandPermission getEventPermission() {
+        return this.eventEditPermission;
+    }
+
+    /**
+     * Get the permission needed to play songs
+     *
+     * @return CommandPermission
+     */
+    public CommandPermission getPlayPermission() {
+        return this.musicPlayPermission;
+    }
+
+    /**
+     * Get command pattern
+     *
+     * @return command pattern
+     */
+    public Pattern getCommandPattern() {
+        return this.commandPattern;
+    }
+
+    /**
+     * Get the template that should be used for greeting new members of guild
+     *
+     * @return String
+     */
+    public Optional<String> getGreetingTemplate() {
+        return this.greetingTemplate;
+    }
+
+    /**
+     * Set command prefix
+     *
+     * @param prefix new command prefix
+     * @throws SQLException if updating prefix failed
+     */
+    public void setCommandPrefix(String prefix) throws SQLException {
+        this.commandPattern = getCommandPattern(prefix);
+        final String query = "UPDATE Guilds SET prefix = ? WHERE guild = ?;";
+        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+            ps.setString(1, prefix);
+            ps.setLong(2, this.guildID);
+            ps.executeUpdate();
         }
     }
 
     /**
-     * Add guild to database
+     * Set the permission required to edit commands
      *
-     * @param guild Guild to add
-     * @return true if add was succesfull
+     * @param newEditPermission permission needed
+     * @return did update succeed
      * @throws SQLException if database connection failed
      */
-    public boolean addGuild(Guild guild) throws SQLException {
-        final String query = "INSERT INTO Guilds(id,commandPrefix,commandEditPermission,commandRunPermission,eventEditPermission,musicPlayPermission,greetingTemplate) VALUES (?,?,?,?,?,?);";
-        try (final PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setLong(1, guild.getIdLong());
-            ps.setString(2, "lemonbot#");
-            ps.setString(3, CommandPermission.ADMIN.name());
-            ps.setString(4, CommandPermission.MEMBER.name());
-            ps.setString(5, CommandPermission.ADMIN.name());
-            ps.setString(6, CommandPermission.MEMBER.name());
-            ps.setString(7, "Welcome to our discord {displayName}");
+    public boolean setEditPermission(CommandPermission newEditPermission) throws SQLException {
+        this.commandEditPermission = newEditPermission;
+
+        final String query = "UPDATE Guilds SET commandEditPermission = ? WHERE guild = ?;";
+        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+            ps.setString(1, newEditPermission.name());
+            ps.setLong(2, this.guildID);
             return ps.executeUpdate() > 0;
         }
     }
 
     /**
-     * Get configmanager for guild
+     * Set the permissiond required to use commands
      *
-     * @param guild guild to get manager for
-     * @return GuildConfigManager
+     * @param newRunPermission permission needed
+     * @return did update succeed
+     * @throws SQLException if database connection failed
      */
-    public GuildConfigManager getGuildConfig(Guild guild) {
-        return this.guilds.computeIfAbsent(guild.getIdLong(), (newGuildID) -> {
-            try {
-                if (!hasGuild(guild.getIdLong())) {
-                    addGuild(guild);
-                }
-            } catch (SQLException e) {
-                LOGGER.error("Error adding missing guild", e);
-            }
-            //Return guildConfigManager to the guild
-            return new GuildConfigManager(conn, newGuildID);
-        });
+    public boolean setCommandRunPermission(CommandPermission newRunPermission) throws SQLException {
+        this.commandRunPermission = newRunPermission;
+
+        final String query = "UPDATE Guilds SET commandRunPermission = ? WHERE guild = ?;";
+        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+            ps.setString(1, newRunPermission.name());
+            ps.setLong(2, this.guildID);
+            return ps.executeUpdate() > 0;
+        }
     }
 
-    private boolean hasGuild(long guildID) throws SQLException{
-        final String query = "SELECT id FROM Guilds WHERE id = ?;";
+    /**
+     * Set the permission required to manage events
+     *
+     * @param newEventPermission permission needed
+     * @return did update succeed
+     * @throws SQLException if database connection failed
+     */
+    public boolean setEventPermission(CommandPermission newEventPermission) throws SQLException {
+        this.eventEditPermission = newEventPermission;
+
+        final String query = "UPDATE Guilds SET eventEditPermission = ? WHERE guild = ?;";
+        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+            ps.setString(1, newEventPermission.name());
+            ps.setLong(2, this.guildID);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Set the permission required to play music
+     *
+     * @param newMusicPermission permission needed
+     * @return did update succeed
+     * @throws SQLException if database connection failed
+     */
+    public boolean setPlayPermission(CommandPermission newMusicPermission) throws SQLException {
+        this.musicPlayPermission = newMusicPermission;
+
+        final String query = "UPDATE Guilds SET musicPlayPermission = ? WHERE guild = ?;";
+        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+            ps.setString(1, newMusicPermission.name());
+            ps.setLong(2, this.guildID);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Set the template used to greet new members with
+     *
+     * @param newTemplate Template string to use, null to disable greeting
+     * @return did update succeed
+     * @throws SQLException id database connection failed
+     */
+    public boolean setGreetingTemplate(String newTemplate) throws SQLException {
+        this.greetingTemplate = Optional.ofNullable(newTemplate);
+
+        final String query = "UPDATE Guilds SET greetingTemplate = ? WHERE guild = ?;";
+        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+            ps.setString(1, newTemplate);
+            ps.setLong(2, this.guildID);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Updates command pattern
+     *
+     * @param prefix prefix to use in pattern
+     */
+    private Pattern getCommandPattern(String prefix) {
+        //Start of match, optionally @numericID, prefix, match group 2 is command
+        return Pattern.compile("^(@\\d+ )?" + Pattern.quote(prefix) + "(\\w+) ?");
+    }
+
+    /**
+     * Load the values this guildconfig stores
+     */
+    private void loadValues() {
+        final String query = "SELECT prefix,greetingTemplate,commandEditPermission,commandRunPermission,eventEditPermission,musicPlayPermission FROM Guilds WHERE id = ?;";
         try (final PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setLong(1, guildID);
+            ps.setLong(1, this.guildID);
             try (final ResultSet rs = ps.executeQuery()) {
-                return rs.next();
+                if (rs.next()) {
+                    //Load command prefix
+                    setCommandPrefix(rs.getString("prefix"));
+                    //Load greeting template
+                    this.greetingTemplate = Optional.ofNullable(rs.getString("greetingTemplate"));
+                    //Load permissionds
+                    try {
+                        this.commandEditPermission = CommandPermission.valueOf(rs.getString("commandEditPermission"));
+                    } catch (IllegalArgumentException e) {
+                        LOGGER.error("Failed to load permissiond for editing commands, malformed enum value", e);
+                        this.commandEditPermission = CommandPermission.ADMIN;
+                    }
+                    try {
+                        this.commandRunPermission = CommandPermission.valueOf(rs.getString("commandRunPermission"));
+                    } catch (IllegalArgumentException e) {
+                        LOGGER.error("Failed to load permissiond for running commands, malformed enum value", e);
+                        this.commandRunPermission = CommandPermission.MEMBER;
+                    }
+                    try {
+                        this.eventEditPermission = CommandPermission.valueOf(rs.getString("eventEditPermission"));
+                    } catch (IllegalArgumentException e) {
+                        LOGGER.error("Failed to load permissiond for editing events, malformed enum value", e);
+                        this.eventEditPermission = CommandPermission.ADMIN;
+                    }
+                    try {
+                        this.musicPlayPermission = CommandPermission.valueOf(rs.getString("musicPlayPermission"));
+                    } catch (IllegalArgumentException e) {
+                        LOGGER.error("Failed to load permissiond for playing music, malformed enum value", e);
+                        this.musicPlayPermission = CommandPermission.MEMBER;
+                    }
+                }
             }
+        } catch (SQLException ex) {
+            LOGGER.error("Failed to load guild config from database");
+            LOGGER.warn(ex.getMessage());
+            LOGGER.trace(ex);
         }
     }
 

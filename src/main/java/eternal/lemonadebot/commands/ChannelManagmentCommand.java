@@ -44,17 +44,15 @@ class ChannelManagmentCommand extends OwnerCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final ChannelManager channels;
-    private final JDA jda;
+    private final DatabaseManager db;
 
     /**
      * Constructor
      *
-     * @param db database to store channels in
+     * @param database database to store channels in
      */
-    ChannelManagmentCommand(DatabaseManager db) {
-        this.channels = db.getChannels();
-        this.jda = db.getJDA();
+    ChannelManagmentCommand(DatabaseManager database) {
+        this.db = database;
     }
 
     @Override
@@ -107,6 +105,7 @@ class ChannelManagmentCommand extends OwnerCommand {
     }
 
     private void addChannel(TextChannel textChannel, Message message) {
+        final ChannelManager channels = this.db.getChannels(textChannel.getGuild());
         final List<TextChannel> mentioned = message.getMentionedChannels();
         //Check if any channels were mentioned
         if (mentioned.isEmpty()) {
@@ -134,6 +133,7 @@ class ChannelManagmentCommand extends OwnerCommand {
     }
 
     private void removeChannel(TextChannel textChannel, Message message) {
+        final ChannelManager channels = this.db.getChannels(textChannel.getGuild());
         final List<TextChannel> mentions = message.getMentionedChannels();
         if (mentions.isEmpty()) {
             textChannel.sendMessage("Mention channels you want to stop listening on").queue();
@@ -160,10 +160,12 @@ class ChannelManagmentCommand extends OwnerCommand {
     }
 
     private void listChannels(TextChannel textChannel) {
+        final ChannelManager channels = this.db.getChannels(textChannel.getGuild());
+        final JDA jda = textChannel.getJDA();
         final List<Long> channelIds = channels.getChannels();
         final StringBuilder sb = new StringBuilder("Channels:\n");
         for (Long id : channelIds) {
-            final TextChannel listeningChannel = this.jda.getTextChannelById(id);
+            final TextChannel listeningChannel = jda.getTextChannelById(id);
             if (listeningChannel == null) {
                 LOGGER.warn("Channel in database which could not be found, removing from listened channels\n");
                 try {
@@ -176,10 +178,7 @@ class ChannelManagmentCommand extends OwnerCommand {
                 }
                 continue;
             }
-            //Only print channels for current server
-            if (textChannel.getGuild().equals(listeningChannel.getGuild())) {
-                sb.append(listeningChannel.getName()).append('\n');
-            }
+            sb.append(listeningChannel.getName()).append('\n');
         }
         if (channelIds.isEmpty()) {
             sb.append("Not listening on any channels");

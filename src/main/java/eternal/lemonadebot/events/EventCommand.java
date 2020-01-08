@@ -27,13 +27,14 @@ import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.EventManager;
-import eternal.lemonadebot.database.GuildConfigManager;
+import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.RemainderManager;
 import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
@@ -48,21 +49,17 @@ public class EventCommand extends UserCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final CommandManager commandParser;
-    private final EventManager eventManager;
-    private final RemainderManager remainderManager;
-    private final ConfigManager configManager;
+    private final DatabaseManager db;
 
     /**
      * Constructor
      *
      * @param parser parser to use for parsing commands
-     * @param db database to store events in
+     * @param database database to store events in
      */
-    public EventCommand(CommandManager parser, DatabaseManager db) {
+    public EventCommand(CommandManager parser, DatabaseManager database) {
         this.commandParser = parser;
-        this.eventManager = db.getEvents();
-        this.remainderManager = db.getRemainders();
-        this.configManager = db.getConfig();
+        this.db = database;
     }
 
     @Override
@@ -138,7 +135,9 @@ public class EventCommand extends UserCommand {
     }
 
     private void createEvent(String[] opts, TextChannel textChannel, Member sender) {
-        final GuildConfigManager guildConf = this.configManager.getGuildConfig(textChannel.getGuild());
+        final Guild guild = textChannel.getGuild();
+        final ConfigManager guildConf = this.db.getConfig(guild);
+        final EventManager events = this.db.getEvents(guild);
         if (!this.commandParser.hasPermission(sender, guildConf.getEditPermission())) {
             textChannel.sendMessage("You do not have permission to create events").queue();
             return;
@@ -156,12 +155,12 @@ public class EventCommand extends UserCommand {
             } else {
                 description = "No description";
             }
-            final Event newEvent = new Event(eventName, description, sender, textChannel.getGuild());
-            if (!eventManager.addEvent(newEvent)) {
+            final Event newEvent = new Event(eventName, description, sender);
+            if (!events.addEvent(newEvent)) {
                 textChannel.sendMessage("Event with that name alredy exists.").queue();
                 return;
             }
-            if (!eventManager.joinEvent(newEvent, sender)) {
+            if (!events.joinEvent(newEvent, sender)) {
                 textChannel.sendMessage("Event created but failed to join the event.").queue();
                 return;
             }
@@ -176,7 +175,11 @@ public class EventCommand extends UserCommand {
     }
 
     private void deleteEvent(String[] opts, TextChannel textChannel, Member sender) {
-        final GuildConfigManager guildConf = this.configManager.getGuildConfig(textChannel.getGuild());
+        final Guild guild = textChannel.getGuild();
+        final GuildDataStore data = this.db.getGuildData(guild);
+        final ConfigManager guildConf = data.getConfigManager();
+        final EventManager events = data.getEventManager();
+        final RemainderManager remainders = data.getRemainderManager();
         if (!this.commandParser.hasPermission(sender, guildConf.getEditPermission())) {
             textChannel.sendMessage("You do not have permission to delete events").queue();
             return;
@@ -187,7 +190,7 @@ public class EventCommand extends UserCommand {
         }
         final String eventName = opts[1];
 
-        final Optional<Event> oldEvent = eventManager.getEvent(eventName, textChannel.getGuild());
+        final Optional<Event> oldEvent = events.getEvent(eventName);
         if (oldEvent.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
             return;
@@ -204,10 +207,10 @@ public class EventCommand extends UserCommand {
 
         try {
             //Delete remainders for the event
-            for (Remainder r : this.remainderManager.getRemainders(textChannel.getGuild())) {
+            for (Remainder r : remainders.getRemainders()) {
                 if (event.equals(r.getEvent())) {
                     try {
-                        this.remainderManager.deleteRemainder(r);
+                        remainders.deleteRemainder(r);
                     } catch (SQLException e) {
                         LOGGER.warn("Error removing remainder for event about to be removed");
                         LOGGER.warn(e.getMessage());
@@ -216,7 +219,7 @@ public class EventCommand extends UserCommand {
                 }
             }
             //Delete event
-            if (eventManager.removeEvent(event)) {
+            if (events.removeEvent(event)) {
                 textChannel.sendMessage("Event succesfully removed").queue();
                 return;
             }
@@ -238,13 +241,14 @@ public class EventCommand extends UserCommand {
         }
         final String eventName = opts[1];
 
-        final Optional<Event> oldEvent = eventManager.getEvent(eventName, textChannel.getGuild());
+        final EventManager events = this.db.getEvents(textChannel.getGuild());
+        final Optional<Event> oldEvent = events.getEvent(eventName);
         if (oldEvent.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
             return;
         }
         try {
-            if (eventManager.joinEvent(oldEvent.get(), sender)) {
+            if (events.joinEvent(oldEvent.get(), sender)) {
                 textChannel.sendMessage("Succesfully joined event").queue();
                 return;
             }
@@ -265,13 +269,14 @@ public class EventCommand extends UserCommand {
         }
         final String eventName = opts[1];
 
-        final Optional<Event> oldEvent = eventManager.getEvent(eventName, textChannel.getGuild());
+        final EventManager events = this.db.getEvents(textChannel.getGuild());
+        final Optional<Event> oldEvent = events.getEvent(eventName);
         if (oldEvent.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
             return;
         }
         try {
-            if (eventManager.leaveEvent(oldEvent.get(), sender.getIdLong())) {
+            if (events.leaveEvent(oldEvent.get(), sender.getIdLong())) {
                 textChannel.sendMessage("Succesfully left event").queue();
                 return;
             }
@@ -292,7 +297,8 @@ public class EventCommand extends UserCommand {
         }
         final String eventName = opts[1];
 
-        final Optional<Event> opt = this.eventManager.getEvent(eventName, textChannel.getGuild());
+        final EventManager events = this.db.getEvents(textChannel.getGuild());
+        final Optional<Event> opt = events.getEvent(eventName);
         if (opt.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
             return;
@@ -305,7 +311,7 @@ public class EventCommand extends UserCommand {
             if (m == null) {
                 LOGGER.warn("Found user in event members who could not be found, removing from event\n");
                 try {
-                    eventManager.leaveEvent(event, id);
+                    events.leaveEvent(event, id);
                     LOGGER.info("Succesfully removed missing member from event\n");
                 } catch (SQLException ex) {
                     LOGGER.error("Failure to remove member from event");
@@ -329,7 +335,8 @@ public class EventCommand extends UserCommand {
         }
         final String eventName = opts[1];
 
-        final Optional<Event> opt = this.eventManager.getEvent(eventName, textChannel.getGuild());
+        final EventManager events = this.db.getEvents(textChannel.getGuild());
+        final Optional<Event> opt = events.getEvent(eventName);
         if (opt.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
             return;
@@ -340,7 +347,7 @@ public class EventCommand extends UserCommand {
             return;
         }
         try {
-            eventManager.clearEvent(event);
+            events.clearEvent(event);
             textChannel.sendMessage("Succesfully cleared the event").queue();
         } catch (SQLException ex) {
             textChannel.sendMessage("Database error clearing event, " + "clear again once the issue is ").queue();
@@ -352,12 +359,11 @@ public class EventCommand extends UserCommand {
     }
 
     private void listEvents(TextChannel textChannel) {
-        final List<Event> ev = this.eventManager.getEvents(textChannel.getGuild());
+        final EventManager events = this.db.getEvents(textChannel.getGuild());
+        final List<Event> ev = events.getEvents();
         final StringBuilder sb = new StringBuilder("Events:\n");
         for (Event e : ev) {
-            if (e.getGuild() == textChannel.getGuild().getIdLong()) {
-                sb.append(' ').append(e.getName()).append(" - ").append(e.getDescription()).append('\n');
-            }
+            sb.append(' ').append(e.getName()).append(" - ").append(e.getDescription()).append('\n');
         }
         if (ev.isEmpty()) {
             sb.append("No events found.");

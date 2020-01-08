@@ -26,7 +26,6 @@ package eternal.lemonadebot.commands;
 import eternal.lemonadebot.commandtypes.OwnerCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.database.GuildConfigManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import java.sql.SQLException;
 import java.util.Optional;
@@ -43,15 +42,15 @@ public class GreetCommand extends OwnerCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final ConfigManager configManager;
+    private final DatabaseManager db;
 
     /**
      * Constructor
      *
-     * @param dataBase database to store greeting template in
+     * @param database database to store greeting template in
      */
-    public GreetCommand(DatabaseManager dataBase) {
-        this.configManager = dataBase.getConfig();
+    public GreetCommand(DatabaseManager database) {
+        this.db = database;
     }
 
     @Override
@@ -81,7 +80,7 @@ public class GreetCommand extends OwnerCommand {
             return;
         }
         final Guild guild = optGuild.get();
-        final GuildConfigManager guildConf = this.configManager.getGuildConfig(guild);
+        final ConfigManager guildConf = this.db.getConfig(guild);
         final String[] options = message.getArguments(1);
         if (options.length == 0) {
             channel.sendMessage("Provide operation to perform, check help for possible operations").queue();

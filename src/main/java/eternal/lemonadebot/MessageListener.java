@@ -27,7 +27,6 @@ import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ChannelManager;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.database.GuildConfigManager;
 import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import java.sql.SQLException;
@@ -57,21 +56,17 @@ public class MessageListener extends ListenerAdapter {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final DatabaseManager DATABASE;
+    private final DatabaseManager db;
     private final CommandManager commandManager;
-    private final ChannelManager channelManager;
-    private final ConfigManager configManager;
 
     /**
      * Constructor
      *
-     * @param db Database to use for operations
+     * @param database Database to use for operations
      */
-    public MessageListener(DatabaseManager db) {
-        this.DATABASE = db;
-        this.commandManager = new CommandManager(db);
-        this.channelManager = db.getChannels();
-        this.configManager = db.getConfig();
+    public MessageListener(DatabaseManager database) {
+        this.db = database;
+        this.commandManager = new CommandManager(database);
     }
 
     /**
@@ -91,15 +86,18 @@ public class MessageListener extends ListenerAdapter {
             return;
         }
 
+        final Guild eventGuild = event.getGuild();
+        final ChannelManager channels = this.db.getChannels(eventGuild);
+
         //Check if we are listening on this channel
         final TextChannel textChannel = event.getChannel();
-        if (!channelManager.hasChannel(textChannel)) {
+        if (!channels.hasChannel(textChannel)) {
             return;
         }
 
         //Check if message is a command
         final Message message = event.getMessage();
-        final CommandMatcher cmdmatch = commandManager.getCommandMatcher(event.getGuild(), message);
+        final CommandMatcher cmdmatch = commandManager.getCommandMatcher(eventGuild, message);
         final Optional<ChatCommand> action = commandManager.getAction(cmdmatch);
         if (action.isEmpty()) {
             return;
@@ -114,26 +112,6 @@ public class MessageListener extends ListenerAdapter {
     }
 
     /**
-     * Send default greeting when new person joins
-     *
-     * @param textChannel TextChannel to send greeting on
-     * @param member Member who joined
-     */
-    private void sendDefaultMessage(TextChannel textChannel, Member member) {
-        final GuildConfigManager guildConf = this.configManager.getGuildConfig(textChannel.getGuild());
-        final Optional<String> optTemplate = guildConf.getGreetingTemplate();
-        if(optTemplate.isEmpty()){
-            LOGGER.debug("Not greeting because greet template is not set");
-            return;
-        }
-        final String greetTemplate = optTemplate.get();
-        final MessageBuilder mb = new MessageBuilder(greetTemplate);  
-        mb.replace("{name}", member.getEffectiveName());
-        mb.replace("{mention}", member.getAsMention());
-        textChannel.sendMessage(mb.build()).queue();
-    }
-
-    /**
      * Received when someone joins a guild
      *
      * @param event info about the join
@@ -143,6 +121,7 @@ public class MessageListener extends ListenerAdapter {
         final Guild guild = event.getGuild();
         final Member member = event.getMember();
         final TextChannel textChannel = guild.getSystemChannel();
+        final ChannelManager channels = this.db.getChannels(guild);
 
         LOGGER.debug("New member: " + member.getEffectiveName());
 
@@ -153,7 +132,7 @@ public class MessageListener extends ListenerAdapter {
         }
 
         //Check if we should react on this channel
-        if (!channelManager.hasChannel(textChannel)) {
+        if (channels.hasChannel(textChannel)) {
             LOGGER.debug("Not greeting because not listening on the channel");
             return;
         }
@@ -213,11 +192,8 @@ public class MessageListener extends ListenerAdapter {
      */
     @Override
     public void onGuildJoin(GuildJoinEvent event) {
-        try {
-            this.configManager.addGuild(event.getGuild());
-        } catch (SQLException ex) {
-            LOGGER.error("Adding new guild to database failed", ex);
-        }
+        final Guild eventGuild = event.getGuild();
+
         //Start listening on the default channel for the guild
         final TextChannel channel = event.getGuild().getSystemChannel();
         if (channel == null) {
@@ -225,8 +201,9 @@ public class MessageListener extends ListenerAdapter {
             return;
         }
         //Store the channel in database
+        final ChannelManager channels = this.db.getChannels(eventGuild);
         try {
-            channelManager.addChannel(channel);
+            channels.addChannel(channel);
             if (channel.canTalk()) {
                 channel.sendMessage("Hello everyone I'm a new bot here, nice to meet you all").queue();
             } else {
@@ -245,10 +222,30 @@ public class MessageListener extends ListenerAdapter {
     @Override
     public void onShutdown(ShutdownEvent event) {
         try {
-            DATABASE.close();
+            db.close();
         } catch (SQLException ex) {
             LOGGER.error("Shutting down database connection failed", ex);
         }
         LOGGER.info("Shutting down");
+    }
+
+    /**
+     * Send default greeting when new person joins
+     *
+     * @param textChannel TextChannel to send greeting on
+     * @param member Member who joined
+     */
+    private void sendDefaultMessage(TextChannel textChannel, Member member) {
+        final ConfigManager guildConf = this.db.getConfig(textChannel.getGuild());
+        final Optional<String> optTemplate = guildConf.getGreetingTemplate();
+        if (optTemplate.isEmpty()) {
+            LOGGER.debug("Not greeting because greet template is not set");
+            return;
+        }
+        final String greetTemplate = optTemplate.get();
+        final MessageBuilder mb = new MessageBuilder(greetTemplate);
+        mb.replace("{name}", member.getEffectiveName());
+        mb.replace("{mention}", member.getAsMention());
+        textChannel.sendMessage(mb.build()).queue();
     }
 }

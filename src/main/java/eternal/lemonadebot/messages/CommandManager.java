@@ -27,9 +27,7 @@ import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.database.ConfigManager;
-import eternal.lemonadebot.database.CustomCommandManager;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.database.GuildConfigManager;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -50,24 +48,17 @@ public class CommandManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    //Command matching
-    private final ConfigManager configManager;
-
-    //Commands
+    private final DatabaseManager db;
     private final CommandProvider commandProvider;
-    private final CustomCommandManager customCommands;
 
     /**
      * Constructor
      *
-     * @param db database to use
+     * @param database database to use
      */
-    public CommandManager(DatabaseManager db) {
-        this.configManager = db.getConfig();
-
-        //Load commands
-        this.commandProvider = new CommandProvider(this, db);
-        this.customCommands = db.getCustomCommands();
+    public CommandManager(DatabaseManager database) {
+        this.db = database;
+        this.commandProvider = new CommandProvider(this, database);
     }
 
     /**
@@ -101,7 +92,7 @@ public class CommandManager {
         final Guild guild = optChannel.get().getGuild();
 
         //Check if we find custom command by that name
-        final Optional<CustomCommand> custom = customCommands.getCommand(commandName, guild);
+        final Optional<CustomCommand> custom = db.getCommands(guild).getCommand(commandName);
         if (custom.isPresent()) {
             return Optional.of(custom.get());
         }
@@ -116,7 +107,7 @@ public class CommandManager {
      * @return Matcher for the message
      */
     public CommandMatcher getCommandMatcher(Guild guild, Message msg) {
-        final GuildConfigManager guildConf = this.configManager.getGuildConfig(guild);
+        final ConfigManager guildConf = this.db.getConfig(guild);
         return new CommandMatcher(guildConf.getCommandPattern(), msg);
     }
 
@@ -127,7 +118,7 @@ public class CommandManager {
      * @return Rank of the member
      */
     public CommandPermission getRank(Member member) {
-        if (configManager.isOwner(member)) {
+        if (this.db.isOwner(member)) {
             return CommandPermission.OWNER;
         }
         if (member.getPermissions().contains(Permission.MANAGE_SERVER)) {
@@ -179,7 +170,7 @@ public class CommandManager {
         if (senderRank == CommandPermission.ADMIN) {
             return getRank(owner).ordinal() < CommandPermission.ADMIN.ordinal();
         }
-        return configManager.isOwner(member);
+        return this.db.isOwner(member);
     }
 
 }

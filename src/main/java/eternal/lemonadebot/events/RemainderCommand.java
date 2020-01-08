@@ -26,6 +26,7 @@ package eternal.lemonadebot.events;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.EventManager;
+import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.RemainderManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import eternal.lemonadebot.messages.CommandPermission;
@@ -52,19 +53,18 @@ public class RemainderCommand implements ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final RemainderManager remainderManager;
-    private final EventManager eventManager;
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("EEEE MMMM dd HH:mm zzz", Locale.ENGLISH);
+    private final DatabaseManager db;
+    private final SimpleDateFormat dateFormat;
 
     /**
      * Constructor
      *
-     * @param db database to store remainders in
+     * @param database database to store remainders in
      */
-    public RemainderCommand(DatabaseManager db) {
-        this.remainderManager = db.getRemainders();
-        this.eventManager = db.getEvents();
+    public RemainderCommand(DatabaseManager database) {
+        this.dateFormat = new SimpleDateFormat("EEEE MMMM dd HH:mm zzz", Locale.ENGLISH);
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+        this.db = database;
     }
 
     @Override
@@ -127,12 +127,15 @@ public class RemainderCommand implements ChatCommand {
     }
 
     private void createRemainder(String[] arguments, TextChannel textChannel) {
+        final GuildDataStore data = this.db.getGuildData(textChannel.getGuild());
+        final EventManager events = data.getEventManager();
+        final RemainderManager remainders = data.getRemainderManager();
         if (arguments.length < 5) {
             textChannel.sendMessage("Missing arguments, see help for event").queue();
             return;
         }
         final String eventName = arguments[1];
-        final Optional<Event> optEvent = this.eventManager.getEvent(eventName, textChannel.getGuild());
+        final Optional<Event> optEvent = events.getEvent(eventName);
         if (optEvent.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
             return;
@@ -160,9 +163,9 @@ public class RemainderCommand implements ChatCommand {
             return;
         }
 
-        final Remainder remainder = this.remainderManager.build(textChannel.getIdLong(), optEvent.get(), me, activationDay, activationTime);
+        final Remainder remainder = remainders.build(textChannel.getIdLong(), optEvent.get(), me, activationDay, activationTime);
         try {
-            if (!this.remainderManager.addRemainder(remainder)) {
+            if (!remainders.addRemainder(remainder)) {
                 textChannel.sendMessage("Matching remainder already exists.").queue();
                 return;
             }
@@ -182,17 +185,19 @@ public class RemainderCommand implements ChatCommand {
             textChannel.sendMessage("Provide the name of the remainder you want to delete").queue();
             return;
         }
+        final RemainderManager remainders = this.db.getRemainders(textChannel.getGuild());
+        
         final String eventName = arguments[1];
         final String remainderDay = arguments[2];
         final String remainderTime = arguments[3];
         //Get the remainder to delete
-        final Optional<Remainder> optRemainder = this.remainderManager.getRemainder(eventName, remainderDay, remainderTime, textChannel.getGuild());
+        final Optional<Remainder> optRemainder = remainders.getRemainder(eventName, remainderDay, remainderTime);
         if (optRemainder.isEmpty()) {
             textChannel.sendMessage("Could not find such remainder").queue();
             return;
         }
         try {
-            if (this.remainderManager.deleteRemainder(optRemainder.get())) {
+            if (remainders.deleteRemainder(optRemainder.get())) {
                 textChannel.sendMessage("Remainder succesfully removed").queue();
                 return;
             }
@@ -208,7 +213,8 @@ public class RemainderCommand implements ChatCommand {
     }
 
     private void listRemainders(TextChannel textChannel) {
-        final List<Remainder> ev = this.remainderManager.getRemainders(textChannel.getGuild());
+        final RemainderManager remainders = this.db.getRemainders(textChannel.getGuild());
+        final List<Remainder> ev = remainders.getRemainders();
         final StringBuilder sb = new StringBuilder("Remainders:\n");
         for (Remainder r : ev) {
             if (r.isValid()) {
@@ -217,10 +223,10 @@ public class RemainderCommand implements ChatCommand {
             }
             sb.append("Remainder in database that has no valid channel, removing");
             try {
-                if (this.remainderManager.deleteRemainder(r)) {
+                if (remainders.deleteRemainder(r)) {
                     sb.append("Remainder removed succesfully\n");
                 } else {
-                    sb.append("Remainder alreayd removed by someone else\n");
+                    sb.append("Remainder already removed by someone else\n");
                 }
             } catch (SQLException ex) {
                 sb.append("Database failure in removing remainder from database\n");

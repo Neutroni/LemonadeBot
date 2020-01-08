@@ -30,7 +30,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
@@ -43,7 +42,6 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Guild;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,6 +55,7 @@ public class RemainderManager {
 
     private final Connection conn;
     private final JDA jda;
+    private final long guildID;
 
     private final Set<Remainder> remainders = Collections.synchronizedSet(new HashSet<>());
     private final Timer remainderTimer = new Timer();
@@ -68,12 +67,12 @@ public class RemainderManager {
      * @param conn database connectionF
      * @param em EventManager to fetch events from
      * @param jda JDA to pass to remainders
-     * @throws SQLException if loading events from database failed
      */
-    RemainderManager(Connection conn, EventManager em, JDA jda) throws SQLException {
+    RemainderManager(Connection conn, JDA jda, EventManager em) {
         this.conn = conn;
         this.jda = jda;
         this.eventManager = em;
+        this.guildID = em.getGuildID();
         loadRemainders();
     }
 
@@ -109,15 +108,14 @@ public class RemainderManager {
         }
 
         //Add to database
-        final String query = "INSERT INTO Remainders(event,day,time,mention,channel) VALUES(?,?,?,?,?);";
-        final long guildID = remainder.getEvent().getGuild();
+        final String query = "INSERT INTO Remainders(guild,event,day,time,mention,channel) VALUES(?,?,?,?,?,?);";
         final String eventName = remainder.getEvent().getName();
         final String remainderDay = remainder.getDay().name();
         final String remainderTime = remainder.getTime().toString();
         final String mention = remainder.getMentionMode().name();
         final long channel = remainder.getChannel();
         try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setLong(1, guildID);
+            ps.setLong(1, this.guildID);
             ps.setString(2, eventName);
             ps.setString(3, remainderDay);
             ps.setString(4, remainderTime);
@@ -140,70 +138,16 @@ public class RemainderManager {
 
         //Remove from database
         final String query = "DELETE FROM Remainders Where guild = ? AND name = ? AND day = ? AND time = ?;";
-        final long guildID = remainder.getEvent().getGuild();
         final String eventName = remainder.getEvent().getName();
         final String remainderDay = remainder.getDay().name();
         final String remainderTime = remainder.getTime().toString();
 
         try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setLong(1, guildID);
+            ps.setLong(1, this.guildID);
             ps.setString(2, eventName);
             ps.setString(3, remainderDay);
             ps.setString(4, remainderTime);
             return ps.executeUpdate() > 0;
-        }
-    }
-
-    /**
-     * Load remainders from database
-     *
-     * @param jda JDA instance to use for initializing remainder timers
-     * @throws SQLException If database connection failed
-     */
-    private void loadRemainders() throws SQLException {
-        LOGGER.debug("Started loading remainders from database");
-        final String query = "SELECT guild,name,day,time,mention,channel FROM Remainders;";
-        try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
-            while (rs.next()) {
-                final long guildID = rs.getLong("guild");
-                final String eventName = rs.getString("name");
-                final Optional<Event> optEvent = this.eventManager.getEvent(eventName, guildID);
-                if (optEvent.isEmpty()) {
-                    LOGGER.error("Malformed remainder with missing event" + guildID + ", " + eventName);
-                    continue;
-                }
-                final String remainderDay = rs.getString("day");
-                DayOfWeek activationDay;
-                try {
-                    activationDay = DayOfWeek.valueOf(remainderDay);
-                } catch (IllegalArgumentException e) {
-                    LOGGER.error("Malformed weekday in database: " + remainderDay);
-                    continue;
-                }
-                final String reminderTime = rs.getString("time");
-                LocalTime activationTime;
-                try {
-                    activationTime = LocalTime.parse(reminderTime);
-                } catch (DateTimeParseException e) {
-                    LOGGER.error("Malformed time for reminder in database: " + reminderTime);
-                    return;
-                }
-                final String mentions = rs.getString("mention");
-                MentionEnum me;
-                try {
-                    me = MentionEnum.valueOf(mentions);
-                } catch (IllegalArgumentException e) {
-                    LOGGER.error("Unkown mention value in database: " + mentions);
-                    continue;
-                }
-                final long remainderChannel = rs.getLong("channel");
-                final Remainder remainder = build(remainderChannel, optEvent.get(), me, activationDay, activationTime);
-
-                remainders.add(remainder);
-                LOGGER.debug("Remainder loaded for event " + remainder.getEvent().getName());
-                this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
-                LOGGER.debug("Remainder scheluded for activation at " + remainder.getActivationDate().toString());
-            }
         }
     }
 
@@ -213,10 +157,9 @@ public class RemainderManager {
      * @param eventName name the remainder is for
      * @param day remainder day
      * @param time remainder time
-     * @param guild guild to search remainders from
      * @return Optional containing the remainder if found
      */
-    public Optional<Remainder> getRemainder(String eventName, String day, String time, Guild guild) {
+    public Optional<Remainder> getRemainder(String eventName, String day, String time) {
         for (Remainder r : this.remainders) {
             if (!r.getEvent().getName().equals(eventName)) {
                 continue;
@@ -227,9 +170,6 @@ public class RemainderManager {
             if (!r.getTime().toString().equals(time.toUpperCase())) {
                 continue;
             }
-            if (r.getEvent().getGuild() != guild.getIdLong()) {
-                continue;
-            }
             return Optional.of(r);
         }
         return Optional.empty();
@@ -238,17 +178,69 @@ public class RemainderManager {
     /**
      * Get the list of remainders currently active
      *
-     * @param guild Guild to get remainder for
      * @return List of remainders
      */
-    public List<Remainder> getRemainders(Guild guild) {
-        final List<Remainder> guildRemainders = new ArrayList<>();
-        for (Remainder r : this.remainders) {
-            if (r.getEvent().getGuild() == guild.getIdLong()) {
-                guildRemainders.add(r);
+    public List<Remainder> getRemainders() {
+        return new ArrayList<>(this.remainders);
+    }
+
+    /**
+     * Load remainders from database
+     *
+     * @param jda JDA instance to use for initializing remainder timers
+     * @throws SQLException If database connection failed
+     */
+    private void loadRemainders() {
+        LOGGER.debug("Started loading remainders from database");
+        final String query = "SELECT name,day,time,mention,channel FROM Remainders WHERE guild = ?;";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setLong(1, this.guildID);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    final String eventName = rs.getString("name");
+                    final Optional<Event> optEvent = this.eventManager.getEvent(eventName);
+                    if (optEvent.isEmpty()) {
+                        LOGGER.error("Malformed remainder with missing event" + guildID + ", " + eventName);
+                        continue;
+                    }
+                    final String remainderDay = rs.getString("day");
+                    DayOfWeek activationDay;
+                    try {
+                        activationDay = DayOfWeek.valueOf(remainderDay);
+                    } catch (IllegalArgumentException e) {
+                        LOGGER.error("Malformed weekday in database: " + remainderDay);
+                        continue;
+                    }
+                    final String reminderTime = rs.getString("time");
+                    LocalTime activationTime;
+                    try {
+                        activationTime = LocalTime.parse(reminderTime);
+                    } catch (DateTimeParseException e) {
+                        LOGGER.error("Malformed time for reminder in database: " + reminderTime);
+                        return;
+                    }
+                    final String mentions = rs.getString("mention");
+                    MentionEnum me;
+                    try {
+                        me = MentionEnum.valueOf(mentions);
+                    } catch (IllegalArgumentException e) {
+                        LOGGER.error("Unkown mention value in database: " + mentions);
+                        continue;
+                    }
+                    final long remainderChannel = rs.getLong("channel");
+                    final Remainder remainder = build(remainderChannel, optEvent.get(), me, activationDay, activationTime);
+
+                    remainders.add(remainder);
+                    LOGGER.debug("Remainder loaded for event " + remainder.getEvent().getName());
+                    this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
+                    LOGGER.debug("Remainder scheluded for activation at " + remainder.getActivationDate().toString());
+                }
             }
+        } catch (SQLException e) {
+            LOGGER.error("Loading remainders from database failed");
+            LOGGER.warn(e.getMessage());
+            LOGGER.trace(e);
         }
-        return guildRemainders;
     }
 
 }
