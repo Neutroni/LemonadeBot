@@ -30,14 +30,11 @@ import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.ShutdownEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
@@ -120,69 +117,36 @@ public class MessageListener extends ListenerAdapter {
     public void onGuildMemberJoin(GuildMemberJoinEvent event) {
         final Guild guild = event.getGuild();
         final Member member = event.getMember();
-        final TextChannel textChannel = guild.getSystemChannel();
-        final ChannelManager channels = this.db.getChannels(guild);
-
         LOGGER.debug("New member: " + member.getEffectiveName());
 
         //Check if we have a channel to greet them on
+        final TextChannel textChannel = guild.getSystemChannel();
         if (textChannel == null) {
             LOGGER.debug("Not greeting because greeting is disabled in discord settings");
             return;
         }
 
         //Check if we should react on this channel
+        final ChannelManager channels = this.db.getChannels(guild);
         if (channels.hasChannel(textChannel)) {
             LOGGER.debug("Not greeting because not listening on the channel");
             return;
         }
 
-        //Get the correct rule message based on wheter they come from another guild
-        final List<Guild> mutualGuilds = member.getUser().getMutualGuilds();
-        if (mutualGuilds.size() < 2) {
-            //Only this guild
-            sendDefaultMessage(textChannel, member);
-        } else if (mutualGuilds.size() == 2) {
-            //This and another guild, try to get role for them based on other guild
-            final List<Guild> mutableGuilds = new ArrayList<>(mutualGuilds);
-            mutableGuilds.remove(guild);
-
-            if (mutableGuilds.size() != 1) {
-                sendDefaultMessage(textChannel, member);
-                return;
-            }
-
-            final Guild otherGuild = mutableGuilds.get(0);
-            final Member otherGuildmember = otherGuild.getMember(member.getUser());
-            if (otherGuildmember == null) {
-                //Has left other server somehow
-                sendDefaultMessage(textChannel, member);
-                return;
-            }
-            final List<Role> otherGuildRoles = otherGuildmember.getRoles();
-            if (otherGuildRoles.isEmpty()) {
-                //Not a member on other server
-                sendDefaultMessage(textChannel, member);
-                return;
-            }
-
-            final String roleName = otherGuild.getName();
-            final List<Role> roles = guild.getRolesByName(roleName, false);
-            guild.modifyMemberRoles(member, roles, null).queue((t) -> {
-                //Success
-                textChannel.sendMessage("Welcome to our guild discord " + member.getEffectiveName()
-                        + "You have been assigned role based on other guild you are also on, "
-                        + "if you believe this is error please contact guild lead.").queue();
-            }, (t) -> {
-                //Failure
-                sendDefaultMessage(textChannel, member);
-            });
-        } else {
-            //More guilds, ask them to use role command
-            textChannel.sendMessage("Welcome to our guild discord " + member.getEffectiveName() + "\n"
-                    + "You apper to be on multiple guilds and as such I can't find a role for you, "
-                    + "use command \"role\" to assing a role based on other guild you are also on.").queue();
+        //Check if guild has message to send to new members
+        final ConfigManager guildConf = this.db.getConfig(guild);
+        final Optional<String> optTemplate = guildConf.getGreetingTemplate();
+        if (optTemplate.isEmpty()) {
+            LOGGER.debug("Not greeting because greet template is not set");
+            return;
         }
+
+        //Send the greeting message
+        final String greetTemplate = optTemplate.get();
+        final MessageBuilder mb = new MessageBuilder(greetTemplate);
+        mb.replace("{name}", member.getEffectiveName());
+        mb.replace("{mention}", member.getAsMention());
+        textChannel.sendMessage(mb.build()).queue();
     }
 
     /**
@@ -229,23 +193,4 @@ public class MessageListener extends ListenerAdapter {
         LOGGER.info("Shutting down");
     }
 
-    /**
-     * Send default greeting when new person joins
-     *
-     * @param textChannel TextChannel to send greeting on
-     * @param member Member who joined
-     */
-    private void sendDefaultMessage(TextChannel textChannel, Member member) {
-        final ConfigManager guildConf = this.db.getConfig(textChannel.getGuild());
-        final Optional<String> optTemplate = guildConf.getGreetingTemplate();
-        if (optTemplate.isEmpty()) {
-            LOGGER.debug("Not greeting because greet template is not set");
-            return;
-        }
-        final String greetTemplate = optTemplate.get();
-        final MessageBuilder mb = new MessageBuilder(greetTemplate);
-        mb.replace("{name}", member.getEffectiveName());
-        mb.replace("{mention}", member.getAsMention());
-        textChannel.sendMessage(mb.build()).queue();
-    }
 }
