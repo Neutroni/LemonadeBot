@@ -25,13 +25,14 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.messages.CommandMatcher;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,48 +51,70 @@ class RoleCommand extends UserCommand {
 
     @Override
     public String getHelp() {
-        return "Syntax: role <role>\n"
-                + "Assign <role> to yourself based on other guild you also are in";
+        return "Syntax: role [role]\n"
+                + "If no role is provided try to automatically assign role.\n"
+                + "Otherwise assign <role> to yourself";
     }
 
     @Override
     public void respond(CommandMatcher matcher) {
+        final MessageChannel channel = matcher.getMessageChannel();
+
         //Check we are on a server
-        final Optional<TextChannel> optChannel = matcher.getTextChannel();
-        final Optional<Member> optMember = matcher.getMember();
-        if (optChannel.isEmpty() || optMember.isEmpty()) {
-            matcher.getMessageChannel().sendMessage("Commands are specific to discord servers and must be edited on one").queue();
+        final Optional<Guild> optGuild = matcher.getGuild();
+        if (optGuild.isEmpty()) {
+            channel.sendMessage("Roles can only be assigned on servers").queue();
             return;
         }
-        final TextChannel textChannel = optChannel.get();
+
         //Check that we can assign roles here
-        if (!textChannel.getGuild().getSelfMember().hasPermission(Permission.MANAGE_ROLES)) {
-            textChannel.sendMessage("It appears I can't assign roles here, if you think this is a mistake contact server adminstrators").queue();
+        final Guild guild = optGuild.get();
+        if (!guild.getSelfMember().hasPermission(Permission.MANAGE_ROLES)) {
+            channel.sendMessage("It appears I can't assign roles here, if you think this to be a mistake contact server adminstrators").queue();
             return;
         }
+
+        final Optional<Member> optMember = matcher.getMember();
+        if (optMember.isEmpty()) {
+            channel.sendMessage("You do not appear to be a member of this guild, that is odd").queue();
+            return;
+        }
+
         //Check persons doesn't already have a role
         final Member sender = optMember.get();
         final List<Role> currentRoles = sender.getRoles();
         if (currentRoles.size() > 0) {
-            textChannel.sendMessage("You cannot assign role to yourself using this command if you alredy have a role").queue();
+            channel.sendMessage("You cannot assign role to yourself using this command if you alredy have a role").queue();
             return;
         }
+
+        //Get the name of the guild user wants role for
         final String[] parameters = matcher.getArguments(1);
         if (parameters.length == 0) {
-            textChannel.sendMessage("Please provide guild name you want the role for").queue();
+            autoAssignRole(channel, sender, guild);
             return;
         }
-
-        //Name of the guild user wants role for
-        final String guildName = parameters[0];
 
         //Ignore current server
-        final Guild currentGuild = textChannel.getGuild();
-        if (currentGuild.getName().equals(guildName)) {
-            textChannel.sendMessage("Can't assign role for current server, check rules if you want member status.").queue();
+        final String guildName = parameters[0];
+        if (guild.getName().equalsIgnoreCase(guildName)) {
+            channel.sendMessage("Can't assign role for current server, check rules if you want member status.").queue();
             return;
         }
 
+        //Try to assign the role user wants
+        assignRole(channel, sender, guild, guildName);
+    }
+
+    /**
+     * Try to assign role to user
+     *
+     * @param channel Channel to use to respond
+     * @param sender Command user
+     * @param guild Current guild
+     * @param roleName Name of the role user wants
+     */
+    private void assignRole(MessageChannel channel, Member sender, Guild guild, String roleName) {
         //Guilds we share with the user
         final List<Guild> mutualGuilds = sender.getUser().getMutualGuilds();
 
@@ -100,7 +123,7 @@ class RoleCommand extends UserCommand {
 
         //Find and assign role
         for (Guild g : mutualGuilds) {
-            if (!g.getName().equals(guildName)) {
+            if (!g.getName().equals(roleName)) {
                 possibleRoleNames.append(g.getName()).append('\n');
                 continue;
             }
@@ -108,35 +131,102 @@ class RoleCommand extends UserCommand {
             //Make sure they are a member on the other server
             final Member otherMember = g.getMember(sender.getUser());
             if (otherMember == null) {
-                textChannel.sendMessage("Did you leave the server while I wasn't looking? Could not find you on that server").queue();
+                channel.sendMessage("Did you leave the server while I wasn't looking? Could not find you on that server").queue();
                 return;
             }
             if (otherMember.getRoles().isEmpty()) {
-                textChannel.sendMessage("You do not have any roles on that server, as such no role was given").queue();
+                channel.sendMessage("You do not have any roles on that server, as such no role was given").queue();
                 return;
             }
 
             //Find the role for given guild
-            final List<Role> roles = textChannel.getGuild().getRolesByName(guildName, false);
+            final List<Role> roles = guild.getRolesByName(roleName, true);
             if (roles.isEmpty()) {
-                textChannel.sendMessage("It appears we do not have a role for that server yet, please contact admin to fix").queue();
+                channel.sendMessage("It appears we do not have a role for that server yet, please contact admin to fix").queue();
                 return;
             }
 
             //Assign found role to the sender, this could assign multiple roles if there is multiple roles with same name
-            textChannel.getGuild().modifyMemberRoles(sender, roles, null).queue((t) -> {
+            guild.modifyMemberRoles(sender, roles, null).queue((t) -> {
                 //Success
-                textChannel.sendMessage("Role assigned succesfully").queue();
+                channel.sendMessage("Role assigned succesfully").queue();
             }, (t) -> {
                 //Failure
                 LOGGER.warn(t);
-                textChannel.sendMessage("Role assignment failed, either I can't assign roles on this server or other error occured").queue();
+                channel.sendMessage("Role assignment failed, either I can't assign roles on this server or other error occured").queue();
             });
             return;
         }
 
         //Did not find the guild, show list of found guilds
-        textChannel.sendMessage("Could not find a guild named: " + guildName + possibleRoleNames).queue();
+        channel.sendMessage("Could not find a guild named: " + roleName + possibleRoleNames).queue();
+    }
+
+    /**
+     * Try to automatically assign role to sender
+     *
+     * @param channel Channel to use to respond
+     * @param sender Command user
+     * @param guild Current guild
+     */
+    private void autoAssignRole(MessageChannel channel, Member member, Guild guild) {
+        final List<Guild> mutualGuilds = member.getUser().getMutualGuilds();
+        if (mutualGuilds.size() < 2) {
+            //Only this guild
+            channel.sendMessage("You do not appear to be on any guilds other than this one that I can see,"
+                    + " ask guild leaders if you belive this to be error.").queue();
+            return;
+        }
+        if (mutualGuilds.size() == 2) {
+            //This and another guild, try to get role for them based on other guild
+            final List<Guild> mutableGuilds = new ArrayList<>(mutualGuilds);
+            mutableGuilds.remove(guild);
+
+            if (mutableGuilds.size() != 1) {
+                channel.sendMessage("").queue();
+                return;
+            }
+
+            final Guild otherGuild = mutableGuilds.get(0);
+            final Member otherGuildmember = otherGuild.getMember(member.getUser());
+            if (otherGuildmember == null) {
+                //Has left other server somehow
+                channel.sendMessage("Could not find a role to assign for you, are you on any other guilds I can see?").queue();
+                return;
+            }
+            final List<Role> otherGuildRoles = otherGuildmember.getRoles();
+            if (otherGuildRoles.isEmpty()) {
+                //Not a member on other server
+                channel.sendMessage("Could not find any guild where you are member, "
+                        + "found one where you are but do not have any roles, as such no role was assigned").queue();
+                return;
+            }
+
+            final String roleName = otherGuild.getName();
+            final List<Role> roles = guild.getRolesByName(roleName, true);
+            if (roles.isEmpty()) {
+                channel.sendMessage("Can not find role for the other server, "
+                        + "if you belive this to be error contact guild lead.").queue();
+                return;
+            }
+
+            guild.modifyMemberRoles(member, roles, null).queue((t) -> {
+                //Success
+                channel.sendMessage(
+                        "Succesfully assigned role: " + roles.get(0).getName()
+                        + "if you believe this is wrong role for you please contact guild lead.").queue();
+            }, (t) -> {
+                //Failure
+                LOGGER.warn(t);
+                channel.sendMessage("Role assignment failed, either I can't assign roles on this server or other error occured").queue();
+            });
+            return;
+        }
+
+        //More guilds, ask them to use role command
+        channel.sendMessage("You apper to be on multiple guilds and as such I can't find a role for you, "
+                + "please provide the the guild name you want role for in the role command.").queue();
+
     }
 
 }
