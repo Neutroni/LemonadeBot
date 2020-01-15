@@ -127,13 +127,34 @@ public class PermissionCommand extends OwnerCommand {
             case "eventEdit": {
                 if (arguments.length == 0) {
                     final String enumName = guildConf.getEventPermission().name().toLowerCase();
-                    channel.sendMessage("Current permission for editing events commands: " + enumName).queue();
+                    channel.sendMessage("Current permission for editing events: " + enumName).queue();
                     return;
                 }
                 try {
                     final String enumString = arguments[1].toUpperCase();
                     final CommandPermission newEventPermission = CommandPermission.valueOf(enumString);
                     if (guildConf.setEventPermission(newEventPermission)) {
+                        channel.sendMessage("Permission updated succesfully").queue();
+                    } else {
+                        channel.sendMessage("Updating permission failed, database failed to modify any recods").queue();
+                    }
+                } catch (IllegalArgumentException e) {
+                    channel.sendMessage("Not a valid value for the permission: " + arguments[1]).queue();
+                } catch (SQLException e) {
+                    channel.sendMessage("Database connection failed, new permission in use untill reboot").queue();
+                }
+                break;
+            }
+            case "remainderEdit": {
+                if (arguments.length == 0) {
+                    final String enumName = guildConf.getRemainderPermissions().name().toLowerCase();
+                    channel.sendMessage("Current permission for editing remainders: " + enumName).queue();
+                    return;
+                }
+                try {
+                    final String enumString = arguments[1].toUpperCase();
+                    final CommandPermission newRemainderPermission = CommandPermission.valueOf(enumString);
+                    if (guildConf.setRemainderPermission(newRemainderPermission)) {
                         channel.sendMessage("Permission updated succesfully").queue();
                     } else {
                         channel.sendMessage("Updating permission failed, database failed to modify any recods").queue();

@@ -24,6 +24,7 @@
 package eternal.lemonadebot.events;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
+import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.database.GuildDataStore;
@@ -90,7 +91,8 @@ public class RemainderCommand implements ChatCommand {
 
     @Override
     public CommandPermission getPermission(Guild guild) {
-        return CommandPermission.ADMIN;
+        final ConfigManager guildConf = this.db.getConfig(guild);
+        return guildConf.getRemainderPermissions();
     }
 
     @Override
@@ -186,7 +188,7 @@ public class RemainderCommand implements ChatCommand {
             return;
         }
         final RemainderManager remainders = this.db.getRemainders(textChannel.getGuild());
-        
+
         final String eventName = arguments[1];
         final String remainderDay = arguments[2];
         final String remainderTime = arguments[3];

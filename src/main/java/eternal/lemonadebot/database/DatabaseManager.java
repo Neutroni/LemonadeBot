@@ -253,15 +253,18 @@ public class DatabaseManager implements AutoCloseable {
      * @throws SQLException if database connection failed
      */
     private boolean addGuild(Guild guild) throws SQLException {
-        final String query = "INSERT OR IGNORE INTO Guilds(id,commandPrefix,commandEditPermission,commandRunPermission,eventEditPermission,musicPlayPermission,greetingTemplate) VALUES (?,?,?,?,?,?);";
+        final String query = "INSERT OR IGNORE INTO Guilds("
+                + "id,commandPrefix,commandEditPermission,commandRunPermission,eventEditPermission,"
+                + "remainderPermission,musicPlayPermission,greetingTemplate) VALUES (?,?,?,?,?,?);";
         try (final PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, guild.getIdLong());
             ps.setString(2, "lemonbot#");
             ps.setString(3, CommandPermission.ADMIN.name());
             ps.setString(4, CommandPermission.MEMBER.name());
             ps.setString(5, CommandPermission.ADMIN.name());
-            ps.setString(6, CommandPermission.MEMBER.name());
-            ps.setString(7, "Welcome to our discord {displayName}");
+            ps.setString(6, CommandPermission.ADMIN.name());
+            ps.setString(7, CommandPermission.MEMBER.name());
+            ps.setString(8, "Welcome to our discord {displayName}");
             return ps.executeUpdate() > 0;
         }
     }

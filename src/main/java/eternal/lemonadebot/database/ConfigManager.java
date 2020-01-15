@@ -46,12 +46,13 @@ public class ConfigManager {
 
     //Stored values
     private final long guildID;
-    private volatile Pattern commandPattern;
-    private volatile Optional<String> greetingTemplate;
-    private volatile CommandPermission commandRunPermission;
-    private volatile CommandPermission commandEditPermission;
-    private volatile CommandPermission eventEditPermission;
-    private volatile CommandPermission musicPlayPermission;
+    private volatile Pattern commandPattern = getCommandPattern("lemonbot#");
+    private volatile Optional<String> greetingTemplate = Optional.empty();
+    private volatile CommandPermission commandRunPermission = CommandPermission.MEMBER;
+    private volatile CommandPermission commandEditPermission = CommandPermission.ADMIN;
+    private volatile CommandPermission eventEditPermission = CommandPermission.ADMIN;
+    private volatile CommandPermission remainderPermission = CommandPermission.ADMIN;
+    private volatile CommandPermission musicPlayPermission = CommandPermission.MEMBER;
 
     /**
      * Constructor
@@ -99,6 +100,14 @@ public class ConfigManager {
      */
     public CommandPermission getEventPermission() {
         return this.eventEditPermission;
+    }
+    
+    /**
+     * Get permission to manage remainders
+     * @return CommandPermission
+     */
+    public CommandPermission getRemainderPermissions() {
+        return this.remainderPermission;
     }
 
     /**
@@ -199,6 +208,24 @@ public class ConfigManager {
             return ps.executeUpdate() > 0;
         }
     }
+    
+    /**
+     * Set the permission required to manage remainders
+     *
+     * @param newRemainderPermission permission needed
+     * @return did update succeed
+     * @throws SQLException if database connection failed
+     */
+    public boolean setRemainderPermission(CommandPermission newRemainderPermission) throws SQLException {
+        this.eventEditPermission = newRemainderPermission;
+
+        final String query = "UPDATE Guilds SET eventRemainderPermission = ? WHERE guild = ?;";
+        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+            ps.setString(1, newRemainderPermission.name());
+            ps.setLong(2, this.guildID);
+            return ps.executeUpdate() > 0;
+        }
+    }
 
     /**
      * Set the permission required to play music
@@ -250,61 +277,84 @@ public class ConfigManager {
      * Load the values this guildconfig stores
      */
     private void loadValues() {
-        final String query = "SELECT prefix,greetingTemplate,commandEditPermission,commandRunPermission,eventEditPermission,musicPlayPermission FROM Guilds WHERE id = ?;";
+        final String query = "SELECT prefix,greetingTemplate,commandEditPermission,commandRunPermission,eventEditPermission,remainderPermission,musicPlayPermission FROM Guilds WHERE id = ?;";
         try (final PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try (final ResultSet rs = ps.executeQuery()) {
                 //Check that database contains this guild
                 if (!rs.next()) {
                     LOGGER.error("Tried to load guild that does not exist in database");
-                    loadDefaultValues();
                     return;
                 }
-                final ConfigOptions opts = new ConfigOptions(rs);
-                setValues(opts);
+                parseResultSet(rs);
             }
         } catch (SQLException ex) {
             LOGGER.error("Failed to load guild config from database");
             LOGGER.warn(ex.getMessage());
             LOGGER.trace(ex);
-            loadDefaultValues();
         }
     }
 
     /**
-     * Load the values stored in configoptions
+     * Load the values stored in resultset
      *
-     * @param opts ConfigOptions to load
+     * @param rs resultSet to load settings from
      */
-    private void setValues(ConfigOptions opts) {
-        //Load command prefix
-        this.commandPattern = getCommandPattern(opts.getCommandPrefix());
-        //Load greeting template
-        this.greetingTemplate = Optional.ofNullable(opts.getGreetingTemplate());
+    private void parseResultSet(ResultSet rs) {
+        try {
+            //Load command prefix
+            this.commandPattern = getCommandPattern(rs.getString("prefix"));
+        } catch (SQLException ex) {
+            LOGGER.error("SQL error on fetching the command prefix");
+            LOGGER.warn(ex);
+        }
+        try {
+            //Load greeting template
+            this.greetingTemplate = Optional.ofNullable(rs.getString("greetingTemplate"));
+        } catch (SQLException ex) {
+            LOGGER.error("SQL error on fetching greeting template");
+            LOGGER.warn(ex);
+        }
         //Load permissionds
         try {
-            this.commandEditPermission = CommandPermission.valueOf(opts.getCommandEditPermission());
+            this.commandEditPermission = CommandPermission.valueOf(rs.getString("commandEditPermission"));
         } catch (IllegalArgumentException e) {
             LOGGER.error("Failed to load permissiond for editing commands, malformed enum value", e);
-            this.commandEditPermission = CommandPermission.ADMIN;
+        } catch (SQLException ex) {
+            LOGGER.error("SQL error on fetching commandEditPermission");
+            LOGGER.warn(ex);
         }
         try {
-            this.commandRunPermission = CommandPermission.valueOf(opts.getCommandRunPermission());
+            this.commandRunPermission = CommandPermission.valueOf(rs.getString("commandRunPermission"));
         } catch (IllegalArgumentException e) {
             LOGGER.error("Failed to load permissiond for running commands, malformed enum value", e);
-            this.commandRunPermission = CommandPermission.MEMBER;
+        } catch (SQLException ex) {
+            LOGGER.error("SQL error on fetching commandRunPermission");
+            LOGGER.warn(ex);
         }
         try {
-            this.eventEditPermission = CommandPermission.valueOf(opts.getEventEditPermission());
+            this.eventEditPermission = CommandPermission.valueOf(rs.getString("eventEditPermission"));
         } catch (IllegalArgumentException e) {
             LOGGER.error("Failed to load permissiond for editing events, malformed enum value", e);
-            this.eventEditPermission = CommandPermission.ADMIN;
+        } catch (SQLException ex) {
+            LOGGER.error("SQL error on fetching eventEditPermission");
+            LOGGER.warn(ex);
         }
         try {
-            this.musicPlayPermission = CommandPermission.valueOf(opts.getMusicPlayPermission());
+            this.remainderPermission = CommandPermission.valueOf(rs.getString("remainderPermission"));
+        } catch (IllegalArgumentException e) {
+            LOGGER.error("Failed to load permissiond for editing remainders, malformed enum value", e);
+        } catch (SQLException ex) {
+            LOGGER.error("SQL error on fetching eventEditPermission");
+            LOGGER.warn(ex);
+        }
+        try {
+            this.musicPlayPermission = CommandPermission.valueOf(rs.getString("musicPlayPermission"));
         } catch (IllegalArgumentException e) {
             LOGGER.error("Failed to load permissiond for playing music, malformed enum value", e);
-            this.musicPlayPermission = CommandPermission.MEMBER;
+        } catch (SQLException ex) {
+            LOGGER.error("SQL error on fetching musicPlayPermission");
+            LOGGER.warn(ex);
         }
     }
 
@@ -315,53 +365,6 @@ public class ConfigManager {
         LOGGER.warn("Loading default values for guild: " + this.guildID);
         this.commandPattern = getCommandPattern("lemonbot#");
         this.greetingTemplate = Optional.empty();
-        this.commandEditPermission = CommandPermission.ADMIN;
-        this.commandRunPermission = CommandPermission.MEMBER;
-        this.eventEditPermission = CommandPermission.ADMIN;
-        this.musicPlayPermission = CommandPermission.MEMBER;
-    }
-
-    private class ConfigOptions {
-
-        private final String commandPrefix;
-        private final String greetingTemplate;
-        private final String commandEditPermission;
-        private final String commandRunPermission;
-        private final String eventEditPermission;
-        private final String musicPlayPermission;
-
-        ConfigOptions(ResultSet rs) throws SQLException {
-            this.commandPrefix = rs.getString("prefix");
-            this.greetingTemplate = rs.getString("greetingTemplate");
-            this.commandEditPermission = rs.getString("commandEditPermission");
-            this.commandRunPermission = rs.getString("commandRunPermission");
-            this.eventEditPermission = rs.getString("eventEditPermission");
-            this.musicPlayPermission = rs.getString("musicPlayPermission");
-        }
-
-        public String getCommandPrefix() {
-            return commandPrefix;
-        }
-
-        public String getGreetingTemplate() {
-            return greetingTemplate;
-        }
-
-        public String getCommandEditPermission() {
-            return commandEditPermission;
-        }
-
-        public String getCommandRunPermission() {
-            return commandRunPermission;
-        }
-
-        public String getEventEditPermission() {
-            return eventEditPermission;
-        }
-
-        public String getMusicPlayPermission() {
-            return musicPlayPermission;
-        }
     }
 
 }
