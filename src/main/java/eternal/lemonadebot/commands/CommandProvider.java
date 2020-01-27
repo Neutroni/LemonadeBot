@@ -58,7 +58,8 @@ public class CommandProvider {
                 new ShutdownCommand(),
                 new MusicCommand(db),
                 new RemainderCommand(db),
-                new PermissionCommand(db)
+                new PermissionCommand(db),
+                new VersionCommand(db)
         );
     }
 

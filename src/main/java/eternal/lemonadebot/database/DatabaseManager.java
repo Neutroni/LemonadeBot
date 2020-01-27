@@ -164,6 +164,15 @@ public class DatabaseManager implements AutoCloseable {
     }
 
     /**
+     * Get the current bot version
+     *
+     * @return Version String
+     */
+    public String getVersionString() {
+        return DATABASE_VERSION;
+    }
+
+    /**
      * Shortcut to get configmanager for given guild
      *
      * @param guild guild to get configmanager for
