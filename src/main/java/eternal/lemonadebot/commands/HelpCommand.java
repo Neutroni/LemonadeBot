@@ -68,7 +68,7 @@ class HelpCommand extends UserCommand {
         final Optional<TextChannel> optChannel = matcher.getTextChannel();
         final Optional<Member> optMember = matcher.getMember();
         if (optChannel.isEmpty() || optMember.isEmpty()) {
-            matcher.getMessageChannel().sendMessage("Commands are specific to discord servers and must be edited on one").queue();
+            matcher.getMessageChannel().sendMessage("Help info can be only provided on discord servers.").queue();
             return;
         }
         final TextChannel textChannel = optChannel.get();
@@ -117,6 +117,8 @@ class HelpCommand extends UserCommand {
     private void listCommands(Member sender, TextChannel textChannel) {
         //Construct the list of commands
         final StringBuilder sb = new StringBuilder();
+        sb.append("Syntax: help <name>\n"
+                + "where 'name' is on of following:\n");
 
         for (ChatCommand c : commands.getCommands()) {
             if (commandParser.hasPermission(sender, c)) {
