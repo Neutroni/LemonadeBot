@@ -23,71 +23,106 @@
  */
 package eternal.lemonadebot.customcommands;
 
+import eternal.lemonadebot.database.EventManager;
+import eternal.lemonadebot.events.Event;
 import eternal.lemonadebot.messages.CommandMatcher;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.regex.Matcher;
 import net.dv8tion.jda.api.entities.ChannelType;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 
 /**
  * Class that holds actions for custom commands and how to substitute given
- * templace with its actual content
+ * template with its actual content
  *
  * @author Neutroni
  */
 public class ActionManager {
 
     private final Random rng = new Random();
+    private final List<SimpleAction> actions;
 
-    private final List<SimpleAction> actions = List.of(
-            new SimpleAction("\\{choice (.*(\\|.*)+)\\}", "{choice a|b} - Selects value separated by | randomly", (CommandMatcher message, Matcher input) -> {
-                final String[] parts = input.group(1).split("\\|");
-                final String response = parts[rng.nextInt(parts.length)];
-                return "" + response;
-            }),
-            new SimpleAction("\\{rng (\\d+),(\\d+)\\}", "{rng x,y} - Generate random number between the two inputs.", (CommandMatcher message, Matcher input) -> {
-                final int start = Integer.parseInt(input.group(1));
-                final int end = Integer.parseInt(input.group(2));
-                return "" + (rng.nextInt(end) + start);
-            }),
-            new SimpleAction("\\{message\\}", "{message} Use the input as part of the reply", (CommandMatcher message, Matcher input) -> {
-                final String[] messageText = message.getArguments(0);
-                if (messageText.length == 0) {
-                    return "";
-                }
-                return messageText[0];
-            }),
-            new SimpleAction("\\{mentions\\}", "{mentions} - Lists the mentioned users", (CommandMatcher matcher, Matcher input) -> {
-                final Message message = matcher.getMessage();
-                if (!message.isFromType(ChannelType.TEXT)) {
-                    return "";
-                }
-                final List<Member> mentionedMembers = message.getMentionedMembers();
-                final Member self = message.getGuild().getSelfMember();
-                final List<Member> mentions = new ArrayList<>(mentionedMembers);
-                mentions.remove(self);
-
-                final StringBuilder mentionMessage = new StringBuilder();
-                for (int i = 0; i < mentions.size(); i++) {
-                    final String nickName = mentions.get(i).getEffectiveName();
-                    mentionMessage.append(nickName);
-                    if (i < mentionedMembers.size() - 1) {
-                        mentionMessage.append(' ');
+    public ActionManager(EventManager eventManager) {
+        this.actions = List.of(
+                new SimpleAction("\\{choice (.*(\\|.*)+)\\}", "{choice a|b} - Selects value separated by | randomly", (CommandMatcher message, Matcher input) -> {
+                    final String[] parts = input.group(1).split("\\|");
+                    final String response = parts[rng.nextInt(parts.length)];
+                    return "" + response;
+                }),
+                new SimpleAction("\\{rng (\\d+),(\\d+)\\}", "{rng x,y} - Generate random number between the two inputs.", (CommandMatcher message, Matcher input) -> {
+                    final int start = Integer.parseInt(input.group(1));
+                    final int end = Integer.parseInt(input.group(2));
+                    return "" + (rng.nextInt(end) + start);
+                }),
+                new SimpleAction("\\{message\\}", "{message} Use the input as part of the reply", (CommandMatcher message, Matcher input) -> {
+                    final String[] messageText = message.getArguments(0);
+                    if (messageText.length == 0) {
+                        return "";
                     }
-                }
-                return mentionMessage.toString();
-            }),
-            new SimpleAction("\\{sender\\}", "{sender} - The name of the command sender", (CommandMatcher matcher, Matcher input) -> {
-                final Optional<Member> optMember = matcher.getMember();
-                if (optMember.isEmpty()) {
-                    return matcher.getMessage().getAuthor().getName();
-                }
-                return optMember.get().getEffectiveName();
-            }));
+                    return messageText[0];
+                }),
+                new SimpleAction("\\{mentions\\}", "{mentions} - Lists the mentioned users", (CommandMatcher matcher, Matcher input) -> {
+                    final Message message = matcher.getMessage();
+                    if (!message.isFromType(ChannelType.TEXT)) {
+                        return "";
+                    }
+                    final List<Member> mentionedMembers = message.getMentionedMembers();
+                    final Member self = message.getGuild().getSelfMember();
+                    final List<Member> mentions = new ArrayList<>(mentionedMembers);
+                    mentions.remove(self);
+
+                    final StringBuilder mentionMessage = new StringBuilder();
+                    for (int i = 0; i < mentions.size(); i++) {
+                        final String nickName = mentions.get(i).getEffectiveName();
+                        mentionMessage.append(nickName);
+                        if (i < mentionedMembers.size() - 1) {
+                            mentionMessage.append(' ');
+                        }
+                    }
+                    return mentionMessage.toString();
+                }),
+                new SimpleAction("\\{sender\\}", "{sender} - The name of the command sender", (CommandMatcher matcher, Matcher input) -> {
+                    final Optional<Member> optMember = matcher.getMember();
+                    if (optMember.isEmpty()) {
+                        return matcher.getMessage().getAuthor().getName();
+                    }
+                    return optMember.get().getEffectiveName();
+                }),
+                new SimpleAction("\\{randomEventMember (\\w+)\\}", "{} - Pick random member from event", (CommandMatcher matcher, Matcher input) -> {
+                    final Optional<Guild> optGuild = matcher.getGuild();
+                    if (optGuild.isEmpty()) {
+                        return "Events are specific to discord servers, as such can't find event.";
+                    }
+                    final Guild guild = optGuild.get();
+
+                    final String eventName = input.group(1);
+                    final Optional<Event> optEvent = eventManager.getEvent(eventName);
+                    if (optEvent.isEmpty()) {
+                        return "No such event: " + eventName;
+                    }
+
+                    final Event event = optEvent.get();
+                    final List<Long> eventMemberIDs = event.getMembers();
+                    if (eventMemberIDs.isEmpty()) {
+                        return "No members in that event";
+                    }
+                    final List<Long> memberIDsMutable = new ArrayList<>(eventMemberIDs);
+                    Collections.shuffle(memberIDsMutable);
+                    for (Long l : memberIDsMutable) {
+                        Member m = guild.getMemberById(l);
+                        if (m != null) {
+                            return m.getEffectiveName();
+                        }
+                    }
+                    return "Could not find members for that event";
+                }));
+    }
 
     /**
      * Gets a response to a message

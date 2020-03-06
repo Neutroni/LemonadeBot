@@ -51,8 +51,9 @@ public class CustomCommandManager {
     private final long guildID;
     private final Set<CustomCommand> commands = Collections.synchronizedSet(new HashSet<>());
 
-    private final ActionManager actionManager = new ActionManager();
+    private final EventManager eventManager;
     private final ConfigManager configManager;
+    private final ActionManager actionManager;
 
     /**
      * Constructor
@@ -60,8 +61,10 @@ public class CustomCommandManager {
      * @param connection Database connection to use
      * @param config configuration manager to use
      */
-    CustomCommandManager(Connection connection, ConfigManager config) {
+    CustomCommandManager(Connection connection, ConfigManager config, EventManager events) {
         this.configManager = config;
+        this.eventManager = events;
+        this.actionManager = new ActionManager(eventManager);
         this.conn = connection;
         this.guildID = config.getGuildID();
         loadCommands();

@@ -48,8 +48,8 @@ public class GuildDataStore {
     GuildDataStore(Connection connection, JDA jda, long guild) {
         this.config = new ConfigManager(connection, guild);
         this.channels = new ChannelManager(connection, guild);
-        this.commands = new CustomCommandManager(connection, this.config);
         this.events = new EventManager(connection, guild);
+        this.commands = new CustomCommandManager(connection, this.config, this.events);
         this.remainders = new RemainderManager(connection, jda, this.events);
     }
 
