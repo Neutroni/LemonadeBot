@@ -48,7 +48,7 @@ public class ActionManager {
     private final Random rng = new Random();
     private final List<SimpleAction> actions;
 
-    public ActionManager(EventManager eventManager) {
+    public ActionManager(final EventManager eventManager) {
         this.actions = List.of(
                 new SimpleAction("\\{choice (.*(\\|.*)+)\\}", "{choice a|b} - Selects value separated by | randomly", (CommandMatcher message, Matcher input) -> {
                     final String[] parts = input.group(1).split("\\|");
