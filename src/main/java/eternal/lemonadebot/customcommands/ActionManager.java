@@ -94,7 +94,7 @@ public class ActionManager {
                     }
                     return optMember.get().getEffectiveName();
                 }),
-                new SimpleAction("\\{randomEventMember (\\w+)\\}", "{} - Pick random member from event", (CommandMatcher matcher, Matcher input) -> {
+                new SimpleAction("\\{randomEventMember (\\w+)\\}", "{randomEventMember <eventname>} - Pick random member from event", (CommandMatcher matcher, Matcher input) -> {
                     final Optional<Guild> optGuild = matcher.getGuild();
                     if (optGuild.isEmpty()) {
                         return "Events are specific to discord servers, as such can't find event.";
