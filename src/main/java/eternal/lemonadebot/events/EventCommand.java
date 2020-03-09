@@ -34,6 +34,7 @@ import eternal.lemonadebot.messages.CommandMatcher;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
+import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -78,6 +79,7 @@ public class EventCommand extends UserCommand {
                 + "  members - list members for event\n"
                 + "  clear - clears event member list\n"
                 + "  list - list active events\n"
+                + "  ping - ping event members\n"
                 + "<name> is the name of the event\n"
                 + "[description] description for the event";
     }
@@ -127,6 +129,9 @@ public class EventCommand extends UserCommand {
             case "list": {
                 listEvents(textChannel);
                 break;
+            }
+            case "ping": {
+                pingEventMembers(opts, textChannel, sender);
             }
             default: {
                 textChannel.sendMessage("Unkown operation: " + opts[0]).queue();
@@ -369,5 +374,37 @@ public class EventCommand extends UserCommand {
             sb.append("No events found.");
         }
         textChannel.sendMessage(sb.toString()).queue();
+    }
+
+    private void pingEventMembers(String[] opts, TextChannel textChannel, Member sender) {
+        if (opts.length == 1) {
+            textChannel.sendMessage("Provide name of the event to ping members for").queue();
+            return;
+        }
+        final String eventName = opts[1];
+
+        final EventManager events = this.db.getEvents(textChannel.getGuild());
+        final Optional<Event> opt = events.getEvent(eventName);
+        if (opt.isEmpty()) {
+            textChannel.sendMessage("Could not find event with name: " + eventName).queue();
+            return;
+        }
+        final Event event = opt.get();
+        if (event.getOwner() != sender.getIdLong()) {
+            textChannel.sendMessage("Only the owner of the event can ping event members.").queue();
+            return;
+        }
+        final List<Long> memberIds = event.getMembers();
+        final MessageBuilder mb = new MessageBuilder("Ping!\n");
+        for (Long id : memberIds) {
+            if (id == sender.getIdLong()) {
+                continue;
+            }
+            final Member m = textChannel.getGuild().getMemberById(id);
+            if (m != null) {
+                mb.append(m);
+            }
+        }
+        textChannel.sendMessage(mb.build()).queue();
     }
 }
