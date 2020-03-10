@@ -8,6 +8,7 @@ import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -106,14 +107,7 @@ class TrackScheduler extends AudioEventAdapter {
      * @return true if removed
      */
     boolean skipTrack(AudioTrack track) {
-        boolean removed = false;
-        for(AudioTrack t: this.queue){
-            if(t.getIdentifier().equals(track.getIdentifier())){
-                this.queue.remove(t);
-                removed = true;
-            }
-        }
-        return removed;
+        return this.queue.removeIf(t -> t.getIdentifier().equals(track.getIdentifier()));
     }
 
     /**
