@@ -94,7 +94,7 @@ public class CustomCommand implements ChatCommand {
 
     @Override
     public String getHelp() {
-        return "Custom command";
+        return "Custom command with template: " + this.actionTemplate;
     }
 
     @Override
