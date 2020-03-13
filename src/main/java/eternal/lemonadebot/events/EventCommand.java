@@ -32,6 +32,8 @@ import eternal.lemonadebot.database.RemainderManager;
 import eternal.lemonadebot.messages.CommandManager;
 import eternal.lemonadebot.messages.CommandMatcher;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import net.dv8tion.jda.api.MessageBuilder;
@@ -80,6 +82,7 @@ public class EventCommand extends UserCommand {
                 + "  clear - clears event member list\n"
                 + "  list - list active events\n"
                 + "  ping - ping event members\n"
+                + "  random - pick random member from event"
                 + "<name> is the name of the event\n"
                 + "[description] description for the event";
     }
@@ -132,6 +135,11 @@ public class EventCommand extends UserCommand {
             }
             case "ping": {
                 pingEventMembers(opts, textChannel, sender);
+                break;
+            }
+            case "random": {
+                pickRandomEventMember(opts, textChannel);
+                break;
             }
             default: {
                 textChannel.sendMessage("Unkown operation: " + opts[0]).queue();
@@ -406,5 +414,43 @@ public class EventCommand extends UserCommand {
             }
         }
         textChannel.sendMessage(mb.build()).queue();
+    }
+
+    private void pickRandomEventMember(String[] opts, TextChannel textChannel) {
+        if (opts.length == 1) {
+            textChannel.sendMessage("Provide name of the event to ping members for").queue();
+            return;
+        }
+        final String eventName = opts[1];
+        final Guild guild = textChannel.getGuild();
+        final EventManager events = this.db.getEvents(guild);
+        final Optional<Event> optEvent = events.getEvent(eventName);
+        if (optEvent.isEmpty()) {
+            textChannel.sendMessage("No such event: " + eventName).queue();
+            return;
+        }
+
+        final Event event = optEvent.get();
+        final List<Long> eventMemberIDs = event.getMembers();
+        final List<Long> memberIDsMutable = new ArrayList<>(eventMemberIDs);
+        Collections.shuffle(memberIDsMutable);
+        for (Long id : memberIDsMutable) {
+            final Member m = guild.getMemberById(id);
+            if (m == null) {
+                LOGGER.warn("Found user in event members who could not be found, removing from event\n");
+                try {
+                    events.leaveEvent(event, id);
+                    LOGGER.info("Succesfully removed missing member from event\n");
+                } catch (SQLException ex) {
+                    LOGGER.error("Failure to remove member from event");
+                    LOGGER.warn(ex.getMessage());
+                    LOGGER.trace("Stack trace", ex);
+                }
+                continue;
+            }
+            textChannel.sendMessage("Selected " + m.getEffectiveName() + " from the event.").queue();
+            return;
+        }
+        textChannel.sendMessage("No members in that event").queue();
     }
 }
