@@ -67,7 +67,7 @@ public class CommandManager {
      * @param cmdMatcher Matcher to find command for
      * @return CommandAction or Option.empty if command was not found
      */
-    public Optional<ChatCommand> getAction(CommandMatcher cmdMatcher) {
+    public Optional<? extends ChatCommand> getAction(CommandMatcher cmdMatcher) {
         final Optional<String> name = cmdMatcher.getCommand();
         if (name.isEmpty()) {
             return Optional.empty();
@@ -77,24 +77,27 @@ public class CommandManager {
         //Check if we find command by that name
         final Optional<ChatCommand> command = commandProvider.getCommand(commandName);
         if (command.isPresent()) {
+            //Log the message if debug is enabled
+            LOGGER.debug(() -> {
+                return "Found command: " + commandName + " in " + cmdMatcher.getMessage().getContentRaw();
+            });
             return command;
         }
 
-        //Log the message if debug is enabled
-        LOGGER.debug(() -> {
-            return "Found command: " + commandName + " in " + cmdMatcher.getMessage().getContentRaw();
-        });
-
-        final Optional<TextChannel> optChannel = cmdMatcher.getTextChannel();
-        if (optChannel.isEmpty()) {
+        final Optional<Guild> optGuild = cmdMatcher.getGuild();
+        if (optGuild.isEmpty()) {
             return Optional.empty();
         }
-        final Guild guild = optChannel.get().getGuild();
+        final Guild guild = optGuild.get();
 
         //Check if we find custom command by that name
         final Optional<CustomCommand> custom = db.getCommands(guild).getCommand(commandName);
         if (custom.isPresent()) {
-            return Optional.of(custom.get());
+            //Log the message if debug is enabled
+            LOGGER.debug(() -> {
+                return "Found custom command: " + commandName + " in " + cmdMatcher.getMessage().getContentRaw();
+            });
+            return custom;
         }
         return Optional.empty();
     }
