@@ -64,6 +64,13 @@ public class ActionManager {
                 }
                 return messageText[0];
             }),
+            new SimpleAction("\\{messageText\\}", "{messageText} - Use the input as part of the reply but remove mentions", (CommandMatcher message, Matcher input) -> {
+                final String[] messageText = message.getArguments(0);
+                if (messageText.length == 0) {
+                    return "";
+                }
+                return messageText[0].replaceAll("<@!\\d+> ?", "").trim();
+            }),
             new SimpleAction("\\{mentions\\}", "{mentions} - Lists the mentioned users", (CommandMatcher matcher, Matcher input) -> {
                 final Message message = matcher.getMessage();
                 if (!message.isFromType(ChannelType.TEXT)) {
