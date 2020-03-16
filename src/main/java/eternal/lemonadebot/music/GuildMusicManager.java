@@ -30,7 +30,7 @@ class GuildMusicManager {
      */
     GuildMusicManager(AudioPlayerManager manager, AudioManager audioManager) {
         player = manager.createPlayer();
-        scheduler = new TrackScheduler(player,audioManager);
+        scheduler = new TrackScheduler(player, audioManager);
         player.addListener(scheduler);
     }
 

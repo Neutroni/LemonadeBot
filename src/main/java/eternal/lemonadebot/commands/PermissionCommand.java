@@ -25,30 +25,17 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.OwnerCommand;
 import eternal.lemonadebot.database.ConfigManager;
-import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.messages.CommandMatcher;
-import eternal.lemonadebot.messages.CommandPermission;
+import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.permissions.CommandPermission;
 import java.sql.SQLException;
-import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
  *
  * @author Neutroni
  */
 public class PermissionCommand extends OwnerCommand {
-
-    private final DatabaseManager db;
-
-    /**
-     * Constructor
-     *
-     * @param database database to use for storing permissions in
-     */
-    PermissionCommand(DatabaseManager database) {
-        this.db = database;
-    }
 
     @Override
     public String getCommand() {
@@ -64,14 +51,7 @@ public class PermissionCommand extends OwnerCommand {
 
     @Override
     public void respond(CommandMatcher message) {
-        //Check that we are in a server and not a private chat
-        final Optional<Guild> optGuild = message.getGuild();
-        if (optGuild.isEmpty()) {
-            message.getMessageChannel().sendMessage("Permissions are per servers and must be edited on one.").queue();
-            return;
-        }
-
-        final MessageChannel channel = message.getMessageChannel();
+        final TextChannel channel = message.getTextChannel();
         final String[] arguments = message.getArguments(2);
         if (arguments.length == 0) {
             channel.sendMessage("Provide the name of the permission to modify, check help for possible permissions.").queue();
@@ -79,8 +59,8 @@ public class PermissionCommand extends OwnerCommand {
         }
 
         //Parse arguments
-        final Guild guild = optGuild.get();
-        final ConfigManager guildConf = this.db.getConfig(guild);
+        final Guild guild = message.getGuild();
+        final ConfigManager guildConf = message.getGuildData().getConfigManager();
         switch (arguments[0]) {
             case "commandEdit": {
                 if (arguments.length == 0) {

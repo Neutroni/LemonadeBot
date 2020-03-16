@@ -26,10 +26,9 @@ package eternal.lemonadebot.commands;
 import eternal.lemonadebot.commandtypes.OwnerCommand;
 import eternal.lemonadebot.database.ChannelManager;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.messages.CommandMatcher;
+import eternal.lemonadebot.CommandMatcher;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Optional;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -43,17 +42,6 @@ import org.apache.logging.log4j.Logger;
 class ChannelManagmentCommand extends OwnerCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
-
-    private final DatabaseManager db;
-
-    /**
-     * Constructor
-     *
-     * @param database database to store channels in
-     */
-    ChannelManagmentCommand(DatabaseManager database) {
-        this.db = database;
-    }
 
     @Override
     public String getCommand() {
@@ -71,31 +59,25 @@ class ChannelManagmentCommand extends OwnerCommand {
 
     @Override
     public void respond(CommandMatcher matcher) {
-        final Optional<TextChannel> optChannel = matcher.getTextChannel();
-        if (optChannel.isEmpty()) {
-            matcher.getMessageChannel().sendMessage("Channels are specific to discord servers and must be edited on one").queue();
-            return;
-        }
-        final TextChannel textChannel = optChannel.get();
-        final Message message = matcher.getMessage();
+        final TextChannel textChannel = matcher.getTextChannel();
 
         final String[] arguments = matcher.getArguments(1);
         if (arguments.length == 0) {
-            matcher.getMessage().getChannel().sendMessage("Provide operation to perform, check help for possible operations").queue();
+            textChannel.sendMessage("Provide operation to perform, check help for possible operations").queue();
             return;
         }
         final String action = arguments[0];
         switch (action) {
             case "add": {
-                addChannel(textChannel, message);
+                addChannel(matcher);
                 break;
             }
             case "remove": {
-                removeChannel(textChannel, message);
+                removeChannel(matcher);
                 break;
             }
             case "list": {
-                listChannels(textChannel);
+                listChannels(matcher);
                 break;
             }
             default: {
@@ -104,8 +86,10 @@ class ChannelManagmentCommand extends OwnerCommand {
         }
     }
 
-    private void addChannel(TextChannel textChannel, Message message) {
-        final ChannelManager channels = this.db.getChannels(textChannel.getGuild());
+    private void addChannel(CommandMatcher matcher) {
+        final ChannelManager channels = matcher.getGuildData().getChannelManager();
+        final Message message = matcher.getMessage();
+        final TextChannel textChannel = matcher.getTextChannel();
         final List<TextChannel> mentioned = message.getMentionedChannels();
         //Check if any channels were mentioned
         if (mentioned.isEmpty()) {
@@ -132,8 +116,10 @@ class ChannelManagmentCommand extends OwnerCommand {
         textChannel.sendMessage(sb.toString()).queue();
     }
 
-    private void removeChannel(TextChannel textChannel, Message message) {
-        final ChannelManager channels = this.db.getChannels(textChannel.getGuild());
+    private void removeChannel(CommandMatcher matcher) {
+        final ChannelManager channels = matcher.getGuildData().getChannelManager();
+        final Message message = matcher.getMessage();
+        final TextChannel textChannel = matcher.getTextChannel();
         final List<TextChannel> mentions = message.getMentionedChannels();
         if (mentions.isEmpty()) {
             textChannel.sendMessage("Mention channels you want to stop listening on").queue();
@@ -159,8 +145,9 @@ class ChannelManagmentCommand extends OwnerCommand {
         textChannel.sendMessage(sb.toString()).queue();
     }
 
-    private void listChannels(TextChannel textChannel) {
-        final ChannelManager channels = this.db.getChannels(textChannel.getGuild());
+    private void listChannels(CommandMatcher matcher) {
+        final ChannelManager channels = matcher.getGuildData().getChannelManager();
+        final TextChannel textChannel = matcher.getTextChannel();
         final JDA jda = textChannel.getJDA();
         final List<Long> channelIds = channels.getChannels();
         final StringBuilder sb = new StringBuilder("Channels:\n");

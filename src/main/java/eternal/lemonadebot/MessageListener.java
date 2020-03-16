@@ -23,12 +23,13 @@
  */
 package eternal.lemonadebot;
 
+import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ChannelManager;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.messages.CommandManager;
-import eternal.lemonadebot.messages.CommandMatcher;
+import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.permissions.PermissionManager;
 import java.sql.SQLException;
 import java.util.Optional;
 import net.dv8tion.jda.api.MessageBuilder;
@@ -54,7 +55,8 @@ public class MessageListener extends ListenerAdapter {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final DatabaseManager db;
-    private final CommandManager commandManager;
+    private final PermissionManager permissionManager;
+    private final CommandProvider commandProvider;
 
     /**
      * Constructor
@@ -63,7 +65,8 @@ public class MessageListener extends ListenerAdapter {
      */
     public MessageListener(DatabaseManager database) {
         this.db = database;
-        this.commandManager = new CommandManager(database);
+        this.permissionManager = new PermissionManager(database);
+        this.commandProvider = new CommandProvider(permissionManager, db);
     }
 
     /**
@@ -84,7 +87,7 @@ public class MessageListener extends ListenerAdapter {
         }
 
         final Guild eventGuild = event.getGuild();
-        final ChannelManager channels = this.db.getChannels(eventGuild);
+        final ChannelManager channels = this.db.getGuildData(eventGuild).getChannelManager();
 
         //Check if we are listening on this channel
         final TextChannel textChannel = event.getChannel();
@@ -94,17 +97,23 @@ public class MessageListener extends ListenerAdapter {
 
         //Check if message is a command
         final Message message = event.getMessage();
-        final CommandMatcher cmdmatch = commandManager.getCommandMatcher(eventGuild, message);
-        final Optional<? extends ChatCommand> action = commandManager.getAction(cmdmatch);
+        final GuildDataStore guildData = this.db.getGuildData(eventGuild);
+        final CommandMatcher cmdMatch = new CommandMatcher(guildData, message);
+        final Optional<? extends ChatCommand> action = this.commandProvider.getAction(cmdMatch);
         if (action.isEmpty()) {
             return;
         }
 
         //React to command
         final ChatCommand ca = action.get();
+        //Log the message if debug is enabled
+        LOGGER.debug(() -> {
+            return "Found command: " + ca.getCommand() + " in " + cmdMatch.getMessage().getContentRaw();
+        });
+
         final Member member = event.getMember();
-        if (commandManager.hasPermission(member, ca)) {
-            ca.respond(cmdmatch);
+        if (permissionManager.hasPermission(member, ca)) {
+            ca.respond(cmdMatch);
         }
     }
 
@@ -127,14 +136,14 @@ public class MessageListener extends ListenerAdapter {
         }
 
         //Check if we should react on this channel
-        final ChannelManager channels = this.db.getChannels(guild);
+        final ChannelManager channels = this.db.getGuildData(guild).getChannelManager();
         if (channels.hasChannel(textChannel)) {
             LOGGER.debug("Not greeting because not listening on the channel");
             return;
         }
 
         //Check if guild has message to send to new members
-        final ConfigManager guildConf = this.db.getConfig(guild);
+        final ConfigManager guildConf = this.db.getGuildData(guild).getConfigManager();
         final Optional<String> optTemplate = guildConf.getGreetingTemplate();
         if (optTemplate.isEmpty()) {
             LOGGER.debug("Not greeting because greet template is not set");
@@ -165,7 +174,7 @@ public class MessageListener extends ListenerAdapter {
             return;
         }
         //Store the channel in database
-        final ChannelManager channels = this.db.getChannels(eventGuild);
+        final ChannelManager channels = this.db.getGuildData(eventGuild).getChannelManager();
         try {
             channels.addChannel(channel);
             if (channel.canTalk()) {

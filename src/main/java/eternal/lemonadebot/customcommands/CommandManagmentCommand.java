@@ -27,9 +27,9 @@ import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.CustomCommandManager;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.messages.CommandManager;
-import eternal.lemonadebot.messages.CommandMatcher;
-import eternal.lemonadebot.messages.CommandPermission;
+import eternal.lemonadebot.permissions.PermissionManager;
+import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.permissions.CommandPermission;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -44,10 +44,10 @@ import org.apache.logging.log4j.Logger;
  * @author Neutroni
  */
 public class CommandManagmentCommand implements ChatCommand {
-    
+
     private static final Logger LOGGER = LogManager.getLogger();
-    
-    private final CommandManager commandManager;
+
+    private final PermissionManager commandManager;
     private final DatabaseManager db;
 
     /**
@@ -56,16 +56,16 @@ public class CommandManagmentCommand implements ChatCommand {
      * @param parser parser to parse arguments with
      * @param database database to store custom commands in
      */
-    public CommandManagmentCommand(CommandManager parser, DatabaseManager database) {
+    public CommandManagmentCommand(PermissionManager parser, DatabaseManager database) {
         this.commandManager = parser;
         this.db = database;
     }
-    
+
     @Override
     public String getCommand() {
         return "custom";
     }
-    
+
     @Override
     public String getHelp() {
         return " Syntax: custom <action> [name] [template]"
@@ -81,23 +81,16 @@ public class CommandManagmentCommand implements ChatCommand {
                 + "  but you can use {key} to modify parts of the message.\n"
                 + "  See \"custom keys\" to see all keys\n";
     }
-    
+
     @Override
     public CommandPermission getPermission(Guild guild) {
-        final ConfigManager guildConf = this.db.getConfig(guild);
+        final ConfigManager guildConf = this.db.getGuildData(guild).getConfigManager();
         return guildConf.getEditPermission();
     }
-    
+
     @Override
     public void respond(CommandMatcher matcher) {
-        final Optional<TextChannel> optChannel = matcher.getTextChannel();
-        final Optional<Member> optMember = matcher.getMember();
-        if (optChannel.isEmpty() || optMember.isEmpty()) {
-            matcher.getMessageChannel().sendMessage("Commands are specific to discord servers and must be edited on one").queue();
-            return;
-        }
-        final TextChannel textChannel = optChannel.get();
-        final Member sender = optMember.get();
+        final TextChannel textChannel = matcher.getTextChannel();
         final String[] arguments = matcher.getArguments(2);
         if (arguments.length == 0) {
             textChannel.sendMessage("Provide operation to perform, check help for possible operations").queue();
@@ -105,20 +98,19 @@ public class CommandManagmentCommand implements ChatCommand {
         }
         switch (arguments[0]) {
             case "create": {
-                createCustomCommand(arguments, textChannel, sender);
+                createCustomCommand(arguments, matcher);
                 break;
             }
             case "delete": {
-                deleteCustomCommand(arguments, textChannel, sender);
+                deleteCustomCommand(arguments, matcher);
                 break;
             }
             case "list": {
-                listCustomCommands(textChannel);
+                listCustomCommands(matcher);
                 break;
             }
             case "keys": {
-                final CustomCommandManager commands = this.db.getCommands(textChannel.getGuild());
-                textChannel.sendMessage(commands.getActionManager().getHelp()).queue();
+                textChannel.sendMessage(ActionManager.getHelp()).queue();
                 break;
             }
             default:
@@ -126,8 +118,9 @@ public class CommandManagmentCommand implements ChatCommand {
                 break;
         }
     }
-    
-    private void createCustomCommand(String[] arguments, TextChannel textChannel, Member sender) {
+
+    private void createCustomCommand(String[] arguments, CommandMatcher matcher) {
+        final TextChannel textChannel = matcher.getTextChannel();
         if (arguments.length < 2) {
             textChannel.sendMessage("Creating custom command requires a name for the command").queue();
             return;
@@ -137,7 +130,7 @@ public class CommandManagmentCommand implements ChatCommand {
             return;
         }
         final String commandName = arguments[1];
-        final CustomCommandManager commands = this.db.getCommands(textChannel.getGuild());
+        final CustomCommandManager commands = matcher.getGuildData().getCustomCommands();
         final Optional<CustomCommand> oldCommand = commands.getCommand(commandName);
         if (oldCommand.isPresent()) {
             try {
@@ -150,7 +143,7 @@ public class CommandManagmentCommand implements ChatCommand {
                 }
             } catch (SQLException ex) {
                 textChannel.sendMessage("Found old command by that name in memory but adding it to database failed.").queue();
-                
+
                 LOGGER.error("Failure to add custom command to database");
                 LOGGER.warn(ex.getMessage());
                 LOGGER.trace("Stack trace", ex);
@@ -158,6 +151,7 @@ public class CommandManagmentCommand implements ChatCommand {
             return;
         }
         final String commandTemplate = arguments[2];
+        final Member sender = matcher.getMember();
         final CustomCommand newAction = commands.build(commandName, commandTemplate, sender.getIdLong());
         {
             try {
@@ -168,21 +162,22 @@ public class CommandManagmentCommand implements ChatCommand {
                 }
             } catch (SQLException ex) {
                 textChannel.sendMessage("Adding command to database failed, added to temporary memory that will be lost on reboot").queue();
-                
+
                 LOGGER.error("Failure to add custom command");
                 LOGGER.warn(ex.getMessage());
                 LOGGER.trace("Stack trace", ex);
             }
         }
     }
-    
-    private void deleteCustomCommand(String[] arguments, TextChannel textChannel, Member sender) {
+
+    private void deleteCustomCommand(String[] arguments, CommandMatcher matcher) {
+        final TextChannel textChannel = matcher.getTextChannel();
         if (arguments.length < 2) {
             textChannel.sendMessage("Deleting custom command requires a name of the the command to remove").queue();
             return;
         }
         final String commandName = arguments[1];
-        final CustomCommandManager commands = this.db.getCommands(textChannel.getGuild());
+        final CustomCommandManager commands = matcher.getGuildData().getCustomCommands();
         final Optional<CustomCommand> optCommand = commands.getCommand(commandName);
         if (optCommand.isEmpty()) {
             textChannel.sendMessage("No such command as " + commandName).queue();
@@ -192,6 +187,7 @@ public class CommandManagmentCommand implements ChatCommand {
         final Member commandOwner = textChannel.getGuild().getMemberById(command.getOwner());
 
         //Check if user has permission to remove the command
+        final Member sender = matcher.getMember();
         final boolean hasPermission = commandManager.hasPermission(sender, commandOwner);
         if (!hasPermission) {
             textChannel.sendMessage("You do not have permission to delete that command, "
@@ -208,18 +204,20 @@ public class CommandManagmentCommand implements ChatCommand {
             textChannel.sendMessage("Command was alredy deleted, propably a database error").queue();
         } catch (SQLException ex) {
             textChannel.sendMessage("Deleting command from database failed, deleted from temporary memory, command will be back after reboot").queue();
-            
+
             LOGGER.error("Failure to delete custom command");
             LOGGER.warn(ex.getMessage());
             LOGGER.trace("Stack trace", ex);
         }
     }
-    
-    private void listCustomCommands(TextChannel textChannel) {
-        final List<CustomCommand> coms = this.db.getCommands(textChannel.getGuild()).getCommands();
+
+    private void listCustomCommands(CommandMatcher matcher) {
+        final List<CustomCommand> coms = matcher.getGuildData().getCustomCommands().getCommands();
+        final Guild guild = matcher.getGuild();
+        final TextChannel textChannel = matcher.getTextChannel();
         final StringBuilder sb = new StringBuilder("Commands:\n");
         for (CustomCommand c : coms) {
-            final Member creator = textChannel.getGuild().getMemberById(c.getOwner());
+            final Member creator = guild.getMemberById(c.getOwner());
             final String creatorName;
             if (creator == null) {
                 creatorName = "Unkown";

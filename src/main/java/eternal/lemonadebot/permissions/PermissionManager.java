@@ -21,97 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.messages;
+package eternal.lemonadebot.permissions;
 
-import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
-import java.util.Optional;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.TextChannel;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Various utility functions for parsing command from messages
  *
  * @author Neutroni
  */
-public class CommandManager {
-
-    private static final Logger LOGGER = LogManager.getLogger();
+public class PermissionManager {
 
     private final DatabaseManager db;
-    private final CommandProvider commandProvider;
 
     /**
      * Constructor
      *
      * @param database database to use
      */
-    public CommandManager(DatabaseManager database) {
+    public PermissionManager(DatabaseManager database) {
         this.db = database;
-        this.commandProvider = new CommandProvider(this, database);
-    }
-
-    /**
-     * Get the action for command
-     *
-     * @param cmdMatcher Matcher to find command for
-     * @return CommandAction or Option.empty if command was not found
-     */
-    public Optional<? extends ChatCommand> getAction(CommandMatcher cmdMatcher) {
-        final Optional<String> name = cmdMatcher.getCommand();
-        if (name.isEmpty()) {
-            return Optional.empty();
-        }
-        //get the command name
-        final String commandName = name.get();
-        //Check if we find command by that name
-        final Optional<ChatCommand> command = commandProvider.getCommand(commandName);
-        if (command.isPresent()) {
-            //Log the message if debug is enabled
-            LOGGER.debug(() -> {
-                return "Found command: " + commandName + " in " + cmdMatcher.getMessage().getContentRaw();
-            });
-            return command;
-        }
-
-        final Optional<Guild> optGuild = cmdMatcher.getGuild();
-        if (optGuild.isEmpty()) {
-            return Optional.empty();
-        }
-        final Guild guild = optGuild.get();
-
-        //Check if we find custom command by that name
-        final Optional<CustomCommand> custom = db.getCommands(guild).getCommand(commandName);
-        if (custom.isPresent()) {
-            //Log the message if debug is enabled
-            LOGGER.debug(() -> {
-                return "Found custom command: " + commandName + " in " + cmdMatcher.getMessage().getContentRaw();
-            });
-            return custom;
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Match of command elements
-     *
-     * @param guild Guild the message was sent in
-     * @param msg Message to parse
-     * @return Matcher for the message
-     */
-    public CommandMatcher getCommandMatcher(Guild guild, Message msg) {
-        final ConfigManager guildConf = this.db.getConfig(guild);
-        return new CommandMatcher(guildConf.getCommandPattern(), msg);
     }
 
     /**

@@ -25,8 +25,8 @@ package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
-import eternal.lemonadebot.messages.CommandMatcher;
-import eternal.lemonadebot.messages.CommandPermission;
+import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.permissions.CommandPermission;
 import java.util.Objects;
 import net.dv8tion.jda.api.entities.Guild;
 
@@ -40,7 +40,6 @@ import net.dv8tion.jda.api.entities.Guild;
 public class CustomCommand implements ChatCommand {
 
     private final ConfigManager configManager;
-    private final ActionManager actionManager;
 
     private final String commandName;
     private final String actionTemplate;
@@ -50,14 +49,12 @@ public class CustomCommand implements ChatCommand {
      * Constructor
      *
      * @param configManager ConfigManager to get command permissions from
-     * @param actions SimpleActions to replace action templates with
      * @param commandName command this is activeted by
      * @param actionTemplate action template
      * @param owner who created this command
      */
-    public CustomCommand(ConfigManager configManager, ActionManager actions, String commandName, String actionTemplate, long owner) {
+    public CustomCommand(ConfigManager configManager, String commandName, String actionTemplate, long owner) {
         this.configManager = configManager;
-        this.actionManager = actions;
         this.commandName = commandName;
         this.actionTemplate = actionTemplate;
         this.owner = owner;
@@ -88,7 +85,7 @@ public class CustomCommand implements ChatCommand {
 
     @Override
     public void respond(CommandMatcher match) {
-        final CharSequence response = this.actionManager.processActions(match, actionTemplate);
+        final CharSequence response = ActionManager.processActions(match, actionTemplate);
         match.getMessage().getChannel().sendMessage(response).queue();
     }
 

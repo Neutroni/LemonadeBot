@@ -43,9 +43,9 @@ import org.apache.logging.log4j.Logger;
  * @author Neutroni
  */
 public class EventManager {
-    
+
     private static final Logger LOGGER = LogManager.getLogger();
-    
+
     private final Connection conn;
     private final long guildID;
     private final Set<Event> events = Collections.synchronizedSet(new HashSet<>());
@@ -221,7 +221,7 @@ public class EventManager {
             LOGGER.trace(e);
         }
     }
-    
+
     private void loadMembers(Event event) throws SQLException {
         final String query = "SELECT member FROM EventMembers WHERE guild = ? AND name = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {

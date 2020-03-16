@@ -25,11 +25,9 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.commandtypes.UserCommand;
-import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.messages.CommandManager;
-import eternal.lemonadebot.messages.CommandMatcher;
+import eternal.lemonadebot.permissions.PermissionManager;
+import eternal.lemonadebot.CommandMatcher;
 import java.util.Optional;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
@@ -41,21 +39,18 @@ import net.dv8tion.jda.api.entities.TextChannel;
  */
 class HelpCommand extends UserCommand {
 
-    private final CommandManager commandParser;
+    private final PermissionManager permissions;
     private final CommandProvider commands;
-    private final DatabaseManager db;
 
     /**
      * Constructor
      *
-     * @param parser parser to use
-     * @param provider CommandProvider to search commands in
-     * @param database database to use for checking if command is custom command
+     * @param permissionManager manager to check user permissions with
+     * @param commandProvider CommandProvider to search commands in
      */
-    HelpCommand(CommandManager parser, CommandProvider provider, DatabaseManager database) {
-        this.commandParser = parser;
-        this.commands = provider;
-        this.db = database;
+    HelpCommand(PermissionManager permissionManager, CommandProvider commandProvider) {
+        this.permissions = permissionManager;
+        this.commands = commandProvider;
     }
 
     @Override
@@ -65,14 +60,8 @@ class HelpCommand extends UserCommand {
 
     @Override
     public void respond(CommandMatcher matcher) {
-        final Optional<TextChannel> optChannel = matcher.getTextChannel();
-        final Optional<Member> optMember = matcher.getMember();
-        if (optChannel.isEmpty() || optMember.isEmpty()) {
-            matcher.getMessageChannel().sendMessage("Help info can be only provided on discord servers.").queue();
-            return;
-        }
-        final TextChannel textChannel = optChannel.get();
-        final Member sender = optMember.get();
+        final TextChannel textChannel = matcher.getTextChannel();
+        final Member sender = matcher.getMember();
 
         final String[] options = matcher.getArguments(1);
         if (options.length == 0) {
@@ -80,7 +69,7 @@ class HelpCommand extends UserCommand {
             return;
         }
         final String name = options[0];
-        listHelp(sender, textChannel, name);
+        listHelp(matcher, name);
     }
 
     @Override
@@ -91,11 +80,13 @@ class HelpCommand extends UserCommand {
                 + "[] indicates optional arguments, <> nessessary one.";
     }
 
-    private void listHelp(Member sender, TextChannel textChannel, String name) {
-        final Optional<ChatCommand> opt = commands.getCommand(name);
+    private void listHelp(CommandMatcher matcher, String name) {
+        final TextChannel textChannel = matcher.getTextChannel();
+        final Member sender = matcher.getMember();
+        final Optional<? extends ChatCommand> opt = commands.getCommand(name, textChannel.getGuild());
         if (opt.isPresent()) {
             final ChatCommand com = opt.get();
-            if (commandParser.hasPermission(sender, com)) {
+            if (permissions.hasPermission(sender, com)) {
                 final EmbedBuilder eb = new EmbedBuilder();
                 eb.setTitle("Help for command: " + com.getCommand());
                 eb.setDescription(com.getHelp());
@@ -103,12 +94,6 @@ class HelpCommand extends UserCommand {
             } else {
                 textChannel.sendMessage("You do not have permission to run that command, as such no help was provided").queue();
             }
-            return;
-        }
-        final GuildDataStore data = this.db.getGuildData(sender.getGuild());
-        final Optional<CustomCommand> custom = data.getCustomCommands().getCommand(name);
-        if (custom.isPresent()) {
-            textChannel.sendMessage("User defined custom command, see command \"help custom\" for details.").queue();
             return;
         }
         textChannel.sendMessage("No such command: " + name).queue();
@@ -121,7 +106,7 @@ class HelpCommand extends UserCommand {
                 + "where 'name' is on of following:\n");
 
         for (ChatCommand c : commands.getCommands()) {
-            if (commandParser.hasPermission(sender, c)) {
+            if (permissions.hasPermission(sender, c)) {
                 sb.append(' ').append(c.getCommand()).append('\n');
             }
         }

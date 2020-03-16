@@ -23,7 +23,7 @@
  */
 package eternal.lemonadebot.customcommands;
 
-import eternal.lemonadebot.messages.CommandMatcher;
+import eternal.lemonadebot.CommandMatcher;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

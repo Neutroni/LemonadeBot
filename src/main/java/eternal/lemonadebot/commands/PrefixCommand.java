@@ -26,28 +26,16 @@ package eternal.lemonadebot.commands;
 import eternal.lemonadebot.commandtypes.OwnerCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.messages.CommandMatcher;
+import eternal.lemonadebot.CommandMatcher;
 import java.sql.SQLException;
-import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
  *
  * @author Neutroni
  */
 class PrefixCommand extends OwnerCommand {
-
-    private final DatabaseManager db;
-
-    /**
-     * Constructor
-     *
-     * @param database ConfigManager to handle prefix with
-     */
-    PrefixCommand(DatabaseManager database) {
-        this.db = database;
-    }
 
     @Override
     public String getCommand() {
@@ -62,15 +50,8 @@ class PrefixCommand extends OwnerCommand {
 
     @Override
     public void respond(CommandMatcher matcher) {
-        final MessageChannel channel = matcher.getMessageChannel();
-
-        //Verify we are on a discord server and not a private chat
-        final Optional<Guild> optGuild = matcher.getGuild();
-        if (optGuild.isEmpty()) {
-            channel.sendMessage("Command prefixes are specific to discord servers and must be edited on one").queue();
-            return;
-        }
-        final Guild guild = optGuild.get();
+        final Guild guild = matcher.getGuild();
+        final TextChannel channel = matcher.getTextChannel();
 
         //Check if user provide prefix
         final String[] options = matcher.getArguments(1);
@@ -81,7 +62,7 @@ class PrefixCommand extends OwnerCommand {
 
         //Update the prefix
         final String newPrefix = options[0];
-        final ConfigManager guildConf = this.db.getConfig(guild);
+        final ConfigManager guildConf = matcher.getGuildData().getConfigManager();
         try {
             guildConf.setCommandPrefix(newPrefix);
             channel.sendMessage("Updated prefix succesfully to: " + newPrefix).queue();

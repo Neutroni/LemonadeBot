@@ -21,15 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.messages;
+package eternal.lemonadebot;
 
+import eternal.lemonadebot.database.GuildDataStore;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
@@ -41,6 +41,7 @@ public class CommandMatcher {
 
     private final Message message;
     private final String messageText;
+    private final GuildDataStore guildData;
     private final Matcher matcher;
     private final boolean matches;
 
@@ -50,12 +51,17 @@ public class CommandMatcher {
      * @param pattern pattern to use to match commands
      * @param msg command message
      */
-    CommandMatcher(Pattern pattern, Message msg) {
+    CommandMatcher(GuildDataStore guildDataStore, Message msg) {
+        if (!msg.isFromGuild()) {
+            throw new IllegalArgumentException("Only messages from guilds supported");
+        }
+
         this.message = msg;
         this.messageText = msg.getContentRaw();
+        this.guildData = guildDataStore;
+        final Pattern pattern = guildData.getConfigManager().getCommandPattern();
         this.matcher = pattern.matcher(messageText);
         this.matches = this.matcher.find();
-
     }
 
     /**
@@ -90,6 +96,15 @@ public class CommandMatcher {
     }
 
     /**
+     * Get the guildata for the related guild
+     *
+     * @return GuildDataStore
+     */
+    public GuildDataStore getGuildData() {
+        return this.guildData;
+    }
+
+    /**
      * Get the message this commandmatcher matches against
      *
      * @return Message
@@ -101,34 +116,19 @@ public class CommandMatcher {
     /**
      * Get member who sent the message
      *
-     * @return Optional containing the member if found
+     * @return Member who sent the message
      */
-    public Optional<Member> getMember() {
-        if (this.message.isFromGuild()) {
-            return Optional.of(this.message.getMember());
-        }
-        return Optional.empty();
+    public Member getMember() {
+        return this.message.getMember();
     }
 
     /**
      * Return the channel which the message was sent in
      *
-     * @return Optional containing TextChannel of the message if found
+     * @return TextChannel of the message
      */
-    public Optional<TextChannel> getTextChannel() {
-        if (this.message.isFromGuild()) {
-            return Optional.of(this.message.getTextChannel());
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Get the channel the message was sent in
-     *
-     * @return MessageChannel of the message
-     */
-    public MessageChannel getMessageChannel() {
-        return this.message.getChannel();
+    public TextChannel getTextChannel() {
+        return this.message.getTextChannel();
     }
 
     /**
@@ -136,10 +136,7 @@ public class CommandMatcher {
      *
      * @return Guild
      */
-    public Optional<Guild> getGuild() {
-        if (this.message.isFromGuild()) {
-            return Optional.of(this.message.getGuild());
-        }
-        return Optional.empty();
+    public Guild getGuild() {
+        return this.message.getGuild();
     }
 }

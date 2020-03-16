@@ -23,7 +23,7 @@
  */
 package eternal.lemonadebot.database;
 
-import eternal.lemonadebot.messages.CommandPermission;
+import eternal.lemonadebot.permissions.CommandPermission;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -101,9 +101,10 @@ public class ConfigManager {
     public CommandPermission getEventPermission() {
         return this.eventEditPermission;
     }
-    
+
     /**
      * Get permission to manage remainders
+     *
      * @return CommandPermission
      */
     public CommandPermission getRemainderPermissions() {
@@ -208,7 +209,7 @@ public class ConfigManager {
             return ps.executeUpdate() > 0;
         }
     }
-    
+
     /**
      * Set the permission required to manage remainders
      *

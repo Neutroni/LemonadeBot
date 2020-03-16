@@ -24,15 +24,15 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.UserCommand;
-import eternal.lemonadebot.messages.CommandMatcher;
+import eternal.lemonadebot.CommandMatcher;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -58,30 +58,17 @@ class RoleCommand extends UserCommand {
 
     @Override
     public void respond(CommandMatcher matcher) {
-        final MessageChannel channel = matcher.getMessageChannel();
-
-        //Check we are on a server
-        final Optional<Guild> optGuild = matcher.getGuild();
-        if (optGuild.isEmpty()) {
-            channel.sendMessage("Roles can only be assigned on servers").queue();
-            return;
-        }
+        final TextChannel channel = matcher.getTextChannel();
 
         //Check that we can assign roles here
-        final Guild guild = optGuild.get();
+        final Guild guild = matcher.getGuild();
         if (!guild.getSelfMember().hasPermission(Permission.MANAGE_ROLES)) {
             channel.sendMessage("It appears I can't assign roles here, if you think this to be a mistake contact server adminstrators").queue();
             return;
         }
 
-        final Optional<Member> optMember = matcher.getMember();
-        if (optMember.isEmpty()) {
-            channel.sendMessage("You do not appear to be a member of this guild, that is odd").queue();
-            return;
-        }
-
         //Check persons doesn't already have a role
-        final Member sender = optMember.get();
+        final Member sender = matcher.getMember();
         final List<Role> currentRoles = sender.getRoles();
         if (currentRoles.size() > 0) {
             channel.sendMessage("You cannot assign role to yourself using this command if you alredy have a role").queue();

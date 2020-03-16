@@ -25,12 +25,10 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.OwnerCommand;
 import eternal.lemonadebot.database.ConfigManager;
-import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.messages.CommandMatcher;
+import eternal.lemonadebot.CommandMatcher;
 import java.sql.SQLException;
 import java.util.Optional;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,17 +39,6 @@ import org.apache.logging.log4j.Logger;
 public class GreetCommand extends OwnerCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
-
-    private final DatabaseManager db;
-
-    /**
-     * Constructor
-     *
-     * @param database database to store greeting template in
-     */
-    public GreetCommand(DatabaseManager database) {
-        this.db = database;
-    }
 
     @Override
     public String getCommand() {
@@ -73,14 +60,8 @@ public class GreetCommand extends OwnerCommand {
 
     @Override
     public void respond(CommandMatcher message) {
-        final MessageChannel channel = message.getMessageChannel();
-        final Optional<Guild> optGuild = message.getGuild();
-        if (optGuild.isEmpty()) {
-            channel.sendMessage("Greeting templates are specific to discord servers and must be edited on one").queue();
-            return;
-        }
-        final Guild guild = optGuild.get();
-        final ConfigManager guildConf = this.db.getConfig(guild);
+        final TextChannel channel = message.getTextChannel();
+        final ConfigManager guildConf = message.getGuildData().getConfigManager();
         final String[] options = message.getArguments(1);
         if (options.length == 0) {
             channel.sendMessage("Provide operation to perform, check help for possible operations").queue();

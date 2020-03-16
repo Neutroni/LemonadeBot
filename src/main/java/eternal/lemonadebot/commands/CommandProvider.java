@@ -25,13 +25,17 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.customcommands.CommandManagmentCommand;
+import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.events.EventCommand;
 import eternal.lemonadebot.events.RemainderCommand;
-import eternal.lemonadebot.messages.CommandManager;
+import eternal.lemonadebot.permissions.PermissionManager;
+import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.database.CustomCommandManager;
 import eternal.lemonadebot.music.MusicCommand;
 import java.util.List;
 import java.util.Optional;
+import net.dv8tion.jda.api.entities.Guild;
 
 /**
  *
@@ -40,6 +44,7 @@ import java.util.Optional;
 public class CommandProvider {
 
     private final List<ChatCommand> commands;
+    private final DatabaseManager dataBase;
 
     /**
      * Constructor
@@ -47,34 +52,62 @@ public class CommandProvider {
      * @param parser parser for commands to use
      * @param db database for commands to use
      */
-    public CommandProvider(CommandManager parser, DatabaseManager db) {
+    public CommandProvider(PermissionManager parser, DatabaseManager db) {
         this.commands = List.of(
-                new HelpCommand(parser, this, db),
-                new EventCommand(parser, db),
-                new ChannelManagmentCommand(db),
+                new HelpCommand(parser, this),
+                new EventCommand(parser),
+                new ChannelManagmentCommand(),
                 new CommandManagmentCommand(parser, db),
-                new PrefixCommand(db),
+                new PrefixCommand(),
                 new RoleCommand(),
                 new ShutdownCommand(),
                 new MusicCommand(db),
                 new RemainderCommand(db),
-                new PermissionCommand(db),
+                new PermissionCommand(),
                 new VersionCommand(db)
         );
+        this.dataBase = db;
+    }
+
+    /**
+     * Get the action for command
+     *
+     * @param cmdMatcher Matcher to find command for
+     * @return CommandAction or Option.empty if command was not found
+     */
+    public Optional<? extends ChatCommand> getAction(CommandMatcher cmdMatcher) {
+        final Optional<String> name = cmdMatcher.getCommand();
+        if (name.isEmpty()) {
+            return Optional.empty();
+        }
+        final String commandName = name.get();
+        final Guild guild = cmdMatcher.getGuild();
+        return getCommand(commandName, guild);
     }
 
     /**
      * Get command by name
      *
      * @param name command name to search action for
+     * @param guild guild to search command for
      * @return Optional containing the action if found, empty if not found
      */
-    public Optional<ChatCommand> getCommand(String name) {
+    public Optional<? extends ChatCommand> getCommand(String name, Guild guild) {
+        //Check if we find command by that name
         for (ChatCommand c : this.commands) {
             if (name.equals(c.getCommand())) {
                 return Optional.of(c);
             }
         }
+
+        //Check if we find custom command by that name
+        final CustomCommandManager customManager = this.dataBase.getGuildData(guild).getCustomCommands();
+        final Optional<CustomCommand> custom = customManager.getCommand(name);
+        if (custom.isPresent()) {
+            return custom;
+        }
+
+        //Couldn't find a command with that name
         return Optional.empty();
     }
 

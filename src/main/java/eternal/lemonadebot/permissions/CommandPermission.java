@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.messages;
+package eternal.lemonadebot.permissions;
 
 /**
  * Permissions required to run a command

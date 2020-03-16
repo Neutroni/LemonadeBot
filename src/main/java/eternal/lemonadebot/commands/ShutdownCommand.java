@@ -24,7 +24,7 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.OwnerCommand;
-import eternal.lemonadebot.messages.CommandMatcher;
+import eternal.lemonadebot.CommandMatcher;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 

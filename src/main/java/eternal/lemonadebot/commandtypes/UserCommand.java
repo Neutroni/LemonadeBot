@@ -23,7 +23,7 @@
  */
 package eternal.lemonadebot.commandtypes;
 
-import eternal.lemonadebot.messages.CommandPermission;
+import eternal.lemonadebot.permissions.CommandPermission;
 import net.dv8tion.jda.api.entities.Guild;
 
 /**

@@ -25,12 +25,11 @@ package eternal.lemonadebot.events;
 
 import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.database.ConfigManager;
-import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.RemainderManager;
-import eternal.lemonadebot.messages.CommandManager;
-import eternal.lemonadebot.messages.CommandMatcher;
+import eternal.lemonadebot.permissions.PermissionManager;
+import eternal.lemonadebot.CommandMatcher;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,18 +50,16 @@ public class EventCommand extends UserCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final CommandManager commandParser;
-    private final DatabaseManager db;
+    private final PermissionManager commandParser;
 
     /**
      * Constructor
      *
      * @param parser parser to use for parsing commands
-     * @param database database to store events in
      */
-    public EventCommand(CommandManager parser, DatabaseManager database) {
+    public EventCommand(PermissionManager parser) {
         this.commandParser = parser;
-        this.db = database;
+
     }
 
     @Override
@@ -89,14 +86,7 @@ public class EventCommand extends UserCommand {
 
     @Override
     public void respond(CommandMatcher matcher) {
-        final Optional<TextChannel> optChannel = matcher.getTextChannel();
-        final Optional<Member> optMember = matcher.getMember();
-        if (optChannel.isEmpty() || optMember.isEmpty()) {
-            matcher.getMessageChannel().sendMessage("Events are specific to discord servers and must be edited on one.").queue();
-            return;
-        }
-        final TextChannel textChannel = optChannel.get();
-        final Member sender = optMember.get();
+        final TextChannel textChannel = matcher.getTextChannel();
 
         final String[] opts = matcher.getArguments(2);
         if (opts.length == 0) {
@@ -106,39 +96,39 @@ public class EventCommand extends UserCommand {
 
         switch (opts[0]) {
             case "create": {
-                createEvent(opts, textChannel, sender);
+                createEvent(opts, matcher);
                 break;
             }
             case "delete": {
-                deleteEvent(opts, textChannel, sender);
+                deleteEvent(opts, matcher);
                 break;
             }
             case "join": {
-                joinEvent(opts, textChannel, sender);
+                joinEvent(opts, matcher);
                 break;
             }
             case "leave": {
-                leaveEvent(opts, textChannel, sender);
+                leaveEvent(opts, matcher);
                 break;
             }
             case "members": {
-                showEventMembers(opts, textChannel);
+                showEventMembers(opts, matcher);
                 break;
             }
             case "clear": {
-                clearEventMembers(opts, textChannel, sender);
+                clearEventMembers(opts, matcher);
                 break;
             }
             case "list": {
-                listEvents(textChannel);
+                listEvents(matcher);
                 break;
             }
             case "ping": {
-                pingEventMembers(opts, textChannel, sender);
+                pingEventMembers(opts, matcher);
                 break;
             }
             case "random": {
-                pickRandomEventMember(opts, textChannel);
+                pickRandomEventMember(opts, matcher);
                 break;
             }
             default: {
@@ -147,10 +137,11 @@ public class EventCommand extends UserCommand {
         }
     }
 
-    private void createEvent(String[] opts, TextChannel textChannel, Member sender) {
-        final Guild guild = textChannel.getGuild();
-        final ConfigManager guildConf = this.db.getConfig(guild);
-        final EventManager events = this.db.getEvents(guild);
+    private void createEvent(String[] opts, CommandMatcher matcher) {
+        final TextChannel textChannel = matcher.getTextChannel();
+        final Member sender = matcher.getMember();
+        final ConfigManager guildConf = matcher.getGuildData().getConfigManager();
+        final EventManager events = matcher.getGuildData().getEventManager();
         if (!this.commandParser.hasPermission(sender, guildConf.getEditPermission())) {
             textChannel.sendMessage("You do not have permission to create events").queue();
             return;
@@ -187,9 +178,10 @@ public class EventCommand extends UserCommand {
         }
     }
 
-    private void deleteEvent(String[] opts, TextChannel textChannel, Member sender) {
-        final Guild guild = textChannel.getGuild();
-        final GuildDataStore data = this.db.getGuildData(guild);
+    private void deleteEvent(String[] opts, CommandMatcher matcher) {
+        final Member sender = matcher.getMember();
+        final TextChannel textChannel = matcher.getTextChannel();
+        final GuildDataStore data = matcher.getGuildData();
         final ConfigManager guildConf = data.getConfigManager();
         final EventManager events = data.getEventManager();
         final RemainderManager remainders = data.getRemainderManager();
@@ -247,14 +239,17 @@ public class EventCommand extends UserCommand {
         }
     }
 
-    private void joinEvent(String[] opts, TextChannel textChannel, Member sender) {
+    private void joinEvent(String[] opts, CommandMatcher matcher) {
+        final TextChannel textChannel = matcher.getTextChannel();
+        final Member sender = matcher.getMember();
+
         if (opts.length == 1) {
             textChannel.sendMessage("Provide name of the event to join").queue();
             return;
         }
         final String eventName = opts[1];
 
-        final EventManager events = this.db.getEvents(textChannel.getGuild());
+        final EventManager events = matcher.getGuildData().getEventManager();
         final Optional<Event> oldEvent = events.getEvent(eventName);
         if (oldEvent.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
@@ -275,14 +270,17 @@ public class EventCommand extends UserCommand {
         }
     }
 
-    private void leaveEvent(String[] opts, TextChannel textChannel, Member sender) {
+    private void leaveEvent(String[] opts, CommandMatcher matcher) {
+        final TextChannel textChannel = matcher.getTextChannel();
+        final Member sender = matcher.getMember();
+
         if (opts.length == 1) {
             textChannel.sendMessage("Provide name of the event to leave").queue();
             return;
         }
         final String eventName = opts[1];
 
-        final EventManager events = this.db.getEvents(textChannel.getGuild());
+        final EventManager events = matcher.getGuildData().getEventManager();
         final Optional<Event> oldEvent = events.getEvent(eventName);
         if (oldEvent.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
@@ -303,14 +301,16 @@ public class EventCommand extends UserCommand {
         }
     }
 
-    private void showEventMembers(String[] opts, TextChannel textChannel) {
+    private void showEventMembers(String[] opts, CommandMatcher matcher) {
+        final TextChannel textChannel = matcher.getTextChannel();
+
         if (opts.length == 1) {
             textChannel.sendMessage("Provide name of the event to show members for").queue();
             return;
         }
         final String eventName = opts[1];
 
-        final EventManager events = this.db.getEvents(textChannel.getGuild());
+        final EventManager events = matcher.getGuildData().getEventManager();
         final Optional<Event> opt = events.getEvent(eventName);
         if (opt.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
@@ -341,14 +341,17 @@ public class EventCommand extends UserCommand {
         textChannel.sendMessage(sb.toString()).queue();
     }
 
-    private void clearEventMembers(String[] opts, TextChannel textChannel, Member sender) {
+    private void clearEventMembers(String[] opts, CommandMatcher matcher) {
+        final TextChannel textChannel = matcher.getTextChannel();
+        final Member sender = matcher.getMember();
+
         if (opts.length == 1) {
             textChannel.sendMessage("Provide name of the event to clear").queue();
             return;
         }
         final String eventName = opts[1];
 
-        final EventManager events = this.db.getEvents(textChannel.getGuild());
+        final EventManager events = matcher.getGuildData().getEventManager();
         final Optional<Event> opt = events.getEvent(eventName);
         if (opt.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
@@ -371,8 +374,10 @@ public class EventCommand extends UserCommand {
         }
     }
 
-    private void listEvents(TextChannel textChannel) {
-        final EventManager events = this.db.getEvents(textChannel.getGuild());
+    private void listEvents(CommandMatcher matcher) {
+        final TextChannel textChannel = matcher.getTextChannel();
+        final EventManager events = matcher.getGuildData().getEventManager();
+
         final List<Event> ev = events.getEvents();
         final StringBuilder sb = new StringBuilder("Events:\n");
         for (Event e : ev) {
@@ -384,20 +389,23 @@ public class EventCommand extends UserCommand {
         textChannel.sendMessage(sb.toString()).queue();
     }
 
-    private void pingEventMembers(String[] opts, TextChannel textChannel, Member sender) {
+    private void pingEventMembers(String[] opts, CommandMatcher matcher) {
+        final TextChannel textChannel = matcher.getTextChannel();
+
         if (opts.length == 1) {
             textChannel.sendMessage("Provide name of the event to ping members for").queue();
             return;
         }
         final String eventName = opts[1];
 
-        final EventManager events = this.db.getEvents(textChannel.getGuild());
+        final EventManager events = matcher.getGuildData().getEventManager();
         final Optional<Event> opt = events.getEvent(eventName);
         if (opt.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
             return;
         }
         final Event event = opt.get();
+        final Member sender = matcher.getMember();
         if (event.getOwner() != sender.getIdLong()) {
             textChannel.sendMessage("Only the owner of the event can ping event members.").queue();
             return;
@@ -416,14 +424,16 @@ public class EventCommand extends UserCommand {
         textChannel.sendMessage(mb.build()).queue();
     }
 
-    private void pickRandomEventMember(String[] opts, TextChannel textChannel) {
+    private void pickRandomEventMember(String[] opts, CommandMatcher matcher) {
+        final TextChannel textChannel = matcher.getTextChannel();
+
         if (opts.length == 1) {
             textChannel.sendMessage("Provide name of the event to ping members for").queue();
             return;
         }
         final String eventName = opts[1];
-        final Guild guild = textChannel.getGuild();
-        final EventManager events = this.db.getEvents(guild);
+        final Guild guild = matcher.getGuild();
+        final EventManager events = matcher.getGuildData().getEventManager();
         final Optional<Event> optEvent = events.getEvent(eventName);
         if (optEvent.isEmpty()) {
             textChannel.sendMessage("No such event: " + eventName).queue();

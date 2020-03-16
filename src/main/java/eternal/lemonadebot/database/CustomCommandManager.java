@@ -52,7 +52,6 @@ public class CustomCommandManager {
     private final Set<CustomCommand> commands = Collections.synchronizedSet(new HashSet<>());
 
     private final ConfigManager configManager;
-    private final ActionManager actionManager;
 
     /**
      * Constructor
@@ -64,7 +63,6 @@ public class CustomCommandManager {
         this.conn = connection;
         this.configManager = config;
         this.guildID = config.getGuildID();
-        this.actionManager = new ActionManager(eventManager);
         loadCommands();
     }
 
@@ -77,16 +75,7 @@ public class CustomCommandManager {
      * @return the new custom command
      */
     public CustomCommand build(String key, String pattern, long owner) {
-        return new CustomCommand(this.configManager, this.actionManager, key, pattern, owner);
-    }
-
-    /**
-     * Gets the action manager used to build commands
-     *
-     * @return ActionManager
-     */
-    public ActionManager getActionManager() {
-        return this.actionManager;
+        return new CustomCommand(this.configManager, key, pattern, owner);
     }
 
     /**

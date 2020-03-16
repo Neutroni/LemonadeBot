@@ -33,12 +33,11 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.messages.CommandMatcher;
-import eternal.lemonadebot.messages.CommandPermission;
+import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.permissions.CommandPermission;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.VoiceChannel;
@@ -95,19 +94,13 @@ public class MusicCommand implements ChatCommand {
 
     @Override
     public CommandPermission getPermission(Guild guild) {
-        final ConfigManager guildConf = this.db.getConfig(guild);
+        final ConfigManager guildConf = this.db.getGuildData(guild).getConfigManager();
         return guildConf.getPlayPermission();
     }
 
     @Override
     public void respond(CommandMatcher message) {
-        //Check that we are in a server and not a private chat
-        final Optional<TextChannel> optChannel = message.getTextChannel();
-        if (optChannel.isEmpty()) {
-            message.getMessageChannel().sendMessage("Music can only be played on servers.").queue();
-            return;
-        }
-        final TextChannel textChannel = optChannel.get();
+        final TextChannel textChannel = message.getTextChannel();
 
         //Get arguments and parse accordingly
         final String[] arguments = message.getArguments(2);

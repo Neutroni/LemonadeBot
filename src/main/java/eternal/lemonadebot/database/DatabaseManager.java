@@ -23,7 +23,7 @@
  */
 package eternal.lemonadebot.database;
 
-import eternal.lemonadebot.messages.CommandPermission;
+import eternal.lemonadebot.permissions.CommandPermission;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -170,56 +170,6 @@ public class DatabaseManager implements AutoCloseable {
      */
     public String getVersionString() {
         return DATABASE_VERSION;
-    }
-
-    /**
-     * Shortcut to get configmanager for given guild
-     *
-     * @param guild guild to get configmanager for
-     * @return ConfigManager
-     */
-    public ConfigManager getConfig(Guild guild) {
-        return getGuildData(guild).getConfigManager();
-    }
-
-    /**
-     * Shortcut to get customcommandmanager for given guild
-     *
-     * @param guild guild to get customcommandmanager for
-     * @return CustomCommandManager
-     */
-    public CustomCommandManager getCommands(Guild guild) {
-        return getGuildData(guild).getCustomCommands();
-    }
-
-    /**
-     * Shortcut to get channelmanager for guild
-     *
-     * @param guild guild to get channelmanager for
-     * @return ChannelManager
-     */
-    public ChannelManager getChannels(Guild guild) {
-        return getGuildData(guild).getChannelManager();
-    }
-
-    /**
-     * Shortcut to get eventmanager for guild
-     *
-     * @param guild guild to get evens for
-     * @return EventManager
-     */
-    public EventManager getEvents(Guild guild) {
-        return getGuildData(guild).getEventManager();
-    }
-
-    /**
-     * Shortcut to get remaindermanager for guild
-     *
-     * @param guild guild to get remainders for
-     * @return RemainderManager
-     */
-    public RemainderManager getRemainders(Guild guild) {
-        return getGuildData(guild).getRemainderManager();
     }
 
     /**

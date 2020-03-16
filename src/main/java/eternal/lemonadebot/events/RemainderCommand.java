@@ -29,8 +29,8 @@ import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.RemainderManager;
-import eternal.lemonadebot.messages.CommandMatcher;
-import eternal.lemonadebot.messages.CommandPermission;
+import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.permissions.CommandPermission;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
@@ -91,35 +91,30 @@ public class RemainderCommand implements ChatCommand {
 
     @Override
     public CommandPermission getPermission(Guild guild) {
-        final ConfigManager guildConf = this.db.getConfig(guild);
+        final ConfigManager guildConf = this.db.getGuildData(guild).getConfigManager();
         return guildConf.getRemainderPermissions();
     }
 
     @Override
-    public void respond(CommandMatcher message) {
-        final Optional<TextChannel> optChannel = message.getTextChannel();
-        if (optChannel.isEmpty()) {
-            message.getMessageChannel().sendMessage("Remainders are specific to discord servers and must be edited on one.").queue();
-            return;
-        }
-        final TextChannel textChannel = optChannel.get();
+    public void respond(CommandMatcher matcher) {
+        final TextChannel textChannel = matcher.getTextChannel();
 
-        final String[] arguments = message.getArguments(5);
+        final String[] arguments = matcher.getArguments(5);
         if (arguments.length == 0) {
             textChannel.sendMessage("Provide action to perform, see help for possible actions").queue();
             return;
         }
         switch (arguments[0]) {
             case "create": {
-                createRemainder(arguments, textChannel);
+                createRemainder(arguments, matcher);
                 break;
             }
             case "delete": {
-                deleteRemainder(arguments, textChannel);
+                deleteRemainder(arguments, matcher);
                 break;
             }
             case "list": {
-                listRemainders(textChannel);
+                listRemainders(matcher);
                 break;
             }
             default: {
@@ -128,8 +123,9 @@ public class RemainderCommand implements ChatCommand {
         }
     }
 
-    private void createRemainder(String[] arguments, TextChannel textChannel) {
-        final GuildDataStore data = this.db.getGuildData(textChannel.getGuild());
+    private void createRemainder(String[] arguments, CommandMatcher matcher) {
+        final GuildDataStore data = matcher.getGuildData();
+        final TextChannel textChannel = matcher.getTextChannel();
         final EventManager events = data.getEventManager();
         final RemainderManager remainders = data.getRemainderManager();
         if (arguments.length < 5) {
@@ -182,12 +178,13 @@ public class RemainderCommand implements ChatCommand {
         }
     }
 
-    private void deleteRemainder(String[] arguments, TextChannel textChannel) {
+    private void deleteRemainder(String[] arguments, CommandMatcher matcher) {
+        final TextChannel textChannel = matcher.getTextChannel();
         if (arguments.length < 4) {
             textChannel.sendMessage("Provide the name of the remainder you want to delete").queue();
             return;
         }
-        final RemainderManager remainders = this.db.getRemainders(textChannel.getGuild());
+        final RemainderManager remainders = matcher.getGuildData().getRemainderManager();
 
         final String eventName = arguments[1];
         final String remainderDay = arguments[2];
@@ -214,8 +211,8 @@ public class RemainderCommand implements ChatCommand {
         }
     }
 
-    private void listRemainders(TextChannel textChannel) {
-        final RemainderManager remainders = this.db.getRemainders(textChannel.getGuild());
+    private void listRemainders(CommandMatcher matcher) {
+        final RemainderManager remainders = matcher.getGuildData().getRemainderManager();
         final List<Remainder> ev = remainders.getRemainders();
         final StringBuilder sb = new StringBuilder("Remainders:\n");
         for (Remainder r : ev) {
@@ -241,6 +238,8 @@ public class RemainderCommand implements ChatCommand {
         if (ev.isEmpty()) {
             sb.append("No remainders found.");
         }
+        
+        final TextChannel textChannel = matcher.getTextChannel();
         textChannel.sendMessage(sb.toString()).queue();
     }
 

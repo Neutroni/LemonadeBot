@@ -25,24 +25,25 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.OwnerCommand;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.messages.CommandMatcher;
-import net.dv8tion.jda.api.entities.MessageChannel;
+import eternal.lemonadebot.CommandMatcher;
+import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
  * Command to check bot version
  *
  * @author Neutroni
  */
-public class VersionCommand extends OwnerCommand{
+public class VersionCommand extends OwnerCommand {
 
     private final DatabaseManager db;
-    
+
     /**
      * Constructor
+     *
      * @param database database to use
      */
     VersionCommand(DatabaseManager database) {
-        this.db=database;
+        this.db = database;
     }
 
     @Override
@@ -58,7 +59,7 @@ public class VersionCommand extends OwnerCommand{
 
     @Override
     public void respond(CommandMatcher message) {
-        final MessageChannel channel = message.getMessageChannel();
+        final TextChannel channel = message.getTextChannel();
         channel.sendMessage("Current bot version: " + this.db.getVersionString()).queue();
     }
 
