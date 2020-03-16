@@ -28,14 +28,17 @@ import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import java.sql.SQLException;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.TextChannel;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
  * @author Neutroni
  */
 public class PermissionCommand extends OwnerCommand {
+
+    private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
     public String getCommand() {
@@ -59,11 +62,10 @@ public class PermissionCommand extends OwnerCommand {
         }
 
         //Parse arguments
-        final Guild guild = message.getGuild();
         final ConfigManager guildConf = message.getGuildData().getConfigManager();
         switch (arguments[0]) {
             case "commandEdit": {
-                if (arguments.length == 0) {
+                if (arguments.length == 1) {
                     final String enumName = guildConf.getEditPermission().name().toLowerCase();
                     channel.sendMessage("Current permission for editing custom commands: " + enumName).queue();
                     return;
@@ -80,11 +82,13 @@ public class PermissionCommand extends OwnerCommand {
                     channel.sendMessage("Not a valid value for the permission: " + arguments[1]).queue();
                 } catch (SQLException e) {
                     channel.sendMessage("Database connection failed, new permission in use untill reboot").queue();
+                    LOGGER.debug(e.getMessage());
+                    LOGGER.trace("Stack trace:", e);
                 }
                 break;
             }
             case "commandRun": {
-                if (arguments.length == 0) {
+                if (arguments.length == 1) {
                     final String enumName = guildConf.getCommandRunPermission().name().toLowerCase();
                     channel.sendMessage("Current permission for using custom commands: " + enumName).queue();
                     return;
@@ -101,11 +105,13 @@ public class PermissionCommand extends OwnerCommand {
                     channel.sendMessage("Not a valid value for the permission: " + arguments[1]).queue();
                 } catch (SQLException e) {
                     channel.sendMessage("Database connection failed, new permission in use untill reboot").queue();
+                    LOGGER.debug(e.getMessage());
+                    LOGGER.trace("Stack trace:", e);
                 }
                 break;
             }
             case "eventEdit": {
-                if (arguments.length == 0) {
+                if (arguments.length == 1) {
                     final String enumName = guildConf.getEventPermission().name().toLowerCase();
                     channel.sendMessage("Current permission for editing events: " + enumName).queue();
                     return;
@@ -122,11 +128,13 @@ public class PermissionCommand extends OwnerCommand {
                     channel.sendMessage("Not a valid value for the permission: " + arguments[1]).queue();
                 } catch (SQLException e) {
                     channel.sendMessage("Database connection failed, new permission in use untill reboot").queue();
+                    LOGGER.debug(e.getMessage());
+                    LOGGER.trace("Stack trace:", e);
                 }
                 break;
             }
             case "remainderEdit": {
-                if (arguments.length == 0) {
+                if (arguments.length == 1) {
                     final String enumName = guildConf.getRemainderPermissions().name().toLowerCase();
                     channel.sendMessage("Current permission for editing remainders: " + enumName).queue();
                     return;
@@ -143,11 +151,13 @@ public class PermissionCommand extends OwnerCommand {
                     channel.sendMessage("Not a valid value for the permission: " + arguments[1]).queue();
                 } catch (SQLException e) {
                     channel.sendMessage("Database connection failed, new permission in use untill reboot").queue();
+                    LOGGER.debug(e.getMessage());
+                    LOGGER.trace("Stack trace:", e);
                 }
                 break;
             }
             case "playMusic": {
-                if (arguments.length == 0) {
+                if (arguments.length == 1) {
                     final String enumName = guildConf.getPlayPermission().name().toLowerCase();
                     channel.sendMessage("Current permission for playing music: " + enumName).queue();
                     return;
@@ -164,6 +174,8 @@ public class PermissionCommand extends OwnerCommand {
                     channel.sendMessage("Not a valid value for the permission: " + arguments[1]).queue();
                 } catch (SQLException e) {
                     channel.sendMessage("Database connection failed, new permission in use untill reboot").queue();
+                    LOGGER.debug(e.getMessage());
+                    LOGGER.trace("Stack trace:", e);
                 }
                 break;
             }

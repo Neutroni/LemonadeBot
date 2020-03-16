@@ -105,10 +105,12 @@ public class LemonadeBot {
             LOGGER.debug("Startup succesfull");
         } catch (SQLException ex) {
             LOGGER.fatal("Failed to connect to database during startup");
+            LOGGER.debug(ex.getMessage());
             LOGGER.trace("Stack trace:", ex);
             System.exit(Returnvalue.DATABASE_FAILED.ordinal());
         } catch (LoginException ex) {
             LOGGER.fatal("Login failed");
+            LOGGER.debug(ex.getMessage());
             LOGGER.trace("Stack trace:", ex);
             System.exit(Returnvalue.LOGIN_FAILED.ordinal());
         } catch (ParseException ex) {
@@ -116,6 +118,7 @@ public class LemonadeBot {
             LOGGER.trace("Stack trace:", ex);
         } catch (InterruptedException ex) {
             LOGGER.fatal("JDA loading interrupted");
+            LOGGER.debug(ex.getMessage());
             LOGGER.trace("Stack trace:", ex);
             System.exit(Returnvalue.INTERRUPTED.ordinal());
         }

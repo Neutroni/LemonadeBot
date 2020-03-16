@@ -108,7 +108,7 @@ public class RemainderManager {
         }
 
         //Add to database
-        final String query = "INSERT INTO Remainders(guild,event,day,time,mention,channel) VALUES(?,?,?,?,?,?);";
+        final String query = "INSERT INTO Remainders(guild,name,day,time,mention,channel) VALUES(?,?,?,?,?,?);";
         final String eventName = remainder.getEvent().getName();
         final String remainderDay = remainder.getDay().name();
         final String remainderTime = remainder.getTime().toString();

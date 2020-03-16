@@ -65,17 +65,18 @@ public class DatabaseManager implements AutoCloseable {
                 + "guild INTEGER NOT NULL);";
         final String GUILDCONF = "CREATE TABLE Guilds("
                 + "id INTEGER PRIMARY KEY NOT NULL,"
-                + "commandPrefix TEXT NOT NULL"
+                + "commandPrefix TEXT NOT NULL,"
                 + "commandEditPermission TEXT NOT NULL,"
                 + "commandRunPermission TEXT NOT NULL,"
                 + "eventEditPermission TEXT NOT NULL,"
-                + "musicPlayPermission TEXT NOT NULL"
+                + "remainderPermission TEXT NOT NULL"
+                + "musicPlayPermission TEXT NOT NULL,"
                 + "greetingTemplate TEXT);";
         final String COMMANDS = "CREATE TABLE Commands("
                 + "guild INTEGER NOT NULL,"
                 + "name TEXT NOT NULL,"
                 + "template TEXT NOT NULL,"
-                + "owner INTEGER NOT NULL"
+                + "owner INTEGER NOT NULL,"
                 + "PRIMARY KEY (guild,name));";
         final String EVENTS = "CREATE TABLE Events("
                 + "guild INTEGER NOT NULL,"
@@ -84,15 +85,19 @@ public class DatabaseManager implements AutoCloseable {
                 + "owner INTEGER NOT NULL,"
                 + "PRIMARY KEY (guild,name));";
         final String EVENT_MEMBERS = "CREATE TABLE EventMembers("
-                + "FOREIGN KEY (guild, name) REFERENCES Events(guild, name) ON DELETE CASCADE,"
+                + "guild INTEGER NOT NULL,"
+                + "name TEXT NOT NULL,"
                 + "member INTEGER NOT NULL,"
+                + "FOREIGN KEY (guild, name) REFERENCES Events(guild, name) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,name,member));";
         final String REMAINDERS = "CREATE TABLE Remainders("
-                + "FOREIGN KEY (guild,name) REFERENCES Events(guild, name) ON DELETE CASCADE,"
+                + "guild INTEGER NOT NULL,"
+                + "name TEXT NOT NULL,"
                 + "day TEXT NOT NULL,"
                 + "time TEXT NOT NULL,"
                 + "mention TEXT NOT NULL,"
                 + "channel INTEGER NOT NULL,"
+                + "FOREIGN KEY (guild,name) REFERENCES Events(guild, name) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,name,day,time));";
         final String INSERT = "INSERT INTO Options(name,value) VALUES(?,?);";
         try (Statement st = connection.createStatement()) {

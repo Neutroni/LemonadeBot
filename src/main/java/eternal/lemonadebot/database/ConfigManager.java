@@ -148,7 +148,7 @@ public class ConfigManager {
     public boolean setCommandPrefix(String prefix) throws SQLException {
         this.commandPattern = getCommandPattern(prefix);
 
-        final String query = "UPDATE Guilds SET prefix = ? WHERE guild = ?;";
+        final String query = "UPDATE Guilds SET commandPrefix = ? WHERE id = ?;";
         try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
             ps.setString(1, prefix);
             ps.setLong(2, this.guildID);
@@ -166,7 +166,7 @@ public class ConfigManager {
     public boolean setEditPermission(CommandPermission newEditPermission) throws SQLException {
         this.commandEditPermission = newEditPermission;
 
-        final String query = "UPDATE Guilds SET commandEditPermission = ? WHERE guild = ?;";
+        final String query = "UPDATE Guilds SET commandEditPermission = ? WHERE id = ?;";
         try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
             ps.setString(1, newEditPermission.name());
             ps.setLong(2, this.guildID);
@@ -184,7 +184,7 @@ public class ConfigManager {
     public boolean setCommandRunPermission(CommandPermission newRunPermission) throws SQLException {
         this.commandRunPermission = newRunPermission;
 
-        final String query = "UPDATE Guilds SET commandRunPermission = ? WHERE guild = ?;";
+        final String query = "UPDATE Guilds SET commandRunPermission = ? WHERE id = ?;";
         try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
             ps.setString(1, newRunPermission.name());
             ps.setLong(2, this.guildID);
@@ -202,7 +202,7 @@ public class ConfigManager {
     public boolean setEventPermission(CommandPermission newEventPermission) throws SQLException {
         this.eventEditPermission = newEventPermission;
 
-        final String query = "UPDATE Guilds SET eventEditPermission = ? WHERE guild = ?;";
+        final String query = "UPDATE Guilds SET eventEditPermission = ? WHERE id = ?;";
         try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
             ps.setString(1, newEventPermission.name());
             ps.setLong(2, this.guildID);
@@ -220,7 +220,7 @@ public class ConfigManager {
     public boolean setRemainderPermission(CommandPermission newRemainderPermission) throws SQLException {
         this.eventEditPermission = newRemainderPermission;
 
-        final String query = "UPDATE Guilds SET eventRemainderPermission = ? WHERE guild = ?;";
+        final String query = "UPDATE Guilds SET eventRemainderPermission = ? WHERE id = ?;";
         try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
             ps.setString(1, newRemainderPermission.name());
             ps.setLong(2, this.guildID);
@@ -238,7 +238,7 @@ public class ConfigManager {
     public boolean setPlayPermission(CommandPermission newMusicPermission) throws SQLException {
         this.musicPlayPermission = newMusicPermission;
 
-        final String query = "UPDATE Guilds SET musicPlayPermission = ? WHERE guild = ?;";
+        final String query = "UPDATE Guilds SET musicPlayPermission = ? WHERE id = ?;";
         try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
             ps.setString(1, newMusicPermission.name());
             ps.setLong(2, this.guildID);
@@ -256,7 +256,7 @@ public class ConfigManager {
     public boolean setGreetingTemplate(String newTemplate) throws SQLException {
         this.greetingTemplate = Optional.ofNullable(newTemplate);
 
-        final String query = "UPDATE Guilds SET greetingTemplate = ? WHERE guild = ?;";
+        final String query = "UPDATE Guilds SET greetingTemplate = ? WHERE id = ?;";
         try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
             ps.setString(1, newTemplate);
             ps.setLong(2, this.guildID);
@@ -278,7 +278,7 @@ public class ConfigManager {
      * Load the values this guildconfig stores
      */
     private void loadValues() {
-        final String query = "SELECT prefix,greetingTemplate,commandEditPermission,commandRunPermission,eventEditPermission,remainderPermission,musicPlayPermission FROM Guilds WHERE id = ?;";
+        final String query = "SELECT commandPrefix,greetingTemplate,commandEditPermission,commandRunPermission,eventEditPermission,remainderPermission,musicPlayPermission FROM Guilds WHERE id = ?;";
         try (final PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try (final ResultSet rs = ps.executeQuery()) {
@@ -304,7 +304,7 @@ public class ConfigManager {
     private void parseResultSet(ResultSet rs) {
         try {
             //Load command prefix
-            this.commandPattern = getCommandPattern(rs.getString("prefix"));
+            this.commandPattern = getCommandPattern(rs.getString("commandPrefix"));
         } catch (SQLException ex) {
             LOGGER.error("SQL error on fetching the command prefix");
             LOGGER.warn(ex);

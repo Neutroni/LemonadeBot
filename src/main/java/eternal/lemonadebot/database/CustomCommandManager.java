@@ -151,7 +151,7 @@ public class CustomCommandManager {
         final String query = "SELECT name,template,owner FROM Commands WHERE guild = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            try (ResultSet rs = ps.executeQuery(query)) {
+            try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final CustomCommand newCommand = build(rs.getString("name"), rs.getString("template"), rs.getLong("owner"));
                     this.commands.add(newCommand);

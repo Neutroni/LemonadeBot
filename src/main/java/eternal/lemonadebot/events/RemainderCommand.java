@@ -76,7 +76,7 @@ public class RemainderCommand implements ChatCommand {
     @Override
     public String getHelp() {
         return "Syntax: remainder <action> <event> <day> <time> [mention]\n"
-                + "<action> can be one of the following:"
+                + "<action> can be one of the following:\n"
                 + "  create - create new remainder\n"
                 + "  delete - delete remainder\n"
                 + "<event> event to use description from\n"

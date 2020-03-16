@@ -125,9 +125,9 @@ public class ChannelManager {
      */
     private void loadChannels() {
         final String query = "SELECT id FROM Channels WHERE guild = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            try (ResultSet rs = ps.executeQuery(query)) {
+            try (final ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     this.channels.add(rs.getLong("id"));
                 }

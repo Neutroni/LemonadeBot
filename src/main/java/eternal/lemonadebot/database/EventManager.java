@@ -140,7 +140,7 @@ public class EventManager {
         event.join(member.getIdLong());
 
         //Add to database
-        final String query = "INSERT OR IGNORE INTO EventMembers(guild,name,member) VALUES(?,?);";
+        final String query = "INSERT OR IGNORE INTO EventMembers(guild,name,member) VALUES(?,?,?);";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, event.getName());

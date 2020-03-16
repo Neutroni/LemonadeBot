@@ -135,13 +135,6 @@ public class MessageListener extends ListenerAdapter {
             return;
         }
 
-        //Check if we should react on this channel
-        final ChannelManager channels = this.db.getGuildData(guild).getChannelManager();
-        if (channels.hasChannel(textChannel)) {
-            LOGGER.debug("Not greeting because not listening on the channel");
-            return;
-        }
-
         //Check if guild has message to send to new members
         final ConfigManager guildConf = this.db.getGuildData(guild).getConfigManager();
         final Optional<String> optTemplate = guildConf.getGreetingTemplate();
@@ -168,11 +161,12 @@ public class MessageListener extends ListenerAdapter {
         final Guild eventGuild = event.getGuild();
 
         //Start listening on the default channel for the guild
-        final TextChannel channel = event.getGuild().getSystemChannel();
+        final TextChannel channel = eventGuild.getSystemChannel();
         if (channel == null) {
             LOGGER.error("Joined a guild for first time but cant find a channel to start listening on");
             return;
         }
+
         //Store the channel in database
         final ChannelManager channels = this.db.getGuildData(eventGuild).getChannelManager();
         try {
