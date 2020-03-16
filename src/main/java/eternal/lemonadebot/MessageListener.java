@@ -95,7 +95,7 @@ public class MessageListener extends ListenerAdapter {
         //Check if message is a command
         final Message message = event.getMessage();
         final CommandMatcher cmdmatch = commandManager.getCommandMatcher(eventGuild, message);
-        final Optional<ChatCommand> action = commandManager.getAction(cmdmatch);
+        final Optional<? extends ChatCommand> action = commandManager.getAction(cmdmatch);
         if (action.isEmpty()) {
             return;
         }
