@@ -238,7 +238,7 @@ public class RemainderCommand implements ChatCommand {
         if (ev.isEmpty()) {
             sb.append("No remainders found.");
         }
-        
+
         final TextChannel textChannel = matcher.getTextChannel();
         textChannel.sendMessage(sb.toString()).queue();
     }

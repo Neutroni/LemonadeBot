@@ -25,7 +25,6 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.OwnerCommand;
 import eternal.lemonadebot.database.ConfigManager;
-import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.CommandMatcher;
 import java.sql.SQLException;
 import net.dv8tion.jda.api.entities.Guild;

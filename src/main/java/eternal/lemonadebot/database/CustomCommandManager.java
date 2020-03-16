@@ -23,7 +23,6 @@
  */
 package eternal.lemonadebot.database;
 
-import eternal.lemonadebot.customcommands.ActionManager;
 import eternal.lemonadebot.customcommands.CustomCommand;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
