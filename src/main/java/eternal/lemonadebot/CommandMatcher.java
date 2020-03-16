@@ -71,7 +71,7 @@ public class CommandMatcher {
      */
     public Optional<String> getCommand() {
         if (this.matches) {
-            return Optional.of(matcher.group(2));
+            return Optional.of(matcher.group(1));
         }
         return Optional.empty();
     }

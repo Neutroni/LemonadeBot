@@ -271,7 +271,7 @@ public class ConfigManager {
      */
     private Pattern getCommandPattern(String prefix) {
         //Start of match, optionally @numericID, prefix, match group 2 is command
-        return Pattern.compile("^(@\\d+ )?" + Pattern.quote(prefix) + "(\\w+) ?");
+        return Pattern.compile("^(?:<@!\\d+> *)*" + Pattern.quote(prefix) + "(\\w+) ?");
     }
 
     /**
