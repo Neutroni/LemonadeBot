@@ -64,7 +64,8 @@ public class CommandProvider {
                 new MusicCommand(db),
                 new RemainderCommand(db),
                 new PermissionCommand(),
-                new VersionCommand(db)
+                new VersionCommand(db),
+                new GreetCommand()
         );
         this.dataBase = db;
     }
