@@ -49,15 +49,15 @@ public class CommandProvider {
     /**
      * Constructor
      *
-     * @param parser parser for commands to use
+     * @param permissionManager permission helper for commands to use
      * @param db database for commands to use
      */
-    public CommandProvider(PermissionManager parser, DatabaseManager db) {
+    public CommandProvider(PermissionManager permissionManager, DatabaseManager db) {
         this.commands = List.of(
-                new HelpCommand(parser, this),
-                new EventCommand(parser),
+                new HelpCommand(permissionManager, this),
+                new EventCommand(permissionManager),
                 new ChannelManagmentCommand(),
-                new CommandManagmentCommand(parser, db),
+                new CommandManagmentCommand(permissionManager, db),
                 new PrefixCommand(),
                 new RoleCommand(),
                 new ShutdownCommand(),
