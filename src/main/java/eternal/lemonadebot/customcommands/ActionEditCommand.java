@@ -75,7 +75,7 @@ public class ActionEditCommand implements ChatCommand {
 
     @Override
     public String getHelpText() {
-        return " Syntax: action <option> [name] [template]"
+        return " Syntax: action <option> [name] [template]\n"
                 + "<option> can be one of the following:\n"
                 + " create - create new action\n"
                 + " delete - delete action\n"
