@@ -70,8 +70,9 @@ class HelpCommand extends UserCommand {
         final String[] options = matcher.getArguments(1);
         if (options.length == 0) {
             final EmbedBuilder eb = new EmbedBuilder();
-            eb.setTitle("Syntax: help [command]");
+            eb.setTitle(getCommand() + " - " + getDescription());
             eb.setDescription(getHelpText());
+            textChannel.sendMessage(eb.build()).queue();
             return;
         }
         final String name = options[0];
@@ -84,7 +85,7 @@ class HelpCommand extends UserCommand {
 
     @Override
     public String getHelpText() {
-        return "help [command] shows help for [command].\n"
+        return "Syntax: help [command]"
                 + "help commands - prints list of commands\n"
                 + "help [command] - prints help for command\n"
                 + "help without arguments prints this message\n"
