@@ -33,6 +33,7 @@ import eternal.lemonadebot.permissions.CommandPermission;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -64,7 +65,7 @@ public class ActionEditCommand implements ChatCommand {
 
     @Override
     public String getCommand() {
-        return "actions";
+        return "action";
     }
 
     @Override
@@ -74,7 +75,7 @@ public class ActionEditCommand implements ChatCommand {
 
     @Override
     public String getHelpText() {
-        return " Syntax: actions <option> [name] [template]"
+        return " Syntax: action <option> [name] [template]"
                 + "<option> can be one of the following:\n"
                 + " create - create new action\n"
                 + " delete - delete action\n"
@@ -116,7 +117,10 @@ public class ActionEditCommand implements ChatCommand {
                 break;
             }
             case "keys": {
-                textChannel.sendMessage(TemplateManager.getHelp()).queue();
+                final EmbedBuilder eb = new EmbedBuilder();
+                eb.setTitle("Templates:");
+                eb.setDescription(TemplateManager.getHelp());
+                textChannel.sendMessage(eb.build()).queue();
                 break;
             }
             default:
