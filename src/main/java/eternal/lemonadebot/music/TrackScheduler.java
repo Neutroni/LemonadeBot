@@ -92,10 +92,11 @@ class TrackScheduler extends AudioEventAdapter {
     }
 
     /**
-     * Clear te playlist and disconnect from voice
+     * Clear the playlist and disconnect from voice
      */
     void clearPlaylist() {
         this.queue.clear();
+        this.manager.getJDA().getPresence().setActivity(null);
         this.manager.closeAudioConnection();
     }
 
