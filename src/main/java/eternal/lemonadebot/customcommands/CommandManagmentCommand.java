@@ -63,12 +63,17 @@ public class CommandManagmentCommand implements ChatCommand {
 
     @Override
     public String getCommand() {
-        return "custom";
+        return "customcommand";
     }
 
     @Override
-    public String getHelp() {
-        return " Syntax: custom <action> [name] [template]"
+    public String getDescription() {
+        return "Manage custom commands";
+    }
+
+    @Override
+    public String getHelpText() {
+        return " Syntax: customcommand <action> [name] [template]"
                 + "<action> can be one of the following:\n"
                 + " create - create new custom command\n"
                 + " delete - deletes custom command\n"

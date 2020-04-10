@@ -58,25 +58,37 @@ class HelpCommand extends UserCommand {
     }
 
     @Override
+    public String getDescription() {
+        return "Help for bot usage";
+    }
+
+    @Override
     public void respond(CommandMatcher matcher) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Member sender = matcher.getMember();
 
         final String[] options = matcher.getArguments(1);
         if (options.length == 0) {
-            listCommands(sender, textChannel);
+            final EmbedBuilder eb = new EmbedBuilder();
+            eb.setTitle("Syntax: help [command]");
+            eb.setDescription(getHelpText());
             return;
         }
         final String name = options[0];
+        if ("commands".equals(name)) {
+            listCommands(sender, textChannel);
+            return;
+        }
         listHelp(matcher, name);
     }
 
     @Override
-    public String getHelp() {
-        return "Syntax: help [command]\n"
-                + "help without arguments shows list of commands.\n"
-                + "help [command] shows help for [command].\n"
-                + "[] indicates optional arguments, <> nessessary one.";
+    public String getHelpText() {
+        return "help [command] shows help for [command].\n"
+                + "help commands - prints list of commands\n"
+                + "help [command] - prints help for command\n"
+                + "help without arguments prints this message\n"
+                + "[] indicates optional argument, <> nessessary one.";
     }
 
     private void listHelp(CommandMatcher matcher, String name) {
@@ -87,8 +99,8 @@ class HelpCommand extends UserCommand {
             final ChatCommand com = opt.get();
             if (permissions.hasPermission(sender, com)) {
                 final EmbedBuilder eb = new EmbedBuilder();
-                eb.setTitle("Help for command: " + com.getCommand());
-                eb.setDescription(com.getHelp());
+                eb.setTitle(com.getCommand() + " - " + com.getDescription());
+                eb.setDescription(com.getHelpText());
                 textChannel.sendMessage(eb.build()).queue();
             } else {
                 textChannel.sendMessage("You do not have permission to run that command, as such no help was provided").queue();
@@ -101,12 +113,11 @@ class HelpCommand extends UserCommand {
     private void listCommands(Member sender, TextChannel textChannel) {
         //Construct the list of commands
         final StringBuilder sb = new StringBuilder();
-        sb.append("Syntax: help <name>\n"
-                + "where 'name' is one of following:\n");
 
         for (ChatCommand c : commands.getCommands()) {
             if (permissions.hasPermission(sender, c)) {
-                sb.append(' ').append(c.getCommand()).append('\n');
+                sb.append(c.getCommand()).append(" - ");
+                sb.append(c.getDescription()).append('\n');
             }
         }
 

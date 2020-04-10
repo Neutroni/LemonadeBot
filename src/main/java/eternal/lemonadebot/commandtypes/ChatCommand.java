@@ -42,11 +42,18 @@ public interface ChatCommand {
     public String getCommand();
 
     /**
+     * Short description for command
+     *
+     * @return Description for what this command does
+     */
+    public String getDescription();
+
+    /**
      * Help text for command
      *
      * @return help
      */
-    public String getHelp();
+    public String getHelpText();
 
     /**
      * Which roles have permssion to run this command

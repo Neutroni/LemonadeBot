@@ -68,7 +68,12 @@ public class EventCommand extends UserCommand {
     }
 
     @Override
-    public String getHelp() {
+    public String getDescription() {
+        return "Add events for people to join";
+    }
+
+    @Override
+    public String getHelpText() {
         return "Syntax: event <action> <name> [description]\n"
                 + "<action> can be one of the following:\n"
                 + " create - create new event, you will join the event automatically\n"

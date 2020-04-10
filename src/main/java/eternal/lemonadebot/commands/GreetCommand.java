@@ -46,7 +46,12 @@ public class GreetCommand extends OwnerCommand {
     }
 
     @Override
-    public String getHelp() {
+    public String getDescription() {
+        return "Set greeting";
+    }
+
+    @Override
+    public String getHelpText() {
         return "Syntax: greeting <action> [template]\n"
                 + "<action> can be one of the following:\n"
                 + " get - get the current greeting template\n"

@@ -48,7 +48,12 @@ class ChannelManagmentCommand extends OwnerCommand {
     }
 
     @Override
-    public String getHelp() {
+    public String getDescription() {
+        return "Set channels bot listens on";
+    }
+
+    @Override
+    public String getHelpText() {
         return "Syntax: channel <action>\n"
                 + "<action> can be one of the following:\n"
                 + " add - start listening on mentioned channels\n"

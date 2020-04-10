@@ -74,7 +74,12 @@ public class RemainderCommand implements ChatCommand {
     }
 
     @Override
-    public String getHelp() {
+    public String getDescription() {
+        return "Add remainders for events";
+    }
+
+    @Override
+    public String getHelpText() {
         return "Syntax: remainder <action> <event> <day> <time> [mention]\n"
                 + "<action> can be one of the following:\n"
                 + " create - create new remainder\n"

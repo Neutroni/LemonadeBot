@@ -42,7 +42,12 @@ class PrefixCommand extends OwnerCommand {
     }
 
     @Override
-    public String getHelp() {
+    public String getDescription() {
+        return "Set command prefix";
+    }
+
+    @Override
+    public String getHelpText() {
         return "Syntax: prefix <prefix>\n"
                 + "Set the command prefix used to call this bot to <prefix>";
     }

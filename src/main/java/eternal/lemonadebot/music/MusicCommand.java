@@ -85,7 +85,12 @@ public class MusicCommand implements ChatCommand {
     }
 
     @Override
-    public String getHelp() {
+    public String getDescription() {
+        return "Play music";
+    }
+
+    @Override
+    public String getHelpText() {
         return "Syntax: music <action> [url]\n"
                 + "<action> can be either play, skip, stop, pause or list\n"
                 + " play - adds song to the song queue or resumes play if paused\n"
@@ -305,16 +310,16 @@ public class MusicCommand implements ChatCommand {
         final EmbedBuilder eb = new EmbedBuilder();
 
         final AudioTrack currentTrack = musicManager.player.getPlayingTrack();
-        if(currentTrack == null){
+        if (currentTrack == null) {
             eb.setTitle("No songs currently in playlist.");
             eb.setDescription("Add music using \"music play <url>\"");
             textChannel.sendMessage(eb.build()).queue();
             return;
         }
-        
+
         eb.setTitle("Currently playing:");
         eb.setDescription(" " + currentTrack.getInfo().title);
-        
+
         //Get upcoming songs
         final StringBuilder sb = new StringBuilder();
         final int songsToPrint = (playlist.size() < 10 ? playlist.size() : 10);
@@ -322,12 +327,12 @@ public class MusicCommand implements ChatCommand {
             sb.append(playlist.get(i).getInfo().title);
             sb.append('\n');
         }
-        
+
         //Check if there is any songs in playlist
-        if(playlist.isEmpty()){
+        if (playlist.isEmpty()) {
             sb.append("No music in playlist");
         }
-        
+
         MessageEmbed.Field upcomingSongsField = new MessageEmbed.Field("Upcoming songs:", sb.toString(), false);
         eb.addField(upcomingSongsField);
 

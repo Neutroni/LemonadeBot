@@ -65,6 +65,11 @@ public class CustomCommand implements ChatCommand {
         return this.commandName;
     }
 
+    @Override
+    public String getDescription() {
+        return "Custom command";
+    }
+
     /**
      * Get the template for the action this command performs
      *
@@ -90,9 +95,10 @@ public class CustomCommand implements ChatCommand {
     }
 
     @Override
-    public String getHelp() {
-        return "Custom command with template:\n " + this.actionTemplate
-                + "\nSee \"help custom\" for details on custom commands.";
+    public String getHelpText() {
+        return "Custom command with template:\n "
+                + this.actionTemplate
+                + "\nSee \"help customcommand\" for details on custom commands.";
     }
 
     @Override

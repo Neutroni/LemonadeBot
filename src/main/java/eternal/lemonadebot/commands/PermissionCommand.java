@@ -46,7 +46,12 @@ public class PermissionCommand extends OwnerCommand {
     }
 
     @Override
-    public String getHelp() {
+    public String getDescription() {
+        return "Manage permissions for commands";
+    }
+
+    @Override
+    public String getHelpText() {
         return "Syntax: permission <name> [level]\n"
                 + "<name> is one of commandEdit,commandRun,eventEdit,playMusic\n"
                 + "[level] is one of user,member,admin,owner";

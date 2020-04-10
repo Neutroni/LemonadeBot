@@ -52,7 +52,12 @@ public class VersionCommand extends OwnerCommand {
     }
 
     @Override
-    public String getHelp() {
+    public String getDescription() {
+        return "Show bot version";
+    }
+
+    @Override
+    public String getHelpText() {
         return "Syntax: version\n+"
                 + "Shows the current version of bot";
     }

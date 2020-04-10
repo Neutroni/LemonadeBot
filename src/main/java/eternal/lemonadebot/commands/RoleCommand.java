@@ -50,7 +50,12 @@ class RoleCommand extends UserCommand {
     }
 
     @Override
-    public String getHelp() {
+    public String getDescription() {
+        return "Add role to yourself";
+    }
+
+    @Override
+    public String getHelpText() {
         return "Syntax: role [role]\n"
                 + "If no role is provided try to automatically assign role.\n"
                 + "Otherwise assign <role> to yourself";
