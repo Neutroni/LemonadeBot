@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
  *
  * @author Neutroni
  */
-public class SimpleAction {
+public class SimpleTemplate {
 
     private final String helpText;
     private final Pattern pattern;
@@ -46,7 +46,7 @@ public class SimpleAction {
      * @param help help text for this action
      * @param func function this action executes
      */
-    public SimpleAction(String pattern, String help, BiFunction<CommandMatcher, Matcher, String> func) {
+    public SimpleTemplate(String pattern, String help, BiFunction<CommandMatcher, Matcher, String> func) {
         this.pattern = Pattern.compile(pattern);
         this.helpText = help;
         this.function = func;

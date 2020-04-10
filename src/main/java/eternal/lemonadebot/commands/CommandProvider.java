@@ -24,7 +24,7 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.customcommands.ActionCommand;
+import eternal.lemonadebot.customcommands.ActionEditCommand;
 import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.events.EventCommand;
@@ -53,12 +53,11 @@ public class CommandProvider {
      * @param db database for commands to use
      */
     public CommandProvider(PermissionManager permissionManager, DatabaseManager db) {
-        this.commands = List.of(
-                new HelpCommand(permissionManager, this),
+        this.commands = List.of(new HelpCommand(permissionManager, this),
                 new MusicCommand(db),
                 new EventCommand(permissionManager),
                 new RemainderCommand(db),
-                new ActionCommand(permissionManager, db),
+                new ActionEditCommand(permissionManager, db),
                 new RoleCommand(),
                 new PrefixCommand(),
                 new PermissionCommand(),

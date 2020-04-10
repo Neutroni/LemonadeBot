@@ -85,7 +85,7 @@ public class MessageListener extends ListenerAdapter {
             return;
         }
 
-        //Check if we are listening on this channel
+        //Check if we can talk on this channel
         final TextChannel textChannel = event.getChannel();
         if (!textChannel.canTalk()) {
             return;
@@ -102,15 +102,16 @@ public class MessageListener extends ListenerAdapter {
         }
 
         //React to command
-        final ChatCommand ca = action.get();
+        final ChatCommand command = action.get();
+
         //Log the message if debug is enabled
         LOGGER.debug(() -> {
-            return "Found command: " + ca.getCommand() + " in " + cmdMatch.getMessage().getContentRaw();
+            return "Found command: " + command.getCommand() + " in " + cmdMatch.getMessage().getContentRaw();
         });
 
         final Member member = event.getMember();
-        if (permissionManager.hasPermission(member, ca)) {
-            ca.respond(cmdMatch);
+        if (permissionManager.hasPermission(member, command)) {
+            command.respond(cmdMatch);
         }
     }
 
@@ -123,7 +124,12 @@ public class MessageListener extends ListenerAdapter {
     public void onGuildMemberJoin(GuildMemberJoinEvent event) {
         final Guild guild = event.getGuild();
         final Member member = event.getMember();
-        LOGGER.debug("New member: " + member.getEffectiveName());
+        LOGGER.debug(() -> {
+            return "New member: " + member.getEffectiveName()
+                    + "\nMember ID: " + member.getId()
+                    + "\nOn guild: " + guild.getName()
+                    + "\nGuild ID: " + guild.getId();
+        });
 
         //Check if we have a channel to greet them on
         final TextChannel textChannel = guild.getSystemChannel();

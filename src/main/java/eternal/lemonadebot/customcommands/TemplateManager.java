@@ -38,40 +38,40 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 
 /**
- * Class that holds actions for custom commands and how to substitute given
+ * Class that holds templates for custom commands and how to substitute given
  * template with its actual content
  *
  * @author Neutroni
  */
-public class ActionManager {
+public class TemplateManager {
 
     private static final Random rng = new Random();
-    private static final List<SimpleAction> actions = List.of(
-            new SimpleAction("\\{choice (.*(\\|.*)+)\\}", "{choice a|b} - Selects value separated by | randomly", (CommandMatcher message, Matcher input) -> {
+    private static final List<SimpleTemplate> actions = List.of(
+            new SimpleTemplate("\\{choice (.*(\\|.*)+)\\}", "{choice a|b} - Selects value separated by | randomly", (CommandMatcher message, Matcher input) -> {
                 final String[] parts = input.group(1).split("\\|");
                 final String response = parts[rng.nextInt(parts.length)];
                 return "" + response;
             }),
-            new SimpleAction("\\{rng (\\d+),(\\d+)\\}", "{rng x,y} - Generate random number between the two inputs.", (CommandMatcher message, Matcher input) -> {
+            new SimpleTemplate("\\{rng (\\d+),(\\d+)\\}", "{rng x,y} - Generate random number between the two inputs.", (CommandMatcher message, Matcher input) -> {
                 final int start = Integer.parseInt(input.group(1));
                 final int end = Integer.parseInt(input.group(2));
                 return "" + (rng.nextInt(end) + start);
             }),
-            new SimpleAction("\\{message\\}", "{message} Use the input as part of the reply", (CommandMatcher message, Matcher input) -> {
+            new SimpleTemplate("\\{message\\}", "{message} Use the input as part of the reply", (CommandMatcher message, Matcher input) -> {
                 final String[] messageText = message.getArguments(0);
                 if (messageText.length == 0) {
                     return "";
                 }
                 return messageText[0];
             }),
-            new SimpleAction("\\{messageText\\}", "{messageText} - Use the input as part of the reply but remove mentions", (CommandMatcher message, Matcher input) -> {
+            new SimpleTemplate("\\{messageText\\}", "{messageText} - Use the input as part of the reply but remove mentions", (CommandMatcher message, Matcher input) -> {
                 final String[] messageText = message.getArguments(0);
                 if (messageText.length == 0) {
                     return "";
                 }
                 return messageText[0].replaceAll("<@!\\d+> ?", "").trim();
             }),
-            new SimpleAction("\\{mentions\\}", "{mentions} - Lists the mentioned users", (CommandMatcher matcher, Matcher input) -> {
+            new SimpleTemplate("\\{mentions\\}", "{mentions} - Lists the mentioned users", (CommandMatcher matcher, Matcher input) -> {
                 final Message message = matcher.getMessage();
                 if (!message.isFromType(ChannelType.TEXT)) {
                     return "";
@@ -91,10 +91,10 @@ public class ActionManager {
                 }
                 return mentionMessage.toString();
             }),
-            new SimpleAction("\\{sender\\}", "{sender} - The name of the command sender", (CommandMatcher matcher, Matcher input) -> {
+            new SimpleTemplate("\\{sender\\}", "{sender} - The name of the command sender", (CommandMatcher matcher, Matcher input) -> {
                 return matcher.getMember().getEffectiveName();
             }),
-            new SimpleAction("\\{randomEventMember (\\w+)\\}", "{randomEventMember <eventname>} - Pick random member from event", (CommandMatcher matcher, Matcher input) -> {
+            new SimpleTemplate("\\{randomEventMember (\\w+)\\}", "{randomEventMember <eventname>} - Pick random member from event", (CommandMatcher matcher, Matcher input) -> {
                 final Guild guild = matcher.getGuild();
 
                 final String eventName = input.group(1);
@@ -131,7 +131,7 @@ public class ActionManager {
         String response = action;
 
         //Process simple actions
-        for (SimpleAction s : actions) {
+        for (SimpleTemplate s : actions) {
             //Check if 
             final Matcher m = s.getMatcher(response);
             final StringBuilder sb = new StringBuilder();
@@ -156,7 +156,7 @@ public class ActionManager {
      */
     public static String getHelp() {
         final StringBuilder sb = new StringBuilder();
-        for (SimpleAction action : actions) {
+        for (SimpleTemplate action : actions) {
             sb.append(action.getHelp()).append('\n');
         }
         return sb.toString();

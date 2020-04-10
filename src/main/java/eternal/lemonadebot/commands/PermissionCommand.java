@@ -72,7 +72,7 @@ public class PermissionCommand extends OwnerCommand {
             case "commandEdit": {
                 if (arguments.length == 1) {
                     final String enumName = guildConf.getEditPermission().name().toLowerCase();
-                    channel.sendMessage("Current permission for editing custom commands: " + enumName).queue();
+                    channel.sendMessage("Current permission for editing actions: " + enumName).queue();
                     return;
                 }
                 try {
@@ -86,7 +86,7 @@ public class PermissionCommand extends OwnerCommand {
                 } catch (IllegalArgumentException e) {
                     channel.sendMessage("Not a valid value for the permission: " + arguments[1]).queue();
                 } catch (SQLException e) {
-                    channel.sendMessage("Database connection failed, new permission in use untill reboot").queue();
+                    channel.sendMessage("Database connection failed, new permission in use until reboot").queue();
                     LOGGER.debug(e.getMessage());
                     LOGGER.trace("Stack trace:", e);
                 }
@@ -95,7 +95,7 @@ public class PermissionCommand extends OwnerCommand {
             case "commandRun": {
                 if (arguments.length == 1) {
                     final String enumName = guildConf.getCommandRunPermission().name().toLowerCase();
-                    channel.sendMessage("Current permission for using custom commands: " + enumName).queue();
+                    channel.sendMessage("Current permission for using actions: " + enumName).queue();
                     return;
                 }
                 try {
@@ -109,7 +109,7 @@ public class PermissionCommand extends OwnerCommand {
                 } catch (IllegalArgumentException e) {
                     channel.sendMessage("Not a valid value for the permission: " + arguments[1]).queue();
                 } catch (SQLException e) {
-                    channel.sendMessage("Database connection failed, new permission in use untill reboot").queue();
+                    channel.sendMessage("Database connection failed, new permission in use until reboot").queue();
                     LOGGER.debug(e.getMessage());
                     LOGGER.trace("Stack trace:", e);
                 }
@@ -132,7 +132,7 @@ public class PermissionCommand extends OwnerCommand {
                 } catch (IllegalArgumentException e) {
                     channel.sendMessage("Not a valid value for the permission: " + arguments[1]).queue();
                 } catch (SQLException e) {
-                    channel.sendMessage("Database connection failed, new permission in use untill reboot").queue();
+                    channel.sendMessage("Database connection failed, new permission in use until reboot").queue();
                     LOGGER.debug(e.getMessage());
                     LOGGER.trace("Stack trace:", e);
                 }
@@ -155,7 +155,7 @@ public class PermissionCommand extends OwnerCommand {
                 } catch (IllegalArgumentException e) {
                     channel.sendMessage("Not a valid value for the permission: " + arguments[1]).queue();
                 } catch (SQLException e) {
-                    channel.sendMessage("Database connection failed, new permission in use untill reboot").queue();
+                    channel.sendMessage("Database connection failed, new permission in use until reboot").queue();
                     LOGGER.debug(e.getMessage());
                     LOGGER.trace("Stack trace:", e);
                 }

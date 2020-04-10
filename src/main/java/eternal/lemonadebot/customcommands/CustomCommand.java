@@ -90,7 +90,7 @@ public class CustomCommand implements ChatCommand {
 
     @Override
     public void respond(CommandMatcher match) {
-        final CharSequence response = ActionManager.processActions(match, actionTemplate);
+        final CharSequence response = TemplateManager.processActions(match, actionTemplate);
         match.getMessage().getChannel().sendMessage(response).queue();
     }
 
@@ -98,7 +98,7 @@ public class CustomCommand implements ChatCommand {
     public String getHelpText() {
         return "Custom command with template:\n "
                 + this.actionTemplate
-                + "\nSee \"help customcommand\" for details on custom commands.";
+                + "\nSee \"help actions\" for details on custom commands.";
     }
 
     @Override

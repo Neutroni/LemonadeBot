@@ -40,10 +40,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
+ * Command to edit custom commands with
  *
  * @author Neutroni
  */
-public class ActionCommand implements ChatCommand {
+public class ActionEditCommand implements ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -56,35 +57,35 @@ public class ActionCommand implements ChatCommand {
      * @param parser parser to parse arguments with
      * @param database database to store custom commands in
      */
-    public ActionCommand(PermissionManager parser, DatabaseManager database) {
+    public ActionEditCommand(PermissionManager parser, DatabaseManager database) {
         this.commandManager = parser;
         this.db = database;
     }
 
     @Override
     public String getCommand() {
-        return "customcommand";
+        return "actions";
     }
 
     @Override
     public String getDescription() {
-        return "Manage custom commands";
+        return "Manage actions";
     }
 
     @Override
     public String getHelpText() {
-        return " Syntax: customcommand <action> [name] [template]"
-                + "<action> can be one of the following:\n"
-                + " create - create new custom command\n"
-                + " delete - deletes custom command\n"
-                + " keys - shows list of keys command can contain\n"
-                + " list - show list of custom commands\n"
-                + "[name] name for custom command\n"
-                + "[template] template for custom command, see below for syntax\n"
-                + "Syntax for custom commands:\n"
+        return " Syntax: actions <option> [name] [template]"
+                + "<option> can be one of the following:\n"
+                + " create - create new action\n"
+                + " delete - delete action\n"
+                + " keys - shows list of keys action can contain\n"
+                + " list - show list of actions\n"
+                + "[name] name for action\n"
+                + "[template] template for action, see below for syntax\n"
+                + "Syntax for actions:\n"
                 + " Text in the template will mostly be shown as is,\n"
                 + " but you can use {key} to modify parts of the message.\n"
-                + " See \"custom keys\" to see all keys\n";
+                + " See \"action keys\" to see all keys\n";
     }
 
     @Override
@@ -115,7 +116,7 @@ public class ActionCommand implements ChatCommand {
                 break;
             }
             case "keys": {
-                textChannel.sendMessage(ActionManager.getHelp()).queue();
+                textChannel.sendMessage(TemplateManager.getHelp()).queue();
                 break;
             }
             default:
