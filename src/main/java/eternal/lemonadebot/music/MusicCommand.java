@@ -35,10 +35,13 @@ import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.dv8tion.jda.api.managers.AudioManager;
@@ -85,10 +88,10 @@ public class MusicCommand implements ChatCommand {
     public String getHelp() {
         return "Syntax: music <action> [url]\n"
                 + "<action> can be either play, skip, stop, pause or list\n"
-                + "  play adds song to the song queue or resumes play if paused\n"
-                + "  skip skips next song, songs by url, or songs in playlist provided\n"
-                + "  stop clears the playlist and stops music playback\n"
-                + "  list prints upcoming songs in playlist\n"
+                + "&emsp;play - adds song to the song queue or resumes play if paused\n"
+                + "&emsp;skip - skips next song, songs by url, or songs in playlist provided\n"
+                + "&emsp;stop - clears the playlist and stops music playback\n"
+                + "&emsp;list - prints upcoming songs in playlist\n"
                 + "[url] is the url of the music to play";
     }
 
@@ -299,16 +302,39 @@ public class MusicCommand implements ChatCommand {
     private void showPlaylist(TextChannel textChannel) {
         final GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
         final List<AudioTrack> playlist = musicManager.scheduler.getPlaylist();
+
+        final EmbedBuilder eb = new EmbedBuilder();
+        eb.setTitle("Currently playing:");
+        eb.setDescription("&emsp;" + musicManager.player.getPlayingTrack().getInfo().title);
+
+        //Get upcomnig songs
+        final StringBuilder sb = new StringBuilder();
         final int songsToPrint = (playlist.size() < 10 ? playlist.size() : 10);
-        final StringBuilder sb = new StringBuilder("Upcoming songs:\n");
         for (int i = 0; i < songsToPrint; i++) {
+            sb.append("&emsp;");
             sb.append(playlist.get(i).getInfo().title);
             sb.append("\n");
         }
         if (songsToPrint == 0) {
             sb.append("No songs in the playlist");
         }
-        textChannel.sendMessage(sb.toString()).queue();
+        MessageEmbed.Field upcomingSongsField = new MessageEmbed.Field("Upcoming songs:", sb.toString(), false);
+        eb.addField(upcomingSongsField);
+
+        long playlistLengthMS = 0;
+        for (AudioTrack t : playlist) {
+            playlistLengthMS += t.getDuration();
+        }
+        Duration playlistDuration = Duration.ofMillis(playlistLengthMS);
+        final long hoursRemining = playlistDuration.toHours();
+        final int minutesPart = playlistDuration.toMinutesPart();
+        final int secondsPart = playlistDuration.toSecondsPart();
+        final String durationString = String.format("%d:%02d:%02d", hoursRemining, minutesPart, secondsPart);
+        MessageEmbed.Field playlistLenghtField = new MessageEmbed.Field("Playlist lenght:", "&emsp;" + durationString + " remaining.", false);
+        eb.addField(playlistLenghtField);
+
+        //Send the message
+        textChannel.sendMessage(eb.build()).queue();
     }
 
 }
