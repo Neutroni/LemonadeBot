@@ -33,7 +33,6 @@ import net.dv8tion.jda.api.JDA;
 public class GuildDataStore {
 
     private final ConfigManager config;
-    private final ChannelManager channels;
     private final CustomCommandManager commands;
     private final EventManager events;
     private final RemainderManager remainders;
@@ -47,7 +46,6 @@ public class GuildDataStore {
      */
     GuildDataStore(Connection connection, JDA jda, long guild) {
         this.config = new ConfigManager(connection, guild);
-        this.channels = new ChannelManager(connection, guild);
         this.events = new EventManager(connection, guild);
         this.commands = new CustomCommandManager(connection, this.config, this.events);
         this.remainders = new RemainderManager(connection, jda, this.events);
@@ -60,15 +58,6 @@ public class GuildDataStore {
      */
     public ConfigManager getConfigManager() {
         return this.config;
-    }
-
-    /**
-     * Get the channelmanager for this datastore
-     *
-     * @return ChannelManager
-     */
-    public ChannelManager getChannelManager() {
-        return this.channels;
     }
 
     /**

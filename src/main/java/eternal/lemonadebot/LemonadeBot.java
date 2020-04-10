@@ -25,9 +25,12 @@ package eternal.lemonadebot;
 
 import eternal.lemonadebot.database.DatabaseManager;
 import java.sql.SQLException;
+import java.util.List;
 import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -94,7 +97,20 @@ public class LemonadeBot {
             }
 
             //Start loading JDA
-            final JDA jda = new JDABuilder(cmd.getOptionValue("k")).build();
+            final List<GatewayIntent> intents = List.of(
+                    GatewayIntent.GUILD_MEMBERS, //User join
+                    GatewayIntent.GUILD_MESSAGES, //Messages
+                    GatewayIntent.GUILD_VOICE_STATES //Voice chat
+            );
+            final String discordKey = cmd.getOptionValue("k");
+            final JDABuilder jdabuilder = JDABuilder.create(discordKey, intents);
+            final List<CacheFlag> cacheFlagsToDisable = List.of(
+                    CacheFlag.ACTIVITY,
+                    CacheFlag.EMOTE,
+                    CacheFlag.CLIENT_STATUS
+            );
+            jdabuilder.disableCache(cacheFlagsToDisable);
+            final JDA jda = jdabuilder.build();
 
             //Connect to the database
             final DatabaseManager DB = new DatabaseManager(databaseLocation, jda);

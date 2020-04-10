@@ -43,7 +43,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class CommandManagmentCommand implements ChatCommand {
+public class ActionCommand implements ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -56,7 +56,7 @@ public class CommandManagmentCommand implements ChatCommand {
      * @param parser parser to parse arguments with
      * @param database database to store custom commands in
      */
-    public CommandManagmentCommand(PermissionManager parser, DatabaseManager database) {
+    public ActionCommand(PermissionManager parser, DatabaseManager database) {
         this.commandManager = parser;
         this.db = database;
     }

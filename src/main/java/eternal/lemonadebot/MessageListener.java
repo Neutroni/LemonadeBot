@@ -25,7 +25,6 @@ package eternal.lemonadebot;
 
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.database.ChannelManager;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
@@ -86,18 +85,16 @@ public class MessageListener extends ListenerAdapter {
             return;
         }
 
-        final Guild eventGuild = event.getGuild();
-        final ChannelManager channels = this.db.getGuildData(eventGuild).getChannelManager();
-
         //Check if we are listening on this channel
         final TextChannel textChannel = event.getChannel();
-        if (!channels.hasChannel(textChannel)) {
+        if (!textChannel.canTalk()) {
             return;
         }
 
         //Check if message is a command
-        final Message message = event.getMessage();
+        final Guild eventGuild = event.getGuild();
         final GuildDataStore guildData = this.db.getGuildData(eventGuild);
+        final Message message = event.getMessage();
         final CommandMatcher cmdMatch = new CommandMatcher(guildData, message);
         final Optional<? extends ChatCommand> action = this.commandProvider.getAction(cmdMatch);
         if (action.isEmpty()) {
@@ -159,25 +156,16 @@ public class MessageListener extends ListenerAdapter {
     @Override
     public void onGuildJoin(GuildJoinEvent event) {
         final Guild eventGuild = event.getGuild();
+        LOGGER.info("Joined guild: " + eventGuild.getName());
+        LOGGER.info("Guild id: " + eventGuild.getId());
 
-        //Start listening on the default channel for the guild
+        //Send greeting if we can on system channel
         final TextChannel channel = eventGuild.getSystemChannel();
         if (channel == null) {
-            LOGGER.error("Joined a guild for first time but cant find a channel to start listening on");
             return;
         }
-
-        //Store the channel in database
-        final ChannelManager channels = this.db.getGuildData(eventGuild).getChannelManager();
-        try {
-            channels.addChannel(channel);
-            if (channel.canTalk()) {
-                channel.sendMessage("Hello everyone I'm a new bot here, nice to meet you all").queue();
-            } else {
-                LOGGER.warn("Joined guild but can't chat, still listening");
-            }
-        } catch (SQLException ex) {
-            LOGGER.error("Adding default listen channel failed", ex);
+        if (channel.canTalk()) {
+            channel.sendMessage("Hello everyone I'm a new bot here, nice to meet you all").queue();
         }
     }
 
