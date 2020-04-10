@@ -77,15 +77,15 @@ public class RemainderCommand implements ChatCommand {
     public String getHelp() {
         return "Syntax: remainder <action> <event> <day> <time> [mention]\n"
                 + "<action> can be one of the following:\n"
-                + "  create - create new remainder\n"
-                + "  delete - delete remainder\n"
+                + "&emsp;create - create new remainder\n"
+                + "&emsp;delete - delete remainder\n"
                 + "<event> event to use description from\n"
                 + "<day> day the remainder activates on\n"
                 + "<time> time of the remainder hh:mm\n"
                 + "[mention] can be on of the following:\n"
-                + "  none - do not mention anyone\n"
-                + "  here - ping online people\n"
-                + "  members - ping all members of the event\n"
+                + "&emsp;none - do not mention anyone\n"
+                + "&emsp;here - ping online people\n"
+                + "&emsp;members - ping all members of the event\n"
                 + "Remainder will be activated on the channel it was created in";
     }
 
