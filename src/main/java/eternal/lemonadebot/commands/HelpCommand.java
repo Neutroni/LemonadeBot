@@ -102,11 +102,11 @@ class HelpCommand extends UserCommand {
         //Construct the list of commands
         final StringBuilder sb = new StringBuilder();
         sb.append("Syntax: help <name>\n"
-                + "where 'name' is on of following:\n");
+                + "where 'name' is one of following:\n");
 
         for (ChatCommand c : commands.getCommands()) {
             if (permissions.hasPermission(sender, c)) {
-                sb.append(' ').append(c.getCommand()).append('\n');
+                sb.append(' ').append(c.getCommand()).append('\n');
             }
         }
 
