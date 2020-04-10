@@ -70,16 +70,16 @@ public class CommandManagmentCommand implements ChatCommand {
     public String getHelp() {
         return " Syntax: custom <action> [name] [template]"
                 + "<action> can be one of the following:\n"
-                + "&emsp;create - create new custom command\n"
-                + "&emsp;delete - deletes custom command\n"
-                + "&emsp;keys - shows list of keys command can contain\n"
-                + "&emsp;list - show list of custom commands\n"
-                + "[name] name for custom command"
-                + "[template] template for custom command, see below for syntax"
+                + " create - create new custom command\n"
+                + " delete - deletes custom command\n"
+                + " keys - shows list of keys command can contain\n"
+                + " list - show list of custom commands\n"
+                + "[name] name for custom command\n"
+                + "[template] template for custom command, see below for syntax\n"
                 + "Syntax for custom commands:\n"
-                + "&emsp;Text in the template will mostly be shown as is,\n"
-                + "&emsp;but you can use {key} to modify parts of the message.\n"
-                + "&emsp;See \"custom keys\" to see all keys\n";
+                + " Text in the template will mostly be shown as is,\n"
+                + " but you can use {key} to modify parts of the message.\n"
+                + " See \"custom keys\" to see all keys\n";
     }
 
     @Override

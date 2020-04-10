@@ -49,13 +49,13 @@ public class GreetCommand extends OwnerCommand {
     public String getHelp() {
         return "Syntax: greeting <action> [template]\n"
                 + "<action> can be one of the following:\n"
-                + "&emsp;get - get the current greeting template\n"
-                + "&emsp;set - set the greeting template to [template]\n"
-                + "&emsp;disable - disable greeting new members\n"
+                + " get - get the current greeting template\n"
+                + " set - set the greeting template to [template]\n"
+                + " disable - disable greeting new members\n"
                 + "[template] is the message to be sent whenever new members joins,\n"
                 + "it can contain the following keys to replace when shown\n"
-                + "&emsp;{name} - name of the newly joined member.\n"
-                + "&emsp;{mention} - mention the newly joined member.";
+                + " {name} - name of the newly joined member.\n"
+                + " {mention} - mention the newly joined member.";
     }
 
     @Override

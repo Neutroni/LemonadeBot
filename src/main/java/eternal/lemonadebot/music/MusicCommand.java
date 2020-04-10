@@ -88,10 +88,10 @@ public class MusicCommand implements ChatCommand {
     public String getHelp() {
         return "Syntax: music <action> [url]\n"
                 + "<action> can be either play, skip, stop, pause or list\n"
-                + "&emsp;play - adds song to the song queue or resumes play if paused\n"
-                + "&emsp;skip - skips next song, songs by url, or songs in playlist provided\n"
-                + "&emsp;stop - clears the playlist and stops music playback\n"
-                + "&emsp;list - prints upcoming songs in playlist\n"
+                + " play - adds song to the song queue or resumes play if paused\n"
+                + " skip - skips next song, songs by url, or songs in playlist provided\n"
+                + " stop - clears the playlist and stops music playback\n"
+                + " list - prints upcoming songs in playlist\n"
                 + "[url] is the url of the music to play";
     }
 
@@ -305,13 +305,13 @@ public class MusicCommand implements ChatCommand {
 
         final EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle("Currently playing:");
-        eb.setDescription("&emsp;" + musicManager.player.getPlayingTrack().getInfo().title);
+        eb.setDescription(" " + musicManager.player.getPlayingTrack().getInfo().title);
 
         //Get upcomnig songs
         final StringBuilder sb = new StringBuilder();
         final int songsToPrint = (playlist.size() < 10 ? playlist.size() : 10);
         for (int i = 0; i < songsToPrint; i++) {
-            sb.append("&emsp;");
+            sb.append(" ");
             sb.append(playlist.get(i).getInfo().title);
             sb.append("\n");
         }
@@ -330,7 +330,7 @@ public class MusicCommand implements ChatCommand {
         final int minutesPart = playlistDuration.toMinutesPart();
         final int secondsPart = playlistDuration.toSecondsPart();
         final String durationString = String.format("%d:%02d:%02d", hoursRemining, minutesPart, secondsPart);
-        MessageEmbed.Field playlistLenghtField = new MessageEmbed.Field("Playlist lenght:", "&emsp;" + durationString + " remaining.", false);
+        MessageEmbed.Field playlistLenghtField = new MessageEmbed.Field("Playlist lenght:", " " + durationString + " remaining.", false);
         eb.addField(playlistLenghtField);
 
         //Send the message
