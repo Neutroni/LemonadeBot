@@ -302,22 +302,32 @@ public class MusicCommand implements ChatCommand {
     private void showPlaylist(TextChannel textChannel) {
         final GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
         final List<AudioTrack> playlist = musicManager.scheduler.getPlaylist();
-
         final EmbedBuilder eb = new EmbedBuilder();
-        eb.setTitle("Currently playing:");
-        eb.setDescription(" " + musicManager.player.getPlayingTrack().getInfo().title);
 
-        //Get upcomnig songs
+        final AudioTrack currentTrack = musicManager.player.getPlayingTrack();
+        if(currentTrack == null){
+            eb.setTitle("No songs currently in playlist.");
+            eb.setDescription("Add music using \"music play <url>\"");
+            textChannel.sendMessage(eb.build()).queue();
+            return;
+        }
+        
+        eb.setTitle("Currently playing:");
+        eb.setDescription(" " + currentTrack.getInfo().title);
+        
+        //Get upcoming songs
         final StringBuilder sb = new StringBuilder();
         final int songsToPrint = (playlist.size() < 10 ? playlist.size() : 10);
         for (int i = 0; i < songsToPrint; i++) {
-            sb.append(" ");
             sb.append(playlist.get(i).getInfo().title);
-            sb.append("\n");
+            sb.append('\n');
         }
-        if (songsToPrint == 0) {
-            sb.append("No songs in the playlist");
+        
+        //Check if there is any songs in playlist
+        if(playlist.isEmpty()){
+            sb.append("No music in playlist");
         }
+        
         MessageEmbed.Field upcomingSongsField = new MessageEmbed.Field("Upcoming songs:", sb.toString(), false);
         eb.addField(upcomingSongsField);
 
