@@ -27,6 +27,7 @@ import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.LemonadeBot;
 import java.util.Optional;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
@@ -70,6 +71,7 @@ class HelpCommand extends UserCommand {
             final EmbedBuilder eb = new EmbedBuilder();
             eb.setTitle(getCommand() + " - " + getDescription());
             eb.setDescription(getHelpText());
+            eb.setFooter("Bot version: " + LemonadeBot.BOT_VERSION);
             textChannel.sendMessage(eb.build()).queue();
             return;
         }

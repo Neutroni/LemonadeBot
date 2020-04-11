@@ -48,6 +48,7 @@ import org.apache.logging.log4j.Logger;
 public class LemonadeBot {
 
     private static final Logger LOGGER = LogManager.getLogger();
+    public static final String BOT_VERSION = "1.1";
 
     /**
      * Main function
@@ -55,7 +56,7 @@ public class LemonadeBot {
      * @param args command line arguments
      */
     public static void main(String[] args) {
-        LOGGER.debug("Bot starting up");
+        LOGGER.info("Bot starting up, version: " + BOT_VERSION);
 
         try {
             //Parse command line arguments
