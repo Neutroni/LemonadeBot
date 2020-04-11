@@ -32,19 +32,26 @@ public enum CommandPermission {
     /**
      * Commands anyone can run
      */
-    USER("User"),
+    USER("Account without roles"),
     /**
      * Command members can run
      */
-    MEMBER("Member on this server"),
+    MEMBER("Account with at least one role"),
     /**
      * Command admins can run
      */
-    ADMIN("Admin on the server"),
-    /**
-     * Command only owner can run
-     */
-    OWNER("Owner of this bot");
+    ADMIN("Account with permission ADMINSTRATOR");
+
+    public static String getLevelDescriptions() {
+        final StringBuilder sb = new StringBuilder();
+        for (CommandPermission p : values()) {
+            sb.append(p.toString().toLowerCase());
+            sb.append(" - ");
+            sb.append(p.getDescription());
+            sb.append('\n');
+        }
+        return sb.toString();
+    }
 
     private final String desc;
 

@@ -29,7 +29,6 @@ import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.events.EventCommand;
 import eternal.lemonadebot.events.RemainderCommand;
-import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.database.CustomCommandManager;
 import eternal.lemonadebot.music.MusicCommand;
@@ -49,20 +48,19 @@ public class CommandProvider {
     /**
      * Constructor
      *
-     * @param permissionManager permission helper for commands to use
      * @param db database for commands to use
      */
-    public CommandProvider(PermissionManager permissionManager, DatabaseManager db) {
-        this.commands = List.of(new HelpCommand(permissionManager, this),
+    public CommandProvider(DatabaseManager db) {
+        this.commands = List.of(
+                new HelpCommand(this),
                 new MusicCommand(db),
-                new EventCommand(permissionManager),
+                new EventCommand(),
                 new RemainderCommand(db),
-                new ActionEditCommand(permissionManager, db),
+                new ActionEditCommand(db),
                 new RoleCommand(),
                 new PrefixCommand(),
                 new PermissionCommand(),
-                new GreetCommand(),
-                new VersionCommand(db)
+                new GreetCommand()
         );
         this.dataBase = db;
     }

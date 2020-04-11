@@ -28,7 +28,7 @@ import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.permissions.PermissionManager;
+import eternal.lemonadebot.permissions.PermissionUtilities;
 import java.sql.SQLException;
 import java.util.Optional;
 import net.dv8tion.jda.api.MessageBuilder;
@@ -54,7 +54,6 @@ public class MessageListener extends ListenerAdapter {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final DatabaseManager db;
-    private final PermissionManager permissionManager;
     private final CommandProvider commandProvider;
 
     /**
@@ -64,8 +63,7 @@ public class MessageListener extends ListenerAdapter {
      */
     public MessageListener(DatabaseManager database) {
         this.db = database;
-        this.permissionManager = new PermissionManager(database);
-        this.commandProvider = new CommandProvider(permissionManager, db);
+        this.commandProvider = new CommandProvider(db);
     }
 
     /**
@@ -110,7 +108,7 @@ public class MessageListener extends ListenerAdapter {
         });
 
         final Member member = event.getMember();
-        if (permissionManager.hasPermission(member, command)) {
+        if (PermissionUtilities.hasPermission(member, command)) {
             command.respond(cmdMatch);
         }
     }

@@ -23,7 +23,7 @@
  */
 package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.commandtypes.OwnerCommand;
+import eternal.lemonadebot.commandtypes.AdminCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.CommandMatcher;
 import java.sql.SQLException;
@@ -36,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class GreetCommand extends OwnerCommand {
+public class GreetCommand extends AdminCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 

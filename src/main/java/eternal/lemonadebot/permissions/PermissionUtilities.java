@@ -24,7 +24,7 @@
 package eternal.lemonadebot.permissions;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.database.DatabaseManager;
+import java.util.EnumSet;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.dv8tion.jda.api.Permission;
@@ -35,18 +35,7 @@ import net.dv8tion.jda.api.entities.Member;
  *
  * @author Neutroni
  */
-public class PermissionManager {
-
-    private final DatabaseManager db;
-
-    /**
-     * Constructor
-     *
-     * @param database database to use
-     */
-    public PermissionManager(DatabaseManager database) {
-        this.db = database;
-    }
+public class PermissionUtilities {
 
     /**
      * What rank user has
@@ -54,11 +43,9 @@ public class PermissionManager {
      * @param member user to check
      * @return Rank of the member
      */
-    public CommandPermission getRank(Member member) {
-        if (this.db.isOwner(member)) {
-            return CommandPermission.OWNER;
-        }
-        if (member.getPermissions().contains(Permission.MANAGE_SERVER)) {
+    public static CommandPermission getRank(Member member) {
+        final EnumSet<Permission> permissions = member.getPermissions();
+        if (permissions.contains(Permission.ADMINISTRATOR)) {
             return CommandPermission.ADMIN;
         }
         if (member.getRoles().size() > 0) {
@@ -74,7 +61,7 @@ public class PermissionManager {
      * @param command Command to check
      * @return Does the person have permission
      */
-    public boolean hasPermission(Member member, ChatCommand command) {
+    public static boolean hasPermission(Member member, ChatCommand command) {
         return getRank(member).ordinal() >= command.getPermission(member.getGuild()).ordinal();
     }
 
@@ -85,7 +72,7 @@ public class PermissionManager {
      * @param requiredPermission permission needed
      * @return true if user has permission
      */
-    public boolean hasPermission(Member member, CommandPermission requiredPermission) {
+    public static boolean hasPermission(Member member, CommandPermission requiredPermission) {
         return getRank(member).ordinal() >= requiredPermission.ordinal();
     }
 
@@ -96,18 +83,17 @@ public class PermissionManager {
      * @param owner owner of the content, can be null
      * @return true if user has permission
      */
-    public boolean hasPermission(@Nonnull Member member, @Nullable Member owner) {
+    public static boolean hasPermission(@Nonnull Member member, @Nullable Member owner) {
+        //Same person
         if (member.equals(owner)) {
             return true;
         }
-        final CommandPermission senderRank = getRank(member);
+        final CommandPermission requesterRank = getRank(member);
+        //No owner
         if (owner == null) {
-            return (senderRank.ordinal() >= CommandPermission.ADMIN.ordinal());
+            return (requesterRank.ordinal() >= CommandPermission.ADMIN.ordinal());
         }
-        if (senderRank == CommandPermission.ADMIN) {
-            return getRank(owner).ordinal() < CommandPermission.ADMIN.ordinal();
-        }
-        return this.db.isOwner(member);
+        return getRank(owner).ordinal() < requesterRank.ordinal();
     }
 
 }

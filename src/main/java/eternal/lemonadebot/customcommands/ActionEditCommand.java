@@ -27,7 +27,7 @@ import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.CustomCommandManager;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.permissions.PermissionManager;
+import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import java.sql.SQLException;
@@ -49,17 +49,14 @@ public class ActionEditCommand implements ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final PermissionManager commandManager;
     private final DatabaseManager db;
 
     /**
      * Constructor
      *
-     * @param parser parser to parse arguments with
      * @param database database to store custom commands in
      */
-    public ActionEditCommand(PermissionManager parser, DatabaseManager database) {
-        this.commandManager = parser;
+    public ActionEditCommand(DatabaseManager database) {
         this.db = database;
     }
 
@@ -198,7 +195,7 @@ public class ActionEditCommand implements ChatCommand {
 
         //Check if user has permission to remove the command
         final Member sender = matcher.getMember();
-        final boolean hasPermission = commandManager.hasPermission(sender, commandOwner);
+        final boolean hasPermission = PermissionUtilities.hasPermission(sender, commandOwner);
         if (!hasPermission) {
             textChannel.sendMessage("You do not have permission to delete that command, "
                     + "only the command owner and admins can delete commands").queue();

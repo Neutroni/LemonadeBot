@@ -25,7 +25,7 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.commandtypes.UserCommand;
-import eternal.lemonadebot.permissions.PermissionManager;
+import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.CommandMatcher;
 import java.util.Optional;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -38,7 +38,6 @@ import net.dv8tion.jda.api.entities.TextChannel;
  */
 class HelpCommand extends UserCommand {
 
-    private final PermissionManager permissions;
     private final CommandProvider commands;
 
     /**
@@ -47,8 +46,7 @@ class HelpCommand extends UserCommand {
      * @param permissionManager manager to check user permissions with
      * @param commandProvider CommandProvider to search commands in
      */
-    HelpCommand(PermissionManager permissionManager, CommandProvider commandProvider) {
-        this.permissions = permissionManager;
+    HelpCommand(CommandProvider commandProvider) {
         this.commands = commandProvider;
     }
 
@@ -98,13 +96,13 @@ class HelpCommand extends UserCommand {
         final Optional<? extends ChatCommand> opt = commands.getCommand(name, textChannel.getGuild());
         if (opt.isPresent()) {
             final ChatCommand com = opt.get();
-            if (permissions.hasPermission(sender, com)) {
+            if (PermissionUtilities.hasPermission(sender, com)) {
                 final EmbedBuilder eb = new EmbedBuilder();
                 eb.setTitle(com.getCommand() + " - " + com.getDescription());
                 eb.setDescription(com.getHelpText());
                 textChannel.sendMessage(eb.build()).queue();
             } else {
-                textChannel.sendMessage("You do not have permission to run that command, as such no help was provided").queue();
+                textChannel.sendMessage("Permission denied").queue();
             }
             return;
         }
@@ -116,7 +114,7 @@ class HelpCommand extends UserCommand {
         final StringBuilder sb = new StringBuilder();
 
         for (ChatCommand c : commands.getCommands()) {
-            if (permissions.hasPermission(sender, c)) {
+            if (PermissionUtilities.hasPermission(sender, c)) {
                 sb.append(c.getCommand()).append(" - ");
                 sb.append(c.getDescription()).append('\n');
             }

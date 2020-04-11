@@ -27,15 +27,15 @@ import eternal.lemonadebot.permissions.CommandPermission;
 import net.dv8tion.jda.api.entities.Guild;
 
 /**
- * Abstract class to provide quick way of writing commands that only the bot
- * owner can use
+ * Abstract class to provide quick way of writing commands that only
+ * adminstrators can use
  *
  * @author Neutroni
  */
-public abstract class OwnerCommand implements ChatCommand {
+public abstract class AdminCommand implements ChatCommand {
 
     @Override
     public CommandPermission getPermission(Guild guild) {
-        return CommandPermission.OWNER;
+        return CommandPermission.ADMIN;
     }
 }

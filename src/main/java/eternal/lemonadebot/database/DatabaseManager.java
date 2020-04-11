@@ -32,10 +32,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,86 +44,8 @@ import org.apache.logging.log4j.Logger;
 public class DatabaseManager implements AutoCloseable {
 
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final String DATABASE_VERSION = "1.0";
-
-    /**
-     * Creates the database for the bot
-     *
-     * @param dbLocation location for database
-     * @param ownerID ID of the bot owner
-     * @throws SQLException if database connection fails
-     */
-    public static void initialize(String dbLocation, String ownerID) throws SQLException {
-        final Connection connection = DriverManager.getConnection("jdbc:sqlite:" + dbLocation);
-        final String CONFIG = "CREATE TABLE Options("
-                + "name TEXT PRIMARY KEY NOT NULL,"
-                + "value TEXT NOT NULL);";
-        final String CHANNELS = "CREATE TABLE Channels("
-                + "id INTEGER PRIMARY KEY NOT NULL,"
-                + "guild INTEGER NOT NULL);";
-        final String GUILDCONF = "CREATE TABLE Guilds("
-                + "id INTEGER PRIMARY KEY NOT NULL,"
-                + "commandPrefix TEXT NOT NULL,"
-                + "commandEditPermission TEXT NOT NULL,"
-                + "commandRunPermission TEXT NOT NULL,"
-                + "eventEditPermission TEXT NOT NULL,"
-                + "remainderPermission TEXT NOT NULL"
-                + "musicPlayPermission TEXT NOT NULL,"
-                + "greetingTemplate TEXT);";
-        final String COMMANDS = "CREATE TABLE Commands("
-                + "guild INTEGER NOT NULL,"
-                + "name TEXT NOT NULL,"
-                + "template TEXT NOT NULL,"
-                + "owner INTEGER NOT NULL,"
-                + "PRIMARY KEY (guild,name));";
-        final String EVENTS = "CREATE TABLE Events("
-                + "guild INTEGER NOT NULL,"
-                + "name TEXT NOT NULL,"
-                + "description TEXT NOT NULL,"
-                + "owner INTEGER NOT NULL,"
-                + "PRIMARY KEY (guild,name));";
-        final String EVENT_MEMBERS = "CREATE TABLE EventMembers("
-                + "guild INTEGER NOT NULL,"
-                + "name TEXT NOT NULL,"
-                + "member INTEGER NOT NULL,"
-                + "FOREIGN KEY (guild, name) REFERENCES Events(guild, name) ON DELETE CASCADE,"
-                + "PRIMARY KEY (guild,name,member));";
-        final String REMAINDERS = "CREATE TABLE Remainders("
-                + "guild INTEGER NOT NULL,"
-                + "name TEXT NOT NULL,"
-                + "day TEXT NOT NULL,"
-                + "time TEXT NOT NULL,"
-                + "mention TEXT NOT NULL,"
-                + "channel INTEGER NOT NULL,"
-                + "FOREIGN KEY (guild,name) REFERENCES Events(guild, name) ON DELETE CASCADE,"
-                + "PRIMARY KEY (guild,name,day,time));";
-        final String INSERT = "INSERT INTO Options(name,value) VALUES(?,?);";
-        try (Statement st = connection.createStatement()) {
-            st.addBatch(CONFIG);
-            st.addBatch(CHANNELS);
-            st.addBatch(GUILDCONF);
-            st.addBatch(COMMANDS);
-            st.addBatch(EVENTS);
-            st.addBatch(EVENT_MEMBERS);
-            st.addBatch(REMAINDERS);
-            st.executeBatch();
-        }
-        try (PreparedStatement ps = connection.prepareStatement(INSERT)) {
-            ps.setString(1, ConfigKey.DATABASE_VERSION.name());
-            ps.setString(2, DATABASE_VERSION);
-            ps.executeUpdate();
-        }
-        try (PreparedStatement ps = connection.prepareStatement(INSERT)) {
-            ps.setString(1, ConfigKey.OWNER_ID.name());
-            ps.setString(2, ownerID);
-            ps.executeUpdate();
-        }
-    }
 
     private final Connection conn;
-    private final JDA jda;
-
-    private final String ownerID;
     private final Map<Long, GuildDataStore> guildDataStores = new HashMap<>();
 
     /**
@@ -138,29 +58,12 @@ public class DatabaseManager implements AutoCloseable {
      */
     public DatabaseManager(String filename, JDA jda) throws SQLException, InterruptedException {
         this.conn = DriverManager.getConnection("jdbc:sqlite:" + filename);
-        this.jda = jda;
 
-        //Load ownerID
-        final Optional<String> optOwner = loadSetting(ConfigKey.OWNER_ID.name());
-        if (optOwner.isEmpty()) {
-            throw new SQLException("Missing owner id");
-        }
-        this.ownerID = optOwner.get();
-
-        //Load database version
-        final Optional<String> optVersion = loadSetting(ConfigKey.DATABASE_VERSION.name());
-        if (optVersion.isEmpty()) {
-            throw new SQLException("Missing database version");
-        }
-        final String databaseVersion = optVersion.get();
-
-        //Check if database version is correct
-        if (!DATABASE_VERSION.equals(databaseVersion)) {
-            throw new SQLException("Database version mismatch");
-        }
+        //Initialize database
+        initialize();
 
         //Load list of known guilds
-        loadGuildList();
+        loadGuildList(jda);
     }
 
     @Override
@@ -169,22 +72,58 @@ public class DatabaseManager implements AutoCloseable {
     }
 
     /**
-     * Get the current bot version
+     * Creates the database for the bot
      *
-     * @return Version String
+     * @param dbLocation location for database
+     * @throws SQLException if database connection fails
      */
-    public String getVersionString() {
-        return DATABASE_VERSION;
-    }
-
-    /**
-     * Check if user is the owner of this bot
-     *
-     * @param user User to check
-     * @return true if the owner
-     */
-    public boolean isOwner(Member user) {
-        return this.ownerID.equals(user.getId());
+    private void initialize() throws SQLException {
+        LOGGER.debug("Initializing database");
+        final String GUILDCONF = "CREATE TABLE IF NOT EXISTS Guilds("
+                + "id INTEGER PRIMARY KEY NOT NULL,"
+                + "commandPrefix TEXT NOT NULL,"
+                + "commandEditPermission TEXT NOT NULL,"
+                + "commandRunPermission TEXT NOT NULL,"
+                + "eventEditPermission TEXT NOT NULL,"
+                + "remainderPermission TEXT NOT NULL,"
+                + "musicPlayPermission TEXT NOT NULL,"
+                + "greetingTemplate TEXT);";
+        final String COMMANDS = "CREATE TABLE IF NOT EXISTS Commands("
+                + "guild INTEGER NOT NULL,"
+                + "name TEXT NOT NULL,"
+                + "template TEXT NOT NULL,"
+                + "owner INTEGER NOT NULL,"
+                + "PRIMARY KEY (guild,name));";
+        final String EVENTS = "CREATE TABLE IF NOT EXISTS Events("
+                + "guild INTEGER NOT NULL,"
+                + "name TEXT NOT NULL,"
+                + "description TEXT NOT NULL,"
+                + "owner INTEGER NOT NULL,"
+                + "PRIMARY KEY (guild,name));";
+        final String EVENT_MEMBERS = "CREATE TABLE IF NOT EXISTS EventMembers("
+                + "guild INTEGER NOT NULL,"
+                + "name TEXT NOT NULL,"
+                + "member INTEGER NOT NULL,"
+                + "FOREIGN KEY (guild, name) REFERENCES Events(guild, name) ON DELETE CASCADE,"
+                + "PRIMARY KEY (guild,name,member));";
+        final String REMAINDERS = "CREATE TABLE IF NOT EXISTS Remainders("
+                + "guild INTEGER NOT NULL,"
+                + "name TEXT NOT NULL,"
+                + "day TEXT NOT NULL,"
+                + "time TEXT NOT NULL,"
+                + "mention TEXT NOT NULL,"
+                + "channel INTEGER NOT NULL,"
+                + "FOREIGN KEY (guild,name) REFERENCES Events(guild, name) ON DELETE CASCADE,"
+                + "PRIMARY KEY (guild,name,day,time));";
+        try (final Statement st = this.conn.createStatement()) {
+            st.addBatch(GUILDCONF);
+            st.addBatch(COMMANDS);
+            st.addBatch(EVENTS);
+            st.addBatch(EVENT_MEMBERS);
+            st.addBatch(REMAINDERS);
+            st.executeBatch();
+        }
+        LOGGER.debug("Database initialized");
     }
 
     /**
@@ -205,7 +144,7 @@ public class DatabaseManager implements AutoCloseable {
                 LOGGER.error("Error adding missing guild", e);
             }
             //Return guildConfigManager to the guild
-            return new GuildDataStore(this.conn, this.jda, newGuildID);
+            return new GuildDataStore(this.conn, guild.getJDA(), newGuildID);
         });
     }
 
@@ -217,6 +156,7 @@ public class DatabaseManager implements AutoCloseable {
      * @throws SQLException if database connection failed
      */
     private boolean addGuild(Guild guild) throws SQLException {
+        LOGGER.debug("Adding guild to database: " + guild.getId());
         final String query = "INSERT OR IGNORE INTO Guilds("
                 + "id,commandPrefix,commandEditPermission,commandRunPermission,eventEditPermission,"
                 + "remainderPermission,musicPlayPermission,greetingTemplate) VALUES (?,?,?,?,?,?);";
@@ -233,34 +173,16 @@ public class DatabaseManager implements AutoCloseable {
         }
     }
 
-    /**
-     * Loads a setting from database
-     *
-     * @param key Key to retrieve setting for
-     * @return Value for setting
-     * @throws SQLException If database connection failed
-     */
-    private Optional<String> loadSetting(String key) throws SQLException {
-        final String query = "SELECT value FROM Options WHERE name = ?;";
-        try (final PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setString(1, key);
-            try (final ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(rs.getString("value"));
-                }
-            }
-        }
-        return Optional.empty();
-    }
-
-    private void loadGuildList() throws SQLException {
+    private void loadGuildList(JDA jda) throws SQLException {
+        LOGGER.debug("Loading guilds from database");
         final String query = "SELECT id FROM Guilds;";
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
                 final long guildID = rs.getLong("id");
-                this.guildDataStores.put(guildID, new GuildDataStore(this.conn, this.jda, guildID));
+                this.guildDataStores.put(guildID, new GuildDataStore(this.conn, jda, guildID));
             }
         }
+        LOGGER.debug("Loaded guilds succesfully");
     }
 
 }

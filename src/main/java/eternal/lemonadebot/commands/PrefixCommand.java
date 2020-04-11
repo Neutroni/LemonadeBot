@@ -23,18 +23,21 @@
  */
 package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.commandtypes.OwnerCommand;
+import eternal.lemonadebot.commandtypes.AdminCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.CommandMatcher;
 import java.sql.SQLException;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.TextChannel;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
  * @author Neutroni
  */
-class PrefixCommand extends OwnerCommand {
+class PrefixCommand extends AdminCommand {
+
+    private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
     public String getCommand() {
@@ -54,7 +57,6 @@ class PrefixCommand extends OwnerCommand {
 
     @Override
     public void respond(CommandMatcher matcher) {
-        final Guild guild = matcher.getGuild();
         final TextChannel channel = matcher.getTextChannel();
 
         //Check if user provide prefix
@@ -72,6 +74,7 @@ class PrefixCommand extends OwnerCommand {
             channel.sendMessage("Updated prefix succesfully to: " + newPrefix).queue();
         } catch (SQLException ex) {
             channel.sendMessage("Storing prefix in DB failed, will still use new prefix until reboot, re-issue command once DB issue is fixed.").queue();
+            LOGGER.error("Updating command prefix failed", ex);
         }
 
     }

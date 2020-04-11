@@ -28,7 +28,7 @@ import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.RemainderManager;
-import eternal.lemonadebot.permissions.PermissionManager;
+import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.CommandMatcher;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -49,18 +49,6 @@ import org.apache.logging.log4j.Logger;
 public class EventCommand extends UserCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
-
-    private final PermissionManager commandParser;
-
-    /**
-     * Constructor
-     *
-     * @param parser parser to use for parsing commands
-     */
-    public EventCommand(PermissionManager parser) {
-        this.commandParser = parser;
-
-    }
 
     @Override
     public String getCommand() {
@@ -147,7 +135,7 @@ public class EventCommand extends UserCommand {
         final Member sender = matcher.getMember();
         final ConfigManager guildConf = matcher.getGuildData().getConfigManager();
         final EventManager events = matcher.getGuildData().getEventManager();
-        if (!this.commandParser.hasPermission(sender, guildConf.getEditPermission())) {
+        if (!PermissionUtilities.hasPermission(sender, guildConf.getEditPermission())) {
             textChannel.sendMessage("You do not have permission to create events").queue();
             return;
         }
@@ -190,7 +178,7 @@ public class EventCommand extends UserCommand {
         final ConfigManager guildConf = data.getConfigManager();
         final EventManager events = data.getEventManager();
         final RemainderManager remainders = data.getRemainderManager();
-        if (!this.commandParser.hasPermission(sender, guildConf.getEditPermission())) {
+        if (!PermissionUtilities.hasPermission(sender, guildConf.getEditPermission())) {
             textChannel.sendMessage("You do not have permission to delete events").queue();
             return;
         }
@@ -209,7 +197,7 @@ public class EventCommand extends UserCommand {
 
         //Check if user has permission to remove the event
         final Member eventOwner = textChannel.getGuild().getMemberById(event.getOwner());
-        final boolean hasPermission = commandParser.hasPermission(sender, eventOwner);
+        final boolean hasPermission = PermissionUtilities.hasPermission(sender, eventOwner);
         if (!hasPermission) {
             textChannel.sendMessage("You do not have permission to remove that event, " + "only the event owner and admins can remove events").queue();
             return;

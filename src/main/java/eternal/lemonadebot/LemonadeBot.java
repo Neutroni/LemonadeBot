@@ -63,7 +63,6 @@ public class LemonadeBot {
             options.addRequiredOption("k", "key", true, "Discord api key");
             options.addOption("h", "help", false, "Prints this message");
             options.addOption("d", "database", true, "Database location");
-            options.addOption("o", "owner", true, "Id of the bot owner");
 
             final HelpFormatter formatter = new HelpFormatter();
             final CommandLineParser parser = new DefaultParser();
@@ -87,13 +86,6 @@ public class LemonadeBot {
                 databaseLocation = cmd.getOptionValue("d");
             } else {
                 databaseLocation = "database.db";
-            }
-
-            //Check if database should be initialized
-            if (cmd.hasOption("o")) {
-                LOGGER.debug("Initializing database");
-                final String ownerID = cmd.getOptionValue("o");
-                DatabaseManager.initialize(databaseLocation, ownerID);
             }
 
             //Start loading JDA

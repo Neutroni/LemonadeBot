@@ -23,7 +23,7 @@
  */
 package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.commandtypes.OwnerCommand;
+import eternal.lemonadebot.commandtypes.AdminCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
@@ -36,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class PermissionCommand extends OwnerCommand {
+public class PermissionCommand extends AdminCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -54,7 +54,8 @@ public class PermissionCommand extends OwnerCommand {
     public String getHelpText() {
         return "Syntax: permission <name> [level]\n"
                 + "<name> is one of commandEdit,commandRun,eventEdit,playMusic\n"
-                + "[level] is one of user,member,admin,owner";
+                + "[level] can be one of following\n"
+                + CommandPermission.getLevelDescriptions();
     }
 
     @Override
