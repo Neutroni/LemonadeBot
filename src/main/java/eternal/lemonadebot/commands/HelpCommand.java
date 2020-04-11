@@ -84,9 +84,9 @@ class HelpCommand extends UserCommand {
     @Override
     public String getHelpText() {
         return "Syntax: help [command]\n"
-                + "help commands - prints list of commands\n"
-                + "help [command] - prints help for command\n"
-                + "help without arguments prints this message\n"
+                + " help commands - prints list of commands\n"
+                + " help [command] - prints help for command\n"
+                + " help without arguments prints this message\n"
                 + "[] indicates optional argument, <> nessessary one.";
     }
 
