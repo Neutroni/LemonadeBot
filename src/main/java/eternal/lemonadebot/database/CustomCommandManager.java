@@ -51,6 +51,7 @@ public class CustomCommandManager {
     private final Set<CustomCommand> commands = Collections.synchronizedSet(new HashSet<>());
 
     private final ConfigManager configManager;
+    private final CooldownManager cooldownManager;
 
     /**
      * Constructor
@@ -58,9 +59,10 @@ public class CustomCommandManager {
      * @param connection Database connection to use
      * @param config configuration manager to use
      */
-    CustomCommandManager(Connection connection, ConfigManager config, EventManager eventManager) {
+    CustomCommandManager(Connection connection, ConfigManager config, CooldownManager cooldownManager) {
         this.conn = connection;
         this.configManager = config;
+        this.cooldownManager = cooldownManager;
         this.guildID = config.getGuildID();
         loadCommands();
     }
@@ -107,6 +109,7 @@ public class CustomCommandManager {
      */
     public boolean removeCommand(CustomCommand command) throws SQLException {
         this.commands.remove(command);
+        this.cooldownManager.removeCooldown(command);
 
         //Remove from database
         final String query = "DELETE FROM Commands WHERE name = ? AND guild = ?;";

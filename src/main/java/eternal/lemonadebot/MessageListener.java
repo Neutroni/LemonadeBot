@@ -26,6 +26,7 @@ package eternal.lemonadebot;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
+import eternal.lemonadebot.database.CooldownManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.permissions.PermissionUtilities;
@@ -98,8 +99,6 @@ public class MessageListener extends ListenerAdapter {
         if (action.isEmpty()) {
             return;
         }
-
-        //React to command
         final ChatCommand command = action.get();
 
         //Log the message if debug is enabled
@@ -107,10 +106,23 @@ public class MessageListener extends ListenerAdapter {
             return "Found command: " + command.getCommand() + " in " + cmdMatch.getMessage().getContentRaw();
         });
 
+        //Check if user has permission
         final Member member = event.getMember();
-        if (PermissionUtilities.hasPermission(member, command)) {
-            command.respond(cmdMatch);
+        if (!PermissionUtilities.hasPermission(member, command)) {
+            return;
         }
+        
+        //Check if command is on cooldown
+        final CooldownManager cdm = guildData.getCooldownManager();
+        if (!cdm.updateRuntime(command)) {
+            final String cooldownRemaining = cdm.getCooldownFormatted(command);
+            textChannel.sendMessage("Command on cooldown, time remaining: " + cooldownRemaining + '.').queue();
+            return;
+        }
+        
+        //Run the command
+        command.respond(cmdMatch);
+
     }
 
     /**

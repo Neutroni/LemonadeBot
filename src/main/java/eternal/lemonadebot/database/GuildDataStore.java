@@ -36,6 +36,7 @@ public class GuildDataStore {
     private final CustomCommandManager commands;
     private final EventManager events;
     private final RemainderManager remainders;
+    private final CooldownManager cooldowns;
 
     /**
      * Constructor
@@ -46,8 +47,9 @@ public class GuildDataStore {
      */
     GuildDataStore(Connection connection, JDA jda, long guild) {
         this.config = new ConfigManager(connection, guild);
+        this.cooldowns = new CooldownManager(connection, guild);
         this.events = new EventManager(connection, guild);
-        this.commands = new CustomCommandManager(connection, this.config, this.events);
+        this.commands = new CustomCommandManager(connection, this.config, this.cooldowns);
         this.remainders = new RemainderManager(connection, jda, this.events);
     }
 
@@ -87,4 +89,12 @@ public class GuildDataStore {
         return this.remainders;
     }
 
+    /**
+     * Get tge cooldownmanager for this datastore
+     *
+     * @return CooldownManager
+     */
+    public CooldownManager getCooldownManager() {
+        return this.cooldowns;
+    }
 }
