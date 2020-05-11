@@ -33,6 +33,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -62,44 +63,94 @@ public class CooldownManager {
      * @param command command to check
      * @return true if command last seen time was updated or does not have
      * cooldown, false otherwise
+     * @throws SQLException If database connection failed
      */
-    public boolean updateRuntime(ChatCommand command) {
+    public Optional<String> updateActivationTime(ChatCommand command) throws SQLException {
         final Cooldown cooldown = this.cooldowns.get(command.getCommand());
         //Command does not have a cooldown
         if (cooldown == null) {
-            return true;
+            return Optional.empty();
         }
+
         final Instant now = Instant.now();
         final Duration timeDelta = Duration.between(cooldown.activationTime, now);
+
         //Command still on cooldown
         if (timeDelta.compareTo(cooldown.cooldownTime) < 0) {
-            return false;
+            return Optional.of(getCooldownFormatted(cooldown, true));
         }
+        
         //Update activationTime
         cooldown.activationTime = now;
-        return true;
+
+        //Store in database
+        final String query = "INSERT OR REPLACE INTO Cooldowns(guild,command,duration,activationTime) VALUES(?,?,?,?)";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setLong(1, this.guildID);
+            ps.setString(2, command.getCommand());
+            ps.setLong(3, cooldown.cooldownTime.getSeconds());
+            ps.setLong(4, now.getEpochSecond());
+            ps.executeUpdate();
+        }
+        return Optional.empty();
+    }
+    
+    public Optional<String> getCooldownFormatted(ChatCommand command){
+        final Cooldown cd = this.cooldowns.get(command.getCommand());
+        if(cd == null){
+            return Optional.empty();
+        }
+        
+        final Duration cooldownToFormat = cd.cooldownTime;
+        if (cooldownToFormat.isNegative() || cooldownToFormat.isZero()) {
+            return Optional.of("00:00:00");
+        }
+        final long remainingDays = cooldownToFormat.toDays();
+        final long remainingHours = cooldownToFormat.toDaysPart();
+        final long remainingMinutes = cooldownToFormat.toMinutesPart();
+        final long remainingSeconds = cooldownToFormat.toSecondsPart();
+
+        final StringBuilder sb = new StringBuilder();
+        boolean printRemaining = false;
+        if (remainingDays != 0) {
+            printRemaining = true;
+            sb.append(remainingDays).append(" days ");
+        }
+        if (printRemaining || (remainingHours != 0)) {
+            printRemaining = true;
+            sb.append(remainingHours).append(" hours ");
+        }
+        if (printRemaining || (remainingMinutes != 0)) {
+            sb.append(remainingMinutes).append(" minutes ");
+        }
+        sb.append(remainingSeconds).append(" seconds");
+
+        return Optional.of(sb.toString());
     }
 
     /**
      * Get the string presentation for remaining cooldown of command
      *
      * @param command command to check cooldown for
+     * @param remainingCooldownOnly only the cooldown remaining
      * @return remaining cooldown as string
      */
-    public String getCooldownFormatted(ChatCommand command) {
-        final Cooldown cd = this.cooldowns.get(command.getCommand());
-        if (cd == null) {
-            return "No cooldown set for command";
+    private String getCooldownFormatted(Cooldown cooldown, boolean remainingCooldownOnly) {
+        final Duration cooldownToFormat;
+        if (remainingCooldownOnly) {
+            final Duration expiredCooldown = Duration.between(cooldown.activationTime, Instant.now());
+            cooldownToFormat = cooldown.cooldownTime.minus(expiredCooldown);
+        } else {
+            cooldownToFormat = cooldown.cooldownTime;
         }
-        final Duration expiredCooldown = Duration.between(cd.activationTime, Instant.now());
-        final Duration remainingCooldown = cd.cooldownTime.minus(expiredCooldown);
-        if (remainingCooldown.isNegative() || remainingCooldown.isZero()) {
+
+        if (cooldownToFormat.isNegative() || cooldownToFormat.isZero()) {
             return "00:00:00";
         }
-        final long remainingDays = remainingCooldown.toDays();
-        final long remainingHours = remainingCooldown.toDaysPart();
-        final long remainingMinutes = remainingCooldown.toMinutesPart();
-        final long remainingSeconds = remainingCooldown.toSecondsPart();
+        final long remainingDays = cooldownToFormat.toDays();
+        final long remainingHours = cooldownToFormat.toDaysPart();
+        final long remainingMinutes = cooldownToFormat.toMinutesPart();
+        final long remainingSeconds = cooldownToFormat.toSecondsPart();
 
         final StringBuilder sb = new StringBuilder();
         boolean printRemaining = false;
@@ -120,13 +171,13 @@ public class CooldownManager {
     }
 
     private void loadCooldowns() {
-        final String query = "SELECT commandname,cooldownDuration,activationTime FROM Cooldowns WHERE guild = ?;";
+        final String query = "SELECT command,duration,activationTime FROM Cooldowns WHERE guild = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    final String commandName = rs.getString("commandName");
-                    final Cooldown cd = new Cooldown(rs.getLong("cooldownDuration"), rs.getLong("activationTime"));
+                    final String commandName = rs.getString("command");
+                    final Cooldown cd = new Cooldown(rs.getLong("duration"), rs.getLong("activationTime"));
                     cooldowns.put(commandName, cd);
                 }
             }
@@ -137,14 +188,59 @@ public class CooldownManager {
         }
     }
 
-    void removeCooldown(ChatCommand command) {
+    /**
+     *
+     * @param command
+     * @return
+     * @throws SQLException
+     */
+    public boolean removeCooldown(ChatCommand command) throws SQLException {
         this.cooldowns.remove(command.getCommand());
+
+        //Remove from database
+        final String query = "DELETE FROM Cooldowns Where guild = ? AND command = ?;";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setLong(1, this.guildID);
+            ps.setString(2, command.getCommand());
+            return ps.executeUpdate() > 0;
+        }
     }
 
+    /**
+     *
+     * @param command
+     * @param cooldownDuration
+     * @return
+     * @throws SQLException
+     */
+    public boolean setCooldown(ChatCommand command, Duration cooldownDuration) throws SQLException {
+        final Cooldown cooldown = this.cooldowns.computeIfAbsent(command.getCommand(), (String t) -> {
+            return new Cooldown(cooldownDuration, Instant.EPOCH);
+        });
+        cooldown.cooldownTime = cooldownDuration;
+
+        final String query = "INSERT OR REPLACE INTO Cooldowns(guild,command,duration,activationTime) VALUES(?,?,?,?)";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setLong(1, this.guildID);
+            ps.setString(2, command.getCommand());
+            ps.setLong(3, cooldownDuration.getSeconds());
+            ps.setLong(4, Instant.EPOCH.getEpochSecond());
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Class to store cooldows in
+     */
     private static class Cooldown {
 
         private Duration cooldownTime;
         private Instant activationTime;
+
+        public Cooldown(Duration cooldownDuration, Instant lastActivation) {
+            this.cooldownTime = cooldownDuration;
+            this.activationTime = lastActivation;
+        }
 
         public Cooldown(long cooldownDurationSeconds, long activationTimeSeconds) {
             this.cooldownTime = Duration.ofSeconds(cooldownDurationSeconds);

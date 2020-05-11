@@ -59,6 +59,7 @@ public class CommandProvider {
                 new ActionEditCommand(db),
                 new RoleCommand(),
                 new PrefixCommand(),
+                new CooldownCommand(this),
                 new PermissionCommand(),
                 new GreetCommand()
         );

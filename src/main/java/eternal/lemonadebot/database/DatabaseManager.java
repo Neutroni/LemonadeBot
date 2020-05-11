@@ -94,6 +94,12 @@ public class DatabaseManager implements AutoCloseable {
                 + "template TEXT NOT NULL,"
                 + "owner INTEGER NOT NULL,"
                 + "PRIMARY KEY (guild,name));";
+        final String COOLDOWNS = "Create TABLE IF NOT EXISTS Cooldowns("
+                + "guild INTEGER NOT NULL,"
+                + "command TEXT NOT NULL,"
+                + "duration INTEGER NOT NULL,"
+                + "activationTime INTEGER NOT NULL,"
+                + "PRIMARY KEY (guild,command));";
         final String EVENTS = "CREATE TABLE IF NOT EXISTS Events("
                 + "guild INTEGER NOT NULL,"
                 + "name TEXT NOT NULL,"
@@ -118,6 +124,7 @@ public class DatabaseManager implements AutoCloseable {
         try (final Statement st = this.conn.createStatement()) {
             st.addBatch(GUILDCONF);
             st.addBatch(COMMANDS);
+            st.addBatch(COOLDOWNS);
             st.addBatch(EVENTS);
             st.addBatch(EVENT_MEMBERS);
             st.addBatch(REMAINDERS);
