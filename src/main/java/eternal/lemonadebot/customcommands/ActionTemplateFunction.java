@@ -21,21 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.commandtypes;
+package eternal.lemonadebot.customcommands;
 
-import eternal.lemonadebot.database.ConfigManager;
-import eternal.lemonadebot.permissions.CommandPermission;
+import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.database.GuildDataStore;
+import java.util.regex.Matcher;
 
 /**
- * Abstract class to provide quick way of writing commands that only
- * adminstrators can use
  *
  * @author Neutroni
  */
-public abstract class AdminCommand implements ChatCommand {
-
-    @Override
-    public CommandPermission getPermission(ConfigManager guild) {
-        return CommandPermission.ADMIN;
-    }
+interface ActionTemplateFunction {
+    String apply(CommandMatcher commandMatcher, GuildDataStore guildData, Matcher templateMatcher);
 }

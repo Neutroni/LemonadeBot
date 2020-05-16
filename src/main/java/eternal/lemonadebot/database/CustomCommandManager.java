@@ -50,7 +50,6 @@ public class CustomCommandManager {
     private final long guildID;
     private final Set<CustomCommand> commands = Collections.synchronizedSet(new HashSet<>());
 
-    private final ConfigManager configManager;
     private final CooldownManager cooldownManager;
 
     /**
@@ -59,24 +58,11 @@ public class CustomCommandManager {
      * @param connection Database connection to use
      * @param config configuration manager to use
      */
-    CustomCommandManager(Connection connection, ConfigManager config, CooldownManager cooldownManager) {
+    CustomCommandManager(Connection connection, CooldownManager cooldownManager, long guildID) {
         this.conn = connection;
-        this.configManager = config;
         this.cooldownManager = cooldownManager;
-        this.guildID = config.getGuildID();
+        this.guildID = guildID;
         loadCommands();
-    }
-
-    /**
-     * Builds a custom command
-     *
-     * @param key key for command
-     * @param pattern pattern for command
-     * @param owner owner fo the command
-     * @return the new custom command
-     */
-    public CustomCommand build(String key, String pattern, long owner) {
-        return new CustomCommand(this.configManager, key, pattern, owner);
     }
 
     /**
@@ -156,7 +142,7 @@ public class CustomCommandManager {
             ps.setLong(1, this.guildID);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    final CustomCommand newCommand = build(rs.getString("name"), rs.getString("template"), rs.getLong("owner"));
+                    final CustomCommand newCommand = new CustomCommand(rs.getString("name"), rs.getString("template"), rs.getLong("owner"));
                     this.commands.add(newCommand);
                 }
             }

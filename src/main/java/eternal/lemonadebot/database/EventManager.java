@@ -63,15 +63,6 @@ public class EventManager {
     }
 
     /**
-     * Get the id of the guild this eventmanger stores events for
-     *
-     * @return id of the guild
-     */
-    public long getGuildID() {
-        return this.guildID;
-    }
-
-    /**
      * Add event to database
      *
      * @param event event to add

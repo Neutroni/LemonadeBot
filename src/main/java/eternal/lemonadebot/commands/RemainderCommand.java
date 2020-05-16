@@ -21,16 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.events;
+package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
-import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.RemainderManager;
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.events.Event;
+import eternal.lemonadebot.events.MentionEnum;
+import eternal.lemonadebot.events.Remainder;
 import eternal.lemonadebot.permissions.CommandPermission;
+import eternal.lemonadebot.permissions.PermissionKey;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
@@ -40,7 +43,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.TimeZone;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,18 +56,15 @@ public class RemainderCommand implements ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final DatabaseManager db;
     private final SimpleDateFormat dateFormat;
 
     /**
      * Constructor
      *
-     * @param database database to store remainders in
      */
-    public RemainderCommand(DatabaseManager database) {
+    public RemainderCommand() {
         this.dateFormat = new SimpleDateFormat("EEEE MMMM dd HH:mm zzz", Locale.ENGLISH);
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        this.db = database;
     }
 
     @Override
@@ -95,13 +94,12 @@ public class RemainderCommand implements ChatCommand {
     }
 
     @Override
-    public CommandPermission getPermission(Guild guild) {
-        final ConfigManager guildConf = this.db.getGuildData(guild).getConfigManager();
-        return guildConf.getRemainderPermissions();
+    public CommandPermission getPermission(ConfigManager guild) {
+        return guild.getRequiredPermission(PermissionKey.EditRemainders);
     }
 
     @Override
-    public void respond(CommandMatcher matcher) {
+    public void respond(CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
 
         final String[] arguments = matcher.getArguments(5);
@@ -111,15 +109,15 @@ public class RemainderCommand implements ChatCommand {
         }
         switch (arguments[0]) {
             case "create": {
-                createRemainder(arguments, matcher);
+                createRemainder(arguments, matcher, guildData);
                 break;
             }
             case "delete": {
-                deleteRemainder(arguments, matcher);
+                deleteRemainder(arguments, matcher, guildData);
                 break;
             }
             case "list": {
-                listRemainders(matcher);
+                listRemainders(matcher, guildData);
                 break;
             }
             default: {
@@ -128,11 +126,10 @@ public class RemainderCommand implements ChatCommand {
         }
     }
 
-    private void createRemainder(String[] arguments, CommandMatcher matcher) {
-        final GuildDataStore data = matcher.getGuildData();
+    private void createRemainder(String[] arguments, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final EventManager events = data.getEventManager();
-        final RemainderManager remainders = data.getRemainderManager();
+        final EventManager events = guildData.getEventManager();
+        final RemainderManager remainders = guildData.getRemainderManager();
         if (arguments.length < 5) {
             textChannel.sendMessage("Missing arguments, see help for event").queue();
             return;
@@ -166,7 +163,7 @@ public class RemainderCommand implements ChatCommand {
             return;
         }
 
-        final Remainder remainder = remainders.build(textChannel.getIdLong(), optEvent.get(), me, activationDay, activationTime);
+        final Remainder remainder = new Remainder(textChannel.getJDA(), textChannel.getIdLong(), optEvent.get(), me, activationDay, activationTime);
         try {
             if (!remainders.addRemainder(remainder)) {
                 textChannel.sendMessage("Matching remainder already exists.").queue();
@@ -183,13 +180,13 @@ public class RemainderCommand implements ChatCommand {
         }
     }
 
-    private void deleteRemainder(String[] arguments, CommandMatcher matcher) {
+    private void deleteRemainder(String[] arguments, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         if (arguments.length < 4) {
             textChannel.sendMessage("Provide the name of the remainder you want to delete").queue();
             return;
         }
-        final RemainderManager remainders = matcher.getGuildData().getRemainderManager();
+        final RemainderManager remainders = guildData.getRemainderManager();
 
         final String eventName = arguments[1];
         final String remainderDay = arguments[2];
@@ -216,8 +213,8 @@ public class RemainderCommand implements ChatCommand {
         }
     }
 
-    private void listRemainders(CommandMatcher matcher) {
-        final RemainderManager remainders = matcher.getGuildData().getRemainderManager();
+    private void listRemainders(CommandMatcher matcher, GuildDataStore guildData) {
+        final RemainderManager remainders = guildData.getRemainderManager();
         final List<Remainder> ev = remainders.getRemainders();
         final StringBuilder sb = new StringBuilder("Remainders:\n");
         for (Remainder r : ev) {

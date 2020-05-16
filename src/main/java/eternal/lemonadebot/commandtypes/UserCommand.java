@@ -23,8 +23,8 @@
  */
 package eternal.lemonadebot.commandtypes;
 
+import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.permissions.CommandPermission;
-import net.dv8tion.jda.api.entities.Guild;
 
 /**
  * Abstract class to provide quick way of writing commands that anyone can use
@@ -34,7 +34,7 @@ import net.dv8tion.jda.api.entities.Guild;
 public abstract class UserCommand implements ChatCommand {
 
     @Override
-    public CommandPermission getPermission(Guild guild) {
+    public CommandPermission getPermission(ConfigManager guild) {
         return CommandPermission.USER;
     }
 }

@@ -32,9 +32,10 @@ import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
-import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.permissions.CommandPermission;
+import eternal.lemonadebot.permissions.PermissionKey;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -64,15 +65,12 @@ public class MusicCommand implements ChatCommand {
 
     private final AudioPlayerManager playerManager;
     private final Map<Long, GuildMusicManager> musicManagers;
-    private final DatabaseManager db;
 
     /**
      * Constructor
      *
-     * @param dataBase DataBase to get music playback permission from
      */
-    public MusicCommand(DatabaseManager dataBase) {
-        this.db = dataBase;
+    public MusicCommand() {
         this.playerManager = new DefaultAudioPlayerManager();
         AudioSourceManagers.registerRemoteSources(playerManager);
         AudioSourceManagers.registerLocalSource(playerManager);
@@ -101,13 +99,12 @@ public class MusicCommand implements ChatCommand {
     }
 
     @Override
-    public CommandPermission getPermission(Guild guild) {
-        final ConfigManager guildConf = this.db.getGuildData(guild).getConfigManager();
-        return guildConf.getPlayPermission();
+    public CommandPermission getPermission(ConfigManager guild) {
+        return guild.getRequiredPermission(PermissionKey.PlayMusic);
     }
 
     @Override
-    public void respond(CommandMatcher message) {
+    public void respond(CommandMatcher message, GuildDataStore guildData) {
         final TextChannel textChannel = message.getTextChannel();
 
         //Get arguments and parse accordingly

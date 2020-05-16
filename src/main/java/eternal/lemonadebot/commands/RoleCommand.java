@@ -25,6 +25,7 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.database.GuildDataStore;
 import java.util.ArrayList;
 import java.util.List;
 import net.dv8tion.jda.api.Permission;
@@ -62,7 +63,7 @@ class RoleCommand extends UserCommand {
     }
 
     @Override
-    public void respond(CommandMatcher matcher) {
+    public void respond(CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel channel = matcher.getTextChannel();
 
         //Check that we can assign roles here

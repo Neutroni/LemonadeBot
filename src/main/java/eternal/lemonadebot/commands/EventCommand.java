@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.events;
+package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.database.ConfigManager;
@@ -30,6 +30,10 @@ import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.RemainderManager;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.events.Event;
+import eternal.lemonadebot.events.Remainder;
+import eternal.lemonadebot.permissions.CommandPermission;
+import eternal.lemonadebot.permissions.PermissionKey;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -78,7 +82,7 @@ public class EventCommand extends UserCommand {
     }
 
     @Override
-    public void respond(CommandMatcher matcher) {
+    public void respond(CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
 
         final String[] opts = matcher.getArguments(2);
@@ -89,39 +93,39 @@ public class EventCommand extends UserCommand {
 
         switch (opts[0]) {
             case "create": {
-                createEvent(opts, matcher);
+                createEvent(opts, matcher, guildData);
                 break;
             }
             case "delete": {
-                deleteEvent(opts, matcher);
+                deleteEvent(opts, matcher, guildData);
                 break;
             }
             case "join": {
-                joinEvent(opts, matcher);
+                joinEvent(opts, matcher, guildData);
                 break;
             }
             case "leave": {
-                leaveEvent(opts, matcher);
+                leaveEvent(opts, matcher, guildData);
                 break;
             }
             case "members": {
-                showEventMembers(opts, matcher);
+                showEventMembers(opts, matcher, guildData);
                 break;
             }
             case "clear": {
-                clearEventMembers(opts, matcher);
+                clearEventMembers(opts, matcher, guildData);
                 break;
             }
             case "list": {
-                listEvents(matcher);
+                listEvents(matcher, guildData);
                 break;
             }
             case "ping": {
-                pingEventMembers(opts, matcher);
+                pingEventMembers(opts, matcher, guildData);
                 break;
             }
             case "random": {
-                pickRandomEventMember(opts, matcher);
+                pickRandomEventMember(opts, matcher, guildData);
                 break;
             }
             default: {
@@ -130,12 +134,13 @@ public class EventCommand extends UserCommand {
         }
     }
 
-    private void createEvent(String[] opts, CommandMatcher matcher) {
+    private void createEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Member sender = matcher.getMember();
-        final ConfigManager guildConf = matcher.getGuildData().getConfigManager();
-        final EventManager events = matcher.getGuildData().getEventManager();
-        if (!PermissionUtilities.hasPermission(sender, guildConf.getEditPermission())) {
+        final ConfigManager guildConf = guildData.getConfigManager();
+        final EventManager events = guildData.getEventManager();
+        final CommandPermission perm = guildConf.getRequiredPermission(PermissionKey.EditEvents);
+        if (!PermissionUtilities.hasPermission(sender, perm)) {
             textChannel.sendMessage("You do not have permission to create events").queue();
             return;
         }
@@ -171,14 +176,14 @@ public class EventCommand extends UserCommand {
         }
     }
 
-    private void deleteEvent(String[] opts, CommandMatcher matcher) {
+    private void deleteEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final Member sender = matcher.getMember();
         final TextChannel textChannel = matcher.getTextChannel();
-        final GuildDataStore data = matcher.getGuildData();
-        final ConfigManager guildConf = data.getConfigManager();
-        final EventManager events = data.getEventManager();
-        final RemainderManager remainders = data.getRemainderManager();
-        if (!PermissionUtilities.hasPermission(sender, guildConf.getEditPermission())) {
+        final ConfigManager guildConf = guildData.getConfigManager();
+        final EventManager events = guildData.getEventManager();
+        final RemainderManager remainders = guildData.getRemainderManager();
+        final CommandPermission perm = guildConf.getRequiredPermission(PermissionKey.EditEvents);
+        if (!PermissionUtilities.hasPermission(sender, perm)) {
             textChannel.sendMessage("You do not have permission to delete events").queue();
             return;
         }
@@ -232,7 +237,7 @@ public class EventCommand extends UserCommand {
         }
     }
 
-    private void joinEvent(String[] opts, CommandMatcher matcher) {
+    private void joinEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Member sender = matcher.getMember();
 
@@ -242,7 +247,7 @@ public class EventCommand extends UserCommand {
         }
         final String eventName = opts[1];
 
-        final EventManager events = matcher.getGuildData().getEventManager();
+        final EventManager events = guildData.getEventManager();
         final Optional<Event> oldEvent = events.getEvent(eventName);
         if (oldEvent.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
@@ -263,7 +268,7 @@ public class EventCommand extends UserCommand {
         }
     }
 
-    private void leaveEvent(String[] opts, CommandMatcher matcher) {
+    private void leaveEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Member sender = matcher.getMember();
 
@@ -273,7 +278,7 @@ public class EventCommand extends UserCommand {
         }
         final String eventName = opts[1];
 
-        final EventManager events = matcher.getGuildData().getEventManager();
+        final EventManager events = guildData.getEventManager();
         final Optional<Event> oldEvent = events.getEvent(eventName);
         if (oldEvent.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
@@ -294,7 +299,7 @@ public class EventCommand extends UserCommand {
         }
     }
 
-    private void showEventMembers(String[] opts, CommandMatcher matcher) {
+    private void showEventMembers(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
 
         if (opts.length == 1) {
@@ -303,7 +308,7 @@ public class EventCommand extends UserCommand {
         }
         final String eventName = opts[1];
 
-        final EventManager events = matcher.getGuildData().getEventManager();
+        final EventManager events = guildData.getEventManager();
         final Optional<Event> opt = events.getEvent(eventName);
         if (opt.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
@@ -334,7 +339,7 @@ public class EventCommand extends UserCommand {
         textChannel.sendMessage(sb.toString()).queue();
     }
 
-    private void clearEventMembers(String[] opts, CommandMatcher matcher) {
+    private void clearEventMembers(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Member sender = matcher.getMember();
 
@@ -344,7 +349,7 @@ public class EventCommand extends UserCommand {
         }
         final String eventName = opts[1];
 
-        final EventManager events = matcher.getGuildData().getEventManager();
+        final EventManager events = guildData.getEventManager();
         final Optional<Event> opt = events.getEvent(eventName);
         if (opt.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
@@ -367,9 +372,9 @@ public class EventCommand extends UserCommand {
         }
     }
 
-    private void listEvents(CommandMatcher matcher) {
+    private void listEvents(CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final EventManager events = matcher.getGuildData().getEventManager();
+        final EventManager events = guildData.getEventManager();
 
         final List<Event> ev = events.getEvents();
         final StringBuilder sb = new StringBuilder("Events:\n");
@@ -382,7 +387,7 @@ public class EventCommand extends UserCommand {
         textChannel.sendMessage(sb.toString()).queue();
     }
 
-    private void pingEventMembers(String[] opts, CommandMatcher matcher) {
+    private void pingEventMembers(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
 
         if (opts.length == 1) {
@@ -391,7 +396,7 @@ public class EventCommand extends UserCommand {
         }
         final String eventName = opts[1];
 
-        final EventManager events = matcher.getGuildData().getEventManager();
+        final EventManager events = guildData.getEventManager();
         final Optional<Event> opt = events.getEvent(eventName);
         if (opt.isEmpty()) {
             textChannel.sendMessage("Could not find event with name: " + eventName).queue();
@@ -417,7 +422,7 @@ public class EventCommand extends UserCommand {
         textChannel.sendMessage(mb.build()).queue();
     }
 
-    private void pickRandomEventMember(String[] opts, CommandMatcher matcher) {
+    private void pickRandomEventMember(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
 
         if (opts.length == 1) {
@@ -426,7 +431,7 @@ public class EventCommand extends UserCommand {
         }
         final String eventName = opts[1];
         final Guild guild = matcher.getGuild();
-        final EventManager events = matcher.getGuildData().getEventManager();
+        final EventManager events = guildData.getEventManager();
         final Optional<Event> optEvent = events.getEvent(eventName);
         if (optEvent.isEmpty()) {
             textChannel.sendMessage("No such event: " + eventName).queue();

@@ -27,6 +27,7 @@ import java.sql.Connection;
 import net.dv8tion.jda.api.JDA;
 
 /**
+ * Class storing info for guilds
  *
  * @author Neutroni
  */
@@ -47,10 +48,10 @@ public class GuildDataStore {
      */
     GuildDataStore(Connection connection, JDA jda, long guild) {
         this.config = new ConfigManager(connection, guild);
-        this.cooldowns = new CooldownManager(connection, guild);
         this.events = new EventManager(connection, guild);
-        this.commands = new CustomCommandManager(connection, this.config, this.cooldowns);
-        this.remainders = new RemainderManager(connection, jda, this.events);
+        this.cooldowns = new CooldownManager(connection, guild);
+        this.commands = new CustomCommandManager(connection, this.cooldowns, guild);
+        this.remainders = new RemainderManager(connection, jda, this.events, guild);
     }
 
     /**
@@ -90,7 +91,7 @@ public class GuildDataStore {
     }
 
     /**
-     * Get tge cooldownmanager for this datastore
+     * Get the cooldownmanager for this datastore
      *
      * @return CooldownManager
      */

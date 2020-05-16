@@ -24,7 +24,7 @@
 package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.CommandMatcher;
-import java.util.function.BiFunction;
+import eternal.lemonadebot.database.GuildDataStore;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,11 +33,11 @@ import java.util.regex.Pattern;
  *
  * @author Neutroni
  */
-public class SimpleTemplate {
+public class ActionTemplate {
 
     private final String helpText;
     private final Pattern pattern;
-    private final BiFunction<CommandMatcher, Matcher, String> function;
+    private final ActionTemplateFunction function;
 
     /**
      * Constructor
@@ -46,7 +46,7 @@ public class SimpleTemplate {
      * @param help help text for this action
      * @param func function this action executes
      */
-    public SimpleTemplate(String pattern, String help, BiFunction<CommandMatcher, Matcher, String> func) {
+    ActionTemplate(String pattern, String help, ActionTemplateFunction func) {
         this.pattern = Pattern.compile(pattern);
         this.helpText = help;
         this.function = func;
@@ -74,11 +74,12 @@ public class SimpleTemplate {
     /**
      * Gets the replacement for given input string
      *
-     * @param m Message this action is response to
-     * @param s match to replace
+     * @param commandMatcher Message this action is response to
+     * @param guildData Stored data for the guild the message is from
+     * @param templateMatcher match to replace
      * @return replacement string
      */
-    public String getValue(CommandMatcher m, Matcher s) {
-        return this.function.apply(m, s);
+    public String getValue(CommandMatcher commandMatcher, GuildDataStore guildData, Matcher templateMatcher) {
+        return this.function.apply(commandMatcher, guildData, templateMatcher);
     }
 }

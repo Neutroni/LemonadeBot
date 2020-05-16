@@ -28,6 +28,8 @@ import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.LemonadeBot;
+import eternal.lemonadebot.database.ConfigManager;
+import eternal.lemonadebot.database.GuildDataStore;
 import java.util.Optional;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
@@ -38,18 +40,6 @@ import net.dv8tion.jda.api.entities.TextChannel;
  * @author Neutroni
  */
 class HelpCommand extends UserCommand {
-
-    private final CommandProvider commands;
-
-    /**
-     * Constructor
-     *
-     * @param permissionManager manager to check user permissions with
-     * @param commandProvider CommandProvider to search commands in
-     */
-    HelpCommand(CommandProvider commandProvider) {
-        this.commands = commandProvider;
-    }
 
     @Override
     public String getCommand() {
@@ -62,9 +52,8 @@ class HelpCommand extends UserCommand {
     }
 
     @Override
-    public void respond(CommandMatcher matcher) {
+    public void respond(CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final Member sender = matcher.getMember();
 
         final String[] options = matcher.getArguments(1);
         if (options.length == 0) {
@@ -77,10 +66,10 @@ class HelpCommand extends UserCommand {
         }
         final String name = options[0];
         if ("commands".equals(name)) {
-            listCommands(sender, textChannel);
+            listCommands(matcher, guildData.getConfigManager());
             return;
         }
-        listHelp(matcher, name);
+        listHelp(matcher, guildData, name);
     }
 
     @Override
@@ -92,13 +81,14 @@ class HelpCommand extends UserCommand {
                 + "[] indicates optional argument, <> nessessary one.";
     }
 
-    private void listHelp(CommandMatcher matcher, String name) {
+    private void listHelp(CommandMatcher matcher, GuildDataStore guildData, String name) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final Member sender = matcher.getMember();
-        final Optional<? extends ChatCommand> opt = commands.getCommand(name, textChannel.getGuild());
+        final Optional<? extends ChatCommand> opt = CommandProvider.getCommand(name, guildData);
         if (opt.isPresent()) {
             final ChatCommand com = opt.get();
-            if (PermissionUtilities.hasPermission(sender, com)) {
+            final Member member = matcher.getMember();
+            final ConfigManager config = guildData.getConfigManager();
+            if (PermissionUtilities.hasPermission(member, config, com)) {
                 final EmbedBuilder eb = new EmbedBuilder();
                 eb.setTitle(com.getCommand() + " - " + com.getDescription());
                 eb.setDescription(com.getHelpText());
@@ -111,12 +101,13 @@ class HelpCommand extends UserCommand {
         textChannel.sendMessage("No such command: " + name).queue();
     }
 
-    private void listCommands(Member sender, TextChannel textChannel) {
+    private void listCommands(CommandMatcher matcher, ConfigManager config) {
         //Construct the list of commands
         final StringBuilder sb = new StringBuilder();
+        final Member member = matcher.getMember();
 
-        for (ChatCommand c : commands.getCommands()) {
-            if (PermissionUtilities.hasPermission(sender, c)) {
+        for (ChatCommand c : CommandProvider.getCommands()) {
+            if (PermissionUtilities.hasPermission(member, config, c)) {
                 sb.append(c.getCommand()).append(" - ");
                 sb.append(c.getDescription()).append('\n');
             }
@@ -126,7 +117,7 @@ class HelpCommand extends UserCommand {
         eb.setTitle("Commands:");
         eb.setDescription(sb.toString());
 
-        textChannel.sendMessage(eb.build()).queue();
+        matcher.getTextChannel().sendMessage(eb.build()).queue();
     }
 
 }

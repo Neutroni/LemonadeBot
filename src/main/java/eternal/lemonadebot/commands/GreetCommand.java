@@ -26,6 +26,7 @@ package eternal.lemonadebot.commands;
 import eternal.lemonadebot.commandtypes.AdminCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.database.GuildDataStore;
 import java.sql.SQLException;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -36,7 +37,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class GreetCommand extends AdminCommand {
+class GreetCommand extends AdminCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -64,9 +65,9 @@ public class GreetCommand extends AdminCommand {
     }
 
     @Override
-    public void respond(CommandMatcher message) {
+    public void respond(CommandMatcher message, GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
-        final ConfigManager guildConf = message.getGuildData().getConfigManager();
+        final ConfigManager guildConf = guildData.getConfigManager();
         final String[] options = message.getArguments(1);
         if (options.length == 0) {
             channel.sendMessage("Provide operation to perform, check help for possible operations").queue();

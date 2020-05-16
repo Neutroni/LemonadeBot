@@ -24,6 +24,7 @@
 package eternal.lemonadebot.permissions;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
+import eternal.lemonadebot.database.ConfigManager;
 import java.util.EnumSet;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -31,7 +32,7 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 
 /**
- * Various utility functions for parsing command from messages
+ * Various utility functions for checking command permissions
  *
  * @author Neutroni
  */
@@ -57,12 +58,13 @@ public class PermissionUtilities {
     /**
      * Checks wheter given user has permission to run given command
      *
-     * @param member Person to check permission for
+     * @param member User to check permission for
+     * @param config Configmanager to get required permission from
      * @param command Command to check
      * @return Does the person have permission
      */
-    public static boolean hasPermission(Member member, ChatCommand command) {
-        return getRank(member).ordinal() >= command.getPermission(member.getGuild()).ordinal();
+    public static boolean hasPermission(Member member, ConfigManager config, ChatCommand command) {
+        return getRank(member).ordinal() >= command.getPermission(config).ordinal();
     }
 
     /**

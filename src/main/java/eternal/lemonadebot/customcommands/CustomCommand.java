@@ -26,9 +26,10 @@ package eternal.lemonadebot.customcommands;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.permissions.CommandPermission;
+import eternal.lemonadebot.permissions.PermissionKey;
 import java.util.Objects;
-import net.dv8tion.jda.api.entities.Guild;
 
 /**
  * User defined commands that take template as input and when run return the
@@ -39,8 +40,6 @@ import net.dv8tion.jda.api.entities.Guild;
  */
 public class CustomCommand implements ChatCommand {
 
-    private final ConfigManager configManager;
-
     private final String commandName;
     private final String actionTemplate;
     private final long owner;
@@ -48,13 +47,11 @@ public class CustomCommand implements ChatCommand {
     /**
      * Constructor
      *
-     * @param configManager ConfigManager to get command permissions from
      * @param commandName command this is activeted by
      * @param actionTemplate action template
      * @param owner who created this command
      */
-    public CustomCommand(ConfigManager configManager, String commandName, String actionTemplate, long owner) {
-        this.configManager = configManager;
+    public CustomCommand(String commandName, String actionTemplate, long owner) {
         this.commandName = commandName;
         this.actionTemplate = actionTemplate;
         this.owner = owner;
@@ -89,9 +86,12 @@ public class CustomCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(CommandMatcher match) {
-        final CharSequence response = TemplateManager.processActions(match, actionTemplate);
-        match.getMessage().getChannel().sendMessage(response).queue();
+    public void respond(CommandMatcher match, GuildDataStore guildData) {
+        final CharSequence response = TemplateManager.processActions(match, guildData, actionTemplate);
+        if(response.length() == 0){
+            return;
+        }
+        match.getTextChannel().sendMessage(response).queue();
     }
 
     @Override
@@ -102,8 +102,8 @@ public class CustomCommand implements ChatCommand {
     }
 
     @Override
-    public CommandPermission getPermission(Guild guild) {
-        return this.configManager.getCommandRunPermission();
+    public CommandPermission getPermission(ConfigManager guild) {
+        return guild.getRequiredPermission(PermissionKey.RunCommands);
     }
 
     @Override

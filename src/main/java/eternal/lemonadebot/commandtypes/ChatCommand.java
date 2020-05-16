@@ -24,8 +24,9 @@
 package eternal.lemonadebot.commandtypes;
 
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.database.ConfigManager;
+import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.permissions.CommandPermission;
-import net.dv8tion.jda.api.entities.Guild;
 
 /**
  * Interface all commands must implement
@@ -61,12 +62,13 @@ public interface ChatCommand {
      * @param guild Guild to check permission in
      * @return CommandPermission needed to run this command
      */
-    public CommandPermission getPermission(Guild guild);
+    public CommandPermission getPermission(ConfigManager guild);
 
     /**
      * Responds to a message
      *
      * @param message Message contents
+     * @param guildData data for the guild the message was sent in
      */
-    public void respond(CommandMatcher message);
+    public void respond(CommandMatcher message, GuildDataStore guildData);
 }

@@ -23,10 +23,8 @@
  */
 package eternal.lemonadebot.database;
 
-import eternal.lemonadebot.permissions.CommandPermission;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -141,43 +139,8 @@ public class DatabaseManager implements AutoCloseable {
      */
     public GuildDataStore getGuildData(Guild guild) {
         return this.guildDataStores.computeIfAbsent(guild.getIdLong(), (Long newGuildID) -> {
-            try {
-                if (addGuild(guild)) {
-                    LOGGER.info("New guild added succesfully");
-                } else {
-                    LOGGER.warn("Tried to add guild to database but was already stored");
-                }
-            } catch (SQLException e) {
-                LOGGER.error("Error adding missing guild", e);
-            }
-            //Return guildConfigManager to the guild
             return new GuildDataStore(this.conn, guild.getJDA(), newGuildID);
         });
-    }
-
-    /**
-     * Add guild to database
-     *
-     * @param guild Guild to add
-     * @return true if add was succesfull
-     * @throws SQLException if database connection failed
-     */
-    private boolean addGuild(Guild guild) throws SQLException {
-        LOGGER.debug("Adding guild to database: " + guild.getId());
-        final String query = "INSERT OR IGNORE INTO Guilds("
-                + "id,commandPrefix,commandEditPermission,commandRunPermission,eventEditPermission,"
-                + "remainderPermission,musicPlayPermission,greetingTemplate) VALUES (?,?,?,?,?,?);";
-        try (final PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setLong(1, guild.getIdLong());
-            ps.setString(2, "lemonbot#");
-            ps.setString(3, CommandPermission.ADMIN.name());
-            ps.setString(4, CommandPermission.MEMBER.name());
-            ps.setString(5, CommandPermission.ADMIN.name());
-            ps.setString(6, CommandPermission.ADMIN.name());
-            ps.setString(7, CommandPermission.MEMBER.name());
-            ps.setString(8, "Welcome to our discord {displayName}");
-            return ps.executeUpdate() > 0;
-        }
     }
 
     private void loadGuildList(JDA jda) throws SQLException {

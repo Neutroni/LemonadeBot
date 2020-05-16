@@ -24,62 +24,48 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.customcommands.ActionEditCommand;
 import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.events.EventCommand;
-import eternal.lemonadebot.events.RemainderCommand;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.database.CustomCommandManager;
+import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.music.MusicCommand;
 import java.util.List;
 import java.util.Optional;
-import net.dv8tion.jda.api.entities.Guild;
 
 /**
+ * Class used to find command by name
  *
  * @author Neutroni
  */
 public class CommandProvider {
 
-    private final List<ChatCommand> commands;
-    private final DatabaseManager dataBase;
-
-    /**
-     * Constructor
-     *
-     * @param db database for commands to use
-     */
-    public CommandProvider(DatabaseManager db) {
-        this.commands = List.of(
-                new HelpCommand(this),
-                new MusicCommand(db),
-                new EventCommand(),
-                new RemainderCommand(db),
-                new ActionEditCommand(db),
-                new RoleCommand(),
-                new PrefixCommand(),
-                new CooldownCommand(this),
-                new PermissionCommand(),
-                new GreetCommand()
-        );
-        this.dataBase = db;
-    }
+    private static final List<ChatCommand> COMMANDS = List.of(
+            new HelpCommand(),
+            new MusicCommand(),
+            new EventCommand(),
+            new RemainderCommand(),
+            new CommandCommand(),
+            new RoleCommand(),
+            new PrefixCommand(),
+            new CooldownCommand(),
+            new PermissionCommand(),
+            new GreetCommand()
+    );
 
     /**
      * Get the action for command
      *
      * @param cmdMatcher Matcher to find command for
+     * @param guildData Stored data for the guild the message is from
      * @return CommandAction or Option.empty if command was not found
      */
-    public Optional<? extends ChatCommand> getAction(CommandMatcher cmdMatcher) {
+    public static Optional<? extends ChatCommand> getAction(CommandMatcher cmdMatcher, GuildDataStore guildData) {
         final Optional<String> name = cmdMatcher.getCommand();
         if (name.isEmpty()) {
             return Optional.empty();
         }
         final String commandName = name.get();
-        final Guild guild = cmdMatcher.getGuild();
-        return getCommand(commandName, guild);
+        return getCommand(commandName, guildData);
     }
 
     /**
@@ -89,16 +75,15 @@ public class CommandProvider {
      * @param guild guild to search command for
      * @return Optional containing the action if found, empty if not found
      */
-    public Optional<? extends ChatCommand> getCommand(String name, Guild guild) {
+    public static Optional<? extends ChatCommand> getCommand(String name, GuildDataStore guild) {
         //Check if we find command by that name
-        for (ChatCommand c : this.commands) {
-            if (name.equals(c.getCommand())) {
-                return Optional.of(c);
-            }
+        final Optional<ChatCommand> command = getBuiltInCommand(name);
+        if (command.isPresent()) {
+            return command;
         }
 
         //Check if we find custom command by that name
-        final CustomCommandManager customManager = this.dataBase.getGuildData(guild).getCustomCommands();
+        final CustomCommandManager customManager = guild.getCustomCommands();
         final Optional<CustomCommand> custom = customManager.getCommand(name);
         if (custom.isPresent()) {
             return custom;
@@ -109,12 +94,27 @@ public class CommandProvider {
     }
 
     /**
+     * Find built-in command by name
+     *
+     * @param name name of the command to find
+     * @return Optional containing the command if found
+     */
+    public static Optional<ChatCommand> getBuiltInCommand(String name) {
+        for (ChatCommand c : COMMANDS) {
+            if (name.equals(c.getCommand())) {
+                return Optional.of(c);
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
      * Get the commands
      *
      * @return List of commands
      */
-    public List<ChatCommand> getCommands() {
-        return this.commands;
+    public static List<ChatCommand> getCommands() {
+        return COMMANDS;
     }
 
 }

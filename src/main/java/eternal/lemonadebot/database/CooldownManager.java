@@ -79,7 +79,7 @@ public class CooldownManager {
         if (timeDelta.compareTo(cooldown.cooldownTime) < 0) {
             return Optional.of(getCooldownFormatted(cooldown, true));
         }
-        
+
         //Update activationTime
         cooldown.activationTime = now;
 
@@ -94,13 +94,13 @@ public class CooldownManager {
         }
         return Optional.empty();
     }
-    
-    public Optional<String> getCooldownFormatted(ChatCommand command){
+
+    public Optional<String> getCooldownFormatted(ChatCommand command) {
         final Cooldown cd = this.cooldowns.get(command.getCommand());
-        if(cd == null){
+        if (cd == null) {
             return Optional.empty();
         }
-        
+
         final Duration cooldownToFormat = cd.cooldownTime;
         if (cooldownToFormat.isNegative() || cooldownToFormat.isZero()) {
             return Optional.of("00:00:00");
@@ -189,10 +189,11 @@ public class CooldownManager {
     }
 
     /**
+     * Remove cooldown from command
      *
-     * @param command
-     * @return
-     * @throws SQLException
+     * @param command Command to remove cooldown from
+     * @return true if cooldown was removed, false otherwise
+     * @throws SQLException if database connection failed
      */
     public boolean removeCooldown(ChatCommand command) throws SQLException {
         this.cooldowns.remove(command.getCommand());
@@ -207,11 +208,12 @@ public class CooldownManager {
     }
 
     /**
+     * Set cooldown for command
      *
-     * @param command
-     * @param cooldownDuration
-     * @return
-     * @throws SQLException
+     * @param command Command to set cooldown for
+     * @param cooldownDuration Lenght of the cooldown
+     * @return true if cooldown was created
+     * @throws SQLException If database connection failed
      */
     public boolean setCooldown(ChatCommand command, Duration cooldownDuration) throws SQLException {
         final Cooldown cooldown = this.cooldowns.computeIfAbsent(command.getCommand(), (String t) -> {

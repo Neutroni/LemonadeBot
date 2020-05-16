@@ -26,8 +26,12 @@ package eternal.lemonadebot.commands;
 import eternal.lemonadebot.commandtypes.AdminCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.permissions.CommandPermission;
+import eternal.lemonadebot.permissions.PermissionKey;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,7 +40,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class PermissionCommand extends AdminCommand {
+class PermissionCommand extends AdminCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -52,14 +56,18 @@ public class PermissionCommand extends AdminCommand {
 
     @Override
     public String getHelpText() {
+        final String keys = Arrays.stream(PermissionKey.values()).map(
+                (PermissionKey key) -> {
+                    return key.toString();
+                }).collect(Collectors.joining(","));
         return "Syntax: permission <name> [level]\n"
-                + "<name> is one of commandEdit,commandRun,eventEdit,playMusic\n"
+                + "<name> is one of: " + keys + "\n"
                 + "[level] can be one of following\n"
                 + CommandPermission.getLevelDescriptions();
     }
 
     @Override
-    public void respond(CommandMatcher message) {
+    public void respond(CommandMatcher message, GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
         final String[] arguments = message.getArguments(2);
         if (arguments.length == 0) {
@@ -68,127 +76,34 @@ public class PermissionCommand extends AdminCommand {
         }
 
         //Parse arguments
-        final ConfigManager guildConf = message.getGuildData().getConfigManager();
-        switch (arguments[0]) {
-            case "commandEdit": {
-                if (arguments.length == 1) {
-                    final String enumName = guildConf.getEditPermission().name().toLowerCase();
-                    channel.sendMessage("Current permission for editing actions: " + enumName).queue();
-                    return;
-                }
-                try {
-                    final String enumString = arguments[1].toUpperCase();
-                    final CommandPermission newEditPermission = CommandPermission.valueOf(enumString);
-                    if (guildConf.setEditPermission(newEditPermission)) {
-                        channel.sendMessage("Permission updated succesfully").queue();
-                    } else {
-                        channel.sendMessage("Updating permission failed, database failed to modify any recods").queue();
-                    }
-                } catch (IllegalArgumentException e) {
-                    channel.sendMessage("Not a valid value for the permission: " + arguments[1]).queue();
-                } catch (SQLException e) {
-                    channel.sendMessage("Database connection failed, new permission in use until reboot").queue();
-                    LOGGER.debug(e.getMessage());
-                    LOGGER.trace("Stack trace:", e);
-                }
-                break;
+        final ConfigManager guildConf = guildData.getConfigManager();
+        final String permissionName = arguments[0];
+        try {
+            final PermissionKey key = PermissionKey.valueOf(permissionName);
+            if (arguments.length == 1) {
+                final CommandPermission perm = guildConf.getRequiredPermission(key);
+                final String enumName = perm.name().toLowerCase();
+                channel.sendMessage("Current permission: " + enumName).queue();
+                return;
             }
-            case "commandRun": {
-                if (arguments.length == 1) {
-                    final String enumName = guildConf.getCommandRunPermission().name().toLowerCase();
-                    channel.sendMessage("Current permission for using actions: " + enumName).queue();
-                    return;
+            try {
+                final String enumString = arguments[1].toUpperCase();
+                final CommandPermission newPermission = CommandPermission.valueOf(enumString);
+                if (guildConf.setPermission(key, newPermission)) {
+                    channel.sendMessage("Permission updated succesfully").queue();
+                } else {
+                    channel.sendMessage("Updating permission failed, database failed to modify any recods").queue();
                 }
-                try {
-                    final String enumString = arguments[1].toUpperCase();
-                    final CommandPermission newRunPermission = CommandPermission.valueOf(enumString);
-                    if (guildConf.setCommandRunPermission(newRunPermission)) {
-                        channel.sendMessage("Permission updated succesfully").queue();
-                    } else {
-                        channel.sendMessage("Updating permission failed, database failed to modify any recods").queue();
-                    }
-                } catch (IllegalArgumentException e) {
-                    channel.sendMessage("Not a valid value for the permission: " + arguments[1]).queue();
-                } catch (SQLException e) {
-                    channel.sendMessage("Database connection failed, new permission in use until reboot").queue();
-                    LOGGER.debug(e.getMessage());
-                    LOGGER.trace("Stack trace:", e);
-                }
-                break;
+            } catch (IllegalArgumentException e) {
+                channel.sendMessage("Not a valid value for the permission: " + arguments[1]).queue();
+            } catch (SQLException e) {
+                channel.sendMessage("Database connection failed, new permission in use until reboot").queue();
+                LOGGER.error("Failure to update permission in database");
+                LOGGER.error(e.getMessage());
+                LOGGER.trace("Stack trace:", e);
             }
-            case "eventEdit": {
-                if (arguments.length == 1) {
-                    final String enumName = guildConf.getEventPermission().name().toLowerCase();
-                    channel.sendMessage("Current permission for editing events: " + enumName).queue();
-                    return;
-                }
-                try {
-                    final String enumString = arguments[1].toUpperCase();
-                    final CommandPermission newEventPermission = CommandPermission.valueOf(enumString);
-                    if (guildConf.setEventPermission(newEventPermission)) {
-                        channel.sendMessage("Permission updated succesfully").queue();
-                    } else {
-                        channel.sendMessage("Updating permission failed, database failed to modify any recods").queue();
-                    }
-                } catch (IllegalArgumentException e) {
-                    channel.sendMessage("Not a valid value for the permission: " + arguments[1]).queue();
-                } catch (SQLException e) {
-                    channel.sendMessage("Database connection failed, new permission in use until reboot").queue();
-                    LOGGER.debug(e.getMessage());
-                    LOGGER.trace("Stack trace:", e);
-                }
-                break;
-            }
-            case "remainderEdit": {
-                if (arguments.length == 1) {
-                    final String enumName = guildConf.getRemainderPermissions().name().toLowerCase();
-                    channel.sendMessage("Current permission for editing remainders: " + enumName).queue();
-                    return;
-                }
-                try {
-                    final String enumString = arguments[1].toUpperCase();
-                    final CommandPermission newRemainderPermission = CommandPermission.valueOf(enumString);
-                    if (guildConf.setRemainderPermission(newRemainderPermission)) {
-                        channel.sendMessage("Permission updated succesfully").queue();
-                    } else {
-                        channel.sendMessage("Updating permission failed, database failed to modify any recods").queue();
-                    }
-                } catch (IllegalArgumentException e) {
-                    channel.sendMessage("Not a valid value for the permission: " + arguments[1]).queue();
-                } catch (SQLException e) {
-                    channel.sendMessage("Database connection failed, new permission in use until reboot").queue();
-                    LOGGER.debug(e.getMessage());
-                    LOGGER.trace("Stack trace:", e);
-                }
-                break;
-            }
-            case "playMusic": {
-                if (arguments.length == 1) {
-                    final String enumName = guildConf.getPlayPermission().name().toLowerCase();
-                    channel.sendMessage("Current permission for playing music: " + enumName).queue();
-                    return;
-                }
-                try {
-                    final String enumString = arguments[1].toUpperCase();
-                    final CommandPermission newMusicPermission = CommandPermission.valueOf(enumString);
-                    if (guildConf.setPlayPermission(newMusicPermission)) {
-                        channel.sendMessage("Permission updated succesfully").queue();
-                    } else {
-                        channel.sendMessage("Updating permission failed, database failed to modify any recods").queue();
-                    }
-                } catch (IllegalArgumentException e) {
-                    channel.sendMessage("Not a valid value for the permission: " + arguments[1]).queue();
-                } catch (SQLException e) {
-                    channel.sendMessage("Database connection failed, new permission in use untill reboot").queue();
-                    LOGGER.debug(e.getMessage());
-                    LOGGER.trace("Stack trace:", e);
-                }
-                break;
-            }
-            default: {
-                channel.sendMessage("Unkown option: " + arguments[0]).queue();
-            }
+        } catch (IllegalArgumentException e) {
+            channel.sendMessage("Unknown permission: " + permissionName).queue();
         }
     }
-
 }

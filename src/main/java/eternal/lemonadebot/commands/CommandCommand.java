@@ -21,15 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.customcommands;
+package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.CustomCommandManager;
-import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.customcommands.CustomCommand;
+import eternal.lemonadebot.customcommands.TemplateManager;
+import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.permissions.CommandPermission;
+import eternal.lemonadebot.permissions.PermissionKey;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -45,55 +48,43 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class ActionEditCommand implements ChatCommand {
+public class CommandCommand implements ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final DatabaseManager db;
-
-    /**
-     * Constructor
-     *
-     * @param database database to store custom commands in
-     */
-    public ActionEditCommand(DatabaseManager database) {
-        this.db = database;
-    }
-
     @Override
     public String getCommand() {
-        return "action";
+        return "command";
     }
 
     @Override
     public String getDescription() {
-        return "Manage actions";
+        return "Manage custom commands";
     }
 
     @Override
     public String getHelpText() {
-        return " Syntax: action <option> [name] [template]\n"
+        return " Syntax: command <option> [name] [template]\n"
                 + "<option> can be one of the following:\n"
-                + " create - create new action\n"
-                + " delete - delete action\n"
-                + " keys - shows list of keys action can contain\n"
-                + " list - show list of actions\n"
+                + " create - create new custom command\n"
+                + " delete - delete custom command\n"
+                + " keys - shows list of keys custom command can contain\n"
+                + " list - show list of custom commands\n"
                 + "[name] name for action\n"
-                + "[template] template for action, see below for syntax\n"
-                + "Syntax for actions:\n"
+                + "[template] template for custom command, see below for syntax\n"
+                + "Syntax for custom commands:\n"
                 + " Text in the template will mostly be shown as is,\n"
                 + " but you can use {key} to modify parts of the message.\n"
-                + " See \"action keys\" to see all keys\n";
+                + " See \"command keys\" to see all keys\n";
     }
 
     @Override
-    public CommandPermission getPermission(Guild guild) {
-        final ConfigManager guildConf = this.db.getGuildData(guild).getConfigManager();
-        return guildConf.getEditPermission();
+    public CommandPermission getPermission(ConfigManager guild) {
+        return guild.getRequiredPermission(PermissionKey.EditCommands);
     }
 
     @Override
-    public void respond(CommandMatcher matcher) {
+    public void respond(CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final String[] arguments = matcher.getArguments(2);
         if (arguments.length == 0) {
@@ -102,15 +93,15 @@ public class ActionEditCommand implements ChatCommand {
         }
         switch (arguments[0]) {
             case "create": {
-                createCustomCommand(arguments, matcher);
+                createCustomCommand(arguments, matcher, guildData);
                 break;
             }
             case "delete": {
-                deleteCustomCommand(arguments, matcher);
+                deleteCustomCommand(arguments, matcher, guildData);
                 break;
             }
             case "list": {
-                listCustomCommands(matcher);
+                listCustomCommands(matcher, guildData);
                 break;
             }
             case "keys": {
@@ -126,25 +117,32 @@ public class ActionEditCommand implements ChatCommand {
         }
     }
 
-    private void createCustomCommand(String[] arguments, CommandMatcher matcher) {
+    private void createCustomCommand(String[] arguments, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         if (arguments.length < 2) {
             textChannel.sendMessage("Creating custom command requires a name for the command").queue();
             return;
         }
         if (arguments.length < 3) {
-            textChannel.sendMessage("Command must contain a template string for the response").queue();
+            textChannel.sendMessage("Custom command must contain a template string for the response").queue();
             return;
         }
         final String commandName = arguments[1];
-        final CustomCommandManager commands = matcher.getGuildData().getCustomCommands();
+
+        //Check that there is no such built in command
+        if (CommandProvider.getBuiltInCommand(commandName).isPresent()) {
+            textChannel.sendMessage("Command with that name already exists.").queue();
+            return;
+        }
+        
+        final CustomCommandManager commands = guildData.getCustomCommands();
         final Optional<CustomCommand> oldCommand = commands.getCommand(commandName);
         if (oldCommand.isPresent()) {
             try {
                 if (commands.addCommand(oldCommand.get())) {
-                    textChannel.sendMessage("Found old command by that name in memory, succesfully added it to database").queue();
+                    textChannel.sendMessage("Found old custom command by that name in memory, succesfully added it to database").queue();
                 } else {
-                    textChannel.sendMessage("Command with that name alredy exists, "
+                    textChannel.sendMessage("Custom command with that name alredy exists, "
                             + "if you want to edit command remove old one first, "
                             + "otherwise provide different name for the command").queue();
                 }
@@ -159,16 +157,16 @@ public class ActionEditCommand implements ChatCommand {
         }
         final String commandTemplate = arguments[2];
         final Member sender = matcher.getMember();
-        final CustomCommand newAction = commands.build(commandName, commandTemplate, sender.getIdLong());
+        final CustomCommand newAction = new CustomCommand(commandName, commandTemplate, sender.getIdLong());
         {
             try {
                 if (commands.addCommand(newAction)) {
-                    textChannel.sendMessage("Command added succesfully").queue();
+                    textChannel.sendMessage("Custom command added succesfully").queue();
                 } else {
-                    textChannel.sendMessage("Command alredy exists, propably a database error").queue();
+                    textChannel.sendMessage("Custom command alredy exists, propably a database error").queue();
                 }
             } catch (SQLException ex) {
-                textChannel.sendMessage("Adding command to database failed, added to temporary memory that will be lost on reboot").queue();
+                textChannel.sendMessage("Adding custmo command to database failed, added to temporary memory that will be lost on reboot").queue();
 
                 LOGGER.error("Failure to add custom command");
                 LOGGER.warn(ex.getMessage());
@@ -177,17 +175,17 @@ public class ActionEditCommand implements ChatCommand {
         }
     }
 
-    private void deleteCustomCommand(String[] arguments, CommandMatcher matcher) {
+    private void deleteCustomCommand(String[] arguments, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         if (arguments.length < 2) {
             textChannel.sendMessage("Deleting custom command requires a name of the the command to remove").queue();
             return;
         }
         final String commandName = arguments[1];
-        final CustomCommandManager commands = matcher.getGuildData().getCustomCommands();
+        final CustomCommandManager commands = guildData.getCustomCommands();
         final Optional<CustomCommand> optCommand = commands.getCommand(commandName);
         if (optCommand.isEmpty()) {
-            textChannel.sendMessage("No such command as " + commandName).queue();
+            textChannel.sendMessage("No such custom command as " + commandName).queue();
             return;
         }
         final CustomCommand command = optCommand.get();
@@ -197,20 +195,20 @@ public class ActionEditCommand implements ChatCommand {
         final Member sender = matcher.getMember();
         final boolean hasPermission = PermissionUtilities.hasPermission(sender, commandOwner);
         if (!hasPermission) {
-            textChannel.sendMessage("You do not have permission to delete that command, "
-                    + "only the command owner and admins can delete commands").queue();
+            textChannel.sendMessage("You do not have permission to delete that custom command, "
+                    + "only the custom command owner and admins can delete custom commands").queue();
             return;
         }
 
         //Delete the command
         try {
             if (commands.removeCommand(command)) {
-                textChannel.sendMessage("Command deleted succesfully").queue();
+                textChannel.sendMessage("Custom command deleted succesfully").queue();
                 return;
             }
-            textChannel.sendMessage("Command was alredy deleted, propably a database error").queue();
+            textChannel.sendMessage("Custom command was alredy deleted, propably a database error").queue();
         } catch (SQLException ex) {
-            textChannel.sendMessage("Deleting command from database failed, deleted from temporary memory, command will be back after reboot").queue();
+            textChannel.sendMessage("Deleting custom command from database failed, deleted from temporary memory, command will be back after reboot").queue();
 
             LOGGER.error("Failure to delete custom command");
             LOGGER.warn(ex.getMessage());
@@ -218,8 +216,8 @@ public class ActionEditCommand implements ChatCommand {
         }
     }
 
-    private void listCustomCommands(CommandMatcher matcher) {
-        final List<CustomCommand> coms = matcher.getGuildData().getCustomCommands().getCommands();
+    private void listCustomCommands(CommandMatcher matcher, GuildDataStore guildData) {
+        final List<CustomCommand> coms = guildData.getCustomCommands().getCommands();
         final Guild guild = matcher.getGuild();
         final TextChannel textChannel = matcher.getTextChannel();
         final StringBuilder sb = new StringBuilder("Commands:\n");
@@ -227,7 +225,7 @@ public class ActionEditCommand implements ChatCommand {
             final Member creator = guild.getMemberById(c.getOwner());
             final String creatorName;
             if (creator == null) {
-                creatorName = "Unkown";
+                creatorName = "Unknown";
             } else {
                 creatorName = creator.getEffectiveName();
             }

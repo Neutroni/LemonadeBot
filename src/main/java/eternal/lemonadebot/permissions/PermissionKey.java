@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2020 Neutroni.
+ * Copyright 2020 joonas.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,21 +21,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.commandtypes;
-
-import eternal.lemonadebot.database.ConfigManager;
-import eternal.lemonadebot.permissions.CommandPermission;
+package eternal.lemonadebot.permissions;
 
 /**
- * Abstract class to provide quick way of writing commands that only
- * adminstrators can use
  *
- * @author Neutroni
+ * @author joonas
  */
-public abstract class AdminCommand implements ChatCommand {
+public enum PermissionKey {
+    /**
+     * Name of permission for using custom commands
+     */
+    RunCommands(CommandPermission.MEMBER),
+    /**
+     * Name of permission for editing custom commands
+     */
+    EditCommands(CommandPermission.ADMIN),
+    /**
+     * Name of permission for editing events
+     */
+    EditEvents(CommandPermission.ADMIN),
+    /**
+     * Name of permission for editing remainders
+     */
+    EditRemainders(CommandPermission.ADMIN),
+    /**
+     * Name of permission for playing music
+     */
+    PlayMusic(CommandPermission.MEMBER),
+    /**
+     * Name of permission for editing aliases
+     */
+    EditAliases(CommandPermission.ADMIN);
 
-    @Override
-    public CommandPermission getPermission(ConfigManager guild) {
-        return CommandPermission.ADMIN;
+    private final CommandPermission defaultPermission;
+
+    private PermissionKey(CommandPermission defaultValue) {
+        this.defaultPermission = defaultValue;
     }
+
+    /**
+     * Get the default permissionlevel
+     *
+     * @return CommandPermission
+     */
+    public CommandPermission getDefaultpermission() {
+        return this.defaultPermission;
+    }
+
 }

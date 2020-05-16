@@ -27,6 +27,7 @@ import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.AdminCommand;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.CooldownManager;
+import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.permissions.CommandPermission;
 import java.sql.SQLException;
 import java.time.Duration;
@@ -43,12 +44,6 @@ import org.apache.logging.log4j.Logger;
 public class CooldownCommand extends AdminCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
-
-    private final CommandProvider commands;
-
-    CooldownCommand(CommandProvider commandProvider) {
-        this.commands = commandProvider;
-    }
 
     @Override
     public String getCommand() {
@@ -69,7 +64,7 @@ public class CooldownCommand extends AdminCommand {
     }
 
     @Override
-    public void respond(CommandMatcher message) {
+    public void respond(CommandMatcher message, GuildDataStore guildData) {
         final String[] options = message.getArguments(3);
         final TextChannel channel = message.getTextChannel();
         if (options.length == 0) {
@@ -77,7 +72,7 @@ public class CooldownCommand extends AdminCommand {
             return;
         }
         final String commandName = options[0];
-        final Optional<? extends ChatCommand> optCommand = this.commands.getCommand(commandName, message.getGuild());
+        final Optional<? extends ChatCommand> optCommand = CommandProvider.getCommand(commandName, guildData);
         if (optCommand.isEmpty()) {
             channel.sendMessage("No such command:" + commandName).queue();
             return;
@@ -85,13 +80,13 @@ public class CooldownCommand extends AdminCommand {
         final ChatCommand command = optCommand.get();
 
         //Do not allow setting cooldown for admin commands
-        if (CommandPermission.ADMIN == command.getPermission(message.getGuild())) {
+        if (CommandPermission.ADMIN == command.getPermission(guildData.getConfigManager())) {
             channel.sendMessage("Can't set a cooldown for admin commands.").queue();
             return;
         }
 
         //No time
-        final CooldownManager cooldownManager = message.getGuildData().getCooldownManager();
+        final CooldownManager cooldownManager = guildData.getCooldownManager();
         if (options.length < 2) {
             final Optional<String> optCooldown = cooldownManager.getCooldownFormatted(command);
             if (optCooldown.isEmpty()) {

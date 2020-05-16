@@ -23,7 +23,8 @@
  */
 package eternal.lemonadebot;
 
-import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.ConfigManager;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,26 +42,39 @@ public class CommandMatcher {
 
     private final Message message;
     private final String messageText;
-    private final GuildDataStore guildData;
     private final Matcher matcher;
     private final boolean matches;
 
     /**
      * Constructor
      *
-     * @param pattern pattern to use to match commands
+     * @param guildDataStore datastore for guild
      * @param msg command message
      */
-    CommandMatcher(GuildDataStore guildDataStore, Message msg) {
+    CommandMatcher(ConfigManager configManager, Message msg) {
         if (!msg.isFromGuild()) {
             throw new IllegalArgumentException("Only messages from guilds supported");
         }
 
         this.message = msg;
         this.messageText = msg.getContentRaw();
-        this.guildData = guildDataStore;
-        final Pattern pattern = guildData.getConfigManager().getCommandPattern();
-        this.matcher = pattern.matcher(messageText);
+        final Pattern pattern = configManager.getCommandPattern();
+        this.matcher = pattern.matcher(this.messageText);
+        this.matches = this.matcher.find();
+    }
+
+    /**
+     * Fake constructor for aliased command invocations
+     *
+     * @param configManager Configmanager to get commandpattern from
+     * @param orignalMatcher Matcher that originally handled the message
+     * @param fakeContent content to override the matchers content with
+     */
+    public CommandMatcher(ConfigManager configManager, CommandMatcher orignalMatcher, String fakeContent) {
+        this.message = orignalMatcher.message;
+        this.messageText = fakeContent;
+        final Pattern pattern = configManager.getCommandPattern();
+        this.matcher = pattern.matcher(this.messageText);
         this.matches = this.matcher.find();
     }
 
@@ -96,30 +110,30 @@ public class CommandMatcher {
     }
 
     /**
-     * Get the guildata for the related guild
-     *
-     * @return GuildDataStore
-     */
-    public GuildDataStore getGuildData() {
-        return this.guildData;
-    }
-
-    /**
-     * Get the message this commandmatcher matches against
-     *
-     * @return Message
-     */
-    public Message getMessage() {
-        return this.message;
-    }
-
-    /**
      * Get member who sent the message
      *
      * @return Member who sent the message
      */
     public Member getMember() {
         return this.message.getMember();
+    }
+
+    /**
+     * Get text content of the message
+     *
+     * @return Same as message.getContentRaw()
+     */
+    public String getMessageText() {
+        return this.messageText;
+    }
+
+    /**
+     * Get list of members mentioned in the message
+     *
+     * @return Same as message.getMentionedMembers();
+     */
+    public List<Member> getMentionedMembers() {
+        return this.message.getMentionedMembers();
     }
 
     /**

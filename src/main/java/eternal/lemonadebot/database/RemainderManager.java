@@ -68,26 +68,12 @@ public class RemainderManager {
      * @param em EventManager to fetch events from
      * @param jda JDA to pass to remainders
      */
-    RemainderManager(Connection conn, JDA jda, EventManager em) {
+    RemainderManager(Connection conn, JDA jda, EventManager em, long guild) {
         this.conn = conn;
         this.jda = jda;
         this.eventManager = em;
-        this.guildID = em.getGuildID();
+        this.guildID = guild;
         loadRemainders();
-    }
-
-    /**
-     * Builds remainder
-     *
-     * @param textChannel channel for remainder
-     * @param event event the remainder is for
-     * @param mentions who the remainder notifies
-     * @param day day for remainder
-     * @param time time for remainder
-     * @return new remainder
-     */
-    public Remainder build(long textChannel, Event event, MentionEnum mentions, DayOfWeek day, LocalTime time) {
-        return new Remainder(this.jda, textChannel, event, mentions, day, time);
     }
 
     /**
@@ -228,7 +214,7 @@ public class RemainderManager {
                         continue;
                     }
                     final long remainderChannel = rs.getLong("channel");
-                    final Remainder remainder = build(remainderChannel, optEvent.get(), me, activationDay, activationTime);
+                    final Remainder remainder = new Remainder(this.jda, remainderChannel, optEvent.get(), me, activationDay, activationTime);
 
                     remainders.add(remainder);
                     LOGGER.debug("Remainder loaded for event " + remainder.getEvent().getName());

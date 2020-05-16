@@ -26,6 +26,7 @@ package eternal.lemonadebot.commands;
 import eternal.lemonadebot.commandtypes.AdminCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.database.GuildDataStore;
 import java.sql.SQLException;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
@@ -56,7 +57,7 @@ class PrefixCommand extends AdminCommand {
     }
 
     @Override
-    public void respond(CommandMatcher matcher) {
+    public void respond(CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel channel = matcher.getTextChannel();
 
         //Check if user provide prefix
@@ -68,7 +69,7 @@ class PrefixCommand extends AdminCommand {
 
         //Update the prefix
         final String newPrefix = options[0];
-        final ConfigManager guildConf = matcher.getGuildData().getConfigManager();
+        final ConfigManager guildConf = guildData.getConfigManager();
         try {
             guildConf.setCommandPrefix(newPrefix);
             channel.sendMessage("Updated prefix succesfully to: " + newPrefix).queue();

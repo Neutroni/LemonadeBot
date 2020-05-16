@@ -55,7 +55,6 @@ public class MessageListener extends ListenerAdapter {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final DatabaseManager db;
-    private final CommandProvider commandProvider;
 
     /**
      * Constructor
@@ -64,7 +63,6 @@ public class MessageListener extends ListenerAdapter {
      */
     public MessageListener(DatabaseManager database) {
         this.db = database;
-        this.commandProvider = new CommandProvider(db);
     }
 
     /**
@@ -93,9 +91,10 @@ public class MessageListener extends ListenerAdapter {
         //Check if message is a command
         final Guild eventGuild = event.getGuild();
         final GuildDataStore guildData = this.db.getGuildData(eventGuild);
+        final ConfigManager configManager = guildData.getConfigManager();
         final Message message = event.getMessage();
-        final CommandMatcher cmdMatch = new CommandMatcher(guildData, message);
-        final Optional<? extends ChatCommand> action = this.commandProvider.getAction(cmdMatch);
+        final CommandMatcher cmdMatch = new CommandMatcher(configManager, message);
+        final Optional<? extends ChatCommand> action = CommandProvider.getAction(cmdMatch, guildData);
         if (action.isEmpty()) {
             return;
         }
@@ -103,12 +102,12 @@ public class MessageListener extends ListenerAdapter {
 
         //Log the message if debug is enabled
         LOGGER.debug(() -> {
-            return "Found command: " + command.getCommand() + " in " + cmdMatch.getMessage().getContentRaw();
+            return "Found command: " + command.getCommand() + " in " + cmdMatch.getMessageText();
         });
 
         //Check if user has permission
-        final Member member = event.getMember();
-        if (!PermissionUtilities.hasPermission(member, command)) {
+        final Member member = cmdMatch.getMember();
+        if (!PermissionUtilities.hasPermission(member, configManager, command)) {
             return;
         }
 
@@ -128,7 +127,7 @@ public class MessageListener extends ListenerAdapter {
         }
 
         //Run the command
-        command.respond(cmdMatch);
+        command.respond(cmdMatch, guildData);
 
     }
 

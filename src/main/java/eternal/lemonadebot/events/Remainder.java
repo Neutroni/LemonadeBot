@@ -41,6 +41,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
+ * Class that stores a remainder, used to send a message at specified time
  *
  * @author Neutroni
  */
