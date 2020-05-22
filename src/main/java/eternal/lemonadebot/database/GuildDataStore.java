@@ -51,7 +51,7 @@ public class GuildDataStore {
         this.events = new EventManager(connection, guild);
         this.cooldowns = new CooldownManager(connection, guild);
         this.commands = new CustomCommandManager(connection, this.cooldowns, guild);
-        this.remainders = new RemainderManager(connection, jda, this.events, guild);
+        this.remainders = new RemainderManager(connection, jda, this, guild);
     }
 
     /**

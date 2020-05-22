@@ -70,6 +70,18 @@ public class DatabaseManager implements AutoCloseable {
     }
 
     /**
+     * Get GuildDataStore for guild
+     *
+     * @param guild guild to get manager for
+     * @return GuildDataStore
+     */
+    public GuildDataStore getGuildData(Guild guild) {
+        return this.guildDataStores.computeIfAbsent(guild.getIdLong(), (Long newGuildID) -> {
+            return new GuildDataStore(this.conn, guild.getJDA(), newGuildID);
+        });
+    }
+
+    /**
      * Creates the database for the bot
      *
      * @param dbLocation location for database
@@ -115,10 +127,10 @@ public class DatabaseManager implements AutoCloseable {
                 + "name TEXT NOT NULL,"
                 + "day TEXT NOT NULL,"
                 + "time TEXT NOT NULL,"
-                + "mention TEXT NOT NULL,"
+                + "message TEXT NOT NULL,"
+                + "author INTEGER NOT NULL,"
                 + "channel INTEGER NOT NULL,"
-                + "FOREIGN KEY (guild,name) REFERENCES Events(guild, name) ON DELETE CASCADE,"
-                + "PRIMARY KEY (guild,name,day,time));";
+                + "PRIMARY KEY (guild,name));";
         try (final Statement st = this.conn.createStatement()) {
             st.addBatch(GUILDCONF);
             st.addBatch(COMMANDS);
@@ -129,18 +141,6 @@ public class DatabaseManager implements AutoCloseable {
             st.executeBatch();
         }
         LOGGER.debug("Database initialized");
-    }
-
-    /**
-     * Get GuildDataStore for guild
-     *
-     * @param guild guild to get manager for
-     * @return GuildDataStore
-     */
-    public GuildDataStore getGuildData(Guild guild) {
-        return this.guildDataStores.computeIfAbsent(guild.getIdLong(), (Long newGuildID) -> {
-            return new GuildDataStore(this.conn, guild.getJDA(), newGuildID);
-        });
     }
 
     private void loadGuildList(JDA jda) throws SQLException {

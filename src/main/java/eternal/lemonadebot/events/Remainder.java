@@ -23,19 +23,22 @@
  */
 package eternal.lemonadebot.events;
 
+import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.commands.CommandProvider;
+import eternal.lemonadebot.commandtypes.ChatCommand;
+import eternal.lemonadebot.database.ConfigManager;
+import eternal.lemonadebot.database.GuildDataStore;
+import java.sql.SQLException;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.TimerTask;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,28 +53,35 @@ public class Remainder extends TimerTask {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final JDA jda;
-    private final DayOfWeek day;
+    private final String name;
+    private final Optional<DayOfWeek> day;
     private final LocalTime time;
+    private final long author;
     private final long channelID;
-    private final Event event;
-    private final MentionEnum mentions;
+    private final String remainderText;
+    private final GuildDataStore guildData;
 
     /**
      * Constructor
      *
      * @param jda JDA to use for getting channel
-     * @param textChannel channel the message should be sent in
-     * @param event event this remainder is for
-     * @param mentions Who to mention in remainder messsage
+     * @param guildData Datastore for the guild
+     * @param name Name of the remainder
+     * @param channelID ID of the channel the message should be sent in
+     * @param author Autoher of the remainder
+     * @param input Input string to either send or execute if it is a command
      * @param day Weekday the reminder happens
      * @param time Time for remainder in UTC
      */
-    public Remainder(JDA jda, long textChannel, Event event, MentionEnum mentions, DayOfWeek day, LocalTime time) {
+    public Remainder(JDA jda, GuildDataStore guildData, String name, long channelID,
+            long author, String input, DayOfWeek day, LocalTime time) {
         this.jda = jda;
-        this.channelID = textChannel;
-        this.event = event;
-        this.mentions = mentions;
-        this.day = day;
+        this.guildData = guildData;
+        this.name = name;
+        this.channelID = channelID;
+        this.author = author;
+        this.remainderText = input;
+        this.day = Optional.ofNullable(day);
         this.time = time;
     }
 
@@ -80,46 +90,77 @@ public class Remainder extends TimerTask {
      */
     @Override
     public void run() {
-        LOGGER.debug("Event remainder started for event" + this.event.getName());
+        LOGGER.debug("Remainder started: " + this.name);
+        //Check remainder channel can be found
         final TextChannel channel = this.jda.getTextChannelById(channelID);
         if (channel == null) {
-            LOGGER.warn("Remainder for textchannel that does not exists, channel id:" + this.channelID);
+            LOGGER.debug("Remainder for textchannel that does not exists, channel id:" + this.channelID + " Deleting remainder");
+            try {
+                this.guildData.getRemainderManager().deleteRemainder(this);
+                LOGGER.info("Remainder with missing channel deleted: " + this.channelID);
+            } catch (SQLException ex) {
+                LOGGER.error("Error removing remainder with missing channel");
+                LOGGER.error(ex.getMessage());
+                LOGGER.trace(ex);
+            }
             return;
         }
-        MessageBuilder mb = new MessageBuilder(this.event.getDescription());
-        mb.append(" time");
-        switch (this.mentions) {
-            case HERE: {
-                final List<Role> roles = channel.getGuild().getRolesByName("here", true);
-                for (Role r : roles) {
-                    mb.append(' ');
-                    mb.append(r);
-                }
-                break;
+        //Check remainder author can be found
+        final Member member = channel.getGuild().getMemberById(this.author);
+        if (member == null) {
+            LOGGER.debug("Remainder with missing author, member id:" + this.author + " Deleting remainder");
+            try {
+                this.guildData.getRemainderManager().deleteRemainder(this);
+                LOGGER.info("Remainder with missing author deleted");
+            } catch (SQLException ex) {
+                LOGGER.error("Error removing remainder with missing author");
+                LOGGER.error(ex.getMessage());
+                LOGGER.trace(ex);
             }
-            case EVENT: {
-                for (long id : this.event.getMembers()) {
-                    final Member m = channel.getGuild().getMemberById(id);
-                    if (m != null) {
-                        mb.append(' ');
-                        mb.append(m);
-                    }
-                }
-                break;
-            }
+            return;
         }
 
-        mb.sendTo(channel).queue();
-        LOGGER.debug("Message sent to channel " + channel.getName());
+        final ConfigManager config = this.guildData.getConfigManager();
+        final String fakeCommand = this.remainderText + config.getCommandPrefix();
+        final CommandMatcher matcher = new CommandMatcher(config, member, channel, fakeCommand);
+        final Optional<? extends ChatCommand> optCommand = CommandProvider.getAction(matcher, guildData);
+        if (optCommand.isEmpty()) {
+            if (this.remainderText.isBlank()) {
+                LOGGER.warn("Remainder ignored because messageText is invalid, remainder name: " + this.name);
+                return;
+            }
+            channel.sendMessage(this.remainderText).queue();
+            LOGGER.debug("Remainder sent as is succesfully on channel" + channel.getName());
+            return;
+        }
+        final ChatCommand command = optCommand.get();
+        command.respond(matcher, guildData);
+        LOGGER.debug("Remainder succesfully activated on channel" + channel.getName());
     }
 
     /**
-     * Get the event this remainder is for
      *
-     * @return Event
+     * @return
      */
-    public Event getEvent() {
-        return this.event;
+    public String getName() {
+        return this.name;
+    }
+
+    /**
+     * Get the ID for text channel this remainder will appear in
+     *
+     * @return TextChannel
+     */
+    public long getChannel() {
+        return this.channelID;
+    }
+
+    public String getMessage() {
+        return this.remainderText;
+    }
+
+    public long getAuthor() {
+        return this.author;
     }
 
     /**
@@ -134,9 +175,9 @@ public class Remainder extends TimerTask {
     /**
      * Get weekday this event activates at
      *
-     * @return day of the week as string
+     * @return day of the week or null if no day specified
      */
-    public DayOfWeek getDay() {
+    public Optional<DayOfWeek> getDay() {
         return this.day;
     }
 
@@ -146,26 +187,17 @@ public class Remainder extends TimerTask {
      * @return Date for this remainder
      */
     public Date getActivationDate() {
-        OffsetDateTime activationTime = OffsetDateTime.now(Clock.systemUTC()).with(TemporalAdjusters.next(this.day)).with(time);
+        OffsetDateTime activationTime = OffsetDateTime.now(Clock.systemUTC()).with(time);
+        if (this.day.isPresent()) {
+            final DayOfWeek weekday = this.day.get();
+            activationTime = activationTime.with(TemporalAdjusters.nextOrSame(weekday));
+            if (activationTime.isBefore(OffsetDateTime.now())) {
+                activationTime = activationTime.with(TemporalAdjusters.next(weekday));
+            }
+        } else if (activationTime.isBefore(OffsetDateTime.now())) {
+            activationTime = activationTime.plusDays(1);
+        }
         return Date.from(activationTime.toInstant());
-    }
-
-    /**
-     * Get mention mode for this remainder
-     *
-     * @return MentionEnum
-     */
-    public MentionEnum getMentionMode() {
-        return this.mentions;
-    }
-
-    /**
-     * Get the ID for text channel this remainder will appear in
-     *
-     * @return TextChannel
-     */
-    public long getChannel() {
-        return this.channelID;
     }
 
     /**
@@ -174,7 +206,12 @@ public class Remainder extends TimerTask {
      * @return true if channel for remainder exists
      */
     public boolean isValid() {
-        return (this.jda.getTextChannelById(this.channelID) != null);
+        final TextChannel channel = this.jda.getTextChannelById(this.channelID);
+        if (channel == null) {
+            return false;
+        }
+        final Member member = channel.getGuild().getMemberById(this.author);
+        return member != null;
     }
 
     /**
@@ -185,39 +222,39 @@ public class Remainder extends TimerTask {
     @Override
     public String toString() {
         final TextChannel channel = this.jda.getTextChannelById(channelID);
-        final StringBuilder sb = new StringBuilder();
         if (channel == null) {
-            sb.append(this.event.getName()).append(' ')
-                    .append(this.day.toString().toLowerCase()).append(' ')
-                    .append(this.time.toString())
-                    .append("channel could not be found and remainder is inactive");
-            return sb.toString();
+            return "Invalid remainder";
         }
-        sb.append(this.event.getName()).append(' ')
-                .append(this.day.toString().toLowerCase()).append(' ')
-                .append(this.time.toString())
-                .append(" on channel ").append(channel.getAsMention());
-        //gdds sunday 17:00 on channel #general
+        final Member member = channel.getGuild().getMemberById(this.author);
+        if (member == null) {
+            return "Invalid remainder";
+        }
+        final StringBuilder sb = new StringBuilder();
+        final String dayString;
+        if (this.day == null) {
+            dayString = "every day";
+        } else {
+            dayString = this.day.toString().toLowerCase();
+        }
+        sb.append(this.getName()).append(" - ")
+                .append(this.time.toString()).append(' ')
+                .append(dayString).append(' ')
+                .append(" on channel ").append(channel.getAsMention())
+                .append(" by ").append(member.getEffectiveName());
+        //gdds - sunday 17:00 on channel #general by author
         return sb.toString();
     }
 
     @Override
     public int hashCode() {
-        int hash = 3;
-        hash = 41 * hash + Objects.hashCode(this.day);
-        hash = 41 * hash + Objects.hashCode(this.time);
-        hash = 41 * hash + Objects.hashCode(this.event);
-        return hash;
+        return this.name.hashCode();
     }
 
     @Override
     public boolean equals(Object other) {
         if (other instanceof Remainder) {
             Remainder otherRemainder = (Remainder) other;
-            final boolean sameEvent = this.event.getName().equals(otherRemainder.getEvent().getName());
-            final boolean sameDay = this.getDay().equals(otherRemainder.getDay());
-            final boolean sameTime = this.getTime().equals(otherRemainder.getTime());
-            return sameEvent && sameDay && sameTime;
+            return this.getName().equals(otherRemainder.getName());
         }
         return false;
     }

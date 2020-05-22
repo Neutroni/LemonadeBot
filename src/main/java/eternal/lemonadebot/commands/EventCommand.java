@@ -209,19 +209,6 @@ public class EventCommand extends UserCommand {
         }
 
         try {
-            //Delete remainders for the event
-            for (Remainder r : remainders.getRemainders()) {
-                if (event.equals(r.getEvent())) {
-                    try {
-                        remainders.deleteRemainder(r);
-                    } catch (SQLException e) {
-                        LOGGER.warn("Error removing remainder for event about to be removed");
-                        LOGGER.warn(e.getMessage());
-                        LOGGER.trace("Stack Trace", e);
-                    }
-                }
-            }
-            //Delete event
             if (events.removeEvent(event)) {
                 textChannel.sendMessage("Event succesfully removed").queue();
                 return;

@@ -37,8 +37,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
 
 /**
  * Class that holds templates for custom commands and how to substitute given
@@ -48,19 +50,20 @@ import net.dv8tion.jda.api.entities.Member;
  */
 public class TemplateManager {
 
-    private static final Random rng = new Random();
+    private static final Random RNG = new Random();
+    private static final Pattern MENTION_PATTERN = Message.MentionType.USER.getPattern();
     private static final List<ActionTemplate> actions = List.of(
             new ActionTemplate("\\{choice (.*(\\|.*)+)\\}", "{choice a|b} - Selects value separated by | randomly",
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
                         final String[] parts = input.group(1).split("\\|");
-                        final String response = parts[rng.nextInt(parts.length)];
+                        final String response = parts[RNG.nextInt(parts.length)];
                         return "" + response;
                     }),
             new ActionTemplate("\\{rng (\\d+),(\\d+)\\}", "{rng x,y} - Generate random number between the two inputs.",
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
                         final int start = Integer.parseInt(input.group(1));
                         final int end = Integer.parseInt(input.group(2));
-                        return "" + (rng.nextInt(end) + start);
+                        return "" + (RNG.nextInt(end) + start);
                     }),
             new ActionTemplate("\\{message\\}", "{message} Use the input as part of the reply",
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
@@ -80,12 +83,13 @@ public class TemplateManager {
                     }),
             new ActionTemplate("\\{mentions\\}", "{mentions} - Lists the mentioned users",
                     (CommandMatcher matcher, GuildDataStore guildData, Matcher input) -> {
-                        final List<Member> mentionedMembers = matcher.getMentionedMembers();
                         final StringBuilder mentionMessage = new StringBuilder();
-                        for (int i = 0; i < mentionedMembers.size(); i++) {
-                            final String nickName = mentionedMembers.get(i).getEffectiveName();
-                            mentionMessage.append(nickName);
-                            if (i < mentionedMembers.size() - 1) {
+                        final Matcher m = MENTION_PATTERN.matcher(matcher.getMessageText());
+                        while (m.find()) {
+                            final String userID = m.group();
+                            final Member member = matcher.getGuild().getMemberById(userID);
+                            if (member != null) {
+                                mentionMessage.append(member.getEffectiveName());
                                 mentionMessage.append(' ');
                             }
                         }

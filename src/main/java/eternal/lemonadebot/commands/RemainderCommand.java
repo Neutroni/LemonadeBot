@@ -25,24 +25,24 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
-import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.RemainderManager;
 import eternal.lemonadebot.CommandMatcher;
-import eternal.lemonadebot.events.Event;
-import eternal.lemonadebot.events.MentionEnum;
 import eternal.lemonadebot.events.Remainder;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.PermissionKey;
+import eternal.lemonadebot.permissions.PermissionUtilities;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
+import java.time.Period;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.TimeZone;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -127,43 +127,54 @@ public class RemainderCommand implements ChatCommand {
     }
 
     private void createRemainder(String[] arguments, CommandMatcher matcher, GuildDataStore guildData) {
+        //remainder create test sunday 17.00 remaindertext
         final TextChannel textChannel = matcher.getTextChannel();
-        final EventManager events = guildData.getEventManager();
         final RemainderManager remainders = guildData.getRemainderManager();
-        if (arguments.length < 5) {
-            textChannel.sendMessage("Missing arguments, see help for event").queue();
+
+        if (arguments.length < 2) {
+            textChannel.sendMessage("Remainder needs a name").queue();
             return;
         }
-        final String eventName = arguments[1];
-        final Optional<Event> optEvent = events.getEvent(eventName);
-        if (optEvent.isEmpty()) {
-            textChannel.sendMessage("Could not find event with name: " + eventName).queue();
+        final String remainderName = arguments[1];
+
+        if (arguments.length < 3) {
+            textChannel.sendMessage("Remainder needs a day to activate on").queue();
             return;
         }
         final String reminderDay = arguments[2];
-        DayOfWeek activationDay;
+        final DayOfWeek activationDay;
         try {
-            activationDay = DayOfWeek.valueOf(reminderDay.toUpperCase());
+            if ("any".equals(reminderDay.toLowerCase())) {
+                activationDay = null;
+            } else {
+                activationDay = DayOfWeek.valueOf(reminderDay.toUpperCase());
+            }
         } catch (IllegalArgumentException e) {
-            textChannel.sendMessage("Day must be weekday written in full, for example, 'Sunday'").queue();
+            textChannel.sendMessage("Day must be weekday written in full, for example, 'Sunday', or special day 'Any' for daily activation").queue();
+            return;
+        }
+
+        if (arguments.length < 4) {
+            textChannel.sendMessage("Remainder needs a time to activate on").queue();
             return;
         }
         final String reminderTime = arguments[3];
-        LocalTime activationTime;
+        final LocalTime activationTime;
         try {
             activationTime = LocalTime.parse(reminderTime);
         } catch (DateTimeParseException e) {
             textChannel.sendMessage("Unkown time: " + reminderTime + " provide time in format hh:mm").queue();
             return;
         }
-        final String mentions = arguments[4];
-        final MentionEnum me = MentionEnum.getByName(mentions);
-        if (me == MentionEnum.ERROR) {
-            textChannel.sendMessage("Unkown mention value: " + mentions + "\nSee help for available values for mentions").queue();
+
+        if (arguments.length < 5) {
+            textChannel.sendMessage("Remainder needs a message to send at scheduled time").queue();
             return;
         }
-
-        final Remainder remainder = new Remainder(textChannel.getJDA(), textChannel.getIdLong(), optEvent.get(), me, activationDay, activationTime);
+        final String messageInput = arguments[4];
+        final Remainder remainder = new Remainder(textChannel.getJDA(), guildData,
+                remainderName, textChannel.getIdLong(), matcher.getMember().getIdLong(),
+                messageInput, activationDay, activationTime);
         try {
             if (!remainders.addRemainder(remainder)) {
                 textChannel.sendMessage("Matching remainder already exists.").queue();
@@ -182,23 +193,32 @@ public class RemainderCommand implements ChatCommand {
 
     private void deleteRemainder(String[] arguments, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        if (arguments.length < 4) {
+        if (arguments.length < 2) {
             textChannel.sendMessage("Provide the name of the remainder you want to delete").queue();
             return;
         }
         final RemainderManager remainders = guildData.getRemainderManager();
 
-        final String eventName = arguments[1];
-        final String remainderDay = arguments[2];
-        final String remainderTime = arguments[3];
-        //Get the remainder to delete
-        final Optional<Remainder> optRemainder = remainders.getRemainder(eventName, remainderDay, remainderTime);
-        if (optRemainder.isEmpty()) {
-            textChannel.sendMessage("Could not find such remainder").queue();
+        final String remainderName = arguments[1];
+        final Optional<Remainder> oldRemainder = remainders.getRemainder(remainderName);
+        if (oldRemainder.isEmpty()) {
+            textChannel.sendMessage("Could not find remainder with name: " + remainderName).queue();
             return;
         }
+        final Remainder remainder = oldRemainder.get();
+
+        //Check if user has permission to remove the event
+        final Member sender = matcher.getMember();
+        final Member remainderOwner = textChannel.getGuild().getMemberById(remainder.getAuthor());
+        final boolean hasPermission = PermissionUtilities.hasPermission(sender, remainderOwner);
+        if (!hasPermission) {
+            textChannel.sendMessage("You do not have permission to remove that remainder, "
+                    + "only the remainder owner and admins can remove remainders").queue();
+            return;
+        }
+
         try {
-            if (remainders.deleteRemainder(optRemainder.get())) {
+            if (remainders.deleteRemainder(remainder)) {
                 textChannel.sendMessage("Remainder succesfully removed").queue();
                 return;
             }
@@ -220,21 +240,6 @@ public class RemainderCommand implements ChatCommand {
         for (Remainder r : ev) {
             if (r.isValid()) {
                 sb.append(r.toString()).append('\n');
-                continue;
-            }
-            sb.append("Remainder in database that has no valid channel, removing");
-            try {
-                if (remainders.deleteRemainder(r)) {
-                    sb.append("Remainder removed succesfully\n");
-                } else {
-                    sb.append("Remainder already removed by someone else\n");
-                }
-            } catch (SQLException ex) {
-                sb.append("Database failure in removing remainder from database\n");
-
-                LOGGER.error("Failure to remove remainder while listing remainders");
-                LOGGER.warn(ex.getMessage());
-                LOGGER.trace("Stack trace", ex);
             }
         }
         if (ev.isEmpty()) {

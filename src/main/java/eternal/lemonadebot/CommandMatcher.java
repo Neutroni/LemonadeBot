@@ -40,7 +40,8 @@ import net.dv8tion.jda.api.entities.TextChannel;
  */
 public class CommandMatcher {
 
-    private final Message message;
+    private final Member author;
+    private final TextChannel channel;
     private final String messageText;
     private final Matcher matcher;
     private final boolean matches;
@@ -56,7 +57,8 @@ public class CommandMatcher {
             throw new IllegalArgumentException("Only messages from guilds supported");
         }
 
-        this.message = msg;
+        this.author = msg.getMember();
+        this.channel = msg.getTextChannel();
         this.messageText = msg.getContentRaw();
         final Pattern pattern = configManager.getCommandPattern();
         this.matcher = pattern.matcher(this.messageText);
@@ -71,8 +73,26 @@ public class CommandMatcher {
      * @param fakeContent content to override the matchers content with
      */
     public CommandMatcher(ConfigManager configManager, CommandMatcher orignalMatcher, String fakeContent) {
-        this.message = orignalMatcher.message;
+        this.author = orignalMatcher.getMember();
+        this.channel = orignalMatcher.getTextChannel();
         this.messageText = fakeContent;
+        final Pattern pattern = configManager.getCommandPattern();
+        this.matcher = pattern.matcher(this.messageText);
+        this.matches = this.matcher.find();
+    }
+
+    /**
+     * Fake constructor for remainder command invocations
+     *
+     * @param configManager Configmanager to get commandpattern from
+     * @param author message author
+     * @param channel Channel message was sent int
+     * @param content Message content
+     */
+    public CommandMatcher(ConfigManager configManager, Member author, TextChannel channel, String content) {
+        this.author = author;
+        this.channel = channel;
+        this.messageText = content;
         final Pattern pattern = configManager.getCommandPattern();
         this.matcher = pattern.matcher(this.messageText);
         this.matches = this.matcher.find();
@@ -115,7 +135,7 @@ public class CommandMatcher {
      * @return Member who sent the message
      */
     public Member getMember() {
-        return this.message.getMember();
+        return this.author;
     }
 
     /**
@@ -128,21 +148,12 @@ public class CommandMatcher {
     }
 
     /**
-     * Get list of members mentioned in the message
-     *
-     * @return Same as message.getMentionedMembers();
-     */
-    public List<Member> getMentionedMembers() {
-        return this.message.getMentionedMembers();
-    }
-
-    /**
      * Return the channel which the message was sent in
      *
      * @return TextChannel of the message
      */
     public TextChannel getTextChannel() {
-        return this.message.getTextChannel();
+        return this.channel;
     }
 
     /**
@@ -151,6 +162,6 @@ public class CommandMatcher {
      * @return Guild
      */
     public Guild getGuild() {
-        return this.message.getGuild();
+        return this.channel.getGuild();
     }
 }
