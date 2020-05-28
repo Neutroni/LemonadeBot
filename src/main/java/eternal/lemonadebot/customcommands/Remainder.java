@@ -119,25 +119,16 @@ public class Remainder extends TimerTask {
             return;
         }
 
-        final CommandMatcher matcher = new FakeMessageMatcher(member, channel, this.remainderText);
-        final Optional<? extends ChatCommand> optCommand = CommandProvider.getAction(matcher, guildData);
-        if (optCommand.isEmpty()) {
-            if (this.remainderText.isBlank()) {
-                LOGGER.warn("Remainder ignored because messageText is invalid, remainder name: " + this.name);
-                return;
-            }
-            channel.sendMessage(this.remainderText).queue();
-            LOGGER.debug("Remainder sent as is succesfully on channel" + channel.getName());
-            return;
-        }
-        final ChatCommand command = optCommand.get();
-        command.respond(matcher, guildData);
+        final CommandMatcher matcher = new FakeMessageMatcher(member, channel, "remainder activate " + this.name);
+        final CharSequence reponse = TemplateManager.processActions(matcher, guildData, this.remainderText);
+        channel.sendMessage(reponse).queue();
         LOGGER.debug("Remainder succesfully activated on channel" + channel.getName());
     }
 
     /**
+     * Get the name of the remainder
      *
-     * @return
+     * @return name of remainderF
      */
     public String getName() {
         return this.name;
@@ -152,10 +143,20 @@ public class Remainder extends TimerTask {
         return this.channelID;
     }
 
+    /**
+     * Get the text for the remainder
+     *
+     * @return String remainder send on activation
+     */
     public String getMessage() {
         return this.remainderText;
     }
 
+    /**
+     * Get the ID of the remainder author
+     *
+     * @return id of remainder author
+     */
     public long getAuthor() {
         return this.author;
     }

@@ -97,7 +97,7 @@ public class PermissionManager {
 
     public boolean setPermission(String action, CommandPermission perm) throws SQLException {
         this.permissions.put(action, perm);
-        final String query = "INSERT OR REPLACE INTO Permissions(guild,name,requiredRank,requiredRole) VALUES(?,?,?,?)";
+        final String query = "INSERT OR REPLACE INTO Permissions(guild,action,requiredRank,requiredRole) VALUES(?,?,?,?)";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, action);
@@ -109,18 +109,18 @@ public class PermissionManager {
 
     private void loadPermissions() {
         //Load default permissions
-        for(ChatCommand c: CommandProvider.getCommands()){
+        for (final ChatCommand c : CommandProvider.getCommands()) {
             final CommandPermission perm = new CommandPermission(c.getDefaultRank(), guildID);
             this.permissions.put(c.getCommand(), perm);
         }
-        
+
         //Load permissions from database
-        final String query = "SELECT name,requiredRank,requiredRole FROM Permissions WHERE guild = ?;";
+        final String query = "SELECT action,requiredRank,requiredRole FROM Permissions WHERE guild = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    final String name = rs.getString("name");
+                    final String action = rs.getString("action");
                     final String rankName = rs.getString("requiredRank");
                     final MemberRank rank;
                     try {
@@ -131,7 +131,7 @@ public class PermissionManager {
                     }
                     final long requiredRole = rs.getLong("requiredRole");
                     final CommandPermission perm = new CommandPermission(rank, requiredRole);
-                    permissions.put(name, perm);
+                    permissions.put(action, perm);
                 }
             }
         } catch (SQLException e) {

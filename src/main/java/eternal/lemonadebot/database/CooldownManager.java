@@ -47,7 +47,7 @@ public class CooldownManager {
 
     private final Connection conn;
     private final long guildID;
-    private final Map<String, Cooldown> cooldowns;
+    private final Map<String, ActionCooldown> cooldowns;
 
     CooldownManager(Connection connection, long guildID) {
         this.conn = connection;
@@ -61,12 +61,10 @@ public class CooldownManager {
      * and has set cooldown time
      *
      * @param command command to check
-     * @return true if command last seen time was updated or does not have
-     * cooldown, false otherwise
-     * @throws SQLException If database connection failed
+     * @return Optional of remaining cooldown if on cooldown, empty otherwise
      */
-    public Optional<String> updateActivationTime(ChatCommand command) throws SQLException {
-        final Cooldown cooldown = this.cooldowns.get(command.getCommand());
+    public Optional<String> updateActivationTime(ChatCommand command) {
+        final ActionCooldown cooldown = this.cooldowns.get(command.getCommand());
         //Command does not have a cooldown
         if (cooldown == null) {
             return Optional.empty();
@@ -77,7 +75,7 @@ public class CooldownManager {
 
         //Command still on cooldown
         if (timeDelta.compareTo(cooldown.cooldownTime) < 0) {
-            return Optional.of(getCooldownFormatted(cooldown, true));
+            return Optional.of(cooldown.getRemainingTime(now));
         }
 
         //Update activationTime
@@ -91,41 +89,27 @@ public class CooldownManager {
             ps.setLong(3, cooldown.cooldownTime.getSeconds());
             ps.setLong(4, now.getEpochSecond());
             ps.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.error("Updating command activation time failed!");
+            LOGGER.error(e.getMessage());
+            LOGGER.trace(e);
         }
         return Optional.empty();
     }
 
+    /**
+     * Get the string presentation of cooldown that is set to a commdn
+     *
+     * @param command Command to get cooldown for
+     * @return String of cooldown
+     */
     public Optional<String> getCooldownFormatted(ChatCommand command) {
-        final Cooldown cd = this.cooldowns.get(command.getCommand());
-        if (cd == null) {
+        final ActionCooldown cooldown = this.cooldowns.get(command.getCommand());
+        //Command does not have a cooldown
+        if (cooldown == null) {
             return Optional.empty();
         }
-
-        final Duration cooldownToFormat = cd.cooldownTime;
-        if (cooldownToFormat.isNegative() || cooldownToFormat.isZero()) {
-            return Optional.of("00:00:00");
-        }
-        final long remainingDays = cooldownToFormat.toDays();
-        final long remainingHours = cooldownToFormat.toDaysPart();
-        final long remainingMinutes = cooldownToFormat.toMinutesPart();
-        final long remainingSeconds = cooldownToFormat.toSecondsPart();
-
-        final StringBuilder sb = new StringBuilder();
-        boolean printRemaining = false;
-        if (remainingDays != 0) {
-            printRemaining = true;
-            sb.append(remainingDays).append(" days ");
-        }
-        if (printRemaining || (remainingHours != 0)) {
-            printRemaining = true;
-            sb.append(remainingHours).append(" hours ");
-        }
-        if (printRemaining || (remainingMinutes != 0)) {
-            sb.append(remainingMinutes).append(" minutes ");
-        }
-        sb.append(remainingSeconds).append(" seconds");
-
-        return Optional.of(sb.toString());
+        return Optional.of(cooldown.toString());
     }
 
     /**
@@ -156,8 +140,8 @@ public class CooldownManager {
      * @throws SQLException If database connection failed
      */
     public boolean setCooldown(ChatCommand command, Duration cooldownDuration) throws SQLException {
-        final Cooldown cooldown = this.cooldowns.computeIfAbsent(command.getCommand(), (String t) -> {
-            return new Cooldown(cooldownDuration, Instant.EPOCH);
+        final ActionCooldown cooldown = this.cooldowns.computeIfAbsent(command.getCommand(), (String t) -> {
+            return new ActionCooldown(cooldownDuration, Instant.EPOCH);
         });
         cooldown.cooldownTime = cooldownDuration;
 
@@ -171,48 +155,6 @@ public class CooldownManager {
         }
     }
 
-    /**
-     * Get the string presentation for remaining cooldown of command
-     *
-     * @param command command to check cooldown for
-     * @param remainingCooldownOnly only the cooldown remaining
-     * @return remaining cooldown as string
-     */
-    private String getCooldownFormatted(Cooldown cooldown, boolean remainingCooldownOnly) {
-        final Duration cooldownToFormat;
-        if (remainingCooldownOnly) {
-            final Duration expiredCooldown = Duration.between(cooldown.activationTime, Instant.now());
-            cooldownToFormat = cooldown.cooldownTime.minus(expiredCooldown);
-        } else {
-            cooldownToFormat = cooldown.cooldownTime;
-        }
-
-        if (cooldownToFormat.isNegative() || cooldownToFormat.isZero()) {
-            return "00:00:00";
-        }
-        final long remainingDays = cooldownToFormat.toDays();
-        final long remainingHours = cooldownToFormat.toDaysPart();
-        final long remainingMinutes = cooldownToFormat.toMinutesPart();
-        final long remainingSeconds = cooldownToFormat.toSecondsPart();
-
-        final StringBuilder sb = new StringBuilder();
-        boolean printRemaining = false;
-        if (remainingDays != 0) {
-            printRemaining = true;
-            sb.append(remainingDays).append(" days ");
-        }
-        if (printRemaining || (remainingHours != 0)) {
-            printRemaining = true;
-            sb.append(remainingHours).append(" hours ");
-        }
-        if (printRemaining || (remainingMinutes != 0)) {
-            sb.append(remainingMinutes).append(" minutes ");
-        }
-        sb.append(remainingSeconds).append(" seconds");
-
-        return sb.toString();
-    }
-
     private void loadCooldowns() {
         final String query = "SELECT command,duration,activationTime FROM Cooldowns WHERE guild = ?;";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
@@ -220,7 +162,7 @@ public class CooldownManager {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final String commandName = rs.getString("command");
-                    final Cooldown cd = new Cooldown(rs.getLong("duration"), rs.getLong("activationTime"));
+                    final ActionCooldown cd = new ActionCooldown(rs.getLong("duration"), rs.getLong("activationTime"));
                     cooldowns.put(commandName, cd);
                 }
             }
@@ -231,23 +173,77 @@ public class CooldownManager {
         }
     }
 
-    /**
-     * Class to store cooldows in
-     */
-    private static class Cooldown {
+    private class ActionCooldown {
 
-        private Duration cooldownTime;
-        private Instant activationTime;
+        Duration cooldownTime;
+        Instant activationTime;
 
-        Cooldown(Duration cooldownDuration, Instant lastActivation) {
+        ActionCooldown(Duration cooldownDuration, Instant lastActivation) {
             this.cooldownTime = cooldownDuration;
             this.activationTime = lastActivation;
         }
 
-        Cooldown(long cooldownDurationSeconds, long activationTimeSeconds) {
+        ActionCooldown(long cooldownDurationSeconds, long activationTimeSeconds) {
             this.cooldownTime = Duration.ofSeconds(cooldownDurationSeconds);
             this.activationTime = Instant.ofEpochSecond(activationTimeSeconds);
         }
-    }
 
+        @Override
+        public String toString() {
+            if (this.cooldownTime.isNegative() || this.cooldownTime.isZero()) {
+                return "00:00:00";
+            }
+            final long remainingDays = this.cooldownTime.toDays();
+            final long remainingHours = this.cooldownTime.toDaysPart();
+            final long remainingMinutes = this.cooldownTime.toMinutesPart();
+            final long remainingSeconds = this.cooldownTime.toSecondsPart();
+
+            final StringBuilder sb = new StringBuilder();
+            boolean printRemaining = false;
+            if (remainingDays != 0) {
+                printRemaining = true;
+                sb.append(remainingDays).append(" days ");
+            }
+            if (printRemaining || (remainingHours != 0)) {
+                printRemaining = true;
+                sb.append(remainingHours).append(" hours ");
+            }
+            if (printRemaining || (remainingMinutes != 0)) {
+                sb.append(remainingMinutes).append(" minutes ");
+            }
+            sb.append(remainingSeconds).append(" seconds");
+
+            return sb.toString();
+        }
+
+        String getRemainingTime(Instant currentTime) {
+            final Duration expiredCooldown = Duration.between(this.activationTime, currentTime);
+            final Duration cooldownToFormat = this.cooldownTime.minus(expiredCooldown);
+
+            if (cooldownToFormat.isNegative() || cooldownToFormat.isZero()) {
+                return "00:00:00";
+            }
+            final long remainingDays = cooldownToFormat.toDays();
+            final long remainingHours = cooldownToFormat.toDaysPart();
+            final long remainingMinutes = cooldownToFormat.toMinutesPart();
+            final long remainingSeconds = cooldownToFormat.toSecondsPart();
+
+            final StringBuilder sb = new StringBuilder();
+            boolean printRemaining = false;
+            if (remainingDays != 0) {
+                printRemaining = true;
+                sb.append(remainingDays).append(" days ");
+            }
+            if (printRemaining || (remainingHours != 0)) {
+                printRemaining = true;
+                sb.append(remainingHours).append(" hours ");
+            }
+            if (printRemaining || (remainingMinutes != 0)) {
+                sb.append(remainingMinutes).append(" minutes ");
+            }
+            sb.append(remainingSeconds).append(" seconds");
+
+            return sb.toString();
+        }
+    }
 }

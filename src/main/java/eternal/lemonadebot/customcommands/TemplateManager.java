@@ -27,6 +27,7 @@ import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
+import eternal.lemonadebot.database.CooldownManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.PermissionManager;
 import java.time.LocalDate;
@@ -41,6 +42,8 @@ import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Class that holds templates for custom commands and how to substitute given
@@ -118,7 +121,7 @@ public class TemplateManager {
                         }
                         return "Could not find members for that event";
                     }),
-            new ActionTemplate("\\{command (\\.+)\\}", "{command <command>} - Run command at the same time as the custom command",
+            new ActionTemplate("\\{command (\\.+)\\}", "{command <command>} - Run a command before the custom command",
                     (commandMatcher, guildData, templateMatcher) -> {
                         final String inputString = templateMatcher.group(1);
                         final CommandMatcher fakeMatcher = new FakeMessageMatcher(commandMatcher, inputString);
@@ -138,6 +141,14 @@ public class TemplateManager {
                         if (permissions.hasPermission(member, inputString)) {
                             return "Insufficient permississions to run that command";
                         }
+
+                        final CooldownManager cdm = guildData.getCooldownManager();
+                        final Optional<String> optCooldown = cdm.updateActivationTime(command);
+                        if (optCooldown.isPresent()) {
+                            final String currentCooldown = optCooldown.get();
+                            return "Command on cooldown, time remaining: " + currentCooldown + '.';
+                        }
+
                         command.respond(fakeMatcher, guildData);
                         return "";
                     }),
@@ -149,7 +160,7 @@ public class TemplateManager {
                             final Period period = Period.between(date, LocalDate.now());
                             return Math.abs(period.getDays()) + " days";
                         } catch (DateTimeParseException e) {
-                            return "Unkown date";
+                            return "Unkown date: " + dateString;
                         }
                     })
     );

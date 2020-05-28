@@ -109,24 +109,18 @@ public class MessageListener extends ListenerAdapter {
         final Member member = cmdMatch.getMember();
         final PermissionManager permissions = guildData.getPermissionManager();
         final String inputString = cmdMatch.getArgumentString();
-        
+
         if (!permissions.hasPermission(member, inputString)) {
             return;
         }
 
         //Check if command is on cooldown
         final CooldownManager cdm = guildData.getCooldownManager();
-        try {
-            final Optional<String> optCooldown = cdm.updateActivationTime(command);
-            if (optCooldown.isPresent()) {
-                final String currentCooldown = optCooldown.get();
-                textChannel.sendMessage("Command on cooldown, time remaining: " + currentCooldown + '.').queue();
-                return;
-            }
-        } catch (SQLException e) {
-            LOGGER.error("Updating command activation time failed!");
-            LOGGER.error(e.getMessage());
-            LOGGER.trace(e);
+        final Optional<String> optCooldown = cdm.updateActivationTime(command);
+        if (optCooldown.isPresent()) {
+            final String currentCooldown = optCooldown.get();
+            textChannel.sendMessage("Command on cooldown, time remaining: " + currentCooldown + '.').queue();
+            return;
         }
 
         //Run the command

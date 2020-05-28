@@ -51,6 +51,12 @@ public class CommandPermission {
         this.roleID = role;
     }
 
+    /**
+     * Check if member has permission that is required
+     *
+     * @param member Member to check
+     * @return true if member has the permissions requiredF
+     */
     public boolean hashPermission(final Member member) {
         //Check that user has required rank
         if (MemberRank.getRank(member).ordinal() < this.rank.ordinal()) {
@@ -75,24 +81,26 @@ public class CommandPermission {
     }
 
     /**
+     * Get the rank that is needed for this permission
      *
-     * @return
+     * @return MemberRank
      */
     public MemberRank getRequiredRank() {
         return this.rank;
     }
 
     /**
+     * Get the ID of the role that is required for this permission
      *
-     * @return
+     * @return ID of the rolef
      */
     public long getRequiredRoleID() {
         return this.roleID;
     }
-    
+
     @Override
-    public String toString(){
-        return "Required rank: " + this.rank.name() + "required role: " + this.roleID;
+    public String toString() {
+        return "Required rank: " + this.rank.name() + "required role id: " + this.roleID;
     }
 
 }

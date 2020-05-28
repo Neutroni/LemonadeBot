@@ -95,7 +95,7 @@ public class DatabaseManager implements AutoCloseable {
                 + "greetingTemplate TEXT);";
         final String PERMISSIONS = "CREATE TABLE IF NOT EXISTS Permissions("
                 + "guild INTEGER NOT NULL,"
-                + "name TEXT NOT NULL,"
+                + "action TEXT NOT NULL,"
                 + "requiredRank TEXT NOT NULL,"
                 + "requiredRole INTEGER NOT NULL,"
                 + "PRIMARY KEY (guild,name));";
