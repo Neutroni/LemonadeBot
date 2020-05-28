@@ -29,6 +29,9 @@ import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.PermissionManager;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -137,6 +140,17 @@ public class TemplateManager {
                         }
                         command.respond(fakeMatcher, guildData);
                         return "";
+                    }),
+            new ActionTemplate("\\{daysSince (\\d+-\\d+\\d+)\\}", "{daysSince <date>} - Days since date specified according to ISO-8601",
+                    (commandMatcher, guildData, templateMatcher) -> {
+                        final String dateString = templateMatcher.group(1);
+                        try {
+                            final LocalDate date = LocalDate.parse(dateString);
+                            final Period period = Period.between(date, LocalDate.now());
+                            return Math.abs(period.getDays()) + " days";
+                        } catch (DateTimeParseException e) {
+                            return "Unkown date";
+                        }
                     })
     );
 
