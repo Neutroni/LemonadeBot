@@ -24,23 +24,20 @@
 package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.database.EventManager;
-import eternal.lemonadebot.events.Event;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.permissions.PermissionUtilities;
+import eternal.lemonadebot.database.PermissionManager;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
 
 /**
  * Class that holds templates for custom commands and how to substitute given
@@ -51,7 +48,6 @@ import net.dv8tion.jda.api.entities.Message;
 public class TemplateManager {
 
     private static final Random RNG = new Random();
-    private static final Pattern MENTION_PATTERN = Message.MentionType.USER.getPattern();
     private static final List<ActionTemplate> actions = List.of(
             new ActionTemplate("\\{choice (.*(\\|.*)+)\\}", "{choice a|b} - Selects value separated by | randomly",
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
@@ -83,17 +79,11 @@ public class TemplateManager {
                     }),
             new ActionTemplate("\\{mentions\\}", "{mentions} - Lists the mentioned users",
                     (CommandMatcher matcher, GuildDataStore guildData, Matcher input) -> {
-                        final StringBuilder mentionMessage = new StringBuilder();
-                        final Matcher m = MENTION_PATTERN.matcher(matcher.getMessageText());
-                        while (m.find()) {
-                            final String userID = m.group();
-                            final Member member = matcher.getGuild().getMemberById(userID);
-                            if (member != null) {
-                                mentionMessage.append(member.getEffectiveName());
-                                mentionMessage.append(' ');
-                            }
-                        }
-                        return mentionMessage.toString();
+
+                        final List<Member> mentionedMembers = matcher.getMentionedMembers();
+                        return mentionedMembers.stream().map((Member member) -> {
+                            return member.getEffectiveName();
+                        }).collect(Collectors.joining(","));
                     }),
             new ActionTemplate("\\{sender\\}", "{sender} - The name of the command sender",
                     (CommandMatcher matcher, GuildDataStore guildData, Matcher input) -> {
@@ -128,12 +118,10 @@ public class TemplateManager {
             new ActionTemplate("\\{command (\\.+)\\}", "{command <command>} - Run command at the same time as the custom command",
                     (commandMatcher, guildData, templateMatcher) -> {
                         final String inputString = templateMatcher.group(1);
-                        final ConfigManager config = guildData.getConfigManager();
-                        final String inputCommand = config.getCommandPrefix() + inputString;
-                        final CommandMatcher fakeMatcher = new CommandMatcher(config, commandMatcher, inputCommand);
+                        final CommandMatcher fakeMatcher = new FakeMessageMatcher(commandMatcher, inputString);
                         final Optional<? extends ChatCommand> optCommand = CommandProvider.getAction(fakeMatcher, guildData);
                         if (optCommand.isEmpty()) {
-                            return "Could not find command with input: " + inputCommand;
+                            return "Could not find command with input: " + inputString;
                         }
                         final ChatCommand command = optCommand.get();
                         if (command instanceof CustomCommand) {
@@ -143,7 +131,8 @@ public class TemplateManager {
                             }
                         }
                         final Member member = commandMatcher.getMember();
-                        if (!PermissionUtilities.hasPermission(member, config, command)) {
+                        final PermissionManager permissions = guildData.getPermissionManager();
+                        if (permissions.hasPermission(member, inputString)) {
                             return "Insufficient permississions to run that command";
                         }
                         command.respond(fakeMatcher, guildData);

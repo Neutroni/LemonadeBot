@@ -21,12 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.events;
+package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import java.sql.SQLException;
 import java.time.Clock;
@@ -120,9 +119,7 @@ public class Remainder extends TimerTask {
             return;
         }
 
-        final ConfigManager config = this.guildData.getConfigManager();
-        final String fakeCommand = this.remainderText + config.getCommandPrefix();
-        final CommandMatcher matcher = new CommandMatcher(config, member, channel, fakeCommand);
+        final CommandMatcher matcher = new FakeMessageMatcher(member, channel, this.remainderText);
         final Optional<? extends ChatCommand> optCommand = CommandProvider.getAction(matcher, guildData);
         if (optCommand.isEmpty()) {
             if (this.remainderText.isBlank()) {

@@ -28,7 +28,7 @@ import eternal.lemonadebot.commandtypes.AdminCommand;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.CooldownManager;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.permissions.CommandPermission;
+import eternal.lemonadebot.permissions.MemberRank;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -80,7 +80,7 @@ public class CooldownCommand extends AdminCommand {
         final ChatCommand command = optCommand.get();
 
         //Do not allow setting cooldown for admin commands
-        if (CommandPermission.ADMIN == command.getPermission(guildData.getConfigManager())) {
+        if (MemberRank.ADMIN == command.getDefaultRank()) {
             channel.sendMessage("Can't set a cooldown for admin commands.").queue();
             return;
         }
@@ -120,7 +120,7 @@ public class CooldownCommand extends AdminCommand {
             channel.sendMessage("Unknown time unit: " + options[2]).queue();
             return;
         }
-        final Duration cooldownDuration = Duration.of(0, unit);
+        final Duration cooldownDuration = Duration.of(timeAmount, unit);
         try {
             cooldownManager.setCooldown(command, cooldownDuration);
             channel.sendMessage("Command cooldown updated succesfully.").queue();

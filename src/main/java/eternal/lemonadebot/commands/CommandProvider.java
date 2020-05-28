@@ -23,9 +23,9 @@
  */
 package eternal.lemonadebot.commands;
 
+import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.database.CustomCommandManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.music.MusicCommand;

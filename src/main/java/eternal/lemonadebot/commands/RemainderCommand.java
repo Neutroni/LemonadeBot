@@ -24,19 +24,16 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.RemainderManager;
 import eternal.lemonadebot.CommandMatcher;
-import eternal.lemonadebot.events.Remainder;
-import eternal.lemonadebot.permissions.CommandPermission;
-import eternal.lemonadebot.permissions.PermissionKey;
+import eternal.lemonadebot.customcommands.Remainder;
+import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
-import java.time.Period;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Locale;
@@ -79,23 +76,20 @@ public class RemainderCommand implements ChatCommand {
 
     @Override
     public String getHelpText() {
-        return "Syntax: remainder <action> <event> <day> <time> [mention]\n"
+        return "Syntax: remainder <action> <name> [day] [time] [message]\n"
                 + "<action> can be one of the following:\n"
                 + " create - create new remainder\n"
                 + " delete - delete remainder\n"
-                + "<event> event to use description from\n"
-                + "<day> day the remainder activates on\n"
+                + "<name> name of remainder\n"
+                + "<day> day the remainder activates on, use 'any' to create remainder that activates daily\n"
                 + "<time> time of the remainder hh:mm\n"
-                + "[mention] can be on of the following:\n"
-                + " none - do not mention anyone\n"
-                + " here - ping online people\n"
-                + " members - ping all members of the event\n"
+                + "[message] message to be sent at the remainder activation\n"
                 + "Remainder will be activated on the channel it was created in";
     }
 
     @Override
-    public CommandPermission getPermission(ConfigManager guild) {
-        return guild.getRequiredPermission(PermissionKey.EditRemainders);
+    public MemberRank getDefaultRank() {
+        return MemberRank.ADMIN;
     }
 
     @Override

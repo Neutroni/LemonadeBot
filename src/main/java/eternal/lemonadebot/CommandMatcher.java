@@ -23,92 +23,25 @@
  */
 package eternal.lemonadebot;
 
-import eternal.lemonadebot.database.ConfigManager;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
- * Matches given message for command pattern
  *
  * @author Neutroni
  */
-public class CommandMatcher {
-
-    private final Member author;
-    private final TextChannel channel;
-    private final String messageText;
-    private final Matcher matcher;
-    private final boolean matches;
+public interface CommandMatcher {
 
     /**
-     * Constructor
+     * Get the arguments from this matcher including the command
      *
-     * @param guildDataStore datastore for guild
-     * @param msg command message
+     * @return String of arguments
      */
-    CommandMatcher(ConfigManager configManager, Message msg) {
-        if (!msg.isFromGuild()) {
-            throw new IllegalArgumentException("Only messages from guilds supported");
-        }
-
-        this.author = msg.getMember();
-        this.channel = msg.getTextChannel();
-        this.messageText = msg.getContentRaw();
-        final Pattern pattern = configManager.getCommandPattern();
-        this.matcher = pattern.matcher(this.messageText);
-        this.matches = this.matcher.find();
-    }
-
-    /**
-     * Fake constructor for aliased command invocations
-     *
-     * @param configManager Configmanager to get commandpattern from
-     * @param orignalMatcher Matcher that originally handled the message
-     * @param fakeContent content to override the matchers content with
-     */
-    public CommandMatcher(ConfigManager configManager, CommandMatcher orignalMatcher, String fakeContent) {
-        this.author = orignalMatcher.getMember();
-        this.channel = orignalMatcher.getTextChannel();
-        this.messageText = fakeContent;
-        final Pattern pattern = configManager.getCommandPattern();
-        this.matcher = pattern.matcher(this.messageText);
-        this.matches = this.matcher.find();
-    }
-
-    /**
-     * Fake constructor for remainder command invocations
-     *
-     * @param configManager Configmanager to get commandpattern from
-     * @param author message author
-     * @param channel Channel message was sent int
-     * @param content Message content
-     */
-    public CommandMatcher(ConfigManager configManager, Member author, TextChannel channel, String content) {
-        this.author = author;
-        this.channel = channel;
-        this.messageText = content;
-        final Pattern pattern = configManager.getCommandPattern();
-        this.matcher = pattern.matcher(this.messageText);
-        this.matches = this.matcher.find();
-    }
-
-    /**
-     * Get the command from the match
-     *
-     * @return optional containing command string if found
-     */
-    public Optional<String> getCommand() {
-        if (this.matches) {
-            return Optional.of(matcher.group(1));
-        }
-        return Optional.empty();
-    }
+    String getArgumentString();
 
     /**
      * Get parameters limited by whitespace and the rest of the message as last
@@ -117,51 +50,62 @@ public class CommandMatcher {
      * @param count number of parameters to return
      * @return array of parameters
      */
-    public String[] getArguments(int count) {
-        int parameterStart = matcher.end();
+    String[] getArguments(int count);
 
-        //Check if message ends at match end
-        if (parameterStart == this.messageText.length()) {
-            return new String[0];
-        }
+    /**
+     * Get the command from the match
+     *
+     * @return optional containing command string if found
+     */
+    Optional<String> getCommand();
 
-        final String parameterString = this.messageText.substring(parameterStart);
-        return parameterString.split(" ", count + 1);
-    }
+    /**
+     * Get the guild the message was sent in
+     *
+     * @return Same as message.getGuild()
+     */
+    Guild getGuild();
 
     /**
      * Get member who sent the message
      *
-     * @return Member who sent the message
+     * @return Same as message.getMember()
      */
-    public Member getMember() {
-        return this.author;
-    }
+    Member getMember();
 
     /**
      * Get text content of the message
      *
      * @return Same as message.getContentRaw()
      */
-    public String getMessageText() {
-        return this.messageText;
-    }
+    String getMessageText();
+
+    /**
+     * Get the text content of the message with mentions stripped out
+     *
+     * @return String that contains the message with mentions removed
+     */
+    String getMessageStripMentions();
 
     /**
      * Return the channel which the message was sent in
      *
      * @return TextChannel of the message
      */
-    public TextChannel getTextChannel() {
-        return this.channel;
-    }
+    TextChannel getTextChannel();
 
     /**
-     * Get the guild the message was sent in
+     * Return the list of members mentioned in the message
      *
-     * @return Guild
+     * @return same as message.getMentinedMembers()
      */
-    public Guild getGuild() {
-        return this.channel.getGuild();
-    }
+    List<Member> getMentionedMembers();
+
+    /**
+     * Return list of roles mentioned in the message
+     *
+     * @return Same as message.getMentionedRoles()
+     */
+    List<Role> getMentionedRoles();
+
 }

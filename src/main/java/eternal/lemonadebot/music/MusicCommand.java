@@ -34,8 +34,7 @@ import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.permissions.CommandPermission;
-import eternal.lemonadebot.permissions.PermissionKey;
+import eternal.lemonadebot.permissions.MemberRank;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -99,8 +98,8 @@ public class MusicCommand implements ChatCommand {
     }
 
     @Override
-    public CommandPermission getPermission(ConfigManager guild) {
-        return guild.getRequiredPermission(PermissionKey.PlayMusic);
+    public MemberRank getDefaultRank() {
+        return MemberRank.MEMBER;
     }
 
     @Override

@@ -23,15 +23,10 @@
  */
 package eternal.lemonadebot.database;
 
-import eternal.lemonadebot.permissions.CommandPermission;
-import eternal.lemonadebot.permissions.PermissionKey;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
@@ -53,7 +48,6 @@ public class ConfigManager {
     private volatile String commandPrefix = "lemonbot#";
     private volatile Pattern commandPattern = getCommandPattern(commandPrefix);
     private volatile Optional<String> greetingTemplate = Optional.empty();
-    private final Map<PermissionKey, CommandPermission> permissions;
 
     /**
      * Constructor
@@ -64,7 +58,6 @@ public class ConfigManager {
     ConfigManager(Connection connection, long guild) {
         this.conn = connection;
         this.guildID = guild;
-        this.permissions = Collections.synchronizedMap(new HashMap<>());
         loadValues();
     }
 
@@ -93,16 +86,6 @@ public class ConfigManager {
      */
     public Optional<String> getGreetingTemplate() {
         return this.greetingTemplate;
-    }
-
-    /**
-     * Get the permissiond needed for action
-     *
-     * @param action name of action
-     * @return Optional containg the required permission
-     */
-    public CommandPermission getRequiredPermission(PermissionKey action) {
-        return this.permissions.getOrDefault(action, action.getDefaultpermission());
     }
 
     /**
@@ -143,26 +126,6 @@ public class ConfigManager {
     }
 
     /**
-     * Set the permission required for action
-     *
-     * @param key permission key of action
-     * @param newPermission permission needed
-     * @return did update succeed
-     * @throws SQLException if database connection failed
-     */
-    public boolean setPermission(PermissionKey key, CommandPermission newPermission) throws SQLException {
-        this.permissions.put(key, newPermission);
-
-        final String query = "UPDATE Guilds SET Permission? = ? WHERE id = ?;";
-        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
-            ps.setString(1, key.name());
-            ps.setString(2, newPermission.name());
-            ps.setLong(3, this.guildID);
-            return ps.executeUpdate() > 0;
-        }
-    }
-
-    /**
      * Updates command pattern
      *
      * @param prefix prefix to use in pattern
@@ -176,15 +139,28 @@ public class ConfigManager {
      * Load the values this guildconfig stores
      */
     private void loadValues() {
-        final String query = "SELECT commandPrefix,greetingTemplate,"
-                + "commandEditPermission,commandRunPermission,eventEditPermission,"
-                + "remainderPermission,musicPlayPermission FROM Guilds WHERE id = ?;";
+        final String query = "SELECT commandPrefix,greetingTemplate FROM Guilds WHERE id = ?;";
         try (final PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try (final ResultSet rs = ps.executeQuery()) {
                 //Check that database contains this guild
                 if (rs.next()) {
-                    parseResultSet(rs);
+                    //Load command prefix
+                    try {
+                        this.commandPrefix = rs.getString("commandPrefix");
+                        this.commandPattern = getCommandPattern(commandPrefix);
+                    } catch (SQLException ex) {
+                        LOGGER.error("SQL error on fetching the command prefix");
+                        LOGGER.warn(ex);
+                    }
+
+                    //Load greeting template
+                    try {
+                        this.greetingTemplate = Optional.ofNullable(rs.getString("greetingTemplate"));
+                    } catch (SQLException ex) {
+                        LOGGER.error("SQL error on fetching greeting template");
+                        LOGGER.warn(ex);
+                    }
                     return;
                 }
                 LOGGER.info("Tried to load guild that does not exist in database, adding to database");
@@ -208,55 +184,13 @@ public class ConfigManager {
     private boolean addGuild() throws SQLException {
         LOGGER.debug("Adding guild to database: " + this.guildID);
         final String query = "INSERT OR IGNORE INTO Guilds("
-                + "id,commandPrefix,commandEditPermission,commandRunPermission,eventEditPermission,"
-                + "remainderPermission,musicPlayPermission,greetingTemplate) VALUES (?,?,?,?,?,?);";
+                + "id,commandPrefix,greetingTemplate) VALUES (?,?,?);";
         try (final PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, "lemonbot#");
-            ps.setString(3, CommandPermission.ADMIN.name());
-            ps.setString(4, CommandPermission.MEMBER.name());
-            ps.setString(5, CommandPermission.ADMIN.name());
-            ps.setString(6, CommandPermission.ADMIN.name());
-            ps.setString(7, CommandPermission.MEMBER.name());
-            ps.setString(8, this.greetingTemplate.orElse(null));
+            ps.setString(3, this.greetingTemplate.orElse(null));
             return ps.executeUpdate() > 0;
         }
     }
 
-    /**
-     * Load the values stored in resultset
-     *
-     * @param rs resultSet to load settings from
-     */
-    private void parseResultSet(ResultSet rs) {
-        try {
-            //Load command prefix
-            this.commandPrefix = rs.getString("commandPrefix");
-            this.commandPattern = getCommandPattern(commandPrefix);
-        } catch (SQLException ex) {
-            LOGGER.error("SQL error on fetching the command prefix");
-            LOGGER.warn(ex);
-        }
-        try {
-            //Load greeting template
-            this.greetingTemplate = Optional.ofNullable(rs.getString("greetingTemplate"));
-        } catch (SQLException ex) {
-            LOGGER.error("SQL error on fetching greeting template");
-            LOGGER.warn(ex);
-        }
-
-        //Load permissionds
-        for (PermissionKey key : PermissionKey.values()) {
-            try {
-                final String rawPerm = rs.getString(key.name());
-                final CommandPermission perm = CommandPermission.valueOf(rawPerm);
-                this.permissions.put(key, perm);
-            } catch (IllegalArgumentException e) {
-                LOGGER.error("Failed to load permission" + key.name() + ", malformed enum value", e);
-            } catch (SQLException ex) {
-                LOGGER.error("SQL error on fetching " + key.name());
-                LOGGER.warn(ex);
-            }
-        }
-    }
 }

@@ -29,7 +29,7 @@ import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.CooldownManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.permissions.PermissionUtilities;
+import eternal.lemonadebot.database.PermissionManager;
 import java.sql.SQLException;
 import java.util.Optional;
 import net.dv8tion.jda.api.MessageBuilder;
@@ -93,7 +93,7 @@ public class MessageListener extends ListenerAdapter {
         final GuildDataStore guildData = this.db.getGuildData(eventGuild);
         final ConfigManager configManager = guildData.getConfigManager();
         final Message message = event.getMessage();
-        final CommandMatcher cmdMatch = new CommandMatcher(configManager, message);
+        final MessageMatcher cmdMatch = new MessageMatcher(configManager, message);
         final Optional<? extends ChatCommand> action = CommandProvider.getAction(cmdMatch, guildData);
         if (action.isEmpty()) {
             return;
@@ -107,7 +107,10 @@ public class MessageListener extends ListenerAdapter {
 
         //Check if user has permission
         final Member member = cmdMatch.getMember();
-        if (!PermissionUtilities.hasPermission(member, configManager, command)) {
+        final PermissionManager permissions = guildData.getPermissionManager();
+        final String inputString = cmdMatch.getArgumentString();
+        
+        if (!permissions.hasPermission(member, inputString)) {
             return;
         }
 

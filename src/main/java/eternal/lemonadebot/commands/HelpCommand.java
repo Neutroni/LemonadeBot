@@ -25,11 +25,10 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.commandtypes.UserCommand;
-import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.LemonadeBot;
-import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.PermissionManager;
 import java.util.Optional;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
@@ -66,7 +65,7 @@ class HelpCommand extends UserCommand {
         }
         final String name = options[0];
         if ("commands".equals(name)) {
-            listCommands(matcher, guildData.getConfigManager());
+            listCommands(matcher, guildData.getPermissionManager());
             return;
         }
         listHelp(matcher, guildData, name);
@@ -87,27 +86,27 @@ class HelpCommand extends UserCommand {
         if (opt.isPresent()) {
             final ChatCommand com = opt.get();
             final Member member = matcher.getMember();
-            final ConfigManager config = guildData.getConfigManager();
-            if (PermissionUtilities.hasPermission(member, config, com)) {
+            final PermissionManager permissions = guildData.getPermissionManager();
+            if (permissions.hasPermission(member, com.getCommand())) {
                 final EmbedBuilder eb = new EmbedBuilder();
                 eb.setTitle(com.getCommand() + " - " + com.getDescription());
                 eb.setDescription(com.getHelpText());
                 textChannel.sendMessage(eb.build()).queue();
             } else {
-                textChannel.sendMessage("Permission denied").queue();
+                textChannel.sendMessage("Permission denied.").queue();
             }
             return;
         }
         textChannel.sendMessage("No such command: " + name).queue();
     }
 
-    private void listCommands(CommandMatcher matcher, ConfigManager config) {
+    private void listCommands(CommandMatcher matcher, PermissionManager permissions) {
         //Construct the list of commands
         final StringBuilder sb = new StringBuilder();
         final Member member = matcher.getMember();
 
         for (ChatCommand c : CommandProvider.getCommands()) {
-            if (PermissionUtilities.hasPermission(member, config, c)) {
+            if (permissions.hasPermission(member, c.getCommand())) {
                 sb.append(c.getCommand()).append(" - ");
                 sb.append(c.getDescription()).append('\n');
             }

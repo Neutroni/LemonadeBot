@@ -24,9 +24,8 @@
 package eternal.lemonadebot.commandtypes;
 
 import eternal.lemonadebot.CommandMatcher;
-import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.permissions.CommandPermission;
+import eternal.lemonadebot.permissions.MemberRank;
 
 /**
  * Interface all commands must implement
@@ -57,12 +56,11 @@ public interface ChatCommand {
     public String getHelpText();
 
     /**
-     * Which roles have permssion to run this command
+     * What rank is needed to run this command by default
      *
-     * @param guild Guild to check permission in
-     * @return CommandPermission needed to run this command
+     * @return The default rank needed to run this command
      */
-    public CommandPermission getPermission(ConfigManager guild);
+    public MemberRank getDefaultRank();
 
     /**
      * Responds to a message

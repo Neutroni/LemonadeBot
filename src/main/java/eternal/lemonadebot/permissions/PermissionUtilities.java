@@ -23,60 +23,16 @@
  */
 package eternal.lemonadebot.permissions;
 
-import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.database.ConfigManager;
-import java.util.EnumSet;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 
 /**
- * Various utility functions for checking command permissions
+ * Various utility functions for checking permissions for editing content
  *
  * @author Neutroni
  */
 public class PermissionUtilities {
-
-    /**
-     * What rank user has
-     *
-     * @param member user to check
-     * @return Rank of the member
-     */
-    public static CommandPermission getRank(Member member) {
-        final EnumSet<Permission> permissions = member.getPermissions();
-        if (permissions.contains(Permission.ADMINISTRATOR)) {
-            return CommandPermission.ADMIN;
-        }
-        if (member.getRoles().size() > 0) {
-            return CommandPermission.MEMBER;
-        }
-        return CommandPermission.USER;
-    }
-
-    /**
-     * Checks wheter given user has permission to run given command
-     *
-     * @param member User to check permission for
-     * @param config Configmanager to get required permission from
-     * @param command Command to check
-     * @return Does the person have permission
-     */
-    public static boolean hasPermission(Member member, ConfigManager config, ChatCommand command) {
-        return getRank(member).ordinal() >= command.getPermission(config).ordinal();
-    }
-
-    /**
-     * Check if member has required permission
-     *
-     * @param member Member to check
-     * @param requiredPermission permission needed
-     * @return true if user has permission
-     */
-    public static boolean hasPermission(Member member, CommandPermission requiredPermission) {
-        return getRank(member).ordinal() >= requiredPermission.ordinal();
-    }
 
     /**
      * Check if user has permission to manage content owned by other member
@@ -90,12 +46,16 @@ public class PermissionUtilities {
         if (member.equals(owner)) {
             return true;
         }
-        final CommandPermission requesterRank = getRank(member);
+        final MemberRank requesterRank = MemberRank.getRank(member);
+        //Requester not admin or higher
+        if(requesterRank.ordinal() < MemberRank.ADMIN.ordinal()){
+            return false;
+        }
         //No owner
         if (owner == null) {
-            return (requesterRank.ordinal() >= CommandPermission.ADMIN.ordinal());
+            return true;
         }
-        return getRank(owner).ordinal() < requesterRank.ordinal();
+        return MemberRank.getRank(owner).ordinal() < requesterRank.ordinal();
     }
 
 }

@@ -23,28 +23,31 @@
  */
 package eternal.lemonadebot.permissions;
 
+import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Member;
+
 /**
  * Permissions required to run a command
  *
  * @author Neutroni
  */
-public enum CommandPermission {
+public enum MemberRank {
     /**
-     * Commands anyone can run
+     * User is anyone on the discord guild that has joined
      */
     USER("Account without roles"),
     /**
-     * Command members can run
+     * Members on discord have at least one role
      */
     MEMBER("Account with at least one role"),
     /**
-     * Command admins can run
+     * Admins are the users that have permission manageserver
      */
     ADMIN("Account with permission ADMINSTRATOR");
 
     public static String getLevelDescriptions() {
         final StringBuilder sb = new StringBuilder();
-        for (CommandPermission p : values()) {
+        for (MemberRank p : values()) {
             sb.append(p.toString().toLowerCase());
             sb.append(" - ");
             sb.append(p.getDescription());
@@ -55,7 +58,7 @@ public enum CommandPermission {
 
     private final String desc;
 
-    private CommandPermission(String description) {
+    private MemberRank(String description) {
         this.desc = description;
     }
 
@@ -66,5 +69,21 @@ public enum CommandPermission {
      */
     public String getDescription() {
         return this.desc;
+    }
+    
+    /**
+     * What rank user has
+     *
+     * @param member user to check
+     * @return Rank of the member
+     */
+    public static MemberRank getRank(Member member){
+        if (member.hasPermission(Permission.ADMINISTRATOR)) {
+            return MemberRank.ADMIN;
+        }
+        if (member.getRoles().size() > 0) {
+            return MemberRank.MEMBER;
+        }
+        return MemberRank.USER;
     }
 }

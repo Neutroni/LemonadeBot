@@ -24,11 +24,9 @@
 package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.permissions.CommandPermission;
-import eternal.lemonadebot.permissions.PermissionKey;
+import eternal.lemonadebot.permissions.MemberRank;
 import java.util.Objects;
 
 /**
@@ -102,8 +100,8 @@ public class CustomCommand implements ChatCommand {
     }
 
     @Override
-    public CommandPermission getPermission(ConfigManager guild) {
-        return guild.getRequiredPermission(PermissionKey.RunCommands);
+    public MemberRank getDefaultRank() {
+        return MemberRank.MEMBER;
     }
 
     @Override

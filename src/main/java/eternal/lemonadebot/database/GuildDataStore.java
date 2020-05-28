@@ -34,6 +34,7 @@ import net.dv8tion.jda.api.JDA;
 public class GuildDataStore {
 
     private final ConfigManager config;
+    private final PermissionManager permissions;
     private final CustomCommandManager commands;
     private final EventManager events;
     private final RemainderManager remainders;
@@ -48,6 +49,7 @@ public class GuildDataStore {
      */
     GuildDataStore(Connection connection, JDA jda, long guild) {
         this.config = new ConfigManager(connection, guild);
+        this.permissions = new PermissionManager(connection, guild);
         this.events = new EventManager(connection, guild);
         this.cooldowns = new CooldownManager(connection, guild);
         this.commands = new CustomCommandManager(connection, this.cooldowns, guild);
@@ -61,6 +63,15 @@ public class GuildDataStore {
      */
     public ConfigManager getConfigManager() {
         return this.config;
+    }
+
+    /**
+     * Get the permissionsmanager for this datastore
+     *
+     * @return PermissionsManager
+     */
+    public PermissionManager getPermissionManager() {
+        return this.permissions;
     }
 
     /**

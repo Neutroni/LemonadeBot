@@ -23,17 +23,13 @@
  */
 package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.commandtypes.UserCommand;
-import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.database.RemainderManager;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.CommandMatcher;
-import eternal.lemonadebot.events.Event;
-import eternal.lemonadebot.events.Remainder;
-import eternal.lemonadebot.permissions.CommandPermission;
-import eternal.lemonadebot.permissions.PermissionKey;
+import eternal.lemonadebot.commandtypes.ChatCommand;
+import eternal.lemonadebot.customcommands.Event;
+import eternal.lemonadebot.permissions.MemberRank;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,13 +46,18 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class EventCommand extends UserCommand {
+public class EventCommand implements ChatCommand{
 
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
     public String getCommand() {
         return "event";
+    }
+    
+    @Override
+    public MemberRank getDefaultRank() {
+        return MemberRank.MEMBER;
     }
 
     @Override
@@ -137,13 +138,7 @@ public class EventCommand extends UserCommand {
     private void createEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Member sender = matcher.getMember();
-        final ConfigManager guildConf = guildData.getConfigManager();
         final EventManager events = guildData.getEventManager();
-        final CommandPermission perm = guildConf.getRequiredPermission(PermissionKey.EditEvents);
-        if (!PermissionUtilities.hasPermission(sender, perm)) {
-            textChannel.sendMessage("You do not have permission to create events").queue();
-            return;
-        }
         if (opts.length == 1) {
             textChannel.sendMessage("Provide name of the event to create.").queue();
             return;
@@ -179,14 +174,7 @@ public class EventCommand extends UserCommand {
     private void deleteEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final Member sender = matcher.getMember();
         final TextChannel textChannel = matcher.getTextChannel();
-        final ConfigManager guildConf = guildData.getConfigManager();
         final EventManager events = guildData.getEventManager();
-        final RemainderManager remainders = guildData.getRemainderManager();
-        final CommandPermission perm = guildConf.getRequiredPermission(PermissionKey.EditEvents);
-        if (!PermissionUtilities.hasPermission(sender, perm)) {
-            textChannel.sendMessage("You do not have permission to delete events").queue();
-            return;
-        }
         if (opts.length == 1) {
             textChannel.sendMessage("Provide name of the event to delete").queue();
             return;
@@ -366,7 +354,7 @@ public class EventCommand extends UserCommand {
         final List<Event> ev = events.getEvents();
         final StringBuilder sb = new StringBuilder("Events:\n");
         for (Event e : ev) {
-            sb.append(' ').append(e.getName()).append(" - ").append(e.getDescription()).append('\n');
+            sb.append(' ').append(e.toString()).append('\n');
         }
         if (ev.isEmpty()) {
             sb.append("No events found.");

@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.events;
+package eternal.lemonadebot.customcommands;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -153,6 +153,11 @@ public class Event {
         }
         final Event other = (Event) obj;
         return Objects.equals(this.name, other.name);
+    }
+    
+    @Override
+    public String toString(){
+        return this.name + " - " + this.description;
     }
 
 }

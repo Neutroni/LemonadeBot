@@ -23,8 +23,7 @@
  */
 package eternal.lemonadebot.commandtypes;
 
-import eternal.lemonadebot.database.ConfigManager;
-import eternal.lemonadebot.permissions.CommandPermission;
+import eternal.lemonadebot.permissions.MemberRank;
 
 /**
  * Abstract class to provide quick way of writing commands that anyone can use
@@ -34,7 +33,7 @@ import eternal.lemonadebot.permissions.CommandPermission;
 public abstract class UserCommand implements ChatCommand {
 
     @Override
-    public CommandPermission getPermission(ConfigManager guild) {
-        return CommandPermission.USER;
+    public MemberRank getDefaultRank() {
+        return MemberRank.USER;
     }
 }

@@ -129,6 +129,49 @@ public class CooldownManager {
     }
 
     /**
+     * Remove cooldown from command
+     *
+     * @param command Command to remove cooldown from
+     * @return true if cooldown was removed, false otherwise
+     * @throws SQLException if database connection failed
+     */
+    public boolean removeCooldown(ChatCommand command) throws SQLException {
+        this.cooldowns.remove(command.getCommand());
+
+        //Remove from database
+        final String query = "DELETE FROM Cooldowns Where guild = ? AND command = ?;";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setLong(1, this.guildID);
+            ps.setString(2, command.getCommand());
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Set cooldown for command
+     *
+     * @param command Command to set cooldown for
+     * @param cooldownDuration Lenght of the cooldown
+     * @return true if cooldown was created
+     * @throws SQLException If database connection failed
+     */
+    public boolean setCooldown(ChatCommand command, Duration cooldownDuration) throws SQLException {
+        final Cooldown cooldown = this.cooldowns.computeIfAbsent(command.getCommand(), (String t) -> {
+            return new Cooldown(cooldownDuration, Instant.EPOCH);
+        });
+        cooldown.cooldownTime = cooldownDuration;
+
+        final String query = "INSERT OR REPLACE INTO Cooldowns(guild,command,duration,activationTime) VALUES(?,?,?,?)";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setLong(1, this.guildID);
+            ps.setString(2, command.getCommand());
+            ps.setLong(3, cooldownDuration.getSeconds());
+            ps.setLong(4, Instant.EPOCH.getEpochSecond());
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
      * Get the string presentation for remaining cooldown of command
      *
      * @param command command to check cooldown for
@@ -189,49 +232,6 @@ public class CooldownManager {
     }
 
     /**
-     * Remove cooldown from command
-     *
-     * @param command Command to remove cooldown from
-     * @return true if cooldown was removed, false otherwise
-     * @throws SQLException if database connection failed
-     */
-    public boolean removeCooldown(ChatCommand command) throws SQLException {
-        this.cooldowns.remove(command.getCommand());
-
-        //Remove from database
-        final String query = "DELETE FROM Cooldowns Where guild = ? AND command = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
-            ps.setString(2, command.getCommand());
-            return ps.executeUpdate() > 0;
-        }
-    }
-
-    /**
-     * Set cooldown for command
-     *
-     * @param command Command to set cooldown for
-     * @param cooldownDuration Lenght of the cooldown
-     * @return true if cooldown was created
-     * @throws SQLException If database connection failed
-     */
-    public boolean setCooldown(ChatCommand command, Duration cooldownDuration) throws SQLException {
-        final Cooldown cooldown = this.cooldowns.computeIfAbsent(command.getCommand(), (String t) -> {
-            return new Cooldown(cooldownDuration, Instant.EPOCH);
-        });
-        cooldown.cooldownTime = cooldownDuration;
-
-        final String query = "INSERT OR REPLACE INTO Cooldowns(guild,command,duration,activationTime) VALUES(?,?,?,?)";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
-            ps.setString(2, command.getCommand());
-            ps.setLong(3, cooldownDuration.getSeconds());
-            ps.setLong(4, Instant.EPOCH.getEpochSecond());
-            return ps.executeUpdate() > 0;
-        }
-    }
-
-    /**
      * Class to store cooldows in
      */
     private static class Cooldown {
@@ -239,12 +239,12 @@ public class CooldownManager {
         private Duration cooldownTime;
         private Instant activationTime;
 
-        public Cooldown(Duration cooldownDuration, Instant lastActivation) {
+        Cooldown(Duration cooldownDuration, Instant lastActivation) {
             this.cooldownTime = cooldownDuration;
             this.activationTime = lastActivation;
         }
 
-        public Cooldown(long cooldownDurationSeconds, long activationTimeSeconds) {
+        Cooldown(long cooldownDurationSeconds, long activationTimeSeconds) {
             this.cooldownTime = Duration.ofSeconds(cooldownDurationSeconds);
             this.activationTime = Instant.ofEpochSecond(activationTimeSeconds);
         }
