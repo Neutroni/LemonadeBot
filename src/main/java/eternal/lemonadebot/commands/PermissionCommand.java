@@ -28,7 +28,7 @@ import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.PermissionManager;
 import eternal.lemonadebot.permissions.MemberRank;
-import eternal.lemonadebot.permissions.RequiredPermission;
+import eternal.lemonadebot.permissions.CommandPermission;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -86,8 +86,8 @@ class PermissionCommand extends AdminCommand {
                     return;
                 }
                 final String permissionName = arguments[1];
-                final Optional<RequiredPermission> optPerm = permissions.getPermission(permissionName);
-                optPerm.ifPresentOrElse((RequiredPermission perm) -> {
+                final Optional<CommandPermission> optPerm = permissions.getPermission(permissionName);
+                optPerm.ifPresentOrElse((CommandPermission perm) -> {
                     final long roleID = perm.getRequiredRoleID();
                     final Role r = channel.getGuild().getRoleById(roleID);
                     if (r == null) {
@@ -143,7 +143,7 @@ class PermissionCommand extends AdminCommand {
                     role = roles.get(0);
                 }
                 final String permissionName = args[3];
-                final RequiredPermission perm = new RequiredPermission(rank, role.getIdLong());
+                final CommandPermission perm = new CommandPermission(rank, role.getIdLong());
                 try {
                     permissions.setPermission(permissionName, perm);
                 } catch (SQLException e) {

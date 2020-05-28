@@ -33,7 +33,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class RequiredPermission {
+public class CommandPermission {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -46,7 +46,7 @@ public class RequiredPermission {
      * @param rank Rank required for this permission
      * @param role Role required for this permission
      */
-    public RequiredPermission(final MemberRank rank, final long role) {
+    public CommandPermission(final MemberRank rank, final long role) {
         this.rank = rank;
         this.roleID = role;
     }
