@@ -385,7 +385,7 @@ public class EventCommand implements ChatCommand{
         }
         final List<Long> memberIds = event.getMembers();
         final MessageBuilder mb = new MessageBuilder("Ping!\n");
-        for (Long id : memberIds) {
+        for (final Long id : memberIds) {
             if (id == sender.getIdLong()) {
                 continue;
             }
@@ -417,7 +417,7 @@ public class EventCommand implements ChatCommand{
         final List<Long> eventMemberIDs = event.getMembers();
         final List<Long> memberIDsMutable = new ArrayList<>(eventMemberIDs);
         Collections.shuffle(memberIDsMutable);
-        for (Long id : memberIDsMutable) {
+        for (final Long id : memberIDsMutable) {
             final Member m = guild.getMemberById(id);
             if (m == null) {
                 LOGGER.warn("Found user in event members who could not be found, removing from event\n");

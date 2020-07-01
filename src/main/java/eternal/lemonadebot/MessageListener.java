@@ -31,6 +31,7 @@ import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.PermissionManager;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Optional;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -88,12 +89,23 @@ public class MessageListener extends ListenerAdapter {
             return;
         }
 
-        //Check if message is a command
+        //Check if message is just ping to us
         final Guild eventGuild = event.getGuild();
+        final Member selfMember = eventGuild.getSelfMember();
+        final Message message = event.getMessage();
         final GuildDataStore guildData = this.db.getGuildData(eventGuild);
         final ConfigManager configManager = guildData.getConfigManager();
-        final Message message = event.getMessage();
         final MessageMatcher cmdMatch = new MessageMatcher(configManager, message);
+        final List<Member> mentionedMembers = message.getMentionedMembers();
+        if (mentionedMembers.size() == 1 && mentionedMembers.contains(selfMember)) {
+            if (cmdMatch.getAction().isBlank()) {
+                textChannel.sendMessage("LemonadeBot version: " + LemonadeBot.BOT_VERSION
+                        + "\nCurrent command prefix: " + configManager.getCommandPrefix()).queue();
+                return;
+            }
+        }
+
+        //Check if message is a command
         final Optional<? extends ChatCommand> action = CommandProvider.getAction(cmdMatch, guildData);
         if (action.isEmpty()) {
             return;
@@ -108,7 +120,7 @@ public class MessageListener extends ListenerAdapter {
         //Check if user has permission
         final Member member = cmdMatch.getMember();
         final PermissionManager permissions = guildData.getPermissionManager();
-        final String inputString = cmdMatch.getArgumentString();
+        final String inputString = cmdMatch.getAction();
 
         if (!permissions.hasPermission(member, inputString)) {
             return;

@@ -35,13 +35,13 @@ import net.dv8tion.jda.api.entities.TextChannel;
  * @author Neutroni
  */
 public interface CommandMatcher {
-
+    
     /**
-     * Get the arguments from this matcher including the command
+     * Get the command from the match
      *
-     * @return String of arguments
+     * @return optional containing command string if found
      */
-    String getArgumentString();
+    Optional<String> getCommand();
 
     /**
      * Get parameters limited by whitespace and the rest of the message as last
@@ -51,13 +51,13 @@ public interface CommandMatcher {
      * @return array of parameters
      */
     String[] getArguments(int count);
-
+    
     /**
-     * Get the command from the match
+     * Get the action for this command
      *
-     * @return optional containing command string if found
+     * @return String of command name and arguments
      */
-    Optional<String> getCommand();
+    String getAction();
 
     /**
      * Get the guild the message was sent in
@@ -79,13 +79,6 @@ public interface CommandMatcher {
      * @return Same as message.getContentRaw()
      */
     String getMessageText();
-
-    /**
-     * Get the text content of the message with mentions stripped out
-     *
-     * @return String that contains the message with mentions removed
-     */
-    String getMessageStripMentions();
 
     /**
      * Return the channel which the message was sent in

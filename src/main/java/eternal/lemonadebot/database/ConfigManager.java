@@ -95,7 +95,7 @@ public class ConfigManager {
      * @return Was comamnd prefix set succesfully
      * @throws SQLException if updating prefix failed
      */
-    public boolean setCommandPrefix(String prefix) throws SQLException {
+    public boolean setCommandPrefix(final String prefix) throws SQLException {
         this.commandPrefix = prefix;
         this.commandPattern = getCommandPattern(prefix);
 
@@ -114,7 +114,7 @@ public class ConfigManager {
      * @return did update succeed
      * @throws SQLException id database connection failed
      */
-    public boolean setGreetingTemplate(String newTemplate) throws SQLException {
+    public boolean setGreetingTemplate(final String newTemplate) throws SQLException {
         this.greetingTemplate = Optional.ofNullable(newTemplate);
 
         final String query = "UPDATE Guilds SET greetingTemplate = ? WHERE id = ?;";
@@ -130,9 +130,9 @@ public class ConfigManager {
      *
      * @param prefix prefix to use in pattern
      */
-    private Pattern getCommandPattern(String prefix) {
-        //Start of match, optionally @numericID, prefix, match group 2 is command
-        return Pattern.compile("^(?:<@!\\d+> *)*" + Pattern.quote(prefix) + "(\\w+) ?");
+    private Pattern getCommandPattern(final String prefix) {
+        //Start of match, prefix, command, arguments
+        return Pattern.compile("^" + Pattern.quote(prefix) + "(\\S+) ?");
     }
 
     /**

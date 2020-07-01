@@ -26,6 +26,7 @@ package eternal.lemonadebot.commandtypes;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.permissions.MemberRank;
+import net.dv8tion.jda.api.MessageBuilder;
 
 /**
  * Interface all commands must implement

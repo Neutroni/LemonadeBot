@@ -31,7 +31,6 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.permissions.MemberRank;
@@ -185,14 +184,12 @@ public class MusicCommand implements ChatCommand {
         });
     }
 
-    private synchronized GuildMusicManager getGuildAudioPlayer(Guild guild) {
-        long guildId = Long.parseLong(guild.getId());
-        GuildMusicManager musicManager = musicManagers.get(guildId);
+    private synchronized GuildMusicManager getGuildAudioPlayer(final Guild guild) {
+        final long guildId = guild.getIdLong();
 
-        if (musicManager == null) {
-            musicManager = new GuildMusicManager(playerManager, guild.getAudioManager());
-            musicManagers.put(guildId, musicManager);
-        }
+        final GuildMusicManager musicManager = musicManagers.computeIfAbsent(guildId, (Long id) -> {
+            return new GuildMusicManager(playerManager, guild.getAudioManager());
+        });
 
         guild.getAudioManager().setSendingHandler(musicManager.getSendHandler());
 
@@ -200,7 +197,7 @@ public class MusicCommand implements ChatCommand {
     }
 
     private void skipTrack(TextChannel channel, String trackUrl) {
-        GuildMusicManager musicManager = getGuildAudioPlayer(channel.getGuild());
+        final GuildMusicManager musicManager = getGuildAudioPlayer(channel.getGuild());
 
         //No url, skip current track
         if (trackUrl == null) {
@@ -261,12 +258,24 @@ public class MusicCommand implements ChatCommand {
         });
     }
 
+    /**
+     * Pause music plaback
+     *
+     * @param textChannel textchannel for reques
+     */
     private void pauseTrack(TextChannel textChannel) {
-        GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
+        final GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
         musicManager.player.setPaused(true);
         textChannel.sendMessage("Playback paused").queue();
     }
 
+    /**
+     * Play audiotrack
+     *
+     * @param guild guild to play on
+     * @param musicManager musicManager to use
+     * @param track AudioTrack to play
+     */
     private void play(Guild guild, GuildMusicManager musicManager, AudioTrack track) {
         connectToFirstVoiceChannel(guild.getAudioManager());
         musicManager.scheduler.queue(track);
@@ -278,7 +287,7 @@ public class MusicCommand implements ChatCommand {
      * @param textChannel channel for the request
      */
     private void resumeTrack(TextChannel textChannel) {
-        GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
+        final GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
         musicManager.player.setPaused(false);
         textChannel.sendMessage("Playback resumed").queue();
     }
@@ -329,7 +338,7 @@ public class MusicCommand implements ChatCommand {
             sb.append("No music in playlist");
         }
 
-        MessageEmbed.Field upcomingSongsField = new MessageEmbed.Field("Upcoming songs:", sb.toString(), false);
+        final MessageEmbed.Field upcomingSongsField = new MessageEmbed.Field("Upcoming songs:", sb.toString(), false);
         eb.addField(upcomingSongsField);
 
         long playlistLengthMS = 0;

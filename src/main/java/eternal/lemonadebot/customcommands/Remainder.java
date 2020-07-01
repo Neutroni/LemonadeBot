@@ -24,8 +24,6 @@
 package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.CommandMatcher;
-import eternal.lemonadebot.commands.CommandProvider;
-import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.GuildDataStore;
 import java.sql.SQLException;
 import java.time.Clock;
@@ -119,8 +117,8 @@ public class Remainder extends TimerTask {
             return;
         }
 
-        final CommandMatcher matcher = new FakeMessageMatcher(member, channel, "remainder activate " + this.name);
-        final CharSequence reponse = TemplateManager.processActions(matcher, guildData, this.remainderText);
+        final CommandMatcher matcher = new RemainderMessageMatcher(member, channel);
+        final CharSequence reponse = TemplateManager.parseAction(matcher, guildData, this.remainderText);
         channel.sendMessage(reponse).queue();
         LOGGER.debug("Remainder succesfully activated on channel" + channel.getName());
     }

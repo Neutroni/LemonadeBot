@@ -33,17 +33,20 @@ import eternal.lemonadebot.database.PermissionManager;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import net.dv8tion.jda.api.entities.Message;
 
 /**
  * Class that holds templates for custom commands and how to substitute given
@@ -55,19 +58,19 @@ public class TemplateManager {
 
     private static final Random RNG = new Random();
     private static final List<ActionTemplate> actions = List.of(
-            new ActionTemplate("\\{choice (.*(\\|.*)+)\\}", "{choice a|b} - Selects value separated by | randomly",
+            new ActionTemplate("choice (.*(\\|.*)+)", "{choice a|b} - Selects value separated by | randomly",
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
                         final String[] parts = input.group(1).split("\\|");
                         final String response = parts[RNG.nextInt(parts.length)];
                         return "" + response;
                     }),
-            new ActionTemplate("\\{rng (\\d+),(\\d+)\\}", "{rng x,y} - Generate random number between the two inputs.",
+            new ActionTemplate("rng (\\d+),(\\d+)", "{rng x,y} - Generate random number between the two inputs.",
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
                         final int start = Integer.parseInt(input.group(1));
                         final int end = Integer.parseInt(input.group(2));
                         return "" + (RNG.nextInt(end) + start);
                     }),
-            new ActionTemplate("\\{message\\}", "{message} Use the input as part of the reply",
+            new ActionTemplate("message", "{message} Use the input as part of the reply",
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
                         final String[] messageText = message.getArguments(0);
                         if (messageText.length == 0) {
@@ -75,15 +78,27 @@ public class TemplateManager {
                         }
                         return messageText[0];
                     }),
-            new ActionTemplate("\\{messageText\\}", "{messageText} - Use the input as part of the reply but remove mentions",
+            new ActionTemplate("messageText", "{messageText} - Use the input as part of the reply but remove mentions",
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
                         final String[] messageText = message.getArguments(0);
                         if (messageText.length == 0) {
                             return "";
                         }
-                        return messageText[0].replaceAll("<@!\\d+> ?", "").trim();
+                        String response = messageText[0];
+                        for (final Message.MentionType mt : Message.MentionType.values()) {
+                            final Pattern pattern = mt.getPattern();
+                            final Matcher matcher = pattern.matcher(response);
+                            final StringBuilder sb = new StringBuilder();
+
+                            while (matcher.find()) {
+                                matcher.appendReplacement(sb, "");
+                            }
+                            matcher.appendTail(sb);
+                            response = sb.toString();
+                        }
+                        return response.trim();
                     }),
-            new ActionTemplate("\\{mentions\\}", "{mentions} - Lists the mentioned users",
+            new ActionTemplate("mentions", "{mentions} - Lists the mentioned users",
                     (CommandMatcher matcher, GuildDataStore guildData, Matcher input) -> {
 
                         final List<Member> mentionedMembers = matcher.getMentionedMembers();
@@ -91,11 +106,11 @@ public class TemplateManager {
                             return member.getEffectiveName();
                         }).collect(Collectors.joining(","));
                     }),
-            new ActionTemplate("\\{sender\\}", "{sender} - The name of the command sender",
+            new ActionTemplate("sender", "{sender} - The name of the command sender",
                     (CommandMatcher matcher, GuildDataStore guildData, Matcher input) -> {
                         return matcher.getMember().getEffectiveName();
                     }),
-            new ActionTemplate("\\{randomEventMember (\\w+)\\}", "{randomEventMember <eventname>} - Pick random member from event",
+            new ActionTemplate("randomEventMember (\\S+)", "{randomEventMember <eventname>} - Pick random member from event",
                     (CommandMatcher matcher, GuildDataStore guildData, Matcher input) -> {
                         final Guild guild = matcher.getGuild();
 
@@ -160,38 +175,67 @@ public class TemplateManager {
                             final Period period = Period.between(date, LocalDate.now());
                             return Math.abs(period.getDays()) + " days";
                         } catch (DateTimeParseException e) {
-                            return "Unkown date: " + dateString;
+                            return "Unknown date: " + dateString;
                         }
                     })
     );
 
     /**
-     * Gets a response to a message
+     * Parse the template string
      *
-     * @param message Message that activated the actions
-     * @param guildData Data for the guild
-     * @param action Action template string
-     * @return Response string
+     * @param message Message this action is a reply to
+     * @param guildData GuildDataStore for current guild
+     * @param action Template string for action
+     * @return String response
      */
-    public static CharSequence processActions(CommandMatcher message, GuildDataStore guildData, String action) {
-        String response = action;
-
-        //Process simple actions
-        for (ActionTemplate s : actions) {
-            //Check if 
-            final Matcher m = s.getMatcher(response);
-            final StringBuilder sb = new StringBuilder();
-
-            while (m.find()) {
-                final String replacement = s.getValue(message, guildData, m);
-                //To avoid referencing matcher groups replace with empty string and append the actual replacement
-                m.appendReplacement(sb, "");
-                sb.append(replacement);
-            }
-            m.appendTail(sb);
-            response = sb.toString();
+    public static CharSequence parseAction(final CommandMatcher message, final GuildDataStore guildData, final String action) {
+        //Check that action is not empty string
+        if (action.length() == 0) {
+            return "";
         }
-        return response;
+
+        //Construct stack to hold the parsed responses
+        final Deque<StringBuilder> stack = new ArrayDeque<>();
+
+        //Initialize the stack if needed
+        if (action.charAt(0) != '{') {
+            stack.addFirst(new StringBuilder(action.length()));
+        }
+
+        //Parse the action
+        for (int i = 0; i < action.length(); i++) {
+            final char c = action.charAt(i);
+            switch (c) {
+                case '{':
+                    stack.addFirst(new StringBuilder());
+                    break;
+                case '}':
+                    final StringBuilder sb = stack.removeFirst();
+                    boolean foundMatch = false;
+                    for (final ActionTemplate s : actions) {
+                        final Matcher m = s.getMatcher(sb);
+                        if (m.matches()) {
+                            foundMatch = true;
+                            final String response = s.getValue(message, guildData, m);
+                            stack.peekFirst().append(response);
+                            break;
+                        }
+                    }
+                    if (!foundMatch) {
+                        stack.peekFirst().append(sb);
+                    }
+                    break;
+                default:
+                    stack.peekFirst().append(c);
+                    break;
+            }
+        }
+        final StringBuilder parsed = stack.removeLast();
+        final Iterator<StringBuilder> it = stack.descendingIterator();
+        while (it.hasNext()) {
+            parsed.append(it.next());
+        }
+        return parsed;
     }
 
     /**

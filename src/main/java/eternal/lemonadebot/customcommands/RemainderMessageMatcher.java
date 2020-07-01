@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2020 joonas.
+ * Copyright 2020 Neutroni.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,87 +26,112 @@ package eternal.lemonadebot.customcommands;
 import eternal.lemonadebot.CommandMatcher;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
+ * Matches given message for command pattern
  *
- * @author joonas
+ * @author Neutroni
  */
-public class FakeMessageMatcher implements CommandMatcher {
+class RemainderMessageMatcher implements CommandMatcher {
 
-    private static final Pattern pattern = Pattern.compile("^(\\S+) ?");
-    private final CommandMatcher commandMatcher;
-    private final String messageText;
-    private final Matcher matcher;
-    private final boolean matches;
+    private final Member author;
+    private final TextChannel channel;
 
-    public FakeMessageMatcher(CommandMatcher originalMatcher, String fakeContent) {
-        this.commandMatcher = originalMatcher;
-        final String[] args = originalMatcher.getArguments(0);
-        if (args.length == 0) {
-            this.messageText = fakeContent;
-        } else {
-            this.messageText = fakeContent + ' ' + args[0];
-        }
-        this.matcher = pattern.matcher(this.messageText);
-        this.matches = this.matcher.find();
+    /**
+     * Constructor for remainder command invocations
+     *
+     * @param author message author
+     * @param channel Channel message was sent int
+     * @param fakeContent Message content
+     */
+    RemainderMessageMatcher(Member author, TextChannel channel) {
+        this.author = author;
+        this.channel = channel;
     }
 
+    /**
+     * Get the command from the match
+     *
+     * @return optional containing command string if found
+     */
     @Override
     public Optional<String> getCommand() {
-        if (this.matches) {
-            return Optional.of(matcher.group(1));
-        }
-        return Optional.empty();
+        return Optional.of("remainder");
     }
 
-    @Override
-    public String[] getArguments(int count) {
-        int parameterStart = matcher.end();
-
-        final String parameterString = this.messageText.substring(parameterStart);
-        return parameterString.split(" ", count + 1);
-    }
-
+    /**
+     * Get the arguments from this matcher including the command
+     *
+     * @return String of arguments
+     */
     @Override
     public String getAction() {
-        int argumentStart = matcher.start(1);
-        return this.messageText.substring(argumentStart);
+        return "";
     }
 
+    /**
+     * Get parameters limited by whitespace and the rest of the message as last
+     * entry in returned array
+     *
+     * @param count number of parameters to return
+     * @return array of parameters
+     */
     @Override
-    public Guild getGuild() {
-        return this.commandMatcher.getGuild();
+    public String[] getArguments(int count) {
+        return new String[0];
     }
 
+    /**
+     * Get member who sent the message
+     *
+     * @return Member who sent the message
+     */
     @Override
     public Member getMember() {
-        return this.commandMatcher.getMember();
+        return this.author;
     }
 
+    /**
+     * Get text content of the message
+     *
+     * @return Same as message.getContentRaw()
+     */
     @Override
     public String getMessageText() {
-        return this.messageText;
+        return "";
     }
 
+    /**
+     * Return the channel which the message was sent in
+     *
+     * @return TextChannel of the message
+     */
     @Override
     public TextChannel getTextChannel() {
-        return this.commandMatcher.getTextChannel();
+        return this.channel;
+    }
+
+    /**
+     * Get the guild the message was sent in
+     *
+     * @return Guild
+     */
+    @Override
+    public Guild getGuild() {
+        return this.channel.getGuild();
     }
 
     @Override
     public List<Member> getMentionedMembers() {
-        return this.commandMatcher.getMentionedMembers();
+        return List.of();
     }
 
     @Override
     public List<Role> getMentionedRoles() {
-        return this.commandMatcher.getMentionedRoles();
+        return List.of();
     }
-
 }

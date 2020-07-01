@@ -47,8 +47,8 @@ import org.apache.logging.log4j.Logger;
  */
 public class LemonadeBot {
 
-    private static final Logger LOGGER = LogManager.getLogger();
     public static final String BOT_VERSION = "1.1";
+    private static final Logger LOGGER = LogManager.getLogger();
 
     /**
      * Main function

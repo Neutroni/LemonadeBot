@@ -23,10 +23,9 @@
  */
 package eternal.lemonadebot.customcommands;
 
-import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.commandtypes.MemberCommand;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.permissions.MemberRank;
 import java.util.Objects;
 
 /**
@@ -36,7 +35,7 @@ import java.util.Objects;
  *
  * @author Neutroni
  */
-public class CustomCommand implements ChatCommand {
+public class CustomCommand extends MemberCommand {
 
     private final String commandName;
     private final String actionTemplate;
@@ -85,8 +84,8 @@ public class CustomCommand implements ChatCommand {
 
     @Override
     public void respond(CommandMatcher match, GuildDataStore guildData) {
-        final CharSequence response = TemplateManager.processActions(match, guildData, actionTemplate);
-        if(response.length() == 0){
+        final CharSequence response = TemplateManager.parseAction(match, guildData, actionTemplate);
+        if (response.length() == 0) {
             return;
         }
         match.getTextChannel().sendMessage(response).queue();
@@ -96,19 +95,12 @@ public class CustomCommand implements ChatCommand {
     public String getHelpText() {
         return "Custom command with template:\n "
                 + this.actionTemplate
-                + "\nSee \"help actions\" for details on custom commands.";
-    }
-
-    @Override
-    public MemberRank getDefaultRank() {
-        return MemberRank.MEMBER;
+                + "\nSee \"help command\" for details on custom commands.";
     }
 
     @Override
     public int hashCode() {
-        int hash = 5;
-        hash = 83 * hash + Objects.hashCode(this.commandName);
-        return hash;
+        return this.commandName.hashCode();
     }
 
     @Override

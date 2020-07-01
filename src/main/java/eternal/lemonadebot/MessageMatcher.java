@@ -52,7 +52,7 @@ class MessageMatcher implements CommandMatcher {
      * @param guildDataStore datastore for guild
      * @param msg command message
      */
-    MessageMatcher(ConfigManager configManager, Message msg) {
+    MessageMatcher(final ConfigManager configManager, final Message msg) {
         if (!msg.isFromGuild()) {
             throw new IllegalArgumentException("Only messages from guilds supported");
         }
@@ -78,17 +78,6 @@ class MessageMatcher implements CommandMatcher {
     }
 
     /**
-     * Get the arguments from this matcher including the command
-     *
-     * @return String of arguments
-     */
-    @Override
-    public String getArgumentString() {
-        int argumentStart = matcher.start(1);
-        return this.messageText.substring(argumentStart);
-    }
-
-    /**
      * Get parameters limited by whitespace and the rest of the message as last
      * entry in returned array
      *
@@ -99,13 +88,20 @@ class MessageMatcher implements CommandMatcher {
     public String[] getArguments(int count) {
         int parameterStart = matcher.end();
 
-        //Check if message ends at match end
-        if (parameterStart == this.messageText.length()) {
-            return new String[0];
-        }
-
         final String parameterString = this.messageText.substring(parameterStart);
         return parameterString.split(" ", count + 1);
+    }
+
+    /**
+     * Get the action from this matcher including the command but excluding the
+     * command prefix
+     *
+     * @return Action String
+     */
+    @Override
+    public String getAction() {
+        int argumentStart = matcher.start(1);
+        return this.messageText.substring(argumentStart);
     }
 
     /**
@@ -158,21 +154,4 @@ class MessageMatcher implements CommandMatcher {
         return this.message.getMentionedRoles();
     }
 
-    @Override
-    public String getMessageStripMentions() {
-        String response = this.messageText;
-        for(final Message.MentionType mt: Message.MentionType.values()){
-            final Pattern pattern = mt.getPattern();
-            final Matcher matcher = pattern.matcher(response);
-            final StringBuilder sb = new StringBuilder();
-
-            while (matcher.find()) {
-                matcher.appendReplacement(sb, "");
-            }
-            matcher.appendTail(sb);
-            response = sb.toString();
-        }
-        
-        return  response;
-    }
 }
