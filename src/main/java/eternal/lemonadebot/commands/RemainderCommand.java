@@ -115,7 +115,7 @@ public class RemainderCommand implements ChatCommand {
                 break;
             }
             default: {
-                textChannel.sendMessage("Unkown operation: " + arguments[0]).queue();
+                textChannel.sendMessage("Unknown operation: " + arguments[0]).queue();
             }
         }
     }
@@ -157,7 +157,7 @@ public class RemainderCommand implements ChatCommand {
         try {
             activationTime = LocalTime.parse(reminderTime);
         } catch (DateTimeParseException e) {
-            textChannel.sendMessage("Unkown time: " + reminderTime + " provide time in format hh:mm").queue();
+            textChannel.sendMessage("Unknown time: " + reminderTime + " provide time in format hh:mm").queue();
             return;
         }
 

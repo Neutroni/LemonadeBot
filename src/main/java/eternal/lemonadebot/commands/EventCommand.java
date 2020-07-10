@@ -130,7 +130,7 @@ public class EventCommand implements ChatCommand{
                 break;
             }
             default: {
-                textChannel.sendMessage("Unkown operation: " + opts[0]).queue();
+                textChannel.sendMessage("Unknown operation: " + opts[0]).queue();
             }
         }
     }

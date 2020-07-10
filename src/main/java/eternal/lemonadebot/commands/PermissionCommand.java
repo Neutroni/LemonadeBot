@@ -155,7 +155,7 @@ class PermissionCommand extends AdminCommand {
                 break;
             }
             default: {
-                channel.sendMessage("Unkown action: " + actionString).queue();
+                channel.sendMessage("Unknown action: " + actionString).queue();
             }
         }
     }

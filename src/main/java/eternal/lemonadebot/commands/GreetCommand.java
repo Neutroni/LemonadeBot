@@ -114,7 +114,7 @@ class GreetCommand extends AdminCommand {
                 break;
             }
             default: {
-                channel.sendMessage("Unkown operation: " + options[0]).queue();
+                channel.sendMessage("Unknown operation: " + options[0]).queue();
                 break;
             }
         }

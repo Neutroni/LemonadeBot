@@ -110,7 +110,7 @@ public class CommandCommand implements ChatCommand {
                 break;
             }
             default:
-                textChannel.sendMessage("Unkown operation: " + arguments[0]).queue();
+                textChannel.sendMessage("Unknown operation: " + arguments[0]).queue();
                 break;
         }
     }
