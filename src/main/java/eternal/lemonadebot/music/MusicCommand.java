@@ -52,15 +52,6 @@ import net.dv8tion.jda.api.managers.AudioManager;
  */
 public class MusicCommand implements ChatCommand {
 
-    private static void connectToFirstVoiceChannel(AudioManager audioManager) {
-        if (!audioManager.isConnected() && !audioManager.isAttemptingToConnect()) {
-            for (VoiceChannel voiceChannel : audioManager.getGuild().getVoiceChannels()) {
-                audioManager.openAudioConnection(voiceChannel);
-                break;
-            }
-        }
-    }
-
     private final AudioPlayerManager playerManager;
     private final Map<Long, GuildMusicManager> musicManagers;
 
@@ -143,7 +134,7 @@ public class MusicCommand implements ChatCommand {
                 break;
             }
             default: {
-                textChannel.sendMessage("Unkown operation: " + arguments[0]).queue();
+                textChannel.sendMessage("Unknown operation: " + arguments[0]).queue();
             }
         }
     }
@@ -162,7 +153,7 @@ public class MusicCommand implements ChatCommand {
             public void playlistLoaded(AudioPlaylist playlist) {
                 //Playlist without track selected
                 if (playlist.getSelectedTrack() == null) {
-                    for (AudioTrack tr : playlist.getTracks()) {
+                    for (final AudioTrack tr : playlist.getTracks()) {
                         play(channel.getGuild(), musicManager, tr);
                     }
                     channel.sendMessage("Added playlist " + playlist.getName()).queue();
@@ -223,7 +214,7 @@ public class MusicCommand implements ChatCommand {
                 //Playlist without track selected
                 if (playlist.getSelectedTrack() == null) {
                     boolean skipped = false;
-                    for (AudioTrack tr : playlist.getTracks()) {
+                    for (final AudioTrack tr : playlist.getTracks()) {
                         if (musicManager.scheduler.skipTrack(tr)) {
                             skipped = true;
                         }
@@ -277,7 +268,16 @@ public class MusicCommand implements ChatCommand {
      * @param track AudioTrack to play
      */
     private void play(Guild guild, GuildMusicManager musicManager, AudioTrack track) {
-        connectToFirstVoiceChannel(guild.getAudioManager());
+        //Make sure we are connected
+        final AudioManager audioManager = guild.getAudioManager();
+        if (!audioManager.isConnected() && !audioManager.isAttemptingToConnect()) {
+            for (final VoiceChannel voiceChannel : audioManager.getGuild().getVoiceChannels()) {
+                audioManager.openAudioConnection(voiceChannel);
+                break;
+            }
+        }
+
+        //Queue the track, starts playback if queue is empty
         musicManager.scheduler.queue(track);
     }
 
@@ -342,7 +342,7 @@ public class MusicCommand implements ChatCommand {
         eb.addField(upcomingSongsField);
 
         long playlistLengthMS = 0;
-        for (AudioTrack t : playlist) {
+        for (final AudioTrack t : playlist) {
             playlistLengthMS += t.getDuration();
         }
         Duration playlistDuration = Duration.ofMillis(playlistLengthMS);

@@ -64,9 +64,10 @@ class TrackScheduler extends AudioEventAdapter {
     }
 
     /**
+     * Called when a track plauback starts
      *
-     * @param player
-     * @param track
+     * @param player player that started
+     * @param track track that was started
      */
     @Override
     public void onTrackStart(AudioPlayer player, AudioTrack track) {
