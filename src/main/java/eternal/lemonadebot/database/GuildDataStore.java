@@ -45,15 +45,15 @@ public class GuildDataStore {
      *
      * @param connection database connection to use
      * @param jda JDA to use when communicating with discord
-     * @param guild Guild this config is for
+     * @param guildID Guild this config is for
      */
-    GuildDataStore(Connection connection, JDA jda, long guild) {
-        this.config = new ConfigManager(connection, guild);
-        this.permissions = new PermissionManager(connection, guild);
-        this.events = new EventManager(connection, guild);
-        this.cooldowns = new CooldownManager(connection, guild);
-        this.commands = new CustomCommandManager(connection, this.cooldowns, guild);
-        this.remainders = new RemainderManager(connection, jda, this, guild);
+    GuildDataStore(Connection connection, JDA jda, long guildID) {
+        this.config = new ConfigManager(connection, guildID);
+        this.permissions = new PermissionManager(connection, guildID);
+        this.events = new EventManager(connection, guildID);
+        this.cooldowns = new CooldownManager(connection, guildID);
+        this.commands = new CustomCommandManager(connection, this.cooldowns, guildID);
+        this.remainders = new RemainderManager(connection, jda, this, guildID);
     }
 
     /**

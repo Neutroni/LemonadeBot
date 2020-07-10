@@ -49,6 +49,14 @@ public enum Returnvalue {
     /**
      * If loading was interrupted
      */
-    INTERRUPTED;
+    INTERRUPTED,
+    /**
+     * If configuration file could not be found
+     */
+    MISSING_CONFIG,
+    /**
+     * If configuration read failed
+     */
+    CONFIG_READ_ERROR;
 
 }

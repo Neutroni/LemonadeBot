@@ -24,8 +24,13 @@
 package eternal.lemonadebot;
 
 import eternal.lemonadebot.database.DatabaseManager;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Properties;
 import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -61,9 +66,8 @@ public class LemonadeBot {
         try {
             //Parse command line arguments
             final Options options = new Options();
-            options.addRequiredOption("k", "key", true, "Discord api key");
             options.addOption("h", "help", false, "Prints this message");
-            options.addOption("d", "database", true, "Database location");
+            options.addOption("c", "config", true, "Configuration file location");
 
             final HelpFormatter formatter = new HelpFormatter();
             final CommandLineParser parser = new DefaultParser();
@@ -71,22 +75,21 @@ public class LemonadeBot {
 
             //Check if we should print help
             if (cmd.hasOption("h")) {
-                formatter.printHelp("bot", options);
+                formatter.printHelp("Lemonadebot", options);
                 System.exit(Returnvalue.SUCCESS.ordinal());
             }
 
+            //Load properties
+            final String configLocation = cmd.getOptionValue("c", "lemonadebot.properties");
+            final InputStream inputStream = new FileInputStream(configLocation);
+            final Properties properties = new Properties();
+            properties.load(inputStream);
+
             //Check that user provided api key
-            if (!cmd.hasOption("k")) {
+            final String discordKey = properties.getProperty("discord-api-key");
+            if (discordKey == null) {
                 LOGGER.fatal("No api key provided, quitting");
                 System.exit(Returnvalue.MISSING_API_KEY.ordinal());
-            }
-
-            //Get database location
-            final String databaseLocation;
-            if (cmd.hasOption("d")) {
-                databaseLocation = cmd.getOptionValue("d");
-            } else {
-                databaseLocation = "database.db";
             }
 
             //Start loading JDA
@@ -95,7 +98,6 @@ public class LemonadeBot {
                     GatewayIntent.GUILD_MESSAGES, //Messages
                     GatewayIntent.GUILD_VOICE_STATES //Voice chat
             );
-            final String discordKey = cmd.getOptionValue("k");
             final JDABuilder jdabuilder = JDABuilder.create(discordKey, intents);
             final List<CacheFlag> cacheFlagsToDisable = List.of(
                     CacheFlag.ACTIVITY,
@@ -106,12 +108,23 @@ public class LemonadeBot {
             final JDA jda = jdabuilder.build();
 
             //Connect to the database
-            final DatabaseManager DB = new DatabaseManager(databaseLocation, jda);
+            final String databaseLocation = properties.getProperty("database-location", "database.db");
+            final DatabaseManager DB = new DatabaseManager(databaseLocation);
             LOGGER.debug("Connected to database succefully");
 
             //Start listening for messages
             jda.addEventListener(new MessageListener(DB));
+
+            //Load guilds from database, used to activate remainders
+            jda.awaitReady();
+            jda.getGuildCache().forEach(DB::getGuildData);
+            
             LOGGER.debug("Startup succesfull");
+        } catch (FileNotFoundException ex) {
+            LOGGER.fatal("Could not find configuration file");
+            LOGGER.debug(ex.getMessage());
+            LOGGER.trace("Stack trace: ", ex);
+            System.exit(Returnvalue.MISSING_CONFIG.ordinal());
         } catch (SQLException ex) {
             LOGGER.fatal("Failed to connect to database during startup");
             LOGGER.debug(ex.getMessage());
@@ -130,6 +143,11 @@ public class LemonadeBot {
             LOGGER.debug(ex.getMessage());
             LOGGER.trace("Stack trace:", ex);
             System.exit(Returnvalue.INTERRUPTED.ordinal());
+        } catch (IOException ex) {
+            LOGGER.fatal("Loading configuration file failed");
+            LOGGER.debug(ex.getMessage());
+            LOGGER.trace("Stack trace: ", ex);
+            System.exit(Returnvalue.CONFIG_READ_ERROR.ordinal());
         }
     }
 }

@@ -25,12 +25,11 @@ package eternal.lemonadebot.database;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,24 +43,19 @@ public class DatabaseManager implements AutoCloseable {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final Connection conn;
-    private final Map<Long, GuildDataStore> guildDataStores = new HashMap<>();
+    private final Map<Long, GuildDataStore> guildDataStores = Collections.synchronizedMap(new HashMap<>());
 
     /**
      * Constructor
      *
      * @param filename location of database
-     * @param jda JDA to pass to managers that need it
      * @throws SQLException if loading database fails
-     * @throws InterruptedException If jda loading was interrupted
      */
-    public DatabaseManager(String filename, JDA jda) throws SQLException, InterruptedException {
+    public DatabaseManager(String filename) throws SQLException {
         this.conn = DriverManager.getConnection("jdbc:sqlite:" + filename);
 
         //Initialize database
         initialize();
-
-        //Load list of known guilds
-        loadGuildList(jda);
     }
 
     @Override
@@ -144,17 +138,4 @@ public class DatabaseManager implements AutoCloseable {
         }
         LOGGER.debug("Database initialized");
     }
-
-    private void loadGuildList(JDA jda) throws SQLException {
-        LOGGER.debug("Loading guilds from database");
-        final String query = "SELECT id FROM Guilds;";
-        try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
-            while (rs.next()) {
-                final long guildID = rs.getLong("id");
-                this.guildDataStores.put(guildID, new GuildDataStore(this.conn, jda, guildID));
-            }
-        }
-        LOGGER.debug("Loaded guilds succesfully");
-    }
-
 }
