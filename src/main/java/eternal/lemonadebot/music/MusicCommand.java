@@ -270,7 +270,7 @@ public class MusicCommand implements ChatCommand {
     private void play(Guild guild, GuildMusicManager musicManager, AudioTrack track) {
         //Make sure we are connected
         final AudioManager audioManager = guild.getAudioManager();
-        if (!audioManager.isConnected() && !audioManager.isAttemptingToConnect()) {
+        if (!audioManager.isConnected()) {
             for (final VoiceChannel voiceChannel : audioManager.getGuild().getVoiceChannels()) {
                 audioManager.openAudioConnection(voiceChannel);
                 break;
