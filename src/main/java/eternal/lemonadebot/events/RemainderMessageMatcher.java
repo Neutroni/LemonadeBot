@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.customcommands;
+package eternal.lemonadebot.events;
 
 import eternal.lemonadebot.CommandMatcher;
 import java.util.List;

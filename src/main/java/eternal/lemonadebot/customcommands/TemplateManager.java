@@ -23,6 +23,7 @@
  */
 package eternal.lemonadebot.customcommands;
 
+import eternal.lemonadebot.events.Event;
 import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commands.CommandProvider;
@@ -62,7 +63,7 @@ public class TemplateManager {
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
                         final String[] parts = input.group(1).split("\\|");
                         final String response = parts[RNG.nextInt(parts.length)];
-                        return "" + response;
+                        return response;
                     }),
             new ActionTemplate("rng (\\d+),(\\d+)", "{rng x,y} - Generate random number between the two inputs.",
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {

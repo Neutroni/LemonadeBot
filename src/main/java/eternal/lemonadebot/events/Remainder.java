@@ -21,9 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.customcommands;
+package eternal.lemonadebot.events;
 
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.customcommands.TemplateManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import java.sql.SQLException;
 import java.time.Clock;

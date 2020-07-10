@@ -23,7 +23,7 @@
  */
 package eternal.lemonadebot.database;
 
-import eternal.lemonadebot.customcommands.Remainder;
+import eternal.lemonadebot.events.Remainder;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -34,7 +34,6 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;

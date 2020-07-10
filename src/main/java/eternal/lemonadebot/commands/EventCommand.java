@@ -28,7 +28,7 @@ import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.customcommands.Event;
+import eternal.lemonadebot.events.Event;
 import eternal.lemonadebot.permissions.MemberRank;
 import java.sql.SQLException;
 import java.util.ArrayList;
