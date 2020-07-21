@@ -25,6 +25,7 @@ package eternal.lemonadebot.database;
 
 import java.sql.Connection;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
 
 /**
  * Class storing info for guilds
@@ -32,7 +33,8 @@ import net.dv8tion.jda.api.JDA;
  * @author Neutroni
  */
 public class GuildDataStore {
-
+    
+    private final long guildID;
     private final ConfigManager config;
     private final PermissionManager permissions;
     private final CustomCommandManager commands;
@@ -44,16 +46,25 @@ public class GuildDataStore {
      * Constructor
      *
      * @param connection database connection to use
-     * @param jda JDA to use when communicating with discord
-     * @param guildID Guild this config is for
+     * @param guild Guild this config is for
      */
-    GuildDataStore(Connection connection, JDA jda, long guildID) {
+    GuildDataStore(Connection connection, Guild guild) {
+        final JDA jda = guild.getJDA();
+        this.guildID = guild.getIdLong();
         this.config = new ConfigManager(connection, guildID);
         this.permissions = new PermissionManager(connection, guildID);
         this.events = new EventManager(connection, guildID);
         this.cooldowns = new CooldownManager(connection, guildID);
         this.commands = new CustomCommandManager(connection, this.cooldowns, guildID);
         this.remainders = new RemainderManager(connection, jda, this, guildID);
+    }
+    
+    /**
+     * Get the ID of the guild this datastore is for
+     * @return guildID
+     */
+    public long getGuildID(){
+        return this.guildID;
     }
 
     /**

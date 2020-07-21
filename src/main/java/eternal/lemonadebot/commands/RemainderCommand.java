@@ -23,12 +23,11 @@
  */
 package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.RemainderManager;
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.commandtypes.AdminCommand;
 import eternal.lemonadebot.events.Remainder;
-import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
@@ -49,7 +48,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class RemainderCommand implements ChatCommand {
+public class RemainderCommand extends AdminCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -85,11 +84,6 @@ public class RemainderCommand implements ChatCommand {
                 + "<time> time of the remainder hh:mm\n"
                 + "[message] message to be sent at the remainder activation\n"
                 + "Remainder will be activated on the channel it was created in";
-    }
-
-    @Override
-    public MemberRank getDefaultRank() {
-        return MemberRank.ADMIN;
     }
 
     @Override

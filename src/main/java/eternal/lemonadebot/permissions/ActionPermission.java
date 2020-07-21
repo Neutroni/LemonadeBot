@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2020 Neutroni.
+ * Copyright 2020 joonas.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,53 +21,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.commandtypes;
-
-import eternal.lemonadebot.CommandMatcher;
-import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.permissions.ActionPermission;
-import java.util.List;
+package eternal.lemonadebot.permissions;
 
 /**
- * Interface all commands must implement
  *
  * @author Neutroni
  */
-public interface ChatCommand {
+public class ActionPermission {
+
+    private final String action;
+    private final MemberRank rank;
 
     /**
-     * Every action has a command it is called with
+     * Constructor
      *
-     * @return the command to activate this action
+     * @param action Action string
+     * @param rank MemberRank required to perform the action
      */
-    public String getCommand();
+    public ActionPermission(String action, MemberRank rank) {
+        this.action = action;
+        this.rank = rank;
+    }
 
     /**
-     * Short description for command
+     * Get the action string
      *
-     * @return Description for what this command does
+     * @return String of the action stored
      */
-    public String getDescription();
+    public String getAction() {
+        return this.action;
+    }
 
     /**
-     * Help text for command
+     * Get the MemberRank that is required to perform the action
      *
-     * @return help
+     * @return Rank required
      */
-    public String getHelpText();
+    public MemberRank getRank() {
+        return this.rank;
+    }
 
-    /**
-     * What rank is needed to run this command by default
-     *
-     * @return The default rank needed to run this command
-     */
-    public List<ActionPermission> getDefaultRanks();
-
-    /**
-     * Responds to a message
-     *
-     * @param message Message contents
-     * @param guildData data for the guild the message was sent in
-     */
-    public void respond(CommandMatcher message, GuildDataStore guildData);
 }

@@ -23,7 +23,9 @@
  */
 package eternal.lemonadebot.commandtypes;
 
+import eternal.lemonadebot.permissions.ActionPermission;
 import eternal.lemonadebot.permissions.MemberRank;
+import java.util.List;
 
 /**
  * Abstract class to provide quick way of writing commands that only
@@ -34,7 +36,7 @@ import eternal.lemonadebot.permissions.MemberRank;
 public abstract class MemberCommand implements ChatCommand {
 
     @Override
-    public MemberRank getDefaultRank() {
-        return MemberRank.MEMBER;
+    public List<ActionPermission> getDefaultRanks() {
+        return List.of(new ActionPermission(getCommand(), MemberRank.MEMBER));
     }
 }

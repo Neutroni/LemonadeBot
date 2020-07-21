@@ -170,6 +170,15 @@ public class Remainder extends TimerTask {
     }
 
     /**
+     * Get the ID of the guild this remainder is for
+     *
+     * @return GuildID
+     */
+    public long getGuildID() {
+        return this.guildData.getGuildID();
+    }
+
+    /**
      * Get weekday this event activates at
      *
      * @return day of the week or null if no day specified

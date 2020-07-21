@@ -69,9 +69,9 @@ public class DatabaseManager implements AutoCloseable {
      * @param guild guild to get manager for
      * @return GuildDataStore
      */
-    public GuildDataStore getGuildData(Guild guild) {
+    public GuildDataStore getGuildData(final Guild guild) {
         return this.guildDataStores.computeIfAbsent(guild.getIdLong(), (Long newGuildID) -> {
-            return new GuildDataStore(this.conn, guild.getJDA(), newGuildID);
+            return new GuildDataStore(this.conn, guild);
         });
     }
 

@@ -23,7 +23,9 @@
  */
 package eternal.lemonadebot.commandtypes;
 
+import eternal.lemonadebot.permissions.ActionPermission;
 import eternal.lemonadebot.permissions.MemberRank;
+import java.util.List;
 
 /**
  * Abstract class to provide quick way of writing commands that anyone can use
@@ -33,7 +35,7 @@ import eternal.lemonadebot.permissions.MemberRank;
 public abstract class UserCommand implements ChatCommand {
 
     @Override
-    public MemberRank getDefaultRank() {
-        return MemberRank.USER;
+    public List<ActionPermission> getDefaultRanks() {
+        return List.of(new ActionPermission(getCommand(), MemberRank.USER));
     }
 }

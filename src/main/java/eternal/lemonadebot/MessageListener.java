@@ -30,6 +30,7 @@ import eternal.lemonadebot.database.CooldownManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.PermissionManager;
+import eternal.lemonadebot.permissions.MemberRank;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -127,12 +128,14 @@ public class MessageListener extends ListenerAdapter {
         }
 
         //Check if command is on cooldown
-        final CooldownManager cdm = guildData.getCooldownManager();
-        final Optional<String> optCooldown = cdm.updateActivationTime(command);
-        if (optCooldown.isPresent()) {
-            final String currentCooldown = optCooldown.get();
-            textChannel.sendMessage("Command on cooldown, time remaining: " + currentCooldown + '.').queue();
-            return;
+        if (!MemberRank.getRank(member).equals(MemberRank.ADMIN)) {
+            final CooldownManager cdm = guildData.getCooldownManager();
+            final Optional<String> optCooldown = cdm.updateActivationTime(command);
+            if (optCooldown.isPresent()) {
+                final String currentCooldown = optCooldown.get();
+                textChannel.sendMessage("Command on cooldown, time remaining: " + currentCooldown + '.').queue();
+                return;
+            }
         }
 
         //Run the command

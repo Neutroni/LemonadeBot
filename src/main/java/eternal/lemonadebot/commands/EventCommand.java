@@ -27,9 +27,8 @@ import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.CommandMatcher;
-import eternal.lemonadebot.commandtypes.ChatCommand;
+import eternal.lemonadebot.commandtypes.MemberCommand;
 import eternal.lemonadebot.events.Event;
-import eternal.lemonadebot.permissions.MemberRank;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,18 +45,13 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class EventCommand implements ChatCommand{
+public class EventCommand extends MemberCommand{
 
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
     public String getCommand() {
         return "event";
-    }
-    
-    @Override
-    public MemberRank getDefaultRank() {
-        return MemberRank.MEMBER;
     }
 
     @Override

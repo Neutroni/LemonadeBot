@@ -25,6 +25,7 @@ package eternal.lemonadebot.database;
 
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
+import eternal.lemonadebot.permissions.ActionPermission;
 import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.permissions.CommandPermission;
 import java.sql.Connection;
@@ -98,7 +99,7 @@ public class PermissionManager {
     public boolean setPermission(String action, CommandPermission perm) throws SQLException {
         this.permissions.put(action, perm);
         final String query = "INSERT OR REPLACE INTO Permissions(guild,action,requiredRank,requiredRole) VALUES(?,?,?,?)";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, action);
             ps.setString(3, perm.getRequiredRank().name());
@@ -110,15 +111,17 @@ public class PermissionManager {
     private void loadPermissions() {
         //Load default permissions
         for (final ChatCommand c : CommandProvider.getCommands()) {
-            final CommandPermission perm = new CommandPermission(c.getDefaultRank(), guildID);
-            this.permissions.put(c.getCommand(), perm);
+            for (final ActionPermission p : c.getDefaultRanks()) {
+                final CommandPermission perm = new CommandPermission(p.getRank(), guildID);
+                this.permissions.put(c.getCommand(), perm);
+            }
         }
 
         //Load permissions from database
         final String query = "SELECT action,requiredRank,requiredRole FROM Permissions WHERE guild = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final String action = rs.getString("action");
                     final String rankName = rs.getString("requiredRank");

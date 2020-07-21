@@ -24,13 +24,12 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.CommandMatcher;
-import eternal.lemonadebot.commandtypes.ChatCommand;
+import eternal.lemonadebot.commandtypes.MemberCommand;
 import eternal.lemonadebot.database.CustomCommandManager;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.customcommands.TemplateManager;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.permissions.MemberRank;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -46,7 +45,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class CommandCommand implements ChatCommand {
+public class CommandCommand extends MemberCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -74,11 +73,6 @@ public class CommandCommand implements ChatCommand {
                 + " Text in the template will mostly be shown as is,\n"
                 + " but you can use {key} to modify parts of the message.\n"
                 + " See \"command keys\" to see all keys\n";
-    }
-
-    @Override
-    public MemberRank getDefaultRank() {
-        return MemberRank.MEMBER;
     }
 
     @Override

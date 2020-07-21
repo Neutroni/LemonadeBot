@@ -87,7 +87,11 @@ public class RemainderManager {
 
         //If timer was just added schedule the activation
         if (added) {
-            this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
+            if (remainder.getDay().isEmpty()) {
+                this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS));
+            } else {
+                this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
+            }
             LOGGER.debug("Remainder scheluded for activation at " + remainder.getActivationDate().toString());
         }
 
@@ -97,7 +101,7 @@ public class RemainderManager {
         final String remainderMessage = remainder.getMessage();
         final Optional<DayOfWeek> optDay = remainder.getDay();
         final String remainderDay;
-        if(optDay.isPresent()){
+        if (optDay.isPresent()) {
             remainderDay = optDay.get().name();
         } else {
             remainderDay = "EVERYDAY";
@@ -105,7 +109,7 @@ public class RemainderManager {
         final String remainderTime = remainder.getTime().toString();
         final long channelID = remainder.getChannel();
         final long authorID = remainder.getAuthor();
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setLong(2, authorID);
             ps.setLong(3, channelID);
@@ -129,7 +133,7 @@ public class RemainderManager {
 
         //Remove from database
         final String query = "DELETE FROM Remainders Where guild = ? AND name = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, remainder.getName());
             return ps.executeUpdate() > 0;
@@ -137,7 +141,7 @@ public class RemainderManager {
     }
 
     /**
-     * Get Reminder by with name,day and time
+     * Get Reminder by name
      *
      * @param name name of the remainder
      * @return Optional containing the remainder if found
@@ -170,9 +174,9 @@ public class RemainderManager {
     private void loadRemainders() {
         LOGGER.debug("Started loading remainders from database");
         final String query = "SELECT author,channel,name,message,day,time FROM Remainders WHERE guild = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final long remainderAuthor = rs.getLong("author");
                     final long remainderChannel = rs.getLong("channel");
@@ -198,19 +202,19 @@ public class RemainderManager {
                         LOGGER.error("Malformed time for reminder in database: " + reminderTime);
                         return;
                     }
-                    
+
                     //Construct and add to list of remainders
                     final Remainder remainder = new Remainder(this.jda, this.guildData,
                             remainderName, remainderChannel, remainderAuthor, remainderMessage, activationDay, activationTime);
                     remainders.add(remainder);
                     LOGGER.debug("Remainder loaded" + remainder.getName());
-                    
-                    if(activationDay == null){
+
+                    if (activationDay == null) {
                         this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS));
                     } else {
                         this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
                     }
-                    
+
                     LOGGER.debug("Remainder scheluded for activation at " + remainder.getActivationDate().toString());
                 }
             }

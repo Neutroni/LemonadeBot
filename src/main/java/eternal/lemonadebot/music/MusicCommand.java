@@ -30,10 +30,9 @@ import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.commandtypes.MemberCommand;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.permissions.MemberRank;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +49,7 @@ import net.dv8tion.jda.api.managers.AudioManager;
  *
  * @author Neutroni
  */
-public class MusicCommand implements ChatCommand {
+public class MusicCommand extends MemberCommand {
 
     private final AudioPlayerManager playerManager;
     private final Map<Long, GuildMusicManager> musicManagers;
@@ -85,11 +84,6 @@ public class MusicCommand implements ChatCommand {
                 + " stop - clears the playlist and stops music playback\n"
                 + " list - prints upcoming songs in playlist\n"
                 + "[url] is the url of the music to play";
-    }
-
-    @Override
-    public MemberRank getDefaultRank() {
-        return MemberRank.MEMBER;
     }
 
     @Override
