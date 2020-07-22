@@ -34,6 +34,8 @@ import eternal.lemonadebot.permissions.MemberRank;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -42,7 +44,6 @@ import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.ShutdownEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
-import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.logging.log4j.LogManager;
@@ -100,7 +101,16 @@ public class MessageListener extends ListenerAdapter {
         final MessageMatcher cmdMatch = new MessageMatcher(configManager, message);
         final List<Member> mentionedMembers = message.getMentionedMembers();
         if (mentionedMembers.size() == 1 && mentionedMembers.contains(selfMember)) {
-            if (cmdMatch.getAction().isBlank()) {
+            //Check that the message is just the mention and possibly whitespace
+            final String textContent = message.getContentRaw();
+            final Pattern mentionPattern = Message.MentionType.USER.getPattern();
+            final Matcher mentionMatcher = mentionPattern.matcher(textContent);
+            final StringBuilder sb = new StringBuilder();
+            while (mentionMatcher.find()) {
+                mentionMatcher.appendReplacement(sb, "");
+            }
+            mentionMatcher.appendTail(sb);
+            if (sb.toString().isBlank()) {
                 textChannel.sendMessage("LemonadeBot version: " + LemonadeBot.BOT_VERSION
                         + "\nCurrent command prefix: " + configManager.getCommandPrefix()).queue();
                 return;
