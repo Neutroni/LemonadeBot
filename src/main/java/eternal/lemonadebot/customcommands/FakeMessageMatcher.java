@@ -39,7 +39,7 @@ import net.dv8tion.jda.api.entities.TextChannel;
  */
 public class FakeMessageMatcher implements CommandMatcher {
 
-    private static final Pattern pattern = Pattern.compile("^(\\S+) ?");
+    private static final Pattern PATTERN = Pattern.compile("^(\\S+) ?");
     private final CommandMatcher commandMatcher;
     private final String messageText;
     private final Matcher matcher;
@@ -53,7 +53,7 @@ public class FakeMessageMatcher implements CommandMatcher {
         } else {
             this.messageText = fakeContent + ' ' + args[0];
         }
-        this.matcher = pattern.matcher(this.messageText);
+        this.matcher = PATTERN.matcher(this.messageText);
         this.matches = this.matcher.find();
     }
 
