@@ -42,6 +42,7 @@ import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.ShutdownEvent;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
+import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.logging.log4j.LogManager;
@@ -130,7 +131,7 @@ public class MessageListener extends ListenerAdapter {
         //Check if command is on cooldown
         if (!MemberRank.getRank(member).equals(MemberRank.ADMIN)) {
             final CooldownManager cdm = guildData.getCooldownManager();
-            final Optional<String> optCooldown = cdm.updateActivationTime(command);
+            final Optional<String> optCooldown = cdm.updateActivationTime(cmdMatch.getAction());
             if (optCooldown.isPresent()) {
                 final String currentCooldown = optCooldown.get();
                 textChannel.sendMessage("Command on cooldown, time remaining: " + currentCooldown + '.').queue();

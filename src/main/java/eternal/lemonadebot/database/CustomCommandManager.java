@@ -77,7 +77,7 @@ public class CustomCommandManager {
 
         //Add to database
         final String query = "INSERT OR IGNORE INTO Commands(guild,name,template,owner) VALUES(?,?,?,?);";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, command.getCommand());
             ps.setString(3, command.getTemplate());
@@ -95,11 +95,11 @@ public class CustomCommandManager {
      */
     public boolean removeCommand(CustomCommand command) throws SQLException {
         this.commands.remove(command);
-        this.cooldownManager.removeCooldown(command);
+        this.cooldownManager.removeCooldown(command.getCommand());
 
         //Remove from database
         final String query = "DELETE FROM Commands WHERE name = ? AND guild = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, command.getCommand());
             ps.setLong(2, this.guildID);
             return ps.executeUpdate() > 0;
@@ -138,9 +138,9 @@ public class CustomCommandManager {
      */
     private void loadCommands() {
         final String query = "SELECT name,template,owner FROM Commands WHERE guild = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final CustomCommand newCommand = new CustomCommand(rs.getString("name"), rs.getString("template"), rs.getLong("owner"));
                     this.commands.add(newCommand);

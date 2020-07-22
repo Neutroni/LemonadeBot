@@ -25,7 +25,6 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.AdminCommand;
-import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.CooldownManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import java.sql.SQLException;
@@ -56,47 +55,76 @@ public class CooldownCommand extends AdminCommand {
 
     @Override
     public String getHelpText() {
-        return "Syntax: cooldown <command> [time] [unit]\n"
-                + "<command> is the name of the command to set or get cooldown for\n"
-                + "[time] is the cooldown time in [unit] time units\n"
-                + "example: 2 minutes\n";
+        return "Syntax: cooldown <option> [time] [unit] <action>\n"
+                + "<option> is one of the following:\n"
+                + " get - to get current cooldown for action\n"
+                + " set - to set cooldown for action\n"
+                + "[time] is the cooldown time in [unit] time units, for example: 2 minutes\n"
+                + "<action> is the action to get or set the cooldown time for\n";
     }
 
     @Override
     public void respond(CommandMatcher message, GuildDataStore guildData) {
-        final String[] options = message.getArguments(3);
+        final String[] arguments = message.getArguments(1);
         final TextChannel channel = message.getTextChannel();
-        if (options.length == 0) {
-            channel.sendMessage("Provide name of the command to get or set cooldown for.").queue();
+        if (arguments.length == 0) {
+            channel.sendMessage("Provide name of the option to perform.").queue();
             return;
         }
-        final String commandName = options[0];
-        final Optional<? extends ChatCommand> optCommand = CommandProvider.getCommand(commandName, guildData);
-        if (optCommand.isEmpty()) {
-            channel.sendMessage("No such command:" + commandName).queue();
+        if (arguments.length == 1) {
+            channel.sendMessage("Provide name of the action to manage cooldown for.").queue();
             return;
         }
-        final ChatCommand command = optCommand.get();
 
-        //No time
         final CooldownManager cooldownManager = guildData.getCooldownManager();
-        if (options.length < 2) {
-            final Optional<String> optCooldown = cooldownManager.getCooldownFormatted(command);
-            if (optCooldown.isEmpty()) {
-                channel.sendMessage("No cooldown set for command: " + commandName).queue();
-            } else {
-                channel.sendMessage("Current cooldown for command " + commandName + " : " + optCooldown).queue();
+        final String option = arguments[0];
+        switch (option) {
+            case "get": {
+                getCooldown(channel, cooldownManager, arguments[1]);
+                break;
             }
+            case "set": {
+                final String[] setArguments = message.getArguments(3);
+                setCooldown(channel, cooldownManager, setArguments);
+                break;
+            }
+            default: {
+                channel.sendMessage("Unkown option: " + option).queue();
+            }
+        }
+    }
+
+    /**
+     * Send message reply of the cooldown set for command
+     *
+     * @param channel Channel to send message on
+     * @param cooldownManager cooldown manager to get cooldown from
+     * @param action action to get cooldown for
+     */
+    private void getCooldown(TextChannel channel, CooldownManager cooldownManager, String action) {
+        final Optional<String> cd = cooldownManager.getCooldownFormatted(action);
+        if (cd.isEmpty()) {
+            channel.sendMessage("No cooldown set for action: " + action).queue();
+        } else {
+            channel.sendMessage("Current cooldown for action " + action + " : " + cd.get()).queue();
+        }
+    }
+
+    /**
+     * Set cooldown for action
+     *
+     * @param channel Channel to send responses on
+     * @param cooldownManager cooldown manager to use for setting cooldown
+     * @param arguments arguments time,amount,action to use for setting cooldown
+     */
+    private void setCooldown(TextChannel channel, CooldownManager cooldownManager, String[] arguments) {
+        //No time amount
+        if (arguments.length < 2) {
+            channel.sendMessage("Provide the amount of cooldown to set for action.").queue();
             return;
         }
 
-        //No time unit
-        if (options.length < 3) {
-            channel.sendMessage("Provide the unit in which the coold down is to apply a cooldown to command.").queue();
-            return;
-        }
-
-        String timeAmountstring = options[1];
+        final String timeAmountstring = arguments[1];
         int timeAmount;
         try {
             timeAmount = Integer.parseInt(timeAmountstring);
@@ -105,22 +133,35 @@ public class CooldownCommand extends AdminCommand {
             return;
         }
 
-        final String unitName = (timeAmount == 1) ? (options[2] + 's').toUpperCase() : options[2].toUpperCase();
+        //No time unit
+        if (arguments.length < 3) {
+            channel.sendMessage("Provide the unit in which the coold down is to apply a cooldown to command.").queue();
+            return;
+        }
+
+        final String unitName = (timeAmount == 1) ? (arguments[2] + 's').toUpperCase() : arguments[2].toUpperCase();
         ChronoUnit unit;
         try {
             unit = ChronoUnit.valueOf(unitName);
         } catch (IllegalArgumentException e) {
-            channel.sendMessage("Unknown time unit: " + options[2]).queue();
+            channel.sendMessage("Unknown time unit: " + arguments[2]).queue();
             return;
         }
         final Duration cooldownDuration = Duration.of(timeAmount, unit);
+
+        if (arguments.length < 4) {
+            channel.sendMessage("Provide the name of the action to set cooldown for").queue();
+            return;
+        }
+        final String actionString = arguments[3];
+
         try {
-            cooldownManager.setCooldown(command, cooldownDuration);
-            channel.sendMessage("Command cooldown updated succesfully.").queue();
+            cooldownManager.setCooldown(actionString, cooldownDuration);
+            channel.sendMessage("Action cooldown updated succesfully.").queue();
         } catch (SQLException ex) {
-            channel.sendMessage("Updating command cooldown failed, database error, will still use untill reboot.").queue();
-            LOGGER.error("Failure to add custom command to database");
-            LOGGER.warn(ex.getMessage());
+            channel.sendMessage("Updating action cooldown failed, database error, will still use untill reboot.").queue();
+            LOGGER.error("Failure to set cooldown in database");
+            LOGGER.error(ex.getMessage());
             LOGGER.trace("Stack trace", ex);
         }
     }

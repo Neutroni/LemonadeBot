@@ -159,7 +159,7 @@ public class TemplateManager {
                         }
 
                         final CooldownManager cdm = guildData.getCooldownManager();
-                        final Optional<String> optCooldown = cdm.updateActivationTime(command);
+                        final Optional<String> optCooldown = cdm.updateActivationTime(inputString);
                         if (optCooldown.isPresent()) {
                             final String currentCooldown = optCooldown.get();
                             return "Command on cooldown, time remaining: " + currentCooldown + '.';

@@ -23,7 +23,6 @@
  */
 package eternal.lemonadebot.database;
 
-import eternal.lemonadebot.commandtypes.ChatCommand;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -39,7 +38,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  *
- * @author joonas
+ * @author Neutroni
  */
 public class CooldownManager {
 
@@ -57,18 +56,22 @@ public class CooldownManager {
     }
 
     /**
-     * Set command last seen time to current time if command is not on cooldown
+     * Set action last seen time to current time if action is not on cooldown
      * and has set cooldown time
      *
-     * @param command command to check
+     * @param action Action string to chechk cooldown for
      * @return Optional of remaining cooldown if on cooldown, empty otherwise
      */
-    public Optional<String> updateActivationTime(ChatCommand command) {
-        final ActionCooldown cooldown = this.cooldowns.get(command.getCommand());
-        //Command does not have a cooldown
-        if (cooldown == null) {
+    public Optional<String> updateActivationTime(String action) {
+        final Optional<Map.Entry<String,ActionCooldown>> cd = getCooldownEntry(action);
+
+        //Action does not have a cooldown
+        if (cd.isEmpty()) {
             return Optional.empty();
         }
+
+        final Map.Entry<String,ActionCooldown> entry = cd.get();
+        final ActionCooldown cooldown = entry.getValue();
 
         final Instant now = Instant.now();
         final Duration timeDelta = Duration.between(cooldown.activationTime, now);
@@ -83,9 +86,9 @@ public class CooldownManager {
 
         //Store in database
         final String query = "INSERT OR REPLACE INTO Cooldowns(guild,command,duration,activationTime) VALUES(?,?,?,?)";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            ps.setString(2, command.getCommand());
+            ps.setString(2, entry.getKey());
             ps.setLong(3, cooldown.cooldownTime.getSeconds());
             ps.setLong(4, now.getEpochSecond());
             ps.executeUpdate();
@@ -98,35 +101,38 @@ public class CooldownManager {
     }
 
     /**
-     * Get the string presentation of cooldown that is set to a commdn
+     * Get the string presentation of cooldown that is set for action
      *
-     * @param command Command to get cooldown for
+     * @param action Action to get cooldown for
      * @return String of cooldown
      */
-    public Optional<String> getCooldownFormatted(ChatCommand command) {
-        final ActionCooldown cooldown = this.cooldowns.get(command.getCommand());
-        //Command does not have a cooldown
-        if (cooldown == null) {
+    public Optional<String> getCooldownFormatted(String action) {
+        final Optional<ActionCooldown> cd = getCooldown(action);
+
+        //Action does not have a cooldown
+        if (cd.isEmpty()) {
             return Optional.empty();
         }
+
+        final ActionCooldown cooldown = cd.get();
         return Optional.of(cooldown.toString());
     }
 
     /**
      * Remove cooldown from command
      *
-     * @param command Command to remove cooldown from
+     * @param action Action to remove cooldown from
      * @return true if cooldown was removed, false otherwise
      * @throws SQLException if database connection failed
      */
-    public boolean removeCooldown(ChatCommand command) throws SQLException {
-        this.cooldowns.remove(command.getCommand());
+    public boolean removeCooldown(String action) throws SQLException {
+        this.cooldowns.remove(action);
 
         //Remove from database
         final String query = "DELETE FROM Cooldowns Where guild = ? AND command = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            ps.setString(2, command.getCommand());
+            ps.setString(2, action);
             return ps.executeUpdate() > 0;
         }
     }
@@ -134,32 +140,82 @@ public class CooldownManager {
     /**
      * Set cooldown for command
      *
-     * @param command Command to set cooldown for
+     * @param action Action to set cooldown for
      * @param cooldownDuration Lenght of the cooldown
      * @return true if cooldown was created
      * @throws SQLException If database connection failed
      */
-    public boolean setCooldown(ChatCommand command, Duration cooldownDuration) throws SQLException {
-        final ActionCooldown cooldown = this.cooldowns.computeIfAbsent(command.getCommand(), (String t) -> {
+    public boolean setCooldown(String action, Duration cooldownDuration) throws SQLException {
+        final ActionCooldown cooldown = this.cooldowns.computeIfAbsent(action, (String t) -> {
             return new ActionCooldown(cooldownDuration, Instant.EPOCH);
         });
         cooldown.cooldownTime = cooldownDuration;
 
         final String query = "INSERT OR REPLACE INTO Cooldowns(guild,command,duration,activationTime) VALUES(?,?,?,?)";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            ps.setString(2, command.getCommand());
+            ps.setString(2, action);
             ps.setLong(3, cooldownDuration.getSeconds());
             ps.setLong(4, Instant.EPOCH.getEpochSecond());
             return ps.executeUpdate() > 0;
         }
     }
 
+    /**
+     * Get cooldown by action string
+     *
+     * @param action Action to get cooldown for
+     * @return ActionCooldown if found
+     */
+    private Optional<ActionCooldown> getCooldown(String action) {
+        long keyLength = 0;
+        ActionCooldown matchingCooldown = null;
+
+        for (Map.Entry<String, ActionCooldown> cd : this.cooldowns.entrySet()) {
+            final String key = cd.getKey();
+            if (!action.startsWith(key)) {
+                continue;
+            }
+            final long newKeyLength = key.length();
+            if (newKeyLength > keyLength) {
+                matchingCooldown = cd.getValue();
+                keyLength = newKeyLength;
+            }
+        }
+
+        return Optional.ofNullable(matchingCooldown);
+    }
+
+    /**
+     * Get matching cooldown entry for given action
+     *
+     * @param action Action to find entry for
+     * @return Optional containing the entry if found
+     */
+    private Optional<Map.Entry<String, ActionCooldown>> getCooldownEntry(String action) {
+        long keyLength = 0;
+        Map.Entry<String, ActionCooldown> matchingCooldown = null;
+
+        for (Map.Entry<String, ActionCooldown> cd : this.cooldowns.entrySet()) {
+            final String key = cd.getKey();
+            if (!action.startsWith(key)) {
+                continue;
+            }
+            final long newKeyLength = key.length();
+            if (newKeyLength > keyLength) {
+                matchingCooldown = cd;
+                keyLength = newKeyLength;
+            }
+        }
+
+        return Optional.ofNullable(matchingCooldown);
+    }
+
     private void loadCooldowns() {
         final String query = "SELECT command,duration,activationTime FROM Cooldowns WHERE guild = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final String commandName = rs.getString("command");
                     final ActionCooldown cd = new ActionCooldown(rs.getLong("duration"), rs.getLong("activationTime"));

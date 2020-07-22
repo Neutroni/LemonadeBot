@@ -35,7 +35,6 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
@@ -72,7 +71,7 @@ public class PermissionManager {
         long keyLength = 0;
         CommandPermission perm = this.adminPermission;
 
-        for (Entry<String, CommandPermission> p : this.permissions.entrySet()) {
+        for (Map.Entry<String, CommandPermission> p : this.permissions.entrySet()) {
             final String key = p.getKey();
             if (!action.startsWith(key)) {
                 continue;
