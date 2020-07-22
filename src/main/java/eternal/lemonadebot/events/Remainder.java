@@ -120,6 +120,10 @@ public class Remainder extends TimerTask {
 
         final CommandMatcher matcher = new RemainderMessageMatcher(member, channel);
         final CharSequence reponse = TemplateManager.parseAction(matcher, guildData, this.remainderText);
+        if (reponse.toString().isBlank()) {
+            LOGGER.debug("Ignored empty response for remainder: " + this.name + " with template: " + this.remainderText);
+            return;
+        }
         channel.sendMessage(reponse).queue();
         LOGGER.debug("Remainder succesfully activated on channel" + channel.getName());
     }
