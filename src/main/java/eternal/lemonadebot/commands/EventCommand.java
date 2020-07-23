@@ -412,7 +412,7 @@ public class EventCommand extends MemberCommand{
         final List<Long> memberIDsMutable = new ArrayList<>(eventMemberIDs);
         Collections.shuffle(memberIDsMutable);
         for (final Long id : memberIDsMutable) {
-            final Member m = guild.getMemberById(id);
+            final Member m = guild.retrieveMemberById(id).complete();
             if (m == null) {
                 LOGGER.warn("Found user in event members who could not be found, removing from event\n");
                 try {

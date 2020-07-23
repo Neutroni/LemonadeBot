@@ -214,7 +214,7 @@ public class CommandCommand extends MemberCommand {
         final TextChannel textChannel = matcher.getTextChannel();
         final StringBuilder sb = new StringBuilder("Commands:\n");
         for (CustomCommand c : coms) {
-            final Member creator = guild.getMemberById(c.getOwner());
+            final Member creator = guild.retrieveMemberById(c.getOwner()).complete();
             final String creatorName;
             if (creator == null) {
                 creatorName = "Unknown";

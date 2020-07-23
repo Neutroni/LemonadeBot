@@ -129,8 +129,8 @@ public class TemplateManager {
                         }
                         final List<Long> memberIDsMutable = new ArrayList<>(eventMemberIDs);
                         Collections.shuffle(memberIDsMutable);
-                        for (Long l : memberIDsMutable) {
-                            Member m = guild.getMemberById(l);
+                        for (final Long l : memberIDsMutable) {
+                            final Member m = guild.retrieveMemberById(l).complete();
                             if (m != null) {
                                 return m.getEffectiveName();
                             }
