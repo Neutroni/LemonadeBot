@@ -25,7 +25,6 @@ package eternal.lemonadebot.database;
 
 import java.sql.Connection;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Guild;
 
 /**
  * Class storing info for guilds
@@ -33,37 +32,40 @@ import net.dv8tion.jda.api.entities.Guild;
  * @author Neutroni
  */
 public class GuildDataStore {
-    
+
     private final long guildID;
     private final ConfigManager config;
     private final PermissionManager permissions;
-    private final CustomCommandManager commands;
+    private final TemplateManager commands;
     private final EventManager events;
     private final RemainderManager remainders;
     private final CooldownManager cooldowns;
+    private final MessageManager messages;
 
     /**
      * Constructor
      *
      * @param connection database connection to use
      * @param guild Guild this config is for
+     * @param jda JDA to use for remainders
      */
-    GuildDataStore(Connection connection, Guild guild) {
-        final JDA jda = guild.getJDA();
-        this.guildID = guild.getIdLong();
+    GuildDataStore(final Connection connection, final Long guildID, JDA jda, final int maxMessages) {
+        this.guildID = guildID;
         this.config = new ConfigManager(connection, guildID);
         this.permissions = new PermissionManager(connection, guildID);
         this.events = new EventManager(connection, guildID);
         this.cooldowns = new CooldownManager(connection, guildID);
-        this.commands = new CustomCommandManager(connection, this.cooldowns, guildID);
+        this.commands = new TemplateManager(connection, this.cooldowns, guildID);
         this.remainders = new RemainderManager(connection, jda, this, guildID);
+        this.messages = new MessageManager(connection, maxMessages);
     }
-    
+
     /**
      * Get the ID of the guild this datastore is for
+     *
      * @return guildID
      */
-    public long getGuildID(){
+    public long getGuildID() {
         return this.guildID;
     }
 
@@ -90,7 +92,7 @@ public class GuildDataStore {
      *
      * @return CustomCommandManager
      */
-    public CustomCommandManager getCustomCommands() {
+    public TemplateManager getCustomCommands() {
         return this.commands;
     }
 
@@ -119,5 +121,14 @@ public class GuildDataStore {
      */
     public CooldownManager getCooldownManager() {
         return this.cooldowns;
+    }
+
+    /**
+     * Get the messagemanager for this guild
+     *
+     * @return MessageManager
+     */
+    public MessageManager getMessageManager() {
+        return this.messages;
     }
 }

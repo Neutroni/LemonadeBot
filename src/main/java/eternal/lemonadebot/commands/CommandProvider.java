@@ -26,7 +26,7 @@ package eternal.lemonadebot.commands;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.database.CustomCommandManager;
+import eternal.lemonadebot.database.TemplateManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.music.MusicCommand;
 import java.util.List;
@@ -39,17 +39,17 @@ import java.util.Optional;
  */
 public class CommandProvider {
 
-    private static final List<ChatCommand> COMMANDS = List.of(
+    public static final List<ChatCommand> COMMANDS = List.of(
             new HelpCommand(),
             new MusicCommand(),
             new EventCommand(),
             new RemainderCommand(),
-            new CommandCommand(),
+            new TemplateCommand(),
             new RoleCommand(),
-            new PrefixCommand(),
+            //Admin commands
+            new ConfigCommand(),
             new CooldownCommand(),
-            new PermissionCommand(),
-            new GreetCommand()
+            new PermissionCommand()
     );
 
     /**
@@ -83,7 +83,7 @@ public class CommandProvider {
         }
 
         //Check if we find custom command by that name
-        final CustomCommandManager customManager = guild.getCustomCommands();
+        final TemplateManager customManager = guild.getCustomCommands();
         final Optional<CustomCommand> custom = customManager.getCommand(name);
         if (custom.isPresent()) {
             return custom;
@@ -109,12 +109,10 @@ public class CommandProvider {
     }
 
     /**
-     * Get the commands
-     *
-     * @return List of commands
+     * Constructor to hide the default constructor
      */
-    public static List<ChatCommand> getCommands() {
-        return COMMANDS;
+    private CommandProvider() {
+        //No op
     }
 
 }

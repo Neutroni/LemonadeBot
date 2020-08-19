@@ -154,4 +154,9 @@ class MessageMatcher implements CommandMatcher {
         return this.message.getMentionedRoles();
     }
 
+    @Override
+    public List<TextChannel> getMentionedChannels() {
+        return this.message.getMentionedChannels();
+    }
+
 }

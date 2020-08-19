@@ -109,4 +109,9 @@ public class FakeMessageMatcher implements CommandMatcher {
         return this.commandMatcher.getMentionedRoles();
     }
 
+    @Override
+    public List<TextChannel> getMentionedChannels() {
+        return this.commandMatcher.getMentionedChannels();
+    }
+
 }

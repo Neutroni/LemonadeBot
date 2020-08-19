@@ -36,14 +36,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.ShutdownEvent;
-import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
-import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.logging.log4j.LogManager;
@@ -98,7 +95,6 @@ public class MessageListener extends ListenerAdapter {
         final Message message = event.getMessage();
         final GuildDataStore guildData = this.db.getGuildData(eventGuild);
         final ConfigManager configManager = guildData.getConfigManager();
-        final MessageMatcher cmdMatch = new MessageMatcher(configManager, message);
         final List<Member> mentionedMembers = message.getMentionedMembers();
         if (mentionedMembers.size() == 1 && mentionedMembers.contains(selfMember)) {
             //Check that the message is just the mention and possibly whitespace
@@ -118,6 +114,7 @@ public class MessageListener extends ListenerAdapter {
         }
 
         //Check if message is a command
+        final MessageMatcher cmdMatch = new MessageMatcher(configManager, message);
         final Optional<? extends ChatCommand> action = CommandProvider.getAction(cmdMatch, guildData);
         if (action.isEmpty()) {
             return;
@@ -152,66 +149,6 @@ public class MessageListener extends ListenerAdapter {
         //Run the command
         command.respond(cmdMatch, guildData);
 
-    }
-
-    /**
-     * Received when someone joins a guild
-     *
-     * @param event info about the join
-     */
-    @Override
-    public void onGuildMemberJoin(GuildMemberJoinEvent event) {
-        final Guild guild = event.getGuild();
-        final Member member = event.getMember();
-        LOGGER.debug(() -> {
-            return "New member: " + member.getEffectiveName()
-                    + "\nMember ID: " + member.getId()
-                    + "\nOn guild: " + guild.getName()
-                    + "\nGuild ID: " + guild.getId();
-        });
-
-        //Check if we have a channel to greet them on
-        final TextChannel textChannel = guild.getSystemChannel();
-        if (textChannel == null) {
-            LOGGER.debug("Not greeting because greeting is disabled in discord settings");
-            return;
-        }
-
-        //Check if guild has message to send to new members
-        final ConfigManager guildConf = this.db.getGuildData(guild).getConfigManager();
-        final Optional<String> optTemplate = guildConf.getGreetingTemplate();
-        if (optTemplate.isEmpty()) {
-            LOGGER.debug("Not greeting because greet template is not set");
-            return;
-        }
-
-        //Send the greeting message
-        final String greetTemplate = optTemplate.get();
-        final MessageBuilder mb = new MessageBuilder(greetTemplate);
-        mb.replace("{name}", member.getEffectiveName());
-        mb.replace("{mention}", member.getAsMention());
-        textChannel.sendMessage(mb.build()).queue();
-    }
-
-    /**
-     * Received when we join a guild
-     *
-     * @param event info about the join
-     */
-    @Override
-    public void onGuildJoin(GuildJoinEvent event) {
-        final Guild eventGuild = event.getGuild();
-        LOGGER.info("Joined guild: " + eventGuild.getName());
-        LOGGER.info("Guild id: " + eventGuild.getId());
-
-        //Send greeting if we can on system channel
-        final TextChannel channel = eventGuild.getSystemChannel();
-        if (channel == null) {
-            return;
-        }
-        if (channel.canTalk()) {
-            channel.sendMessage("Hello everyone I'm a new bot here, nice to meet you all").queue();
-        }
     }
 
     /**

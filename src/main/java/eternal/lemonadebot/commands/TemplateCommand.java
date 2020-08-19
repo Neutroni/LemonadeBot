@@ -25,11 +25,11 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.MemberCommand;
-import eternal.lemonadebot.database.CustomCommandManager;
-import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.customcommands.TemplateManager;
+import eternal.lemonadebot.customcommands.TemplateProvider;
 import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.TemplateManager;
+import eternal.lemonadebot.permissions.PermissionUtilities;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -45,13 +45,13 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class CommandCommand extends MemberCommand {
+public class TemplateCommand extends MemberCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
     public String getCommand() {
-        return "command";
+        return "template";
     }
 
     @Override
@@ -61,7 +61,7 @@ public class CommandCommand extends MemberCommand {
 
     @Override
     public String getHelpText() {
-        return " Syntax: command <option> [name] [template]\n"
+        return " Syntax: template <option> [name] [template]\n"
                 + "<option> can be one of the following:\n"
                 + " create - create new custom command\n"
                 + " delete - delete custom command\n"
@@ -99,7 +99,7 @@ public class CommandCommand extends MemberCommand {
             case "keys": {
                 final EmbedBuilder eb = new EmbedBuilder();
                 eb.setTitle("Templates:");
-                eb.setDescription(TemplateManager.getHelp());
+                eb.setDescription(TemplateProvider.getHelp());
                 textChannel.sendMessage(eb.build()).queue();
                 break;
             }
@@ -127,7 +127,7 @@ public class CommandCommand extends MemberCommand {
             return;
         }
         
-        final CustomCommandManager commands = guildData.getCustomCommands();
+        final TemplateManager commands = guildData.getCustomCommands();
         final Optional<CustomCommand> oldCommand = commands.getCommand(commandName);
         if (oldCommand.isPresent()) {
             try {
@@ -174,7 +174,7 @@ public class CommandCommand extends MemberCommand {
             return;
         }
         final String commandName = arguments[1];
-        final CustomCommandManager commands = guildData.getCustomCommands();
+        final TemplateManager commands = guildData.getCustomCommands();
         final Optional<CustomCommand> optCommand = commands.getCommand(commandName);
         if (optCommand.isEmpty()) {
             textChannel.sendMessage("No such custom command as " + commandName).queue();

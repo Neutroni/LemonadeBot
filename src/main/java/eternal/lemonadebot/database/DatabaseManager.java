@@ -25,11 +25,13 @@ package eternal.lemonadebot.database;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,19 +45,27 @@ public class DatabaseManager implements AutoCloseable {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final Connection conn;
+    private final JDA jda;
     private final Map<Long, GuildDataStore> guildDataStores = Collections.synchronizedMap(new HashMap<>());
+    private final int maxMessages;
 
     /**
      * Constructor
      *
      * @param filename location of database
+     * @param jda JDA to use for Managers that need it
+     * @param maxMessages Max amount of messages to keep stored in database
      * @throws SQLException if loading database fails
      */
-    public DatabaseManager(String filename) throws SQLException {
+    public DatabaseManager(final String filename, final JDA jda, int maxMessages) throws SQLException {
         this.conn = DriverManager.getConnection("jdbc:sqlite:" + filename);
+        this.maxMessages = maxMessages;
+        this.jda = jda;
 
         //Initialize database
         initialize();
+        //load guilds from database
+        loadGuilds();
     }
 
     @Override
@@ -71,7 +81,7 @@ public class DatabaseManager implements AutoCloseable {
      */
     public GuildDataStore getGuildData(final Guild guild) {
         return this.guildDataStores.computeIfAbsent(guild.getIdLong(), (Long newGuildID) -> {
-            return new GuildDataStore(this.conn, guild);
+            return new GuildDataStore(this.conn, guild.getIdLong(), this.jda, this.maxMessages);
         });
     }
 
@@ -86,30 +96,42 @@ public class DatabaseManager implements AutoCloseable {
         final String GUILDCONF = "CREATE TABLE IF NOT EXISTS Guilds("
                 + "id INTEGER PRIMARY KEY NOT NULL,"
                 + "commandPrefix TEXT NOT NULL,"
+                + "locale TEXT NOT NULL,"
+                + "logChannel TEXT,"
                 + "greetingTemplate TEXT);";
         final String PERMISSIONS = "CREATE TABLE IF NOT EXISTS Permissions("
                 + "guild INTEGER NOT NULL,"
                 + "action TEXT NOT NULL,"
                 + "requiredRank TEXT NOT NULL,"
                 + "requiredRole INTEGER NOT NULL,"
+                + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,name));";
+        final String MESSAGES = "CREATE TABLE IF NOT EXISTS Messages("
+                + "id INTEGER PRIMARY KEY NOT NULL,"
+                + "guild INTEGER NOT NULL"
+                + "author INTEGER NOT NULL,"
+                + "content TEXT NOT NULL"
+                + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE);";
         final String COMMANDS = "CREATE TABLE IF NOT EXISTS Commands("
                 + "guild INTEGER NOT NULL,"
                 + "name TEXT NOT NULL,"
                 + "template TEXT NOT NULL,"
                 + "owner INTEGER NOT NULL,"
+                + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,name));";
         final String COOLDOWNS = "Create TABLE IF NOT EXISTS Cooldowns("
                 + "guild INTEGER NOT NULL,"
                 + "command TEXT NOT NULL,"
                 + "duration INTEGER NOT NULL,"
                 + "activationTime INTEGER NOT NULL,"
+                + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,command));";
         final String EVENTS = "CREATE TABLE IF NOT EXISTS Events("
                 + "guild INTEGER NOT NULL,"
                 + "name TEXT NOT NULL,"
                 + "description TEXT NOT NULL,"
                 + "owner INTEGER NOT NULL,"
+                + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,name));";
         final String EVENT_MEMBERS = "CREATE TABLE IF NOT EXISTS EventMembers("
                 + "guild INTEGER NOT NULL,"
@@ -125,10 +147,12 @@ public class DatabaseManager implements AutoCloseable {
                 + "message TEXT NOT NULL,"
                 + "author INTEGER NOT NULL,"
                 + "channel INTEGER NOT NULL,"
+                + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,name));";
         try (final Statement st = this.conn.createStatement()) {
             st.addBatch(GUILDCONF);
             st.addBatch(PERMISSIONS);
+            st.addBatch(MESSAGES);
             st.addBatch(COMMANDS);
             st.addBatch(COOLDOWNS);
             st.addBatch(EVENTS);
@@ -137,5 +161,17 @@ public class DatabaseManager implements AutoCloseable {
             st.executeBatch();
         }
         LOGGER.debug("Database initialized");
+    }
+
+    private void loadGuilds() throws SQLException {
+        LOGGER.debug("Loading guilds from database");
+        final String query = "SELECT id FROM Guilds;";
+        try ( Statement st = conn.createStatement();  ResultSet rs = st.executeQuery(query)) {
+            while (rs.next()) {
+                final long guildID = rs.getLong("id");
+                this.guildDataStores.put(guildID, new GuildDataStore(this.conn, guildID, this.jda, this.maxMessages));
+            }
+        }
+        LOGGER.debug("Loaded guilds succesfully");
     }
 }

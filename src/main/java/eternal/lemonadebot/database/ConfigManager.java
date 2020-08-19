@@ -27,8 +27,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.ResourceBundle;
+import java.util.Set;
 import java.util.regex.Pattern;
+import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,6 +43,7 @@ import org.apache.logging.log4j.Logger;
 public class ConfigManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
+    public static final Set<Locale> SUPPORTED_LOCALES = Set.of(Locale.ENGLISH, new Locale("fi"));
 
     //Database connection
     private final Connection conn;
@@ -47,7 +52,10 @@ public class ConfigManager {
     private final long guildID;
     private volatile String commandPrefix = "lemonbot#";
     private volatile Pattern commandPattern = getCommandPattern(commandPrefix);
+    private volatile Optional<Long> logChannelID = Optional.empty();
     private volatile Optional<String> greetingTemplate = Optional.empty();
+    private volatile Locale locale = Locale.ENGLISH;
+    private volatile ResourceBundle resources = ResourceBundle.getBundle("Translation", locale);
 
     /**
      * Constructor
@@ -80,6 +88,33 @@ public class ConfigManager {
     }
 
     /**
+     * Get the current locale
+     *
+     * @return locale in use
+     */
+    public Locale getLocale() {
+        return this.locale;
+    }
+
+    /**
+     * Get the current resourcebundle used for localisation in this guild
+     *
+     * @return Localisation ResourceBundle
+     */
+    public ResourceBundle getResourceBundle() {
+        return this.resources;
+    }
+
+    /**
+     * Get the ID of the channel used to log messages
+     *
+     * @return channel id
+     */
+    public Optional<Long> getLogChannelID() {
+        return this.logChannelID;
+    }
+
+    /**
      * Get the template that should be used for greeting new members of guild
      *
      * @return String
@@ -102,6 +137,50 @@ public class ConfigManager {
         final String query = "UPDATE Guilds SET commandPrefix = ? WHERE id = ?;";
         try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
             ps.setString(1, prefix);
+            ps.setLong(2, this.guildID);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Set locale used in guild
+     *
+     * @param newLocale locale to set
+     * @return false if update failed due to unsupported locale
+     * @throws SQLException if database error occured
+     */
+    public boolean setLocale(final Locale newLocale) throws SQLException {
+        if (!SUPPORTED_LOCALES.contains(newLocale)) {
+            return false;
+        }
+        this.locale = newLocale;
+        this.resources = ResourceBundle.getBundle("Translation", newLocale);
+
+        final String query = "UPDATE Guilds SET locale = ? WHERE id = ?;";
+        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+            ps.setString(1, newLocale.toLanguageTag());
+            ps.setLong(2, this.guildID);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Set the channel used to send message logs to
+     *
+     * @param channel Channel to send messages to, null to disable log
+     * @return did update succeed
+     * @throws SQLException if database connection failed
+     */
+    public boolean setLogChannel(final TextChannel channel) throws SQLException {
+        final String query = "UPDATE Guilds SET logChannel = ? WHERE id = ?;";
+        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+            if (channel == null) {
+                this.logChannelID = Optional.empty();
+                ps.setString(1, query);
+            } else {
+                this.logChannelID = Optional.of(channel.getIdLong());
+                ps.setString(1, channel.getId());
+            }
             ps.setLong(2, this.guildID);
             return ps.executeUpdate() > 0;
         }

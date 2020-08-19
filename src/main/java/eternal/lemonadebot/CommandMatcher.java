@@ -35,7 +35,7 @@ import net.dv8tion.jda.api.entities.TextChannel;
  * @author Neutroni
  */
 public interface CommandMatcher {
-    
+
     /**
      * Get the command from the match
      *
@@ -51,7 +51,7 @@ public interface CommandMatcher {
      * @return array of parameters
      */
     String[] getArguments(int count);
-    
+
     /**
      * Get the action for this command
      *
@@ -100,5 +100,12 @@ public interface CommandMatcher {
      * @return Same as message.getMentionedRoles()
      */
     List<Role> getMentionedRoles();
+
+    /**
+     * Return list of channels mentions in the message
+     *
+     * @return Same as message.getMentionedChannels()
+     */
+    List<TextChannel> getMentionedChannels();
 
 }

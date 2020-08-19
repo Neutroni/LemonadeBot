@@ -26,8 +26,8 @@ package eternal.lemonadebot.database;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.permissions.ActionPermission;
-import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.permissions.CommandPermission;
+import eternal.lemonadebot.permissions.MemberRank;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -109,7 +109,7 @@ public class PermissionManager {
 
     private void loadPermissions() {
         //Load default permissions
-        for (final ChatCommand c : CommandProvider.getCommands()) {
+        for (final ChatCommand c : CommandProvider.COMMANDS) {
             for (final ActionPermission p : c.getDefaultRanks()) {
                 final CommandPermission perm = new CommandPermission(p.getRank(), guildID);
                 this.permissions.put(c.getCommand(), perm);

@@ -23,44 +23,43 @@
  */
 package eternal.lemonadebot;
 
+import java.util.Optional;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.User;
+
 /**
- * Program return codes
+ * Message stored in the database
  *
  * @author Neutroni
  */
-public enum Returnvalue {
+public class StoredMessage {
+
+    private final long author;
+    private final String content;
+
+    public StoredMessage(long author, String content) {
+        this.author = author;
+        this.content = content;
+    }
 
     /**
-     * If program exited normally
+     * Get the auhor of the message
+     *
+     * @param jda JDA to use to fetch the user
+     * @return Optional containing the user if found
      */
-    SUCCESS,
+    public Optional<User> getAuthor(JDA jda) {
+        final User user = jda.retrieveUserById(author).complete();
+        return Optional.ofNullable(user);
+    }
+
     /**
-     * If no api key was provided
+     * Text content of the stored message
+     *
+     * @return Message.getContentRaw()
      */
-    MISSING_API_KEY,
-    /**
-     * If database connection could not be established
-     */
-    DATABASE_FAILED,
-    /**
-     * If login to discord faild
-     */
-    LOGIN_FAILED,
-    /**
-     * If loading was interrupted
-     */
-    INTERRUPTED,
-    /**
-     * If configuration file could not be found
-     */
-    MISSING_CONFIG,
-    /**
-     * If configuration read failed
-     */
-    CONFIG_READ_ERROR, 
-    /**
-     * If loading version number from META-INF failed
-     */
-    VERSION_LOAD_FAILED;
+    public String getContent() {
+        return this.content;
+    }
 
 }

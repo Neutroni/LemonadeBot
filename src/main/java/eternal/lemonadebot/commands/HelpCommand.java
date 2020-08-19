@@ -23,10 +23,10 @@
  */
 package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.LemonadeBot;
+import eternal.lemonadebot.commandtypes.ChatCommand;
+import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.PermissionManager;
 import java.util.Optional;
@@ -105,7 +105,7 @@ class HelpCommand extends UserCommand {
         final StringBuilder sb = new StringBuilder();
         final Member member = matcher.getMember();
 
-        for (ChatCommand c : CommandProvider.getCommands()) {
+        for (ChatCommand c : CommandProvider.COMMANDS) {
             if (permissions.hasPermission(member, c.getCommand())) {
                 sb.append(c.getCommand()).append(" - ");
                 sb.append(c.getDescription()).append('\n');

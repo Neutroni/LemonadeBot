@@ -24,7 +24,7 @@
 package eternal.lemonadebot.events;
 
 import eternal.lemonadebot.CommandMatcher;
-import eternal.lemonadebot.customcommands.TemplateManager;
+import eternal.lemonadebot.customcommands.TemplateProvider;
 import eternal.lemonadebot.database.GuildDataStore;
 import java.sql.SQLException;
 import java.time.Clock;
@@ -89,6 +89,13 @@ public class Remainder extends TimerTask {
     @Override
     public void run() {
         LOGGER.debug("Remainder started: " + this.name);
+        //Make sure JDA is loaded
+        try {
+            this.jda.awaitReady();
+        } catch (InterruptedException e) {
+            LOGGER.error("JDA loading interrupted while trying to run a remainder: " + e.getMessage());
+            LOGGER.trace(e);
+        }
         //Check remainder channel can be found
         final TextChannel channel = this.jda.getTextChannelById(channelID);
         if (channel == null) {
@@ -119,7 +126,7 @@ public class Remainder extends TimerTask {
         }
 
         final CommandMatcher matcher = new RemainderMessageMatcher(member, channel);
-        final CharSequence reponse = TemplateManager.parseAction(matcher, guildData, this.remainderText);
+        final CharSequence reponse = TemplateProvider.parseAction(matcher, guildData, this.remainderText);
         if (reponse.toString().isBlank()) {
             LOGGER.debug("Ignored empty response for remainder: " + this.name + " with template: " + this.remainderText);
             return;

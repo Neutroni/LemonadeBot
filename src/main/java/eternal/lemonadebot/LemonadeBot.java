@@ -36,12 +36,6 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,7 +46,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class LemonadeBot {
 
-    public static final String BOT_VERSION = "1.1";
+    public static final String BOT_VERSION = LemonadeBot.class.getPackage().getImplementationVersion();
     private static final Logger LOGGER = LogManager.getLogger();
 
     /**
@@ -61,91 +55,85 @@ public class LemonadeBot {
      * @param args command line arguments
      */
     public static void main(String[] args) {
-        LOGGER.info("Bot starting up, version: " + BOT_VERSION);
+        LOGGER.info("LemonadeBot starting up, version: " + BOT_VERSION);
 
-        try {
-            //Parse command line arguments
-            final Options options = new Options();
-            options.addOption("h", "help", false, "Prints this message");
-            options.addOption("c", "config", true, "Configuration file location");
+        //Get property file location
+        final String configLocation;
+        if (args.length > 0) {
+            configLocation = args[0];
+        } else {
+            configLocation = "lemonadebot.properties";
+        }
 
-            final HelpFormatter formatter = new HelpFormatter();
-            final CommandLineParser parser = new DefaultParser();
-            final CommandLine cmd = parser.parse(options, args);
-
-            //Check if we should print help
-            if (cmd.hasOption("h")) {
-                formatter.printHelp("Lemonadebot", options);
-                System.exit(Returnvalue.SUCCESS.ordinal());
-            }
-
-            //Load properties
-            final String configLocation = cmd.getOptionValue("c", "lemonadebot.properties");
-            final InputStream inputStream = new FileInputStream(configLocation);
-            final Properties properties = new Properties();
+        //Load properties
+        final Properties properties = new Properties();
+        try (final InputStream inputStream = new FileInputStream(configLocation)) {
             properties.load(inputStream);
+        } catch (FileNotFoundException ex) {
+            LOGGER.fatal("Could not find configuration file" + ex.getMessage());
+            LOGGER.trace("Stack trace: ", ex);
+            System.exit(Returnvalue.MISSING_CONFIG.ordinal());
+        } catch (IOException ex) {
+            LOGGER.fatal("Loading configuration file failed" + ex.getMessage());
+            LOGGER.trace("Stack trace: ", ex);
+            System.exit(Returnvalue.CONFIG_READ_ERROR.ordinal());
+        }
 
-            //Check that user provided api key
-            final String discordKey = properties.getProperty("discord-api-key");
-            if (discordKey == null) {
-                LOGGER.fatal("No api key provided, quitting");
-                System.exit(Returnvalue.MISSING_API_KEY.ordinal());
-            }
+        //Check that user provided api key
+        final String discordKey = properties.getProperty("discord-api-key");
+        if (discordKey == null) {
+            LOGGER.fatal("No api key provided, quitting");
+            System.exit(Returnvalue.MISSING_API_KEY.ordinal());
+        }
 
-            //Start loading JDA
-            final List<GatewayIntent> intents = List.of(
-                    GatewayIntent.GUILD_MEMBERS, //User join
-                    GatewayIntent.GUILD_MESSAGES, //Messages
-                    GatewayIntent.GUILD_VOICE_STATES //Voice chat
-            );
-            final JDABuilder jdabuilder = JDABuilder.create(discordKey, intents);
-            final List<CacheFlag> cacheFlagsToDisable = List.of(
-                    CacheFlag.ACTIVITY,
-                    CacheFlag.EMOTE,
-                    CacheFlag.CLIENT_STATUS
-            );
-            jdabuilder.disableCache(cacheFlagsToDisable);
+        //Start loading JDA
+        final List<GatewayIntent> intents = List.of(
+                GatewayIntent.GUILD_MEMBERS, //User join
+                GatewayIntent.GUILD_MESSAGES, //Messages
+                GatewayIntent.GUILD_VOICE_STATES //Voice chat
+        );
+        final JDABuilder jdabuilder = JDABuilder.create(discordKey, intents);
+        final List<CacheFlag> cacheFlagsToDisable = List.of(
+                CacheFlag.ACTIVITY,
+                CacheFlag.EMOTE,
+                CacheFlag.CLIENT_STATUS
+        );
+        jdabuilder.disableCache(cacheFlagsToDisable);
+        try {
             final JDA jda = jdabuilder.build();
 
             //Connect to the database
             final String databaseLocation = properties.getProperty("database-location", "database.db");
-            final DatabaseManager DB = new DatabaseManager(databaseLocation);
+            final int maxMessages;
+            final String numberString = properties.getProperty("max-messages");
+            if (numberString == null) {
+                maxMessages = 4096;
+                LOGGER.info("Max messages to store not set, defaulting to 4096");
+            } else {
+                maxMessages = Integer.parseInt(numberString);
+                LOGGER.info("Set max messages to: " + maxMessages);
+            }
+
+            final DatabaseManager DB = new DatabaseManager(databaseLocation, jda, maxMessages);
             LOGGER.debug("Connected to database succefully");
 
             //Start listening for messages
             jda.addEventListener(new MessageListener(DB));
+            jda.addEventListener(new MessageLoggerListener(DB));
+            jda.addEventListener(new JoinListener(DB));
 
-            //Load guilds from database, used to activate remainders
-            jda.awaitReady();
-            jda.getGuildCache().forEach(DB::getGuildData);
-            
             LOGGER.debug("Startup succesfull");
-        } catch (FileNotFoundException ex) {
-            LOGGER.fatal("Could not find configuration file");
-            LOGGER.debug(ex.getMessage());
-            LOGGER.trace("Stack trace: ", ex);
-            System.exit(Returnvalue.MISSING_CONFIG.ordinal());
+
         } catch (SQLException ex) {
-            LOGGER.fatal("Failed to connect to database during startup");
-            LOGGER.debug(ex.getMessage());
+            LOGGER.fatal("Failed to connect to database during startup: " + ex.getMessage());
             LOGGER.trace("Stack trace:", ex);
             System.exit(Returnvalue.DATABASE_FAILED.ordinal());
         } catch (LoginException ex) {
-            LOGGER.fatal("Login failed");
-            LOGGER.debug(ex.getMessage());
+            LOGGER.fatal("Login failed: " + ex.getMessage());
             LOGGER.trace("Stack trace:", ex);
             System.exit(Returnvalue.LOGIN_FAILED.ordinal());
-        } catch (ParseException ex) {
-            LOGGER.fatal("Command line argument parsing failed");
-            LOGGER.trace("Stack trace:", ex);
-        } catch (InterruptedException ex) {
-            LOGGER.fatal("JDA loading interrupted");
-            LOGGER.debug(ex.getMessage());
-            LOGGER.trace("Stack trace:", ex);
-            System.exit(Returnvalue.INTERRUPTED.ordinal());
-        } catch (IOException ex) {
-            LOGGER.fatal("Loading configuration file failed");
-            LOGGER.debug(ex.getMessage());
+        } catch (NumberFormatException ex) {
+            LOGGER.fatal("Loading max messages value from configuration file failed: " + ex.getMessage());
             LOGGER.trace("Stack trace: ", ex);
             System.exit(Returnvalue.CONFIG_READ_ERROR.ordinal());
         }

@@ -42,7 +42,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class CustomCommandManager {
+public class TemplateManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -58,7 +58,7 @@ public class CustomCommandManager {
      * @param connection Database connection to use
      * @param config configuration manager to use
      */
-    CustomCommandManager(Connection connection, CooldownManager cooldownManager, long guildID) {
+    TemplateManager(Connection connection, CooldownManager cooldownManager, long guildID) {
         this.conn = connection;
         this.cooldownManager = cooldownManager;
         this.guildID = guildID;

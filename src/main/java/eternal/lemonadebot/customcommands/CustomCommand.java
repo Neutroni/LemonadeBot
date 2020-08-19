@@ -84,7 +84,7 @@ public class CustomCommand extends MemberCommand {
 
     @Override
     public void respond(CommandMatcher match, GuildDataStore guildData) {
-        final CharSequence response = TemplateManager.parseAction(match, guildData, actionTemplate);
+        final CharSequence response = TemplateProvider.parseAction(match, guildData, actionTemplate);
         if (response.length() == 0) {
             return;
         }

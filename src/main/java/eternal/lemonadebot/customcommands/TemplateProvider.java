@@ -23,14 +23,14 @@
  */
 package eternal.lemonadebot.customcommands;
 
-import eternal.lemonadebot.events.Event;
-import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.CooldownManager;
+import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.PermissionManager;
+import eternal.lemonadebot.events.Event;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeParseException;
@@ -55,7 +55,7 @@ import net.dv8tion.jda.api.entities.Message;
  *
  * @author Neutroni
  */
-public class TemplateManager {
+public class TemplateProvider {
 
     private static final Random RNG = new Random();
     private static final List<ActionTemplate> actions = List.of(
@@ -246,7 +246,7 @@ public class TemplateManager {
      */
     public static String getHelp() {
         final StringBuilder sb = new StringBuilder();
-        for (ActionTemplate action : actions) {
+        for (final ActionTemplate action : actions) {
             sb.append(action.getHelp()).append('\n');
         }
         return sb.toString();

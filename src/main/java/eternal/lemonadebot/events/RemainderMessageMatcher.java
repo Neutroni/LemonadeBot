@@ -134,4 +134,9 @@ class RemainderMessageMatcher implements CommandMatcher {
     public List<Role> getMentionedRoles() {
         return List.of();
     }
+
+    @Override
+    public List<TextChannel> getMentionedChannels() {
+        return List.of();
+    }
 }

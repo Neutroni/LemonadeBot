@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2020 Neutroni.
+ * Copyright 2020 joonas.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,46 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot;
+package eternal.lemonadebot.database;
 
 /**
- * Program return codes
  *
- * @author Neutroni
+ * @author joonas
  */
-public enum Returnvalue {
-
-    /**
-     * If program exited normally
-     */
-    SUCCESS,
-    /**
-     * If no api key was provided
-     */
-    MISSING_API_KEY,
-    /**
-     * If database connection could not be established
-     */
-    DATABASE_FAILED,
-    /**
-     * If login to discord faild
-     */
-    LOGIN_FAILED,
-    /**
-     * If loading was interrupted
-     */
-    INTERRUPTED,
-    /**
-     * If configuration file could not be found
-     */
-    MISSING_CONFIG,
-    /**
-     * If configuration read failed
-     */
-    CONFIG_READ_ERROR, 
-    /**
-     * If loading version number from META-INF failed
-     */
-    VERSION_LOAD_FAILED;
-
+class KeywordManager {
+    
 }
