@@ -24,12 +24,8 @@
 package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.CommandMatcher;
-import eternal.lemonadebot.commands.CommandProvider;
-import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.database.CooldownManager;
 import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.database.PermissionManager;
 import eternal.lemonadebot.events.Event;
 import java.time.LocalDate;
 import java.time.Period;
@@ -137,37 +133,6 @@ public class TemplateProvider {
                         }
                         return "Could not find members for that event";
                     }),
-            new ActionTemplate("\\{command (\\.+)\\}", "{command <command>} - Run a command before the custom command",
-                    (commandMatcher, guildData, templateMatcher) -> {
-                        final String inputString = templateMatcher.group(1);
-                        final CommandMatcher fakeMatcher = new FakeMessageMatcher(commandMatcher, inputString);
-                        final Optional<? extends ChatCommand> optCommand = CommandProvider.getAction(fakeMatcher, guildData);
-                        if (optCommand.isEmpty()) {
-                            return "Could not find command with input: " + inputString;
-                        }
-                        final ChatCommand command = optCommand.get();
-                        if (command instanceof CustomCommand) {
-                            final CustomCommand custom = (CustomCommand) command;
-                            if (custom.getTemplate().contains("{command ")) {
-                                return "Custom command cannot run a command that calls another command";
-                            }
-                        }
-                        final Member member = commandMatcher.getMember();
-                        final PermissionManager permissions = guildData.getPermissionManager();
-                        if (permissions.hasPermission(member, inputString)) {
-                            return "Insufficient permississions to run that command";
-                        }
-
-                        final CooldownManager cdm = guildData.getCooldownManager();
-                        final Optional<String> optCooldown = cdm.updateActivationTime(inputString);
-                        if (optCooldown.isPresent()) {
-                            final String currentCooldown = optCooldown.get();
-                            return "Command on cooldown, time remaining: " + currentCooldown + '.';
-                        }
-
-                        command.respond(fakeMatcher, guildData);
-                        return "";
-                    }),
             new ActionTemplate("\\{daysSince (\\d+-\\d+\\d+)\\}", "{daysSince <date>} - Days since date specified according to ISO-8601",
                     (commandMatcher, guildData, templateMatcher) -> {
                         final String dateString = templateMatcher.group(1);
@@ -223,7 +188,7 @@ public class TemplateProvider {
                         }
                     }
                     if (!foundMatch) {
-                        stack.peekFirst().append(sb);
+                        stack.peekFirst().append('{').append(sb).append('}');
                     }
                     break;
                 default:

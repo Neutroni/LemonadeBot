@@ -23,12 +23,12 @@
  */
 package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.database.EventManager;
-import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.MemberCommand;
+import eternal.lemonadebot.database.EventManager;
+import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.events.Event;
+import eternal.lemonadebot.permissions.PermissionUtilities;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -45,7 +45,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class EventCommand extends MemberCommand{
+public class EventCommand extends MemberCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -138,15 +138,15 @@ public class EventCommand extends MemberCommand{
             return;
         }
         final String eventName = opts[1];
+        final String description;
+        if (opts.length == 3) {
+            description = opts[2];
+        } else {
+            description = "No description";
+        }
+        final Event newEvent = new Event(eventName, description, sender);
 
         try {
-            final String description;
-            if (opts.length == 3) {
-                description = opts[2];
-            } else {
-                description = "No description";
-            }
-            final Event newEvent = new Event(eventName, description, sender);
             if (!events.addEvent(newEvent)) {
                 textChannel.sendMessage("Event with that name alredy exists.").queue();
                 return;

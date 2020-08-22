@@ -24,9 +24,16 @@
 package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.commands.CommandProvider;
+import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.commandtypes.MemberCommand;
+import eternal.lemonadebot.database.CooldownManager;
 import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.PermissionManager;
 import java.util.Objects;
+import java.util.Optional;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
  * User defined commands that take template as input and when run return the
@@ -83,12 +90,49 @@ public class CustomCommand extends MemberCommand {
     }
 
     @Override
-    public void respond(CommandMatcher match, GuildDataStore guildData) {
-        final CharSequence response = TemplateProvider.parseAction(match, guildData, actionTemplate);
-        if (response.length() == 0) {
+    public void respond(CommandMatcher message, GuildDataStore guildData) {
+        final TextChannel channel = message.getTextChannel();
+        final CharSequence response = TemplateProvider.parseAction(message, guildData, actionTemplate);
+        
+        //Check if message is empty
+        final String commandString = response.toString();
+        if (commandString.isBlank()) {
+            channel.sendMessage("Error: Template produced empty message").queue();
             return;
         }
-        match.getTextChannel().sendMessage(response).queue();
+
+        //Send response assuming it is not a command
+        if (response.charAt(0) != '!') {
+            channel.sendMessage(response).queue();
+            return;
+        }
+
+        //If response begins with a exclamation point it should be treated as a command
+        final CommandMatcher fakeMatcher = new FakeMessageMatcher(message, commandString);
+        final Optional<? extends ChatCommand> optCommand = CommandProvider.getAction(fakeMatcher, guildData);
+        if (optCommand.isEmpty()) {
+            channel.sendMessage("Could not find command with input: " + commandString).queue();
+            return;
+        }
+        final ChatCommand command = optCommand.get();
+        if (command instanceof CustomCommand) {
+            channel.sendMessage("Custom command cannot run another custom command").queue();
+            return;
+        }
+        final Member member = message.getMember();
+        final PermissionManager permissions = guildData.getPermissionManager();
+        if (permissions.hasPermission(member, commandString)) {
+            channel.sendMessage("Insufficient permississions to run that command").queue();
+        }
+
+        final CooldownManager cdm = guildData.getCooldownManager();
+        final Optional<String> optCooldown = cdm.updateActivationTime(commandString);
+        if (optCooldown.isPresent()) {
+            final String currentCooldown = optCooldown.get();
+            channel.sendMessage("Command on cooldown, time remaining: " + currentCooldown + '.').queue();
+        }
+
+        command.respond(fakeMatcher, guildData);
     }
 
     @Override

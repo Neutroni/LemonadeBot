@@ -43,14 +43,14 @@ public interface ChatCommand {
     public String getCommand();
 
     /**
-     * Short description for command
+     * Short description for command, used for command listings
      *
      * @return Description for what this command does
      */
     public String getDescription();
 
     /**
-     * Help text for command
+     * Help text for command, usage info for the command
      *
      * @return help
      */

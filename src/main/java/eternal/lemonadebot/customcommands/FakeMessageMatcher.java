@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2020 joonas.
+ * Copyright 2020 Neutroni.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,17 +34,24 @@ import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
+ * CommandMatcher for custom commands that call other commands
  *
- * @author joonas
+ * @author Neutroni
  */
 public class FakeMessageMatcher implements CommandMatcher {
 
-    private static final Pattern PATTERN = Pattern.compile("^(\\S+) ?");
+    private static final Pattern PATTERN = Pattern.compile("^!(\\S+) ?");
     private final CommandMatcher commandMatcher;
     private final String messageText;
     private final Matcher matcher;
     private final boolean matches;
 
+    /**
+     * Constructor
+     *
+     * @param originalMatcher commandmatcher of the original custom command call
+     * @param fakeContent content of the custom command call
+     */
     public FakeMessageMatcher(CommandMatcher originalMatcher, String fakeContent) {
         this.commandMatcher = originalMatcher;
         final String[] args = originalMatcher.getArguments(0);

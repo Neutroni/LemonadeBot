@@ -24,6 +24,7 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.commandtypes.MemberCommand;
 import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.customcommands.TemplateProvider;
@@ -119,52 +120,32 @@ public class TemplateCommand extends MemberCommand {
             textChannel.sendMessage("Custom command must contain a template string for the response").queue();
             return;
         }
-        final String commandName = arguments[1];
 
         //Check that there is no such built in command
-        if (CommandProvider.getBuiltInCommand(commandName).isPresent()) {
-            textChannel.sendMessage("Command with that name already exists.").queue();
+        final String commandName = arguments[1];
+        final Optional<ChatCommand> optCommand = CommandProvider.getBuiltInCommand(commandName);
+        if (optCommand.isPresent()) {
+            textChannel.sendMessage("Custom command name reserved by command.").queue();
             return;
         }
-        
-        final TemplateManager commands = guildData.getCustomCommands();
-        final Optional<CustomCommand> oldCommand = commands.getCommand(commandName);
-        if (oldCommand.isPresent()) {
-            try {
-                if (commands.addCommand(oldCommand.get())) {
-                    textChannel.sendMessage("Found old custom command by that name in memory, succesfully added it to database").queue();
-                } else {
-                    textChannel.sendMessage("Custom command with that name alredy exists, "
-                            + "if you want to edit command remove old one first, "
-                            + "otherwise provide different name for the command").queue();
-                }
-            } catch (SQLException ex) {
-                textChannel.sendMessage("Found old command by that name in memory but adding it to database failed.").queue();
 
-                LOGGER.error("Failure to add custom command to database");
-                LOGGER.warn(ex.getMessage());
-                LOGGER.trace("Stack trace", ex);
-            }
-            return;
-        }
         final String commandTemplate = arguments[2];
         final Member sender = matcher.getMember();
+        final TemplateManager commands = guildData.getCustomCommands();
         final CustomCommand newAction = new CustomCommand(commandName, commandTemplate, sender.getIdLong());
-        {
-            try {
-                if (commands.addCommand(newAction)) {
-                    textChannel.sendMessage("Custom command added succesfully").queue();
-                } else {
-                    textChannel.sendMessage("Custom command alredy exists, propably a database error").queue();
-                }
-            } catch (SQLException ex) {
-                textChannel.sendMessage("Adding custmo command to database failed, added to temporary memory that will be lost on reboot").queue();
-
-                LOGGER.error("Failure to add custom command");
-                LOGGER.warn(ex.getMessage());
-                LOGGER.trace("Stack trace", ex);
+        try {
+            if (commands.addCommand(newAction)) {
+                textChannel.sendMessage("Custom command added succesfully").queue();
+                return;
             }
+            textChannel.sendMessage("Custom command with that name alredy exists.").queue();
+        } catch (SQLException ex) {
+            textChannel.sendMessage("Adding custom command to database failed, added to temporary memory that will be lost on reboot").queue();
+
+            LOGGER.error("Failure to add custom command: " + ex.getMessage());
+            LOGGER.trace("Stack trace", ex);
         }
+
     }
 
     private void deleteCustomCommand(String[] arguments, CommandMatcher matcher, GuildDataStore guildData) {
