@@ -26,23 +26,26 @@ package eternal.lemonadebot.customcommands;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.commandtypes.MemberCommand;
 import eternal.lemonadebot.database.CooldownManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.PermissionManager;
-import java.util.Objects;
+import eternal.lemonadebot.permissions.CommandPermission;
+import eternal.lemonadebot.permissions.MemberRank;
+import eternal.lemonadebot.translation.TranslationKey;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
  * User defined commands that take template as input and when run return the
- * template with parts substituted according to SimpleActions defined in
- * ActionManager
+ * template with parts substituted according to ActionTemplateFuctions defined
+ * in TemplateProvider
  *
  * @author Neutroni
  */
-public class CustomCommand extends MemberCommand {
+public class CustomCommand implements ChatCommand {
 
     private final String commandName;
     private final String actionTemplate;
@@ -61,14 +64,39 @@ public class CustomCommand extends MemberCommand {
         this.owner = owner;
     }
 
+    /**
+     * Get the name of the custom command
+     *
+     * @param locale Locale from the guild, ignored for custom commands
+     * @return Command name
+     */
     @Override
-    public String getCommand() {
+    public String getCommand(Locale locale) {
+        return this.commandName;
+    }
+
+    /**
+     * Get the command name without needing to pass locale
+     *
+     * @return Command name
+     */
+    public String getCommandName() {
         return this.commandName;
     }
 
     @Override
-    public String getDescription() {
-        return "Custom command";
+    public String getDescription(Locale locale) {
+        return TranslationKey.DESCRIPTION_CUSTOMCOMMAND.getTranslation(locale);
+    }
+
+    @Override
+    public String getHelpText(Locale locale) {
+        return TranslationKey.SYNTAX_CUSTOMCOMMAND.getTranslation(locale);
+    }
+
+    @Override
+    public Map<String, CommandPermission> getDefaultRanks(Locale locale, long guildID) {
+        return Map.of(getCommand(locale), new CommandPermission(MemberRank.USER, guildID));
     }
 
     /**
@@ -93,11 +121,12 @@ public class CustomCommand extends MemberCommand {
     public void respond(CommandMatcher message, GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
         final CharSequence response = TemplateProvider.parseAction(message, guildData, actionTemplate);
-        
+        final Locale locale = guildData.getConfigManager().getLocale();
+
         //Check if message is empty
         final String commandString = response.toString();
         if (commandString.isBlank()) {
-            channel.sendMessage("Error: Template produced empty message").queue();
+            channel.sendMessage(TranslationKey.ERROR_TEMPLATE_EMPTY.getTranslation(locale)).queue();
             return;
         }
 
@@ -111,35 +140,37 @@ public class CustomCommand extends MemberCommand {
         final CommandMatcher fakeMatcher = new FakeMessageMatcher(message, commandString);
         final Optional<? extends ChatCommand> optCommand = CommandProvider.getAction(fakeMatcher, guildData);
         if (optCommand.isEmpty()) {
-            channel.sendMessage("Could not find command with input: " + commandString).queue();
+            channel.sendMessage(TranslationKey.ERROR_COMMAND_NOT_FOUND.getTranslation(locale) + commandString).queue();
             return;
         }
         final ChatCommand command = optCommand.get();
         if (command instanceof CustomCommand) {
-            channel.sendMessage("Custom command cannot run another custom command").queue();
+            channel.sendMessage(TranslationKey.ERROR_RECURSION_NOT_PERMITTED.getTranslation(locale)).queue();
             return;
         }
         final Member member = message.getMember();
         final PermissionManager permissions = guildData.getPermissionManager();
         if (permissions.hasPermission(member, commandString)) {
-            channel.sendMessage("Insufficient permississions to run that command").queue();
+            channel.sendMessage(TranslationKey.ERROR_INSUFFICIENT_PERMISSION.getTranslation(locale)).queue();
         }
 
         final CooldownManager cdm = guildData.getCooldownManager();
         final Optional<String> optCooldown = cdm.updateActivationTime(commandString);
         if (optCooldown.isPresent()) {
-            final String currentCooldown = optCooldown.get();
-            channel.sendMessage("Command on cooldown, time remaining: " + currentCooldown + '.').queue();
+            final String days = TranslationKey.TIME_DAYS.getTranslation(locale);
+            final String hours = TranslationKey.TIME_HOURS.getTranslation(locale);
+            final String minutes = TranslationKey.TIME_MINUTES.getTranslation(locale);
+            final String seconds = TranslationKey.TIME_SECONDS.getTranslation(locale);
+            final String day = TranslationKey.TIME_DAY.getTranslation(locale);
+            final String hour = TranslationKey.TIME_HOUR.getTranslation(locale);
+            final String minute = TranslationKey.TIME_MINUTE.getTranslation(locale);
+            final String second = TranslationKey.TIME_SECOND.getTranslation(locale);
+            final String currentCooldown = String.format(optCooldown.get(), days, hours, minutes, seconds, day, hour, minute, second);
+            channel.sendMessage(TranslationKey.ERROR_COMMAND_COOLDOWN_TIME.getTranslation(locale) + currentCooldown).queue();
+            return;
         }
 
         command.respond(fakeMatcher, guildData);
-    }
-
-    @Override
-    public String getHelpText() {
-        return "Custom command with template:\n "
-                + this.actionTemplate
-                + "\nSee \"help command\" for details on custom commands.";
     }
 
     @Override
@@ -148,18 +179,12 @@ public class CustomCommand extends MemberCommand {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
+    public boolean equals(Object other) {
+        if (other instanceof CustomCommand) {
+            final CustomCommand otherCommand = (CustomCommand) other;
+            return this.commandName.equals(otherCommand.commandName);
         }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final CustomCommand other = (CustomCommand) obj;
-        return Objects.equals(this.commandName, other.commandName);
+        return false;
     }
 
 }

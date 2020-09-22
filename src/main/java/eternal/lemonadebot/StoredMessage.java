@@ -26,6 +26,9 @@ package eternal.lemonadebot;
 import java.util.Optional;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Message stored in the database
@@ -33,6 +36,8 @@ import net.dv8tion.jda.api.entities.User;
  * @author Neutroni
  */
 public class StoredMessage {
+
+    private static final Logger LOGGER = LogManager.getLogger();
 
     private final long author;
     private final String content;
@@ -49,8 +54,13 @@ public class StoredMessage {
      * @return Optional containing the user if found
      */
     public Optional<User> getAuthor(JDA jda) {
-        final User user = jda.retrieveUserById(author).complete();
-        return Optional.ofNullable(user);
+        try {
+            final User user = jda.retrieveUserById(author).complete();
+            return Optional.ofNullable(user);
+        } catch (ErrorResponseException e) {
+            LOGGER.debug("User for a stored message could not be found", e);
+            return Optional.empty();
+        }
     }
 
     /**

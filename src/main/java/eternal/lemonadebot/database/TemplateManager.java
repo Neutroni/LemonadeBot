@@ -28,12 +28,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,7 +46,7 @@ public class TemplateManager {
 
     private final Connection conn;
     private final long guildID;
-    private final Set<CustomCommand> commands = Collections.synchronizedSet(new HashSet<>());
+    private final Set<CustomCommand> commands = ConcurrentHashMap.newKeySet();
 
     private final CooldownManager cooldownManager;
 
@@ -79,7 +77,7 @@ public class TemplateManager {
         final String query = "INSERT OR IGNORE INTO Commands(guild,name,template,owner) VALUES(?,?,?,?);";
         try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            ps.setString(2, command.getCommand());
+            ps.setString(2, command.getCommandName());
             ps.setString(3, command.getTemplate());
             ps.setLong(4, command.getOwner());
             return ps.executeUpdate() > 0;
@@ -95,12 +93,12 @@ public class TemplateManager {
      */
     public boolean removeCommand(CustomCommand command) throws SQLException {
         this.commands.remove(command);
-        this.cooldownManager.removeCooldown(command.getCommand());
+        this.cooldownManager.removeCooldown(command.getCommandName());
 
         //Remove from database
         final String query = "DELETE FROM Commands WHERE name = ? AND guild = ?;";
         try ( PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setString(1, command.getCommand());
+            ps.setString(1, command.getCommandName());
             ps.setLong(2, this.guildID);
             return ps.executeUpdate() > 0;
         }
@@ -114,7 +112,7 @@ public class TemplateManager {
      */
     public Optional<CustomCommand> getCommand(String name) {
         for (CustomCommand c : this.commands) {
-            if (!c.getCommand().equals(name)) {
+            if (!c.getCommandName().equals(name)) {
                 continue;
             }
             return Optional.of(c);
@@ -127,8 +125,8 @@ public class TemplateManager {
      *
      * @return custom commands
      */
-    public List<CustomCommand> getCommands() {
-        return new ArrayList<>(commands);
+    public Set<CustomCommand> getCommands() {
+        return Collections.unmodifiableSet(this.commands);
     }
 
     /**
@@ -147,8 +145,7 @@ public class TemplateManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Loading custom commands from database failed");
-            LOGGER.warn(e.getMessage());
+            LOGGER.error("Loading custom commands from database failed: {}", e.getMessage());
             LOGGER.trace(e);
         }
     }

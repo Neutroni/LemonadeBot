@@ -31,7 +31,7 @@ import net.dv8tion.jda.api.JDA;
  *
  * @author Neutroni
  */
-public class GuildDataStore {
+public class GuildDataStore implements AutoCloseable {
 
     private final long guildID;
     private final ConfigManager config;
@@ -52,7 +52,7 @@ public class GuildDataStore {
     GuildDataStore(final Connection connection, final Long guildID, JDA jda, final int maxMessages) {
         this.guildID = guildID;
         this.config = new ConfigManager(connection, guildID);
-        this.permissions = new PermissionManager(connection, guildID);
+        this.permissions = new PermissionManager(connection, guildID, this.config);
         this.events = new EventManager(connection, guildID);
         this.cooldowns = new CooldownManager(connection, guildID);
         this.commands = new TemplateManager(connection, this.cooldowns, guildID);
@@ -130,5 +130,10 @@ public class GuildDataStore {
      */
     public MessageManager getMessageManager() {
         return this.messages;
+    }
+
+    @Override
+    public void close() {
+        this.remainders.close();
     }
 }

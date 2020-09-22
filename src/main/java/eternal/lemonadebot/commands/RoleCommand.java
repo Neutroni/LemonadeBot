@@ -23,53 +23,68 @@
  */
 package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.commandtypes.UserCommand;
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.commandtypes.ChatCommand;
+import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.permissions.CommandPermission;
+import eternal.lemonadebot.permissions.MemberRank;
+import eternal.lemonadebot.translation.TranslationKey;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
+import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
+ * Command used to assign roles to user based on other servers they are also on
  *
  * @author Neutroni
  */
-class RoleCommand extends UserCommand {
+class RoleCommand implements ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand() {
-        return "role";
+    public String getCommand(Locale locale) {
+        return TranslationKey.COMMAND_ROLE.getTranslation(locale);
     }
 
     @Override
-    public String getDescription() {
-        return "Add role to yourself";
+    public String getDescription(Locale locale) {
+        return TranslationKey.DESCRIPTION_ROLE.getTranslation(locale);
     }
 
     @Override
-    public String getHelpText() {
-        return "Syntax: role [role]\n"
-                + "If no role is provided try to automatically assign role.\n"
-                + "Otherwise assign <role> to yourself";
+    public String getHelpText(Locale locale) {
+        return TranslationKey.SYNTAX_ROLE.getTranslation(locale);
+    }
+
+    @Override
+    public Map<String, CommandPermission> getDefaultRanks(Locale locale, long guildID) {
+        return Map.of(getCommand(locale),
+                new CommandPermission(MemberRank.USER, guildID));
     }
 
     @Override
     public void respond(CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel channel = matcher.getTextChannel();
+        final ConfigManager guildConf = guildData.getConfigManager();
+        final Locale locale = guildConf.getLocale();
 
         //Check that we can assign roles here
         final Guild guild = matcher.getGuild();
         if (!guild.getSelfMember().hasPermission(Permission.MANAGE_ROLES)) {
-            channel.sendMessage("It appears I can't assign roles here, if you think this to be a mistake contact server adminstrators").queue();
+            channel.sendMessage(TranslationKey.ROLE_BOT_NO_PERMISSION.getTranslation(locale)).queue();
             return;
         }
 
@@ -77,26 +92,27 @@ class RoleCommand extends UserCommand {
         final Member sender = matcher.getMember();
         final List<Role> currentRoles = sender.getRoles();
         if (currentRoles.size() > 0) {
-            channel.sendMessage("You cannot assign role to yourself using this command if you alredy have a role").queue();
+            channel.sendMessage(TranslationKey.ROLE_ALREADY_HAS_ROLE.getTranslation(locale)).queue();
             return;
         }
 
         //Get the name of the guild user wants role for
-        final String[] parameters = matcher.getArguments(1);
+        final String[] parameters = matcher.getArguments(0);
         if (parameters.length == 0) {
-            autoAssignRole(channel, sender, guild);
+            autoAssignRole(channel, sender, locale);
             return;
         }
 
         //Ignore current server
-        final String guildName = parameters[0];
-        if (guild.getName().equalsIgnoreCase(guildName)) {
-            channel.sendMessage("Can't assign role for current server, check rules if you want member status.").queue();
+        final String requestedRoleName = parameters[0];
+        final Collator collator = guildConf.getCollator();
+        if (collator.equals(guild.getName(), requestedRoleName)) {
+            channel.sendMessage(TranslationKey.ROLE_CURRENT_GUILD_NOT_ALLOWED.getTranslation(locale)).queue();
             return;
         }
 
         //Try to assign the role user wants
-        assignRole(channel, sender, guild, guildName);
+        assignRole(channel, sender, requestedRoleName, guildConf);
     }
 
     /**
@@ -104,55 +120,82 @@ class RoleCommand extends UserCommand {
      *
      * @param channel Channel to use to respond
      * @param sender Command user
-     * @param guild Current guild
-     * @param roleName Name of the role user wants
+     * @param currentGuild Current guild
+     * @param requestedRoleName Name of the role user wants
      */
-    private void assignRole(MessageChannel channel, Member sender, Guild guild, String roleName) {
+    private void assignRole(TextChannel channel, Member sender, String requestedRoleName, ConfigManager guildConf) {
+        final Guild currentGuild = channel.getGuild();
+        final Locale locale = guildConf.getLocale();
+        final Collator collator = guildConf.getCollator();
         //Guilds we share with the user
         final List<Guild> mutualGuilds = sender.getUser().getMutualGuilds();
 
         //Get names of the mutual guilds
-        final StringBuilder possibleRoleNames = new StringBuilder("Possible guilds:\n");
+        final List<String> possibleRoleNames = new ArrayList<>(mutualGuilds.size());
+        final List<String> missingRoleNames = new ArrayList<>(mutualGuilds.size());
 
         //Find and assign role
-        for (Guild g : mutualGuilds) {
-            if (!g.getName().equals(roleName)) {
-                possibleRoleNames.append(g.getName()).append('\n');
+        for (final Guild otherGuild : mutualGuilds) {
+            //Ignore current guild
+            if (otherGuild.equals(currentGuild)) {
+                continue;
+            }
+
+            //Check if guild name is equal to one user requested
+            final String otherGuildName = otherGuild.getName();
+            if (!collator.equals(otherGuildName, requestedRoleName)) {
+                if (currentGuild.getRolesByName(otherGuildName, true).isEmpty()) {
+                    //Found guild that current guild does not have a role for
+                    missingRoleNames.add(otherGuildName);
+                } else {
+                    possibleRoleNames.add(otherGuildName);
+                }
                 continue;
             }
 
             //Make sure they are a member on the other server
-            final Member otherMember = g.getMember(sender.getUser());
+            final Member otherMember = otherGuild.getMember(sender.getUser());
             if (otherMember == null) {
-                channel.sendMessage("Did you leave the server while I wasn't looking? Could not find you on that server").queue();
+                channel.sendMessage(TranslationKey.ROLE_OTHER_SERVER_MEMBER_NOT_FOUND.getTranslation(locale)).queue();
                 return;
             }
             if (otherMember.getRoles().isEmpty()) {
-                channel.sendMessage("You do not have any roles on that server, as such no role was given").queue();
+                channel.sendMessage(TranslationKey.ROLE_OTHER_SEVER_NO_ROLES.getTranslation(locale)).queue();
                 return;
             }
 
-            //Find the role for given guild
-            final List<Role> roles = guild.getRolesByName(roleName, true);
+            //Find the matching role for given guild
+            final List<Role> roles = currentGuild.getRolesByName(requestedRoleName, true);
             if (roles.isEmpty()) {
-                channel.sendMessage("It appears we do not have a role for that server yet, please contact admin to fix").queue();
+                channel.sendMessage(TranslationKey.ROLE_NO_ROLE_FOR_SERVER.getTranslation(locale)).queue();
                 return;
             }
 
             //Assign found role to the sender, this could assign multiple roles if there is multiple roles with same name
-            guild.modifyMemberRoles(sender, roles, null).queue((t) -> {
+            currentGuild.modifyMemberRoles(sender, roles, null).queue((Void t) -> {
                 //Success
-                channel.sendMessage("Role assigned succesfully").queue();
-            }, (t) -> {
+                channel.sendMessage(TranslationKey.ROLE_ASSING_SUCCESS.getTranslation(locale)).queue();
+            }, (Throwable t) -> {
                 //Failure
-                LOGGER.warn(t);
-                channel.sendMessage("Role assignment failed, either I can't assign roles on this server or other error occured").queue();
+                LOGGER.warn("Assigning role failed: {}", t.getMessage());
+                channel.sendMessage(TranslationKey.ROLE_ASSIGN_FAILED.getTranslation(locale)).queue();
             });
             return;
         }
 
-        //Did not find the guild, show list of found guilds
-        channel.sendMessage("Could not find a guild named: " + roleName + possibleRoleNames).queue();
+        //Did not find guild with the requested name, show list of found guilds
+        final MessageBuilder mb = new MessageBuilder();
+        final String template = TranslationKey.ROLE_DID_NOT_FIND_GUILD.getTranslation(locale);
+        mb.appendFormat(template, requestedRoleName);
+        if (possibleRoleNames.isEmpty()) {
+            mb.append(TranslationKey.ROLE_NO_AVAILABLE_ROLES.getTranslation(locale));
+        } else {
+            mb.appendFormat(TranslationKey.ROLE_VALID_ROLE_NAMES.getTranslation(locale), String.join(",", possibleRoleNames));
+        }
+        if (!missingRoleNames.isEmpty()) {
+            mb.appendFormat(TranslationKey.ROLE_GUILD_MISSING_ROLES.getTranslation(locale), String.join(",", missingRoleNames));
+        }
+        channel.sendMessage(mb.build()).queue();
     }
 
     /**
@@ -162,63 +205,65 @@ class RoleCommand extends UserCommand {
      * @param sender Command user
      * @param guild Current guild
      */
-    private void autoAssignRole(MessageChannel channel, Member member, Guild guild) {
+    private void autoAssignRole(TextChannel channel, Member member, Locale locale) {
+        final Guild currentGuild = channel.getGuild();
         final List<Guild> mutualGuilds = member.getUser().getMutualGuilds();
-        if (mutualGuilds.size() < 2) {
-            //Only this guild
-            channel.sendMessage("You do not appear to be on any guilds other than this one that I can see,"
-                    + " ask guild leaders if you belive this to be error.").queue();
-            return;
-        }
-        if (mutualGuilds.size() == 2) {
-            //This and another guild, try to get role for them based on other guild
-            final List<Guild> mutableGuilds = new ArrayList<>(mutualGuilds);
-            mutableGuilds.remove(guild);
-
-            if (mutableGuilds.size() != 1) {
-                channel.sendMessage("").queue();
-                return;
+        //Construct the list of valid guilds
+        final List<Guild> validGuilds = mutualGuilds.stream().filter((Guild otherGuild) -> {
+            //Ignore current guild
+            if (otherGuild.equals(currentGuild)) {
+                return false;
             }
-
-            final Guild otherGuild = mutableGuilds.get(0);
+            //Get the person on the other server
             final Member otherGuildmember = otherGuild.getMember(member.getUser());
             if (otherGuildmember == null) {
-                //Has left other server somehow
-                channel.sendMessage("Could not find a role to assign for you, are you on any other guilds I can see?").queue();
-                return;
+                return false;
             }
+            //Check if the person has any roles on the server.
             final List<Role> otherGuildRoles = otherGuildmember.getRoles();
-            if (otherGuildRoles.isEmpty()) {
+            return !otherGuildRoles.isEmpty();
+        }).collect(Collectors.toList());
+
+        //Check if we found any valid guilds
+        if (validGuilds.isEmpty()) {
+            //Get the other guilds user is also on
+            final List<Guild> mutableGuilds = new ArrayList<>(mutualGuilds);
+            mutableGuilds.removeIf(currentGuild::equals);
+            if (mutableGuilds.isEmpty()) {
+                //Only this guild
+                channel.sendMessage(TranslationKey.ROLE_NO_MUTUAL_GUILDS.getTranslation(locale)).queue();
+            } else {
                 //Not a member on other server
-                channel.sendMessage("Could not find any guild where you are member, "
-                        + "found one where you are but do not have any roles, as such no role was assigned").queue();
-                return;
+                channel.sendMessage(TranslationKey.ROLE_NO_ROLES_ON_MUTUAL_SERVER.getTranslation(locale)).queue();
             }
+            return;
+        }
+
+        //Found exactly one valid guild, assign role
+        if (validGuilds.size() == 1) {
+            final Guild otherGuild = validGuilds.get(0);
 
             final String roleName = otherGuild.getName();
-            final List<Role> roles = guild.getRolesByName(roleName, true);
+            final List<Role> roles = currentGuild.getRolesByName(roleName, true);
             if (roles.isEmpty()) {
-                channel.sendMessage("Can not find role for the other server, "
-                        + "if you belive this to be error contact guild lead.").queue();
+                channel.sendMessage(TranslationKey.ROLE_NO_ROLE_FOUND.getTranslation(locale)).queue();
                 return;
             }
 
-            guild.modifyMemberRoles(member, roles, null).queue((t) -> {
+            currentGuild.modifyMemberRoles(member, roles, null).queue((t) -> {
                 //Success
-                channel.sendMessage(
-                        "Succesfully assigned role: " + roles.get(0).getName()
-                        + "if you believe this is wrong role for you please contact guild lead.").queue();
+                final String template = TranslationKey.ROLE_AUTOMATIC_ASSIGN_SUCCESS.getTranslation(locale);
+                channel.sendMessageFormat(template, roles.get(0).getName()).queue();
             }, (t) -> {
                 //Failure
                 LOGGER.warn(t);
-                channel.sendMessage("Role assignment failed, either I can't assign roles on this server or other error occured").queue();
+                channel.sendMessage(TranslationKey.ROLE_ASSIGN_FAILED.getTranslation(locale)).queue();
             });
             return;
         }
 
         //More guilds, ask them to use role command
-        channel.sendMessage("You apper to be on multiple guilds and as such I can't find a role for you, "
-                + "please provide the the guild name you want role for in the role command.").queue();
+        channel.sendMessage(TranslationKey.ROLE_AUTOMATIC_MULTIPLE_GUILDS.getTranslation(locale)).queue();
 
     }
 

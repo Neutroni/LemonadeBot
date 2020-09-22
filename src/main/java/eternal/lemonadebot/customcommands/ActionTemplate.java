@@ -25,6 +25,8 @@ package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.translation.TranslationKey;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,7 +37,7 @@ import java.util.regex.Pattern;
  */
 public class ActionTemplate {
 
-    private final String helpText;
+    private final TranslationKey helpText;
     private final Pattern pattern;
     private final ActionTemplateFunction function;
 
@@ -46,7 +48,7 @@ public class ActionTemplate {
      * @param help help text for this action
      * @param func function this action executes
      */
-    ActionTemplate(String pattern, String help, ActionTemplateFunction func) {
+    ActionTemplate(String pattern, TranslationKey help, ActionTemplateFunction func) {
         this.pattern = Pattern.compile(pattern);
         this.helpText = help;
         this.function = func;
@@ -55,10 +57,11 @@ public class ActionTemplate {
     /**
      * Gets the help text for this action
      *
+     * @param locale Locale to return the help text in
      * @return help string
      */
-    public String getHelp() {
-        return this.helpText;
+    public String getHelp(Locale locale) {
+        return this.helpText.getTranslation(locale);
     }
 
     /**

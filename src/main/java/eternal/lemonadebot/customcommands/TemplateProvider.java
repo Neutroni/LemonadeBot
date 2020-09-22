@@ -27,6 +27,7 @@ import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.events.Event;
+import eternal.lemonadebot.translation.TranslationKey;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeParseException;
@@ -36,6 +37,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Random;
 import java.util.regex.Matcher;
@@ -55,19 +57,19 @@ public class TemplateProvider {
 
     private static final Random RNG = new Random();
     private static final List<ActionTemplate> actions = List.of(
-            new ActionTemplate("choice (.*(\\|.*)+)", "{choice a|b} - Selects value separated by | randomly",
+            new ActionTemplate("choice (.*(\\|.*)+)", TranslationKey.HELP_TEMPLATE_CHOICE,
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
                         final String[] parts = input.group(1).split("\\|");
                         final String response = parts[RNG.nextInt(parts.length)];
                         return response;
                     }),
-            new ActionTemplate("rng (\\d+),(\\d+)", "{rng x,y} - Generate random number between the two inputs.",
+            new ActionTemplate("rng (\\d+),(\\d+)", TranslationKey.HELP_TEMPLATE_RNG,
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
                         final int start = Integer.parseInt(input.group(1));
                         final int end = Integer.parseInt(input.group(2));
                         return "" + (RNG.nextInt(end) + start);
                     }),
-            new ActionTemplate("message", "{message} Use the input as part of the reply",
+            new ActionTemplate("message", TranslationKey.HELP_TEMPLATE_MESSAGE,
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
                         final String[] messageText = message.getArguments(0);
                         if (messageText.length == 0) {
@@ -75,7 +77,7 @@ public class TemplateProvider {
                         }
                         return messageText[0];
                     }),
-            new ActionTemplate("messageText", "{messageText} - Use the input as part of the reply but remove mentions",
+            new ActionTemplate("messageText", TranslationKey.HELP_TEMPLATE_MESSAGE_TEXT,
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
                         final String[] messageText = message.getArguments(0);
                         if (messageText.length == 0) {
@@ -95,7 +97,7 @@ public class TemplateProvider {
                         }
                         return response.trim();
                     }),
-            new ActionTemplate("mentions", "{mentions} - Lists the mentioned users",
+            new ActionTemplate("mentions", TranslationKey.HELP_TEMPLATE_MENTIONS,
                     (CommandMatcher matcher, GuildDataStore guildData, Matcher input) -> {
 
                         final List<Member> mentionedMembers = matcher.getMentionedMembers();
@@ -103,14 +105,13 @@ public class TemplateProvider {
                             return member.getEffectiveName();
                         }).collect(Collectors.joining(","));
                     }),
-            new ActionTemplate("sender", "{sender} - The name of the command sender",
+            new ActionTemplate("sender", TranslationKey.HELP_TEMPLATE_SENDER,
                     (CommandMatcher matcher, GuildDataStore guildData, Matcher input) -> {
                         return matcher.getMember().getEffectiveName();
                     }),
-            new ActionTemplate("randomEventMember (\\S+)", "{randomEventMember <eventname>} - Pick random member from event",
+            new ActionTemplate("randomEventMember (\\S+)", TranslationKey.HELP_TEMPLATE_RANDOM_EVENT_MEMBER,
                     (CommandMatcher matcher, GuildDataStore guildData, Matcher input) -> {
                         final Guild guild = matcher.getGuild();
-
                         final String eventName = input.group(1);
                         final EventManager eventManager = guildData.getEventManager();
                         final Optional<Event> optEvent = eventManager.getEvent(eventName);
@@ -126,14 +127,14 @@ public class TemplateProvider {
                         final List<Long> memberIDsMutable = new ArrayList<>(eventMemberIDs);
                         Collections.shuffle(memberIDsMutable);
                         for (final Long l : memberIDsMutable) {
-                            final Member m = guild.retrieveMemberById(l).complete();
+                            final Member m = guild.getMemberById(l);
                             if (m != null) {
                                 return m.getEffectiveName();
                             }
                         }
                         return "Could not find members for that event";
                     }),
-            new ActionTemplate("\\{daysSince (\\d+-\\d+\\d+)\\}", "{daysSince <date>} - Days since date specified according to ISO-8601",
+            new ActionTemplate("\\{daysSince (\\d+-\\d+\\d+)\\}", TranslationKey.HELP_TEMPLATE_DAYS_SINCE,
                     (commandMatcher, guildData, templateMatcher) -> {
                         final String dateString = templateMatcher.group(1);
                         try {
@@ -207,12 +208,13 @@ public class TemplateProvider {
     /**
      * Gets the help text for simpleactions
      *
+     * @param locale Locale to get the help text in
      * @return help text
      */
-    public static String getHelp() {
+    public static String getHelp(Locale locale) {
         final StringBuilder sb = new StringBuilder();
         for (final ActionTemplate action : actions) {
-            sb.append(action.getHelp()).append('\n');
+            sb.append(action.getHelp(locale)).append('\n');
         }
         return sb.toString();
     }

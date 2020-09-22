@@ -25,17 +25,16 @@ package eternal.lemonadebot.database;
 
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.permissions.ActionPermission;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,14 +49,14 @@ public class PermissionManager {
 
     private final Connection conn;
     private final long guildID;
-    private final Map<String, CommandPermission> permissions = Collections.synchronizedMap(new HashMap<>());
+    private final Map<String, CommandPermission> permissions = new ConcurrentHashMap<>();
     private final CommandPermission adminPermission;
 
-    public PermissionManager(Connection conn, long guildID) {
+    public PermissionManager(Connection conn, long guildID, ConfigManager config) {
         this.conn = conn;
         this.guildID = guildID;
         this.adminPermission = new CommandPermission(MemberRank.ADMIN, guildID);
-        loadPermissions();
+        loadPermissions(config.getLocale());
     }
 
     /**
@@ -95,6 +94,14 @@ public class PermissionManager {
         return Optional.ofNullable(this.permissions.get(action));
     }
 
+    /**
+     * Set the permission required for action
+     *
+     * @param action Action to set required permission for
+     * @param perm Permission required for the action
+     * @return true if update succeeded
+     * @throws SQLException if database connetion failed
+     */
     public boolean setPermission(String action, CommandPermission perm) throws SQLException {
         this.permissions.put(action, perm);
         final String query = "INSERT OR REPLACE INTO Permissions(guild,action,requiredRank,requiredRole) VALUES(?,?,?,?)";
@@ -107,13 +114,25 @@ public class PermissionManager {
         }
     }
 
-    private void loadPermissions() {
+    /**
+     * Update permissions according to locale
+     *
+     * @param locale Translation to use
+     */
+    public void updatePermissions(Locale locale) {
+        this.permissions.clear();
+        loadPermissions(locale);
+    }
+
+    /**
+     * Load permissions according to locale
+     *
+     * @param locale ResourceBundle to get translated commands from
+     */
+    private void loadPermissions(Locale locale) {
         //Load default permissions
         for (final ChatCommand c : CommandProvider.COMMANDS) {
-            for (final ActionPermission p : c.getDefaultRanks()) {
-                final CommandPermission perm = new CommandPermission(p.getRank(), guildID);
-                this.permissions.put(c.getCommand(), perm);
-            }
+            this.permissions.putAll(c.getDefaultRanks(locale, this.guildID));
         }
 
         //Load permissions from database

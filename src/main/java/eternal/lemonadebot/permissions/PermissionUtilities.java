@@ -48,7 +48,7 @@ public class PermissionUtilities {
         }
         final MemberRank requesterRank = MemberRank.getRank(member);
         //Requester not admin or higher
-        if(requesterRank.ordinal() < MemberRank.ADMIN.ordinal()){
+        if (requesterRank.ordinal() < MemberRank.ADMIN.ordinal()) {
             return false;
         }
         //No owner

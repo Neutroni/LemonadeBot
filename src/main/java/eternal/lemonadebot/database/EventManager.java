@@ -28,12 +28,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,7 +46,7 @@ public class EventManager {
 
     private final Connection conn;
     private final long guildID;
-    private final Set<Event> events = Collections.synchronizedSet(new HashSet<>());
+    private final Set<Event> events = ConcurrentHashMap.newKeySet();
 
     /**
      * Constructor
@@ -74,7 +72,7 @@ public class EventManager {
 
         //Add to database
         final String query = "INSERT OR IGNORE INTO Events(guild,name,description,owner) VALUES(?,?,?,?);";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, event.getName());
             ps.setString(3, event.getDescription());
@@ -95,7 +93,7 @@ public class EventManager {
 
         //Remove from database
         final String query = "DELETE FROM Events Where guild = ? AND name = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, event.getName());
             return ps.executeUpdate() > 0;
@@ -132,7 +130,7 @@ public class EventManager {
 
         //Add to database
         final String query = "INSERT OR IGNORE INTO EventMembers(guild,name,member) VALUES(?,?,?);";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, event.getName());
             ps.setString(3, member.getId());
@@ -153,7 +151,7 @@ public class EventManager {
 
         //Remove from database
         final String query = "DELETE FROM EventMembers WHERE guild = ? AND name = ? AND member = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, event.getName());
             ps.setLong(3, memberID);
@@ -173,7 +171,7 @@ public class EventManager {
         //Remove from database
         final String query = "DELETE FROM EventMembers WHERE guild = ? AND name = ?;";
         event.clear();
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, event.getName());
             ps.executeUpdate();
@@ -185,8 +183,8 @@ public class EventManager {
      *
      * @return list of events
      */
-    public List<Event> getEvents() {
-        return new ArrayList<>(this.events);
+    public Set<Event> getEvents() {
+        return Collections.unmodifiableSet(this.events);
     }
 
     /**
@@ -197,9 +195,9 @@ public class EventManager {
      */
     private void loadEvents() {
         final String query = "SELECT name,description,owner FROM Events WHERE guild = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final Event ev = new Event(rs.getString("name"), rs.getString("description"), rs.getLong("owner"));
                     loadMembers(ev);
@@ -215,10 +213,10 @@ public class EventManager {
 
     private void loadMembers(Event event) throws SQLException {
         final String query = "SELECT member FROM EventMembers WHERE guild = ? AND name = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, event.getName());
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     event.join(rs.getLong("member"));
                 }

@@ -35,6 +35,7 @@ import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -70,11 +71,11 @@ public class LemonadeBot {
         try (final InputStream inputStream = new FileInputStream(configLocation)) {
             properties.load(inputStream);
         } catch (FileNotFoundException ex) {
-            LOGGER.fatal("Could not find configuration file" + ex.getMessage());
+            LOGGER.fatal("Could not find configuration file, {}", ex.getMessage());
             LOGGER.trace("Stack trace: ", ex);
             System.exit(Returnvalue.MISSING_CONFIG.ordinal());
         } catch (IOException ex) {
-            LOGGER.fatal("Loading configuration file failed" + ex.getMessage());
+            LOGGER.fatal("Loading configuration file failed, {}", ex.getMessage());
             LOGGER.trace("Stack trace: ", ex);
             System.exit(Returnvalue.CONFIG_READ_ERROR.ordinal());
         }
@@ -99,22 +100,13 @@ public class LemonadeBot {
                 CacheFlag.CLIENT_STATUS
         );
         jdabuilder.disableCache(cacheFlagsToDisable);
+        jdabuilder.setMemberCachePolicy(MemberCachePolicy.ALL);
         try {
+            //Start loading JDA
             final JDA jda = jdabuilder.build();
 
             //Connect to the database
-            final String databaseLocation = properties.getProperty("database-location", "database.db");
-            final int maxMessages;
-            final String numberString = properties.getProperty("max-messages");
-            if (numberString == null) {
-                maxMessages = 4096;
-                LOGGER.info("Max messages to store not set, defaulting to 4096");
-            } else {
-                maxMessages = Integer.parseInt(numberString);
-                LOGGER.info("Set max messages to: " + maxMessages);
-            }
-
-            final DatabaseManager DB = new DatabaseManager(databaseLocation, jda, maxMessages);
+            final DatabaseManager DB = new DatabaseManager(properties, jda);
             LOGGER.debug("Connected to database succefully");
 
             //Start listening for messages
@@ -123,17 +115,16 @@ public class LemonadeBot {
             jda.addEventListener(new JoinListener(DB));
 
             LOGGER.debug("Startup succesfull");
-
         } catch (SQLException ex) {
-            LOGGER.fatal("Failed to connect to database during startup: " + ex.getMessage());
+            LOGGER.fatal("Failed to connect to database during startup: {}", ex.getMessage());
             LOGGER.trace("Stack trace:", ex);
             System.exit(Returnvalue.DATABASE_FAILED.ordinal());
         } catch (LoginException ex) {
-            LOGGER.fatal("Login failed: " + ex.getMessage());
+            LOGGER.fatal("Login failed: {}", ex.getMessage());
             LOGGER.trace("Stack trace:", ex);
             System.exit(Returnvalue.LOGIN_FAILED.ordinal());
         } catch (NumberFormatException ex) {
-            LOGGER.fatal("Loading max messages value from configuration file failed: " + ex.getMessage());
+            LOGGER.fatal("Loading max messages value from configuration file failed: {}", ex.getMessage());
             LOGGER.trace("Stack trace: ", ex);
             System.exit(Returnvalue.CONFIG_READ_ERROR.ordinal());
         }

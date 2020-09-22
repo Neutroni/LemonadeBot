@@ -31,11 +31,14 @@ import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.PermissionManager;
 import eternal.lemonadebot.permissions.MemberRank;
+import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -95,6 +98,7 @@ public class MessageListener extends ListenerAdapter {
         final Message message = event.getMessage();
         final GuildDataStore guildData = this.db.getGuildData(eventGuild);
         final ConfigManager configManager = guildData.getConfigManager();
+        final Locale locale = configManager.getLocale();
         final List<Member> mentionedMembers = message.getMentionedMembers();
         if (mentionedMembers.size() == 1 && mentionedMembers.contains(selfMember)) {
             //Check that the message is just the mention and possibly whitespace
@@ -107,8 +111,11 @@ public class MessageListener extends ListenerAdapter {
             }
             mentionMatcher.appendTail(sb);
             if (sb.toString().isBlank()) {
-                textChannel.sendMessage("LemonadeBot version: " + LemonadeBot.BOT_VERSION
-                        + "\nCurrent command prefix: " + configManager.getCommandPrefix()).queue();
+                final MessageBuilder responseBuilder = new MessageBuilder();
+                responseBuilder.appendFormat(TranslationKey.BOT_VERSION.getTranslation(locale), LemonadeBot.BOT_VERSION);
+                responseBuilder.append('\n');
+                responseBuilder.appendFormat(TranslationKey.PREFIX_CURRENT_VALUE.getTranslation(locale), configManager.getCommandPrefix());
+                textChannel.sendMessage(responseBuilder.build()).queue();
                 return;
             }
         }
@@ -123,7 +130,7 @@ public class MessageListener extends ListenerAdapter {
 
         //Log the message if debug is enabled
         LOGGER.debug(() -> {
-            return "Found command: " + command.getCommand() + " in " + cmdMatch.getMessageText();
+            return "Found command: " + cmdMatch.getAction() + " in:\n" + cmdMatch.getMessageText();
         });
 
         //Check if user has permission
@@ -140,8 +147,17 @@ public class MessageListener extends ListenerAdapter {
             final CooldownManager cdm = guildData.getCooldownManager();
             final Optional<String> optCooldown = cdm.updateActivationTime(cmdMatch.getAction());
             if (optCooldown.isPresent()) {
-                final String currentCooldown = optCooldown.get();
-                textChannel.sendMessage("Command on cooldown, time remaining: " + currentCooldown + '.').queue();
+                final String days = TranslationKey.TIME_DAYS.getTranslation(locale);
+                final String hours = TranslationKey.TIME_HOURS.getTranslation(locale);
+                final String minutes = TranslationKey.TIME_MINUTES.getTranslation(locale);
+                final String seconds = TranslationKey.TIME_SECONDS.getTranslation(locale);
+                final String day = TranslationKey.TIME_DAY.getTranslation(locale);
+                final String hour = TranslationKey.TIME_HOUR.getTranslation(locale);
+                final String minute = TranslationKey.TIME_MINUTE.getTranslation(locale);
+                final String second = TranslationKey.TIME_SECOND.getTranslation(locale);
+                final String currentCooldown = String.format(optCooldown.get(), days, hours, minutes, seconds, day, hour, minute, second);
+                final String template = TranslationKey.ERROR_COMMAND_COOLDOWN_TIME.getTranslation(locale);
+                textChannel.sendMessage(template + currentCooldown).queue();
                 return;
             }
         }
@@ -161,7 +177,8 @@ public class MessageListener extends ListenerAdapter {
         try {
             db.close();
         } catch (SQLException ex) {
-            LOGGER.error("Shutting down database connection failed", ex);
+            LOGGER.error("Shutting down database connection failed: {}", ex);
+            LOGGER.trace("Stack trace", ex);
         }
         LOGGER.info("Shutting down");
     }

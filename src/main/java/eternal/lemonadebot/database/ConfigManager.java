@@ -27,9 +27,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.Collator;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.regex.Pattern;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -43,7 +43,8 @@ import org.apache.logging.log4j.Logger;
 public class ConfigManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
-    public static final Set<Locale> SUPPORTED_LOCALES = Set.of(Locale.ENGLISH, new Locale("fi"));
+    private static final Locale DEFAULT_LOCALE = Locale.ENGLISH;
+    public static final Set<Locale> SUPPORTED_LOCALES = Set.of(DEFAULT_LOCALE, new Locale("fi"));
 
     //Database connection
     private final Connection conn;
@@ -52,10 +53,10 @@ public class ConfigManager {
     private final long guildID;
     private volatile String commandPrefix = "lemonbot#";
     private volatile Pattern commandPattern = getCommandPattern(commandPrefix);
-    private volatile Optional<Long> logChannelID = Optional.empty();
     private volatile Optional<String> greetingTemplate = Optional.empty();
-    private volatile Locale locale = Locale.ENGLISH;
-    private volatile ResourceBundle resources = ResourceBundle.getBundle("Translation", locale);
+    private volatile Optional<Long> logChannelID = Optional.empty();
+    private volatile Locale locale = DEFAULT_LOCALE;
+    private volatile Collator collator;
 
     /**
      * Constructor
@@ -88,21 +89,12 @@ public class ConfigManager {
     }
 
     /**
-     * Get the current locale
+     * Get the template that should be used for greeting new members of guild
      *
-     * @return locale in use
+     * @return String
      */
-    public Locale getLocale() {
-        return this.locale;
-    }
-
-    /**
-     * Get the current resourcebundle used for localisation in this guild
-     *
-     * @return Localisation ResourceBundle
-     */
-    public ResourceBundle getResourceBundle() {
-        return this.resources;
+    public Optional<String> getGreetingTemplate() {
+        return this.greetingTemplate;
     }
 
     /**
@@ -115,12 +107,29 @@ public class ConfigManager {
     }
 
     /**
-     * Get the template that should be used for greeting new members of guild
+     * Get the locale set for guild
      *
-     * @return String
+     * @return Locale
      */
-    public Optional<String> getGreetingTemplate() {
-        return this.greetingTemplate;
+    public Locale getLocale() {
+        return this.locale;
+    }
+
+    /**
+     * Get the case insesitive Collator for text comparisons
+     *
+     * @return Collator
+     */
+    public Collator getCollator() {
+        return this.collator;
+    }
+
+    /**
+     * Update the case-insensitive collator to current locale
+     */
+    private void updateCollator() {
+        this.collator = Collator.getInstance(this.locale);
+        this.collator.setStrength(Collator.SECONDARY);
     }
 
     /**
@@ -143,28 +152,6 @@ public class ConfigManager {
     }
 
     /**
-     * Set locale used in guild
-     *
-     * @param newLocale locale to set
-     * @return false if update failed due to unsupported locale
-     * @throws SQLException if database error occured
-     */
-    public boolean setLocale(final Locale newLocale) throws SQLException {
-        if (!SUPPORTED_LOCALES.contains(newLocale)) {
-            return false;
-        }
-        this.locale = newLocale;
-        this.resources = ResourceBundle.getBundle("Translation", newLocale);
-
-        final String query = "UPDATE Guilds SET locale = ? WHERE id = ?;";
-        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
-            ps.setString(1, newLocale.toLanguageTag());
-            ps.setLong(2, this.guildID);
-            return ps.executeUpdate() > 0;
-        }
-    }
-
-    /**
      * Set the channel used to send message logs to
      *
      * @param channel Channel to send messages to, null to disable log
@@ -176,11 +163,33 @@ public class ConfigManager {
         try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
             if (channel == null) {
                 this.logChannelID = Optional.empty();
-                ps.setString(1, query);
+                ps.setLong(1, 0);
             } else {
                 this.logChannelID = Optional.of(channel.getIdLong());
-                ps.setString(1, channel.getId());
+                ps.setLong(1, channel.getIdLong());
             }
+            ps.setLong(2, this.guildID);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Set locale used in guild
+     *
+     * @param newLocale locale to set
+     * @return false if update failed due to unsupported locale
+     * @throws SQLException if database error occured
+     */
+    public boolean setLocale(final Locale newLocale) throws SQLException {
+        if (!SUPPORTED_LOCALES.contains(newLocale)) {
+            return false;
+        }
+        this.locale = newLocale;
+        updateCollator();
+
+        final String query = "UPDATE Guilds SET locale = ? WHERE id = ?;";
+        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+            ps.setString(1, newLocale.toLanguageTag());
             ps.setLong(2, this.guildID);
             return ps.executeUpdate() > 0;
         }
@@ -229,16 +238,23 @@ public class ConfigManager {
                         this.commandPrefix = rs.getString("commandPrefix");
                         this.commandPattern = getCommandPattern(commandPrefix);
                     } catch (SQLException ex) {
-                        LOGGER.error("SQL error on fetching the command prefix");
-                        LOGGER.warn(ex);
+                        LOGGER.error("SQL error on fetching the command prefix: {}", ex.getMessage());
+                        LOGGER.warn("Stack trace:", ex);
                     }
-
                     //Load greeting template
                     try {
                         this.greetingTemplate = Optional.ofNullable(rs.getString("greetingTemplate"));
                     } catch (SQLException ex) {
-                        LOGGER.error("SQL error on fetching greeting template");
-                        LOGGER.warn(ex);
+                        LOGGER.error("SQL error on fetching greeting template: {}", ex.getMessage());
+                        LOGGER.warn("Stack trace:", ex);
+                    }
+                    //Load greeting template
+                    try {
+                        this.locale = Locale.forLanguageTag(rs.getString("language"));
+                        updateCollator();
+                    } catch (SQLException ex) {
+                        LOGGER.error("SQL error on fetching locale: {}", ex.getMessage());
+                        LOGGER.warn("Stack trace:", ex);
                     }
                     return;
                 }
@@ -248,9 +264,8 @@ public class ConfigManager {
                 }
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to load guild config from database");
-            LOGGER.warn(ex.getMessage());
-            LOGGER.trace(ex);
+            LOGGER.error("Failed to load guild config from database: {}", ex.getMessage());
+            LOGGER.trace("Stack trace: ", ex);
         }
     }
 
@@ -261,13 +276,15 @@ public class ConfigManager {
      * @throws SQLException if database connection failed
      */
     private boolean addGuild() throws SQLException {
-        LOGGER.debug("Adding guild to database: " + this.guildID);
+        LOGGER.debug("Adding guild to database: {}", this.guildID);
         final String query = "INSERT OR IGNORE INTO Guilds("
-                + "id,commandPrefix,greetingTemplate) VALUES (?,?,?);";
+                + "id,commandPrefix,greetingTemplate,language,logChannel) VALUES (?,?,?,?,?);";
         try (final PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, "lemonbot#");
             ps.setString(3, this.greetingTemplate.orElse(null));
+            ps.setString(4, DEFAULT_LOCALE.toLanguageTag());
+            ps.setString(5, null);
             return ps.executeUpdate() > 0;
         }
     }

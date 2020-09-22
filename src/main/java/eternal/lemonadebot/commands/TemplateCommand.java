@@ -25,16 +25,23 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.commandtypes.MemberCommand;
 import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.customcommands.TemplateProvider;
+import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.TemplateManager;
+import eternal.lemonadebot.permissions.CommandPermission;
+import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.permissions.PermissionUtilities;
+import eternal.lemonadebot.translation.ActionKey;
+import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
-import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -42,90 +49,92 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Command to edit custom commands with
+ * Command used to edit custom commands
  *
  * @author Neutroni
  */
-public class TemplateCommand extends MemberCommand {
+public class TemplateCommand implements ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand() {
-        return "template";
+    public String getCommand(Locale locale) {
+        return TranslationKey.COMMAND_TEMPLATE.getTranslation(locale);
     }
 
     @Override
-    public String getDescription() {
-        return "Manage custom commands";
+    public String getDescription(Locale locale) {
+        return TranslationKey.DESCRIPTION_TEMPLATE.getTranslation(locale);
     }
 
     @Override
-    public String getHelpText() {
-        return " Syntax: template <option> [name] [template]\n"
-                + "<option> can be one of the following:\n"
-                + " create - create new custom command\n"
-                + " delete - delete custom command\n"
-                + " keys - shows list of keys custom command can contain\n"
-                + " list - show list of custom commands\n"
-                + "[name] name for action\n"
-                + "[template] template for custom command, see below for syntax\n"
-                + "Syntax for custom commands:\n"
-                + " Text in the template will mostly be shown as is,\n"
-                + " but you can use {key} to modify parts of the message.\n"
-                + " See \"command keys\" to see all keys\n";
+    public String getHelpText(Locale locale) {
+        return TranslationKey.SYNTAX_TEMPLATE.getTranslation(locale);
+    }
+
+    @Override
+    public Map<String, CommandPermission> getDefaultRanks(Locale locale, long guildID) {
+        return Map.of(getCommand(locale),
+                new CommandPermission(MemberRank.MEMBER, guildID));
     }
 
     @Override
     public void respond(CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
+        final ConfigManager guildConf = guildData.getConfigManager();
+        final Locale locale = guildConf.getLocale();
         final String[] arguments = matcher.getArguments(2);
         if (arguments.length == 0) {
-            textChannel.sendMessage("Provide operation to perform, check help for possible operations").queue();
+            textChannel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
             return;
         }
-        switch (arguments[0]) {
-            case "create": {
+
+        final String actionName = arguments[0];
+        final ActionKey action = ActionKey.getAction(actionName, guildConf);
+        switch (action) {
+            case CREATE: {
                 createCustomCommand(arguments, matcher, guildData);
                 break;
             }
-            case "delete": {
+            case DELETE: {
                 deleteCustomCommand(arguments, matcher, guildData);
                 break;
             }
-            case "list": {
+            case LIST: {
                 listCustomCommands(matcher, guildData);
                 break;
             }
-            case "keys": {
+            case KEYS: {
                 final EmbedBuilder eb = new EmbedBuilder();
-                eb.setTitle("Templates:");
-                eb.setDescription(TemplateProvider.getHelp());
+                eb.setTitle(TranslationKey.HEADER_TEMPLATES.getTranslation(locale));
+                eb.setDescription(TemplateProvider.getHelp(locale));
                 textChannel.sendMessage(eb.build()).queue();
                 break;
             }
             default:
-                textChannel.sendMessage("Unknown operation: " + arguments[0]).queue();
+                textChannel.sendMessage(TranslationKey.ERROR_UNKNOWN_OPERATION.getTranslation(locale) + actionName).queue();
                 break;
         }
     }
 
     private void createCustomCommand(String[] arguments, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
+        final Locale locale = guildData.getConfigManager().getLocale();
+
         if (arguments.length < 2) {
-            textChannel.sendMessage("Creating custom command requires a name for the command").queue();
+            textChannel.sendMessage(TranslationKey.TEMPLATE_CREATE_MISSING_NAME.getTranslation(locale)).queue();
             return;
         }
         if (arguments.length < 3) {
-            textChannel.sendMessage("Custom command must contain a template string for the response").queue();
+            textChannel.sendMessage(TranslationKey.TEMPLATE_CREATE_MISSING_TEMPLATE.getTranslation(locale)).queue();
             return;
         }
 
         //Check that there is no such built in command
         final String commandName = arguments[1];
-        final Optional<ChatCommand> optCommand = CommandProvider.getBuiltInCommand(commandName);
+        final Optional<ChatCommand> optCommand = CommandProvider.getBuiltInCommand(commandName, locale);
         if (optCommand.isPresent()) {
-            textChannel.sendMessage("Custom command name reserved by command.").queue();
+            textChannel.sendMessage(TranslationKey.TEMPLATE_NAME_RESERVED.getTranslation(locale)).queue();
             return;
         }
 
@@ -135,14 +144,13 @@ public class TemplateCommand extends MemberCommand {
         final CustomCommand newAction = new CustomCommand(commandName, commandTemplate, sender.getIdLong());
         try {
             if (commands.addCommand(newAction)) {
-                textChannel.sendMessage("Custom command added succesfully").queue();
+                textChannel.sendMessage(TranslationKey.TEMPLATE_CREATE_SUCCESS.getTranslation(locale)).queue();
                 return;
             }
-            textChannel.sendMessage("Custom command with that name alredy exists.").queue();
+            textChannel.sendMessage(TranslationKey.TEMPLATE_ALREADY_EXISTS.getTranslation(locale)).queue();
         } catch (SQLException ex) {
-            textChannel.sendMessage("Adding custom command to database failed, added to temporary memory that will be lost on reboot").queue();
-
-            LOGGER.error("Failure to add custom command: " + ex.getMessage());
+            textChannel.sendMessage(TranslationKey.TEMPLATE_SQL_ERROR_ON_CREATE.getTranslation(locale)).queue();
+            LOGGER.error("Failure to add custom command: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);
         }
 
@@ -150,63 +158,64 @@ public class TemplateCommand extends MemberCommand {
 
     private void deleteCustomCommand(String[] arguments, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
+        final Locale locale = guildData.getConfigManager().getLocale();
+
         if (arguments.length < 2) {
-            textChannel.sendMessage("Deleting custom command requires a name of the the command to remove").queue();
+            textChannel.sendMessage(TranslationKey.TEMPLATE_DELETE_MISSING_NAME.getTranslation(locale)).queue();
             return;
         }
         final String commandName = arguments[1];
         final TemplateManager commands = guildData.getCustomCommands();
         final Optional<CustomCommand> optCommand = commands.getCommand(commandName);
         if (optCommand.isEmpty()) {
-            textChannel.sendMessage("No such custom command as " + commandName).queue();
+            final String template = TranslationKey.TEMPLATE_DELETE_NOT_FOUND.getTranslation(locale);
+            textChannel.sendMessageFormat(template, commandName).queue();
             return;
         }
         final CustomCommand command = optCommand.get();
-        final Member commandOwner = textChannel.getGuild().getMemberById(command.getOwner());
 
         //Check if user has permission to remove the command
         final Member sender = matcher.getMember();
+        final Member commandOwner = textChannel.getGuild().getMemberById(command.getOwner());
         final boolean hasPermission = PermissionUtilities.hasPermission(sender, commandOwner);
         if (!hasPermission) {
-            textChannel.sendMessage("You do not have permission to delete that custom command, "
-                    + "only the custom command owner and admins can delete custom commands").queue();
+            textChannel.sendMessage(TranslationKey.TEMPLATE_DELETE_PERMISSION_DENIED.getTranslation(locale)).queue();
             return;
         }
 
         //Delete the command
         try {
-            if (commands.removeCommand(command)) {
-                textChannel.sendMessage("Custom command deleted succesfully").queue();
-                return;
-            }
-            textChannel.sendMessage("Custom command was alredy deleted, propably a database error").queue();
+            commands.removeCommand(command);
+            textChannel.sendMessage(TranslationKey.TEMPLATE_DELETE_SUCCESS.getTranslation(locale)).queue();
         } catch (SQLException ex) {
-            textChannel.sendMessage("Deleting custom command from database failed, deleted from temporary memory, command will be back after reboot").queue();
-
-            LOGGER.error("Failure to delete custom command");
-            LOGGER.warn(ex.getMessage());
+            textChannel.sendMessage(TranslationKey.TEMPLATE_SQL_ERROR_ON_DELETE.getTranslation(locale)).queue();
+            LOGGER.error("Failure to delete custom command: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);
         }
     }
 
     private void listCustomCommands(CommandMatcher matcher, GuildDataStore guildData) {
-        final List<CustomCommand> coms = guildData.getCustomCommands().getCommands();
+        final Set<CustomCommand> coms = guildData.getCustomCommands().getCommands();
+        final Locale locale = guildData.getConfigManager().getLocale();
         final Guild guild = matcher.getGuild();
         final TextChannel textChannel = matcher.getTextChannel();
-        final StringBuilder sb = new StringBuilder("Commands:\n");
-        for (CustomCommand c : coms) {
-            final Member creator = guild.retrieveMemberById(c.getOwner()).complete();
+        final MessageBuilder sb = new MessageBuilder(TranslationKey.HEADER_COMMANDS.getTranslation(locale));
+        sb.append('\n');
+        for (final CustomCommand c : coms) {
+            final Member creator = guild.getMemberById(c.getOwner());
             final String creatorName;
             if (creator == null) {
-                creatorName = "Unknown";
+                creatorName = TranslationKey.UNKNOWN_USER.getTranslation(locale);
             } else {
                 creatorName = creator.getEffectiveName();
             }
-            sb.append(c.getCommand()).append(" by ").append(creatorName).append('\n');
+            final String template = TranslationKey.TEMPLATE_COMMAND_LIST_ELEMENT.getTranslation(locale);
+            sb.appendFormat(template, c.getCommand(locale), creatorName);
+            sb.append('\n');
         }
         if (coms.isEmpty()) {
-            sb.append("No custom commands");
+            sb.append(TranslationKey.TEMPLATE_NO_COMMANDS);
         }
-        textChannel.sendMessage(sb.toString()).queue();
+        textChannel.sendMessage(sb.build()).queue();
     }
 }

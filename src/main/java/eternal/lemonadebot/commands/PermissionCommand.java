@@ -23,14 +23,18 @@
  */
 package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.commandtypes.AdminCommand;
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.commandtypes.AdminCommand;
+import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.PermissionManager;
-import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.permissions.CommandPermission;
+import eternal.lemonadebot.permissions.MemberRank;
+import eternal.lemonadebot.translation.ActionKey;
+import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Role;
@@ -39,6 +43,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
+ * Command used to set required permissions for commands
  *
  * @author Neutroni
  */
@@ -47,116 +52,127 @@ class PermissionCommand extends AdminCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand() {
-        return "permission";
+    public String getCommand(Locale locale) {
+        return TranslationKey.COMMAND_PERMISSION.getTranslation(locale);
     }
 
     @Override
-    public String getDescription() {
-        return "Manage permissions for commands";
+    public String getDescription(Locale locale) {
+        return TranslationKey.DESCRIPTION_PERMISSION.getTranslation(locale);
     }
 
     @Override
-    public String getHelpText() {
-        return "Syntax: permission <action> [rank] [role] <name>\n"
-                + "<action> can be one of the following:"
-                + " get to get current permission"
-                + " set to update permission"
-                + "<name> is the name of permission to update\n"
-                + "[rank] can be one of following\n"
-                + MemberRank.getLevelDescriptions()
-                + "[role] is a name of role needed for permission, use 'anyone' to disable role check";
+    public String getHelpText(Locale locale) {
+        final String template = TranslationKey.SYNTAX_PERMISSION.getTranslation(locale);
+        return String.format(template, MemberRank.getLevelDescriptions(locale));
     }
 
     @Override
     public void respond(CommandMatcher message, GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
+        final ConfigManager guildConf = guildData.getConfigManager();
+        final Locale locale = guildConf.getLocale();
         final String[] arguments = message.getArguments(1);
         if (arguments.length == 0) {
-            channel.sendMessage("Provide the name of the permission to modify, check help for possible permissions.").queue();
+            channel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
             return;
         }
 
-        final PermissionManager permissions = guildData.getPermissionManager();
         final String actionString = arguments[0];
-        switch (actionString) {
-            case "get": {
-                if (arguments.length < 2) {
-                    channel.sendMessage("Provide name of permission to get curret value for.").queue();
-                    return;
-                }
-                final String permissionName = arguments[1];
-                final Optional<CommandPermission> optPerm = permissions.getPermission(permissionName);
-                optPerm.ifPresentOrElse((CommandPermission perm) -> {
-                    final long roleID = perm.getRequiredRoleID();
-                    final Role r = channel.getGuild().getRoleById(roleID);
-                    if (r == null) {
-                        channel.sendMessage("Required rank: " + perm.getRequiredRank().name().toLowerCase()
-                                + "required role could not be found, defaulting to anyone").queue();
-                        return;
-                    }
-                    channel.sendMessage("Required rank: " + perm.getRequiredRank().name().toLowerCase()
-                            + " required role: " + r.getName()).queue();
-
-                }, () -> {
-                    channel.sendMessage("No permission with that name currently set.").queue();
-                });
+        final ActionKey key = ActionKey.getAction(actionString, guildConf);
+        switch (key) {
+            case GET: {
+                getPermission(arguments, channel, guildData);
                 break;
             }
-            case "set": {
-                final String[] args = message.getArguments(3);
-                if (args.length < 2) {
-                    channel.sendMessage("Provide the rank to set for permission.").queue();
-                    return;
-                }
-                if (args.length < 3) {
-                    channel.sendMessage("Provide role to set for permission").queue();
-                    return;
-                }
-                if (args.length < 4) {
-                    channel.sendMessage("Provide name of permission to update").queue();
-                    return;
-                }
-                final String rankName = args[1];
-                final MemberRank rank;
-                try {
-                    final String enumString = rankName.toUpperCase();
-                    rank = MemberRank.valueOf(enumString);
-                } catch (IllegalArgumentException e) {
-                    final MessageBuilder mb = new MessageBuilder();
-                    mb.append("Unknown rank: ").append(rankName).append("\n");
-                    mb.append("Valid values are:\n").append(MemberRank.getLevelDescriptions());
-                    channel.sendMessage(mb.build()).queue();
-                    return;
-                }
-                final String roleName = args[2];
-                final Role role;
-                if ("anyone".equals(roleName)) {
-                    role = channel.getGuild().getPublicRole();
-                } else {
-                    final List<Role> roles = channel.getGuild().getRolesByName(roleName, true);
-
-                    if (roles.isEmpty()) {
-                        channel.sendMessage("Could not find a role with the name: " + roleName).queue();
-                        return;
-                    }
-                    role = roles.get(0);
-                }
-                final String permissionName = args[3];
-                final CommandPermission perm = new CommandPermission(rank, role.getIdLong());
-                try {
-                    permissions.setPermission(permissionName, perm);
-                } catch (SQLException e) {
-                    channel.sendMessage("Database connection failed, new permission in use until reboot").queue();
-                    LOGGER.error("Failure to update permission in database");
-                    LOGGER.error(e.getMessage());
-                    LOGGER.trace("Stack trace:", e);
-                }
+            case SET: {
+                setPermission(message, channel, guildData);
                 break;
             }
             default: {
-                channel.sendMessage("Unknown action: " + actionString).queue();
+                channel.sendMessage(TranslationKey.ERROR_UNKNOWN_OPERATION.getTranslation(locale) + actionString).queue();
             }
+        }
+    }
+
+    private void getPermission(String[] arguments, TextChannel channel, GuildDataStore guildData) {
+        final PermissionManager permissions = guildData.getPermissionManager();
+        final Locale locale = guildData.getConfigManager().getLocale();
+
+        if (arguments.length < 2) {
+            channel.sendMessage(TranslationKey.PERMISSION_GET_MISSING_NAME.getTranslation(locale)).queue();
+            return;
+        }
+        final String permissionName = arguments[1];
+        final Optional<CommandPermission> optPerm = permissions.getPermission(permissionName);
+        optPerm.ifPresentOrElse((CommandPermission perm) -> {
+            final long roleID = perm.getRequiredRoleID();
+            final Role r = channel.getGuild().getRoleById(roleID);
+            if (r == null) {
+                final String template = TranslationKey.PERMISSION_RANK_MISSING_ROLE.getTranslation(locale);
+                final String rankName = perm.getRequiredRank().getNameKey().getTranslation(locale);
+                channel.sendMessageFormat(template, rankName).queue();
+                return;
+            }
+            final String template = TranslationKey.PERMISSION_REQUIRED_RANK_ROLE.getTranslation(locale);
+            final String rankName = perm.getRequiredRank().getNameKey().getTranslation(locale);
+            channel.sendMessageFormat(template, rankName, r.getName()).queue();
+        }, () -> {
+            channel.sendMessage(TranslationKey.PERMISSION_NOT_FOUND.getTranslation(locale)).queue();
+        });
+    }
+
+    private void setPermission(CommandMatcher message, TextChannel channel, GuildDataStore guildData) {
+        final PermissionManager permissions = guildData.getPermissionManager();
+        final ConfigManager guildConf = guildData.getConfigManager();
+        final Locale locale = guildConf.getLocale();
+
+        final String[] args = message.getArguments(3);
+        if (args.length < 2) {
+            channel.sendMessage(TranslationKey.PERMISSION_SET_MISSING_RANK.getTranslation(locale)).queue();
+            return;
+        }
+        if (args.length < 3) {
+            channel.sendMessage(TranslationKey.PERMISSION_SET_MISSING_ROLE.getTranslation(locale)).queue();
+            return;
+        }
+        if (args.length < 4) {
+            channel.sendMessage(TranslationKey.PERMISSION_SET_MISSING_ACTION.getTranslation(locale)).queue();
+            return;
+        }
+        final String rankName = args[1];
+        final MemberRank rank;
+        try {
+            rank = MemberRank.getByLocalizedName(rankName, guildConf);
+        } catch (IllegalArgumentException e) {
+            final MessageBuilder mb = new MessageBuilder();
+            final String template = TranslationKey.PERMISSION_UNKNOWN_RANK.getTranslation(locale);
+            mb.appendFormat(template, rankName, MemberRank.getLevelDescriptions(locale));
+            channel.sendMessage(mb.build()).queue();
+            return;
+        }
+        final String roleName = args[2];
+        final Role role;
+        final String localAnyRole = TranslationKey.PERMISSION_ROLE_ANYONE.getTranslation(locale);
+        if (localAnyRole.equals(roleName)) {
+            role = channel.getGuild().getPublicRole();
+        } else {
+            final List<Role> roles = channel.getGuild().getRolesByName(roleName, true);
+
+            if (roles.isEmpty()) {
+                channel.sendMessage(TranslationKey.PERMISSION_ROLE_NOT_FOUND_NAME.getTranslation(locale) + roleName).queue();
+                return;
+            }
+            role = roles.get(0);
+        }
+        final String permissionName = args[3];
+        final CommandPermission perm = new CommandPermission(rank, role.getIdLong());
+        try {
+            permissions.setPermission(permissionName, perm);
+        } catch (SQLException e) {
+            channel.sendMessage(TranslationKey.PERMISSION_SQL_ERROR_ON_SET.getTranslation(locale)).queue();
+            LOGGER.error("Failure to update permission in database: {}", e.getMessage());
+            LOGGER.trace("Stack trace:", e);
         }
     }
 }

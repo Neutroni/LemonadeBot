@@ -29,14 +29,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
+ * Class that manages cooldown for actions
  *
  * @author Neutroni
  */
@@ -46,12 +46,11 @@ public class CooldownManager {
 
     private final Connection conn;
     private final long guildID;
-    private final Map<String, ActionCooldown> cooldowns;
+    private final Map<String, ActionCooldown> cooldowns = new ConcurrentHashMap<>();
 
     CooldownManager(Connection connection, long guildID) {
         this.conn = connection;
         this.guildID = guildID;
-        this.cooldowns = Collections.synchronizedMap(new HashMap<>());
         loadCooldowns();
     }
 
@@ -60,17 +59,18 @@ public class CooldownManager {
      * and has set cooldown time
      *
      * @param action Action string to chechk cooldown for
-     * @return Optional of remaining cooldown if on cooldown, empty otherwise
+     * @return Optional containing template string for remaining cooldown if on
+     * cooldown, empty otherwise
      */
     public Optional<String> updateActivationTime(String action) {
-        final Optional<Map.Entry<String,ActionCooldown>> cd = getCooldownEntry(action);
+        final Optional<Map.Entry<String, ActionCooldown>> cd = getCooldownEntry(action);
 
         //Action does not have a cooldown
         if (cd.isEmpty()) {
             return Optional.empty();
         }
 
-        final Map.Entry<String,ActionCooldown> entry = cd.get();
+        final Map.Entry<String, ActionCooldown> entry = cd.get();
         final ActionCooldown cooldown = entry.getValue();
 
         final Instant now = Instant.now();
@@ -182,7 +182,6 @@ public class CooldownManager {
                 keyLength = newKeyLength;
             }
         }
-
         return Optional.ofNullable(matchingCooldown);
     }
 
@@ -223,8 +222,7 @@ public class CooldownManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Loading cooldowns from database failed");
-            LOGGER.warn(e.getMessage());
+            LOGGER.error("Loading cooldowns from database failed: {}", e.getMessage());
             LOGGER.trace(e);
         }
     }
@@ -258,16 +256,26 @@ public class CooldownManager {
             boolean printRemaining = false;
             if (remainingDays != 0) {
                 printRemaining = true;
-                sb.append(remainingDays).append(" days ");
+                sb.append(remainingDays);
+                if (remainingDays == 1) {
+                    sb.append(" %1s ");
+                } else {
+                    sb.append(" %5s ");
+                }
             }
             if (printRemaining || (remainingHours != 0)) {
                 printRemaining = true;
-                sb.append(remainingHours).append(" hours ");
+                sb.append(remainingHours);
+                if (remainingHours == 1) {
+                    sb.append(" %2s ");
+                } else {
+                    sb.append(" %6s ");
+                }
             }
             if (printRemaining || (remainingMinutes != 0)) {
-                sb.append(remainingMinutes).append(" minutes ");
+                sb.append(remainingMinutes).append(" %3s ");
             }
-            sb.append(remainingSeconds).append(" seconds");
+            sb.append(remainingSeconds).append(" %4s");
 
             return sb.toString();
         }
@@ -288,16 +296,16 @@ public class CooldownManager {
             boolean printRemaining = false;
             if (remainingDays != 0) {
                 printRemaining = true;
-                sb.append(remainingDays).append(" days ");
+                sb.append(remainingDays).append(" %1s ");
             }
             if (printRemaining || (remainingHours != 0)) {
                 printRemaining = true;
-                sb.append(remainingHours).append(" hours ");
+                sb.append(remainingHours).append(" %2s ");
             }
             if (printRemaining || (remainingMinutes != 0)) {
-                sb.append(remainingMinutes).append(" minutes ");
+                sb.append(remainingMinutes).append(" %3s ");
             }
-            sb.append(remainingSeconds).append(" seconds");
+            sb.append(remainingSeconds).append(" %4s");
 
             return sb.toString();
         }

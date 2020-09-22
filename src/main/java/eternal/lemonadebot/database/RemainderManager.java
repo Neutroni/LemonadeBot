@@ -31,13 +31,11 @@ import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Timer;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import net.dv8tion.jda.api.JDA;
 import org.apache.logging.log4j.LogManager;
@@ -47,7 +45,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class RemainderManager {
+public class RemainderManager implements AutoCloseable {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -55,7 +53,7 @@ public class RemainderManager {
     private final JDA jda;
     private final long guildID;
 
-    private final Set<Remainder> remainders = Collections.synchronizedSet(new HashSet<>());
+    private final Set<Remainder> remainders = ConcurrentHashMap.newKeySet();
     private final Timer remainderTimer = new Timer();
     private final GuildDataStore guildData;
 
@@ -161,8 +159,8 @@ public class RemainderManager {
      *
      * @return List of remainders
      */
-    public List<Remainder> getRemainders() {
-        return new ArrayList<>(this.remainders);
+    public Set<Remainder> getRemainders() {
+        return Collections.unmodifiableSet(this.remainders);
     }
 
     /**
@@ -223,6 +221,11 @@ public class RemainderManager {
             LOGGER.warn(e.getMessage());
             LOGGER.trace(e);
         }
+    }
+
+    @Override
+    public void close() {
+        this.remainderTimer.cancel();
     }
 
 }

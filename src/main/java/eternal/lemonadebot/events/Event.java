@@ -23,11 +23,9 @@
  */
 package eternal.lemonadebot.events;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import net.dv8tion.jda.api.entities.Member;
 
 /**
@@ -39,7 +37,7 @@ public class Event {
     private final String name;
     private final String description;
     private final long ownerID;
-    private final Set<Long> members = Collections.synchronizedSet(new HashSet<>());
+    private final Set<Long> members = ConcurrentHashMap.newKeySet();
 
     /**
      * Constructor
@@ -98,9 +96,10 @@ public class Event {
     }
 
     /**
-     * Get the list of members who have joined this event
+     * Get the list of members who have joined this event. This returns a list
+     * to make partitioning easier when retrieving members
      *
-     * @return list of member idsF
+     * @return list of members in the event
      */
     public List<Long> getMembers() {
         return List.copyOf(this.members);
@@ -135,28 +134,20 @@ public class Event {
 
     @Override
     public int hashCode() {
-        int hash = 5;
-        hash = 79 * hash + Objects.hashCode(this.name);
-        return hash;
+        return this.name.hashCode();
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
+    public boolean equals(Object other) {
+        if (other instanceof Event) {
+            final Event otherEvent = (Event) other;
+            return this.name.equals(otherEvent.name);
         }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final Event other = (Event) obj;
-        return Objects.equals(this.name, other.name);
+        return false;
     }
-    
+
     @Override
-    public String toString(){
+    public String toString() {
         return this.name + " - " + this.description;
     }
 

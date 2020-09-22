@@ -28,9 +28,9 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import org.apache.logging.log4j.LogManager;
@@ -46,20 +46,28 @@ public class DatabaseManager implements AutoCloseable {
 
     private final Connection conn;
     private final JDA jda;
-    private final Map<Long, GuildDataStore> guildDataStores = Collections.synchronizedMap(new HashMap<>());
+    private final Map<Long, GuildDataStore> guildDataStores = new ConcurrentHashMap<>();
     private final int maxMessages;
 
     /**
      * Constructor
      *
-     * @param filename location of database
+     * @param config Properties that sot
      * @param jda JDA to use for Managers that need it
-     * @param maxMessages Max amount of messages to keep stored in database
      * @throws SQLException if loading database fails
      */
-    public DatabaseManager(final String filename, final JDA jda, int maxMessages) throws SQLException {
-        this.conn = DriverManager.getConnection("jdbc:sqlite:" + filename);
-        this.maxMessages = maxMessages;
+    public DatabaseManager(final Properties config, final JDA jda) throws SQLException, NumberFormatException {
+        final String databaseLocation = config.getProperty("database-location", "database.db");
+        final String numberString = config.getProperty("max-messages");
+        if (numberString == null) {
+            this.maxMessages = 4096;
+            LOGGER.info("Max messages to store not set, defaulting to: {}", maxMessages);
+        } else {
+            this.maxMessages = Integer.parseInt(numberString);
+            LOGGER.info("Set max messages to: {}", maxMessages);
+        }
+
+        this.conn = DriverManager.getConnection("jdbc:sqlite:" + databaseLocation);
         this.jda = jda;
 
         //Initialize database
@@ -71,6 +79,9 @@ public class DatabaseManager implements AutoCloseable {
     @Override
     public void close() throws SQLException {
         this.conn.close();
+        this.guildDataStores.forEach((Long t, GuildDataStore u) -> {
+            u.close();
+        });
     }
 
     /**
@@ -81,7 +92,7 @@ public class DatabaseManager implements AutoCloseable {
      */
     public GuildDataStore getGuildData(final Guild guild) {
         return this.guildDataStores.computeIfAbsent(guild.getIdLong(), (Long newGuildID) -> {
-            return new GuildDataStore(this.conn, guild.getIdLong(), this.jda, this.maxMessages);
+            return new GuildDataStore(this.conn, newGuildID, this.jda, this.maxMessages);
         });
     }
 
@@ -97,7 +108,7 @@ public class DatabaseManager implements AutoCloseable {
                 + "id INTEGER PRIMARY KEY NOT NULL,"
                 + "commandPrefix TEXT NOT NULL,"
                 + "locale TEXT NOT NULL,"
-                + "logChannel TEXT,"
+                + "logChannel INTEGER NOT NULL,"
                 + "greetingTemplate TEXT);";
         final String PERMISSIONS = "CREATE TABLE IF NOT EXISTS Permissions("
                 + "guild INTEGER NOT NULL,"

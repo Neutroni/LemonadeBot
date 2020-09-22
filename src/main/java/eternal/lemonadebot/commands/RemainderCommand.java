@@ -23,28 +23,35 @@
  */
 package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.database.RemainderManager;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.AdminCommand;
+import eternal.lemonadebot.database.ConfigManager;
+import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.RemainderManager;
 import eternal.lemonadebot.events.Remainder;
 import eternal.lemonadebot.permissions.PermissionUtilities;
+import eternal.lemonadebot.translation.ActionKey;
+import eternal.lemonadebot.translation.TranslationKey;
+import eternal.lemonadebot.translation.WeekDayKey;
 import java.sql.SQLException;
+import java.text.Collator;
 import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
-import java.util.List;
+import java.util.Formatter;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TimeZone;
+import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Command to add remainders for events
+ * Command used to manage remainders
  *
  * @author Neutroni
  */
@@ -64,52 +71,49 @@ public class RemainderCommand extends AdminCommand {
     }
 
     @Override
-    public String getCommand() {
-        return "remainder";
+    public String getCommand(Locale locale) {
+        return TranslationKey.COMMAND_REMAINDER.getTranslation(locale);
     }
 
     @Override
-    public String getDescription() {
-        return "Add remainders for events";
+    public String getDescription(Locale locale) {
+        return TranslationKey.DESCRIPTION_REMAINDER.getTranslation(locale);
     }
 
     @Override
-    public String getHelpText() {
-        return "Syntax: remainder <action> <name> [day] [time] [message]\n"
-                + "<action> can be one of the following:\n"
-                + " create - create new remainder\n"
-                + " delete - delete remainder\n"
-                + "<name> name of remainder\n"
-                + "<day> day the remainder activates on, use 'any' to create remainder that activates daily\n"
-                + "<time> time of the remainder hh:mm\n"
-                + "[message] message to be sent at the remainder activation\n"
-                + "Remainder will be activated on the channel it was created in";
+    public String getHelpText(Locale locale) {
+        return TranslationKey.SYNTAX_REMAINDER.getTranslation(locale);
     }
 
     @Override
     public void respond(CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
+        final ConfigManager guildConf = guildData.getConfigManager();
+        final Locale locale = guildConf.getLocale();
 
         final String[] arguments = matcher.getArguments(5);
         if (arguments.length == 0) {
-            textChannel.sendMessage("Provide action to perform, see help for possible actions").queue();
+            textChannel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
             return;
         }
-        switch (arguments[0]) {
-            case "create": {
+
+        final String action = arguments[0];
+        final ActionKey key = ActionKey.getAction(action, guildConf);
+        switch (key) {
+            case CREATE: {
                 createRemainder(arguments, matcher, guildData);
                 break;
             }
-            case "delete": {
+            case DELETE: {
                 deleteRemainder(arguments, matcher, guildData);
                 break;
             }
-            case "list": {
+            case LIST: {
                 listRemainders(matcher, guildData);
                 break;
             }
             default: {
-                textChannel.sendMessage("Unknown operation: " + arguments[0]).queue();
+                textChannel.sendMessage(TranslationKey.ERROR_UNKNOWN_OPERATION.getTranslation(locale) + arguments[0]).queue();
             }
         }
     }
@@ -118,32 +122,37 @@ public class RemainderCommand extends AdminCommand {
         //remainder create test sunday 17.00 remaindertext
         final TextChannel textChannel = matcher.getTextChannel();
         final RemainderManager remainders = guildData.getRemainderManager();
+        final ConfigManager guildConf = guildData.getConfigManager();
+        final Locale locale = guildConf.getLocale();
 
         if (arguments.length < 2) {
-            textChannel.sendMessage("Remainder needs a name").queue();
+            textChannel.sendMessage(TranslationKey.REMAINDER_MISSING_NAME.getTranslation(locale)).queue();
             return;
         }
         final String remainderName = arguments[1];
 
         if (arguments.length < 3) {
-            textChannel.sendMessage("Remainder needs a day to activate on").queue();
+            textChannel.sendMessage(TranslationKey.REMAINDER_MISSING_DAY.getTranslation(locale)).queue();
             return;
         }
         final String reminderDay = arguments[2];
+        final Collator collator = guildConf.getCollator();
         final DayOfWeek activationDay;
         try {
-            if ("any".equals(reminderDay.toLowerCase())) {
+            final String localAnyDay = TranslationKey.REMAINDER_DAY_DAILY.getTranslation(locale);
+            if (collator.equals(reminderDay, localAnyDay)) {
                 activationDay = null;
             } else {
-                activationDay = DayOfWeek.valueOf(reminderDay.toUpperCase());
+                WeekDayKey activationKey = WeekDayKey.getDayFromTranslatedName(reminderDay, guildConf);
+                activationDay = activationKey.getDay();
             }
         } catch (IllegalArgumentException e) {
-            textChannel.sendMessage("Day must be weekday written in full, for example, 'Sunday', or special day 'Any' for daily activation").queue();
+            textChannel.sendMessage(TranslationKey.REMAINDER_ERROR_UNKNOWN_DAY.getTranslation(locale)).queue();
             return;
         }
 
         if (arguments.length < 4) {
-            textChannel.sendMessage("Remainder needs a time to activate on").queue();
+            textChannel.sendMessage(TranslationKey.REMAINDER_MISSING_TIME.getTranslation(locale)).queue();
             return;
         }
         final String reminderTime = arguments[3];
@@ -151,12 +160,12 @@ public class RemainderCommand extends AdminCommand {
         try {
             activationTime = LocalTime.parse(reminderTime);
         } catch (DateTimeParseException e) {
-            textChannel.sendMessage("Unknown time: " + reminderTime + " provide time in format hh:mm").queue();
+            textChannel.sendMessageFormat(TranslationKey.REMAINDER_UNKNOWN_TIME.getTranslation(locale), reminderTime).queue();
             return;
         }
 
         if (arguments.length < 5) {
-            textChannel.sendMessage("Remainder needs a message to send at scheduled time").queue();
+            textChannel.sendMessage(TranslationKey.REMAINDER_MISSING_MESSAGE.getTranslation(locale)).queue();
             return;
         }
         final String messageInput = arguments[4];
@@ -165,24 +174,24 @@ public class RemainderCommand extends AdminCommand {
                 messageInput, activationDay, activationTime);
         try {
             if (!remainders.addRemainder(remainder)) {
-                textChannel.sendMessage("Matching remainder already exists.").queue();
+                textChannel.sendMessage(TranslationKey.REMAINDER_ALREADY_EXISTS.getTranslation(locale)).queue();
                 return;
             }
             final String firstActivation = dateFormat.format(remainder.getActivationDate());
-            textChannel.sendMessage("Remainder succesfully created.\n First activation at: " + firstActivation).queue();
+            textChannel.sendMessageFormat(TranslationKey.REMAINDER_CREATE_SUCCESS.getTranslation(locale), firstActivation).queue();
         } catch (SQLException ex) {
-            textChannel.sendMessage("Database error adding remainder, "
-                    + "add again once database issue is fixed to make add persist after reboot").queue();
-            LOGGER.error("Failure to create remainder");
-            LOGGER.warn(ex.getMessage());
+            textChannel.sendMessage(TranslationKey.REMAINDER_SQL_ERROR_ON_CREATE.getTranslation(locale)).queue();
+            LOGGER.error("Failure to create remainder: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);
         }
     }
 
     private void deleteRemainder(String[] arguments, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
+        final Locale locale = guildData.getConfigManager().getLocale();
+
         if (arguments.length < 2) {
-            textChannel.sendMessage("Provide the name of the remainder you want to delete").queue();
+            textChannel.sendMessage(TranslationKey.REMAINDER_DELETE_MISSING_NAME.getTranslation(locale)).queue();
             return;
         }
         final RemainderManager remainders = guildData.getRemainderManager();
@@ -190,7 +199,7 @@ public class RemainderCommand extends AdminCommand {
         final String remainderName = arguments[1];
         final Optional<Remainder> oldRemainder = remainders.getRemainder(remainderName);
         if (oldRemainder.isEmpty()) {
-            textChannel.sendMessage("Could not find remainder with name: " + remainderName).queue();
+            textChannel.sendMessageFormat(TranslationKey.REMAINDER_NOT_FOUND_NAME.getTranslation(locale), remainderName).queue();
             return;
         }
         final Remainder remainder = oldRemainder.get();
@@ -200,42 +209,39 @@ public class RemainderCommand extends AdminCommand {
         final Member remainderOwner = textChannel.getGuild().getMemberById(remainder.getAuthor());
         final boolean hasPermission = PermissionUtilities.hasPermission(sender, remainderOwner);
         if (!hasPermission) {
-            textChannel.sendMessage("You do not have permission to remove that remainder, "
-                    + "only the remainder owner and admins can remove remainders").queue();
+            textChannel.sendMessage(TranslationKey.REMAINDER_DELETE_MISSING_PERMISSION.getTranslation(locale)).queue();
             return;
         }
 
         try {
-            if (remainders.deleteRemainder(remainder)) {
-                textChannel.sendMessage("Remainder succesfully removed").queue();
-                return;
-            }
-            textChannel.sendMessage("Could not find such remainder").queue();
+            remainders.deleteRemainder(remainder);
+            textChannel.sendMessage(TranslationKey.REMAINDER_DELETE_SUCCESS.getTranslation(locale)).queue();
         } catch (SQLException ex) {
-            textChannel.sendMessage("Database error removing remainder, "
-                    + "remove again once issue is fixed to make remove persistent").queue();
-
-            LOGGER.error("Failure to delete remainder");
-            LOGGER.warn(ex.getMessage());
+            textChannel.sendMessage(TranslationKey.REMAINDER_SQL_ERROR_ON_DELETE.getTranslation(locale)).queue();
+            LOGGER.error("Failure to delete remainder: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);
         }
     }
 
     private void listRemainders(CommandMatcher matcher, GuildDataStore guildData) {
         final RemainderManager remainders = guildData.getRemainderManager();
-        final List<Remainder> ev = remainders.getRemainders();
-        final StringBuilder sb = new StringBuilder("Remainders:\n");
-        for (Remainder r : ev) {
+        final Locale locale = guildData.getConfigManager().getLocale();
+        final Set<Remainder> ev = remainders.getRemainders();
+        final MessageBuilder sb = new MessageBuilder(TranslationKey.HEADER_REMAINDERS.getTranslation(locale));
+        sb.append('\n');
+        final Formatter formatter = new Formatter(sb, locale);
+        for (final Remainder r : ev) {
             if (r.isValid()) {
-                sb.append(r.toString()).append('\n');
+                r.formatTo(formatter, 0, 0, 0);
+                sb.append('\n');
             }
         }
         if (ev.isEmpty()) {
-            sb.append("No remainders found.");
+            sb.append(TranslationKey.REMAINDER_NO_REMAINDERS.getTranslation(locale));
         }
 
         final TextChannel textChannel = matcher.getTextChannel();
-        textChannel.sendMessage(sb.toString()).queue();
+        textChannel.sendMessage(sb.build()).queue();
     }
 
 }

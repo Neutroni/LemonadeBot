@@ -27,7 +27,9 @@ import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.MessageManager;
+import eternal.lemonadebot.translation.TranslationKey;
 import java.time.OffsetDateTime;
+import java.util.Locale;
 import java.util.Optional;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -68,12 +70,8 @@ public class MessageLoggerListener extends ListenerAdapter {
         final Guild eventGuild = event.getGuild();
         final Message message = event.getMessage();
         final GuildDataStore guildData = this.db.getGuildData(eventGuild);
-        final ConfigManager configManager = guildData.getConfigManager();
-        final Optional<Long> logID = configManager.getLogChannelID();
-        logID.ifPresent((Long t) -> {
-            final MessageManager messageManager = guildData.getMessageManager();
-            messageManager.logMessage(message);
-        });
+        final ConfigManager guildConf = guildData.getConfigManager();
+        guildData.getMessageManager().logMessage(message, guildConf);
     }
 
     /**
@@ -87,8 +85,8 @@ public class MessageLoggerListener extends ListenerAdapter {
         final GuildDataStore guildData = this.db.getGuildData(guild);
 
         //Check if guild has logging enabled
-        final ConfigManager configManager = guildData.getConfigManager();
-        final Optional<Long> logID = configManager.getLogChannelID();
+        final ConfigManager guildConf = guildData.getConfigManager();
+        final Optional<Long> logID = guildConf.getLogChannelID();
         if (logID.isEmpty()) {
             return;
         }
@@ -98,18 +96,19 @@ public class MessageLoggerListener extends ListenerAdapter {
             return;
         }
         //Get the old content if stored
-        final MessageManager messageManager = guildData.getMessageManager();
         final Message message = event.getMessage();
+        final MessageManager messageManager = guildData.getMessageManager();
+        final Locale locale = guildConf.getLocale();
         final Optional<StoredMessage> oldContent = messageManager.getMessageContent(message.getIdLong());
         oldContent.ifPresent((StoredMessage t) -> {
             final User author = event.getAuthor();
             final EmbedBuilder eb = new EmbedBuilder();
-            eb.setAuthor("Message Edited");
-            eb.setTitle("User: " + author.getAsMention());
-            eb.addField("Before:", t.getContent(), false);
-            eb.addField("After:", message.getContentRaw(), false);
+            eb.setAuthor(TranslationKey.MESSAGE_UPDATE_HEADER.getTranslation(locale));
+            eb.setTitle(TranslationKey.MESSAGE_LOG_USER.getTranslation(locale) + author.getAsMention());
+            eb.addField(TranslationKey.MESSAGE_CONTENT_BEFORE.getTranslation(locale), t.getContent(), false);
+            eb.addField(TranslationKey.MESSAGE_CONTENT_AFTER.getTranslation(locale), message.getContentRaw(), false);
             final OffsetDateTime dt = message.getTimeCreated();
-            eb.setFooter("Created: " + dt.toString());
+            eb.setFooter(TranslationKey.MESSAGE_CREATION_TIME.getTranslation(locale) + dt.toString());
             logChannel.sendMessage(eb.build()).queue();
         });
     }
@@ -125,8 +124,8 @@ public class MessageLoggerListener extends ListenerAdapter {
         final GuildDataStore guildData = this.db.getGuildData(guild);
 
         //Check if guild has logging enabled
-        final ConfigManager configManager = guildData.getConfigManager();
-        final Optional<Long> logID = configManager.getLogChannelID();
+        final ConfigManager guildConf = guildData.getConfigManager();
+        final Optional<Long> logID = guildConf.getLogChannelID();
         if (logID.isEmpty()) {
             return;
         }
@@ -138,19 +137,20 @@ public class MessageLoggerListener extends ListenerAdapter {
         //Get the old content if stored
         final long messageID = event.getMessageIdLong();
         final MessageManager messageManager = guildData.getMessageManager();
+        final Locale locale = guildConf.getLocale();
         final Optional<StoredMessage> oldContent = messageManager.getMessageContent(messageID);
         oldContent.ifPresent((StoredMessage t) -> {
             final EmbedBuilder eb = new EmbedBuilder();
-            eb.setAuthor("Message Deleted");
+            eb.setAuthor(TranslationKey.MESSAGE_DELETE_HEADER.getTranslation(locale));
             final Optional<User> user = t.getAuthor(event.getJDA());
             user.ifPresentOrElse((User u) -> {
-                eb.setTitle("User: " + u.getAsMention());
+                eb.setTitle(TranslationKey.MESSAGE_LOG_USER + u.getAsMention());
             }, () -> {
-                eb.setTitle("User: Unknown");
+                eb.setTitle(TranslationKey.MESSAGE_LOG_USER_UNKNOWN.getTranslation(locale));
             });
-            eb.addField("Content:", t.getContent(), false);
+            eb.addField(TranslationKey.MESSAGE_CONTENT.getTranslation(locale), t.getContent(), false);
             final OffsetDateTime dt = TimeUtil.getTimeCreated(messageID);
-            eb.setFooter("Created: " + dt.toString());
+            eb.setFooter(TranslationKey.MESSAGE_CREATION_TIME.getTranslation(locale) + dt.toString());
             logChannel.sendMessage(eb.build()).queue();
         });
     }

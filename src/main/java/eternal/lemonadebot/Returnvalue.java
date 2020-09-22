@@ -57,7 +57,7 @@ public enum Returnvalue {
     /**
      * If configuration read failed
      */
-    CONFIG_READ_ERROR, 
+    CONFIG_READ_ERROR,
     /**
      * If loading version number from META-INF failed
      */

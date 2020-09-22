@@ -45,7 +45,12 @@ public interface CommandMatcher {
 
     /**
      * Get parameters limited by whitespace and the rest of the message as last
-     * entry in returned array
+     * entry in returned array.
+     *
+     * Examples: String "foo bar baz"
+     * count 1 {"foo","bar baz"}
+     * count 0 {"foo bar baz"}
+     * count -1 {"foo","bar","baz"]
      *
      * @param count number of parameters to return
      * @return array of parameters

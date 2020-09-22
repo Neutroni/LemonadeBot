@@ -25,8 +25,9 @@ package eternal.lemonadebot.commandtypes;
 
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.permissions.ActionPermission;
-import java.util.List;
+import eternal.lemonadebot.permissions.CommandPermission;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Interface all commands must implement
@@ -36,38 +37,44 @@ import java.util.List;
 public interface ChatCommand {
 
     /**
-     * Every action has a command it is called with
-     *
-     * @return the command to activate this action
-     */
-    public String getCommand();
-
-    /**
-     * Short description for command, used for command listings
-     *
-     * @return Description for what this command does
-     */
-    public String getDescription();
-
-    /**
-     * Help text for command, usage info for the command
-     *
-     * @return help
-     */
-    public String getHelpText();
-
-    /**
-     * What rank is needed to run this command by default
-     *
-     * @return The default rank needed to run this command
-     */
-    public List<ActionPermission> getDefaultRanks();
-
-    /**
      * Responds to a message
      *
      * @param message Message contents
      * @param guildData data for the guild the message was sent in
      */
-    public void respond(CommandMatcher message, GuildDataStore guildData);
+    void respond(CommandMatcher message, GuildDataStore guildData);
+
+    /**
+     * Every action has a command it is called with
+     *
+     * @param locale Locale to get the command name inF
+     * @return the command to activate this action
+     */
+    public String getCommand(Locale locale);
+
+    /**
+     * Short description for command, used for command listings
+     *
+     * @param locale Locale to return the description in
+     * @return Description for what this command does
+     */
+    public String getDescription(Locale locale);
+
+    /**
+     * Help text for command, usage info for the command
+     *
+     * @param locale Locale to return the help in
+     * @return help text for the command
+     */
+    public String getHelpText(Locale locale);
+
+    /**
+     * What rank is needed to run this command by default
+     *
+     * @param locale Locale to get the ranks for
+     * @param guildID ID of the guild used to create commandpermission
+     * @return The default rank needed to run this command
+     */
+    public Map<String, CommandPermission> getDefaultRanks(Locale locale, long guildID);
+
 }

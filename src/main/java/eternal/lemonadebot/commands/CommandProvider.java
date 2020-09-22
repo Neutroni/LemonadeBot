@@ -26,10 +26,12 @@ package eternal.lemonadebot.commands;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.customcommands.CustomCommand;
+import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.TemplateManager;
 import eternal.lemonadebot.music.MusicCommand;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -43,12 +45,12 @@ public class CommandProvider {
             new HelpCommand(),
             new MusicCommand(),
             new EventCommand(),
-            new RemainderCommand(),
             new TemplateCommand(),
             new RoleCommand(),
             //Admin commands
             new ConfigCommand(),
             new CooldownCommand(),
+            new RemainderCommand(),
             new PermissionCommand()
     );
 
@@ -77,7 +79,8 @@ public class CommandProvider {
      */
     public static Optional<? extends ChatCommand> getCommand(String name, GuildDataStore guild) {
         //Check if we find command by that name
-        final Optional<ChatCommand> command = getBuiltInCommand(name);
+        final ConfigManager guildConf = guild.getConfigManager();
+        final Optional<ChatCommand> command = getBuiltInCommand(name, guildConf.getLocale());
         if (command.isPresent()) {
             return command;
         }
@@ -97,11 +100,13 @@ public class CommandProvider {
      * Find built-in command by name
      *
      * @param name name of the command to find
+     * @param locale ResourceBundle to get localised name for commands from
      * @return Optional containing the command if found
      */
-    public static Optional<ChatCommand> getBuiltInCommand(String name) {
-        for (ChatCommand c : COMMANDS) {
-            if (name.equals(c.getCommand())) {
+    public static Optional<ChatCommand> getBuiltInCommand(String name, Locale locale) {
+        for (final ChatCommand c : COMMANDS) {
+            final String commandName = c.getCommand(locale);
+            if (name.equals(commandName)) {
                 return Optional.of(c);
             }
         }

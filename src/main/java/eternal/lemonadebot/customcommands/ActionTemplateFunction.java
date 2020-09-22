@@ -32,5 +32,6 @@ import java.util.regex.Matcher;
  * @author Neutroni
  */
 interface ActionTemplateFunction {
+
     String apply(CommandMatcher commandMatcher, GuildDataStore guildData, Matcher templateMatcher);
 }

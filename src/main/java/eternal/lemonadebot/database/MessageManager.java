@@ -56,30 +56,35 @@ public class MessageManager {
      * stored
      *
      * @param message Message to log
+     * @param guildConf ConfigManager to get log channel from
      */
-    public void logMessage(Message message) {
-        final long guildID = message.getGuild().getIdLong();
+    public void logMessage(Message message, ConfigManager guildConf) {
+        //Do not log if guild has logging disabled
+        if (guildConf.getLogChannelID().isEmpty()) {
+            return;
+        }
+        final long currentguildID = message.getGuild().getIdLong();
         final String query = "INSERT INTO Messages(id,guild,author,content) VALUES(?,?,?)";
         try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, message.getIdLong());
-            ps.setLong(2, guildID);
+            ps.setLong(2, currentguildID);
             ps.setLong(3, message.getAuthor().getIdLong());
             ps.setString(4, message.getContentRaw());
             ps.executeUpdate();
         } catch (SQLException ex) {
-            LOGGER.error("Failed to log message in database" + ex.getMessage());
+            LOGGER.error("Failed to log message in database: {}", ex.getMessage());
             LOGGER.trace("Stack trace: ", ex);
         }
 
         final String cleanup = "DELETE FROM Messages WHERE id IN"
                 + " (SELECT id FROM Messages WHERE guild = ? ORDER BY id DESC LIMIT -1 OFFSET ?);";
         try ( PreparedStatement ps = conn.prepareStatement(cleanup)) {
-            ps.setLong(1, guildID);
+            ps.setLong(1, currentguildID);
             ps.setInt(2, this.maxMessages);
             int count = ps.executeUpdate();
-            LOGGER.debug("Deleted " + count + " rows from database on cleanup");
+            LOGGER.debug("Deleted {} rows from message database on cleanup", count);
         } catch (SQLException ex) {
-            LOGGER.error("Failed to clean up message log in database" + ex.getMessage());
+            LOGGER.error("Failed to clean up message log in database: {}", ex.getMessage());
             LOGGER.trace("Stack trace: ", ex);
         }
     }
@@ -103,9 +108,10 @@ public class MessageManager {
                 }
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to get message content from database" + ex.getMessage());
+            LOGGER.error("Failed to get message content from database: {}", ex.getMessage());
             LOGGER.trace("Stack trace: ", ex);
         }
         return Optional.empty();
     }
+
 }

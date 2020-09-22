@@ -23,6 +23,10 @@
  */
 package eternal.lemonadebot.permissions;
 
+import eternal.lemonadebot.database.ConfigManager;
+import eternal.lemonadebot.translation.TranslationKey;
+import java.text.Collator;
+import java.util.Locale;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 
@@ -35,49 +39,83 @@ public enum MemberRank {
     /**
      * User is anyone on the discord guild that has joined
      */
-    USER("Account without roles"),
+    USER(TranslationKey.RANK_USER, TranslationKey.RANK_DESCRIPTION_USER),
     /**
      * Members on discord have at least one role
      */
-    MEMBER("Account with at least one role"),
+    MEMBER(TranslationKey.RANK_MEMBER, TranslationKey.RANK_DESCRIPTION_MEMBER),
     /**
      * Admins are the users that have permission manageserver
      */
-    ADMIN("Account with permission ADMINSTRATOR");
+    ADMIN(TranslationKey.RANK_ADMIN, TranslationKey.RANK_DESCRIPTION_ADMIN),
+    /**
+     * Owner of the server
+     */
+    SERVER_OWNER(TranslationKey.RANK_SERVER_OWNER, TranslationKey.RANK_DESCRIPTION_SERVER_OWNER);
 
-    public static String getLevelDescriptions() {
+    /**
+     * Get the names and descriptions of rank values in locale
+     *
+     * @param locale Locale to get description in
+     * @return Description in locale
+     */
+    public static String getLevelDescriptions(Locale locale) {
         final StringBuilder sb = new StringBuilder();
-        for (MemberRank p : values()) {
-            sb.append(p.toString().toLowerCase());
+        for (final MemberRank p : values()) {
+            sb.append(p.name.getTranslation(locale));
             sb.append(" - ");
-            sb.append(p.getDescription());
+            sb.append(p.desc.getTranslation(locale));
             sb.append('\n');
         }
         return sb.toString();
     }
 
-    private final String desc;
+    /**
+     * Get rank by translated name
+     *
+     * @param rankName name of the rank to find
+     * @param guildConf locale the name is in
+     * @return MemberRank if foud
+     * @throws IllegalArgumentException if no matching rank could be found
+     */
+    public static MemberRank getByLocalizedName(String rankName, ConfigManager guildConf) throws IllegalArgumentException {
+        final Locale locale = guildConf.getLocale();
+        final Collator collator = guildConf.getCollator();
+        for (final MemberRank rank : MemberRank.values()) {
+            if (collator.equals(rankName, rank.getNameKey().getTranslation(locale))) {
+                return rank;
+            }
+        }
+        throw new IllegalArgumentException("Unknown rank name: " + rankName);
+    }
 
-    private MemberRank(String description) {
+    private final TranslationKey name;
+    private final TranslationKey desc;
+
+    private MemberRank(TranslationKey name, TranslationKey description) {
+        this.name = name;
         this.desc = description;
     }
 
     /**
-     * Get the descriptiotn for this role
+     * Get the TranslationKey for the name of this rank
      *
-     * @return description string
+     * @return TranslationKey
      */
-    public String getDescription() {
-        return this.desc;
+    public TranslationKey getNameKey() {
+        return this.name;
     }
-    
+
     /**
      * What rank user has
      *
      * @param member user to check
      * @return Rank of the member
      */
-    public static MemberRank getRank(Member member){
+    public static MemberRank getRank(Member member) {
+        if (member.isOwner()) {
+            return MemberRank.SERVER_OWNER;
+        }
         if (member.hasPermission(Permission.ADMINISTRATOR)) {
             return MemberRank.ADMIN;
         }
