@@ -103,14 +103,6 @@ class ConfigCommand extends AdminCommand {
                 disableValue(options[1], channel, guildData);
                 break;
             }
-            case HELP: {
-                if (options.length < 2) {
-                    channel.sendMessage(TranslationKey.CONFIG_HELP_MISSING_OPTION.getTranslation(locale)).queue();
-                    return;
-                }
-                printHelp(options[1], channel, config);
-                break;
-            }
             default: {
                 channel.sendMessage(TranslationKey.ERROR_UNKNOWN_OPERATION.getTranslation(locale) + options[0]).queue();
                 break;
@@ -286,41 +278,6 @@ class ConfigCommand extends AdminCommand {
             }
             case LANGUAGE: {
                 channel.sendMessage(TranslationKey.CONFIG_LANGUAGE_DISABLE.getTranslation(locale)).queue();
-                break;
-            }
-            default: {
-                channel.sendMessage(TranslationKey.CONFIG_ERROR_UNKOWN_SETTING.getTranslation(locale) + option).queue();
-                break;
-            }
-        }
-
-    }
-
-    /**
-     * Reply with help text for given config option
-     *
-     * @param options String of the option to print help for
-     * @param channel TextChannel to reply on
-     * @param guildConf ConfigManager for translation
-     */
-    private void printHelp(String option, TextChannel channel, ConfigManager guildConf) {
-        final Locale locale = guildConf.getLocale();
-        final ActionKey key = ActionKey.getAction(option, guildConf);
-        switch (key) {
-            case PREFIX: {
-                channel.sendMessage(TranslationKey.CONFIG_HELP_PREFIX.getTranslation(locale)).queue();
-                break;
-            }
-            case GREETING: {
-                channel.sendMessage(TranslationKey.CONFIG_HELP_GREETING.getTranslation(locale)).queue();
-                break;
-            }
-            case LOG_CHANNEL: {
-                channel.sendMessage(TranslationKey.CONFIG_HELP_LOGCHANNEL.getTranslation(locale)).queue();
-                break;
-            }
-            case LANGUAGE: {
-                channel.sendMessage(TranslationKey.CONFIG_HELP_LANGUAGE.getTranslation(locale)).queue();
                 break;
             }
             default: {

@@ -69,7 +69,9 @@ public class TemplateCommand implements ChatCommand {
 
     @Override
     public String getHelpText(Locale locale) {
-        return TranslationKey.SYNTAX_TEMPLATE.getTranslation(locale);
+        final String template = TranslationKey.SYNTAX_TEMPLATE.getTranslation(locale);
+        final String keys = TemplateProvider.getHelp(locale);
+        return String.format(template, keys);
     }
 
     @Override
@@ -102,13 +104,6 @@ public class TemplateCommand implements ChatCommand {
             }
             case LIST: {
                 listCustomCommands(matcher, guildData);
-                break;
-            }
-            case KEYS: {
-                final EmbedBuilder eb = new EmbedBuilder();
-                eb.setTitle(TranslationKey.HEADER_TEMPLATES.getTranslation(locale));
-                eb.setDescription(TemplateProvider.getHelp(locale));
-                textChannel.sendMessage(eb.build()).queue();
                 break;
             }
             default:

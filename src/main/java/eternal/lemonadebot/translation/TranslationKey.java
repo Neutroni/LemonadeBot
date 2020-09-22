@@ -72,13 +72,11 @@ public enum TranslationKey {
     ACTION_STOP("stop"),
     ACTION_SKIP("skip"),
     ACTION_PAUSE("pause"),
-    ACTION_HELP("help"),
     ACTION_PREFIX("prefix"),
     ACTION_GREETING("greeting"),
     ACTION_LOG_CHANNEL("logchannel"),
     ACTION_LANGUAGE("language"),
     ACTION_COMMANDS("commands"),
-    ACTION_KEYS("keys"),
     ACTION_UNKNOWN("unknown"),
     TIME_SECOND("second"),
     TIME_MINUTE("minute"),
@@ -113,7 +111,11 @@ public enum TranslationKey {
             + " greeting - Text used to greet new members with.\n"
             + " logchannel - Channel used to send log messages to.\n"
             + " language - Language for the bot to reply in.\n"
-            + "[value] - Value to set configuration to."),
+            + "[value] - Value to set configuration to, valid value formats for settings are\n"
+            + " prefix - Any string.\n"
+            + " greeting - Template with additional keys {name} and {mention} to add name of the new person or mention them in the message.\n"
+            + " logchannel - Mention the channel using #channel\n"
+            + " language - Language name as two letter code."),
     SYNTAX_COOLDOWN("Syntax: cooldown <option> [time] [unit] <action>\n"
             + "<option> is one of the following:\n"
             + " get - to get current cooldown for action\n"
@@ -169,7 +171,7 @@ public enum TranslationKey {
             + "Syntax for custom commands:\n"
             + " Text in the template will mostly be shown as is,\n"
             + " but you can use {key} to modify parts of the message.\n"
-            + " See \"command keys\" to see all keys"),
+            + " Valid keys are:\n%s"),
     SYNTAX_MUSIC("Syntax: music <action> [url]\n"
             + "<action> can be either play, skip, stop, pause or list\n"
             + " play - adds song to the song queue or resumes play if paused\n"
@@ -179,10 +181,6 @@ public enum TranslationKey {
             + "[url] is the url of the music to play"),
     SYNTAX_CUSTOMCOMMAND("Custom command with template:\n %s\n"
             + "See \"help command\" for details on custom commands."),
-    CONFIG_HELP_GREETING("Greeting for new members, available templates {name} and {mention} to add name of the new person or mention them in the message."),
-    CONFIG_HELP_PREFIX("Command prefix, any string."),
-    CONFIG_HELP_LOGCHANNEL("Channel used for logging messages, mention the channel using #channel"),
-    CONFIG_HELP_LANGUAGE("Language name as two letter code."),
     CONFIG_SET_MISSING_OPTION("Provide the name of the setting and the value to set."),
     CONFIG_MISSING_VALUE("Provide the value to set the setting to."),
     CONFIG_GET_MISSING_OPTION("Provide the name of the setting to get the value for."),
@@ -235,7 +233,6 @@ public enum TranslationKey {
     PREFIX_CURRENT_VALUE("Current command prefix: %s"),
     UNKNOWN_USER("unknown"),
     HEADER_COMMANDS("Commands:"),
-    HEADER_TEMPLATES("Templates:"),
     HEADER_EVENTS("Events:"),
     HEADER_PING("Ping!"),
     HEADER_GUILDS("Possible guilds:"),

@@ -51,13 +51,11 @@ public enum ActionKey {
     SKIP(TranslationKey.ACTION_SKIP),
     PAUSE(TranslationKey.ACTION_PAUSE),
     STOP(TranslationKey.ACTION_STOP),
-    HELP(TranslationKey.ACTION_HELP),
     PREFIX(TranslationKey.ACTION_PREFIX),
     GREETING(TranslationKey.ACTION_GREETING),
     LOG_CHANNEL(TranslationKey.ACTION_LOG_CHANNEL),
     LANGUAGE(TranslationKey.ACTION_LANGUAGE),
     COMMANDS(TranslationKey.ACTION_COMMANDS),
-    KEYS(TranslationKey.ACTION_KEYS),
     UNKOWN(TranslationKey.ACTION_UNKNOWN);
 
     private final TranslationKey key;
