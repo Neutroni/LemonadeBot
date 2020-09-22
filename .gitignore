@@ -11,6 +11,7 @@ logfile.log
 
 #Database
 database.db
+*.bak
 
 # Compiled class file
 *.class
