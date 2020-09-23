@@ -138,7 +138,8 @@ public class CustomCommand implements ChatCommand {
 
         //If response begins with a exclamation point it should be treated as a command
         final CommandMatcher fakeMatcher = new FakeMessageMatcher(message, commandString);
-        final Optional<? extends ChatCommand> optCommand = CommandProvider.getAction(fakeMatcher, guildData);
+        final CommandProvider commands = guildData.getCommandProvider();
+        final Optional<ChatCommand> optCommand = commands.getAction(fakeMatcher);
         if (optCommand.isEmpty()) {
             channel.sendMessage(TranslationKey.ERROR_COMMAND_NOT_FOUND.getTranslation(locale) + commandString).queue();
             return;

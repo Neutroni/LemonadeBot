@@ -107,11 +107,10 @@ public class EventManager {
      * @return optional containing the event
      */
     public Optional<Event> getEvent(String name) {
-        for (Event e : this.events) {
-            if (!name.equals(e.getName())) {
-                continue;
+        for (final Event e : this.events) {
+            if (name.equals(e.getName())) {
+                return Optional.of(e);
             }
-            return Optional.of(e);
         }
         return Optional.empty();
     }

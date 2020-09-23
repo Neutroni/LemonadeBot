@@ -122,7 +122,8 @@ public class MessageListener extends ListenerAdapter {
 
         //Check if message is a command
         final MessageMatcher cmdMatch = new MessageMatcher(configManager, message);
-        final Optional<? extends ChatCommand> action = CommandProvider.getAction(cmdMatch, guildData);
+        final CommandProvider commandProvider = guildData.getCommandProvider();
+        final Optional<ChatCommand> action = commandProvider.getAction(cmdMatch);
         if (action.isEmpty()) {
             return;
         }

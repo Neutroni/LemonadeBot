@@ -107,9 +107,10 @@ class HelpCommand implements ChatCommand {
         final ConfigManager guildConf = guildData.getConfigManager();
         final Locale locale = guildConf.getLocale();
         final PermissionManager permissions = guildData.getPermissionManager();
+        final CommandProvider commands = guildData.getCommandProvider();
 
         //Get the command with the name user provided
-        final Optional<? extends ChatCommand> opt = CommandProvider.getCommand(name, guildData);
+        final Optional<ChatCommand> opt = commands.getCommand(name);
         if (opt.isPresent()) {
             final ChatCommand com = opt.get();
             final Member member = matcher.getMember();

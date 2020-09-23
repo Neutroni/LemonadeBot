@@ -25,14 +25,14 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.database.ConfigManager;
-import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.TemplateManager;
 import eternal.lemonadebot.music.MusicCommand;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Class used to find command by name
@@ -41,6 +41,9 @@ import java.util.Optional;
  */
 public class CommandProvider {
 
+    /**
+     * List of all the built in commands
+     */
     public static final List<ChatCommand> COMMANDS = List.of(
             new HelpCommand(),
             new MusicCommand(),
@@ -54,70 +57,70 @@ public class CommandProvider {
             new PermissionCommand()
     );
 
+    private final Map<String, ChatCommand> commandMap = new ConcurrentHashMap<>();
+    private final TemplateManager templateManager;
+
+    /**
+     * Constructor
+     *
+     * @param config ConfigManager to get locale from
+     * @param templates TemplateManager to get templates from
+     */
+    public CommandProvider(ConfigManager config, TemplateManager templates) {
+        this.templateManager = templates;
+        final Locale locale = config.getLocale();
+        //Load translated built in commands
+        COMMANDS.forEach(command -> {
+            this.commandMap.put(command.getCommand(locale), command);
+        });
+    }
+
+    /**
+     * Find built-in command by name
+     *
+     * @param commandName name of the command to find
+     * @return Optional containing the command if found
+     */
+    public Optional<ChatCommand> getBuiltInCommand(String commandName) {
+        return Optional.ofNullable(this.commandMap.get(commandName));
+    }
+
     /**
      * Get the action for command
      *
      * @param cmdMatcher Matcher to find command for
-     * @param guildData Stored data for the guild the message is from
      * @return CommandAction or Option.empty if command was not found
      */
-    public static Optional<? extends ChatCommand> getAction(CommandMatcher cmdMatcher, GuildDataStore guildData) {
-        final Optional<String> name = cmdMatcher.getCommand();
-        if (name.isEmpty()) {
-            return Optional.empty();
-        }
-        final String commandName = name.get();
-        return getCommand(commandName, guildData);
+    public Optional<ChatCommand> getAction(CommandMatcher cmdMatcher) {
+        return cmdMatcher.getCommand().flatMap((String commandName) -> {
+            return getCommand(commandName);
+        });
     }
 
     /**
      * Get command by name
      *
      * @param name command name to search action for
-     * @param guild guild to search command for
      * @return Optional containing the action if found, empty if not found
      */
-    public static Optional<? extends ChatCommand> getCommand(String name, GuildDataStore guild) {
-        //Check if we find command by that name
-        final ConfigManager guildConf = guild.getConfigManager();
-        final Optional<ChatCommand> command = getBuiltInCommand(name, guildConf.getLocale());
-        if (command.isPresent()) {
-            return command;
-        }
-
-        //Check if we find custom command by that name
-        final TemplateManager customManager = guild.getCustomCommands();
-        final Optional<CustomCommand> custom = customManager.getCommand(name);
-        if (custom.isPresent()) {
-            return custom;
-        }
-
-        //Couldn't find a command with that name
-        return Optional.empty();
+    public Optional<ChatCommand> getCommand(String name) {
+        //Checks if we find built in command by that name
+        return getBuiltInCommand(name).or(() -> {
+            //Did not find built in command, return optional from templateManager
+            return this.templateManager.getCommand(name);
+        });
     }
 
     /**
-     * Find built-in command by name
+     * Update the locale of the commands
      *
-     * @param name name of the command to find
-     * @param locale ResourceBundle to get localised name for commands from
-     * @return Optional containing the command if found
+     * @param newLocale
      */
-    public static Optional<ChatCommand> getBuiltInCommand(String name, Locale locale) {
-        for (final ChatCommand c : COMMANDS) {
-            final String commandName = c.getCommand(locale);
-            if (name.equals(commandName)) {
-                return Optional.of(c);
-            }
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Constructor to hide the default constructor
-     */
-    private CommandProvider() {
-        //No op
+    void updateLocale(Locale newLocale) {
+        this.commandMap.clear();
+        COMMANDS.forEach(command -> {
+            this.commandMap.put(command.getCommand(newLocale), command);
+        });
     }
 
 }

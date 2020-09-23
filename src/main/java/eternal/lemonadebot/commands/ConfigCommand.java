@@ -165,16 +165,20 @@ class ConfigCommand extends AdminCommand {
                 try {
                     final Locale newLocale = new Locale(value);
                     if (guildConf.setLocale(newLocale)) {
-                        channel.sendMessage(TranslationKey.CONFIG_LANGUAGE_UPDATE_SUCCESS.getTranslation(newLocale) + locale.getDisplayLanguage(newLocale)).queue();
+                        channel.sendMessage(TranslationKey.CONFIG_LANGUAGE_UPDATE_SUCCESS.getTranslation(newLocale) + newLocale.getDisplayLanguage(newLocale)).queue();
 
                         //Update permissions to new locale
                         final PermissionManager permissions = guildData.getPermissionManager();
                         permissions.updatePermissions(newLocale);
+                        //update localized commandprovider for new locale
+                        final CommandProvider commands = guildData.getCommandProvider();
+                        commands.updateLocale(newLocale);
                     } else {
-                        final String languages = ConfigManager.SUPPORTED_LOCALES.stream().map((t) -> {
+                        final String supportedLanguages = ConfigManager.SUPPORTED_LOCALES.stream().map((t) -> {
                             return t.getLanguage() + " - " + t.getDisplayLanguage(locale);
                         }).collect(Collectors.joining(","));
-                        channel.sendMessageFormat(TranslationKey.CONFIG_UNSUPPPRTED_LOCALE.getTranslation(locale), languages).queue();
+                        final String template = TranslationKey.CONFIG_UNSUPPPRTED_LOCALE.getTranslation(locale);
+                        channel.sendMessageFormat(template, supportedLanguages).queue();
                     }
                 } catch (SQLException ex) {
                     channel.sendMessage(TranslationKey.CONFIG_LANGUAGE_SQL_ERROR.getTranslation(locale)).queue();
@@ -184,7 +188,7 @@ class ConfigCommand extends AdminCommand {
                 break;
             }
             default: {
-                channel.sendMessageFormat(TranslationKey.CONFIG_ERROR_UNKOWN_SETTING.getTranslation(locale), config).queue();
+                channel.sendMessageFormat(TranslationKey.CONFIG_ERROR_UNKNOWN_SETTING.getTranslation(locale), config).queue();
                 break;
             }
         }
@@ -219,7 +223,7 @@ class ConfigCommand extends AdminCommand {
                 guildConf.getLogChannelID().ifPresentOrElse((Long channelID) -> {
                     final TextChannel logChannel = channel.getGuild().getTextChannelById(channelID);
                     if (logChannel == null) {
-                        channel.sendMessage(TranslationKey.CONFIG_LOG_CHANNEL_UNKOWN.getTranslation(locale)).queue();
+                        channel.sendMessage(TranslationKey.CONFIG_LOG_CHANNEL_UNKNOWN.getTranslation(locale)).queue();
                     } else {
                         channel.sendMessageFormat(TranslationKey.CONFIG_CURRENT_LOG_CHANNEL.getTranslation(locale), logChannel.getAsMention()).queue();
                     }
@@ -233,7 +237,7 @@ class ConfigCommand extends AdminCommand {
                 break;
             }
             default: {
-                channel.sendMessageFormat(TranslationKey.CONFIG_ERROR_UNKOWN_SETTING.getTranslation(locale), option).queue();
+                channel.sendMessageFormat(TranslationKey.CONFIG_ERROR_UNKNOWN_SETTING.getTranslation(locale), option).queue();
                 break;
             }
         }
@@ -281,7 +285,7 @@ class ConfigCommand extends AdminCommand {
                 break;
             }
             default: {
-                channel.sendMessage(TranslationKey.CONFIG_ERROR_UNKOWN_SETTING.getTranslation(locale) + option).queue();
+                channel.sendMessage(TranslationKey.CONFIG_ERROR_UNKNOWN_SETTING.getTranslation(locale) + option).queue();
                 break;
             }
         }

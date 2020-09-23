@@ -88,7 +88,7 @@ public interface CommandMatcher {
     /**
      * Return the channel which the message was sent in
      *
-     * @return TextChannel of the message
+     * @return same as message.getTextChannel()
      */
     TextChannel getTextChannel();
 

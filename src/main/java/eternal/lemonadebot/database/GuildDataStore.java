@@ -23,6 +23,7 @@
  */
 package eternal.lemonadebot.database;
 
+import eternal.lemonadebot.commands.CommandProvider;
 import java.sql.Connection;
 import net.dv8tion.jda.api.JDA;
 
@@ -41,6 +42,7 @@ public class GuildDataStore implements AutoCloseable {
     private final RemainderManager remainders;
     private final CooldownManager cooldowns;
     private final MessageManager messages;
+    private final CommandProvider commandProvider;
 
     /**
      * Constructor
@@ -58,6 +60,7 @@ public class GuildDataStore implements AutoCloseable {
         this.commands = new TemplateManager(connection, this.cooldowns, guildID);
         this.remainders = new RemainderManager(connection, jda, this, guildID);
         this.messages = new MessageManager(connection, maxMessages);
+        this.commandProvider = new CommandProvider(this.config, this.commands);
     }
 
     /**
@@ -132,8 +135,18 @@ public class GuildDataStore implements AutoCloseable {
         return this.messages;
     }
 
+    /**
+     * Get the localized CommandProvider for this guild
+     *
+     * @return CommandProvider
+     */
+    public CommandProvider getCommandProvider() {
+        return this.commandProvider;
+    }
+
     @Override
     public void close() {
         this.remainders.close();
     }
+
 }

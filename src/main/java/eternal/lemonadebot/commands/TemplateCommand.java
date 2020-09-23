@@ -41,7 +41,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -127,7 +126,8 @@ public class TemplateCommand implements ChatCommand {
 
         //Check that there is no such built in command
         final String commandName = arguments[1];
-        final Optional<ChatCommand> optCommand = CommandProvider.getBuiltInCommand(commandName, locale);
+        final CommandProvider commandProvider = guildData.getCommandProvider();
+        final Optional<ChatCommand> optCommand = commandProvider.getBuiltInCommand(commandName);
         if (optCommand.isPresent()) {
             textChannel.sendMessage(TranslationKey.TEMPLATE_NAME_RESERVED.getTranslation(locale)).queue();
             return;
@@ -194,12 +194,12 @@ public class TemplateCommand implements ChatCommand {
         final Locale locale = guildData.getConfigManager().getLocale();
         final Guild guild = matcher.getGuild();
         final TextChannel textChannel = matcher.getTextChannel();
-        
+
         //Construc embed
         final String header = TranslationKey.HEADER_COMMANDS.getTranslation(locale);
         final EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle(header);
-        
+
         //Get the list or templates
         final StringBuilder contentBuilder = new StringBuilder();
         for (final CustomCommand c : coms) {
