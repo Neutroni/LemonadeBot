@@ -194,8 +194,14 @@ public class TemplateCommand implements ChatCommand {
         final Locale locale = guildData.getConfigManager().getLocale();
         final Guild guild = matcher.getGuild();
         final TextChannel textChannel = matcher.getTextChannel();
-        final MessageBuilder sb = new MessageBuilder(TranslationKey.HEADER_COMMANDS.getTranslation(locale));
-        sb.append('\n');
+        
+        //Construc embed
+        final String header = TranslationKey.HEADER_COMMANDS.getTranslation(locale);
+        final EmbedBuilder eb = new EmbedBuilder();
+        eb.setTitle(header);
+        
+        //Get the list or templates
+        final StringBuilder contentBuilder = new StringBuilder();
         for (final CustomCommand c : coms) {
             final Member creator = guild.getMemberById(c.getOwner());
             final String creatorName;
@@ -205,12 +211,13 @@ public class TemplateCommand implements ChatCommand {
                 creatorName = creator.getEffectiveName();
             }
             final String template = TranslationKey.TEMPLATE_COMMAND_LIST_ELEMENT.getTranslation(locale);
-            sb.appendFormat(template, c.getCommand(locale), creatorName);
-            sb.append('\n');
+            final String content = String.format(template, c.getCommand(locale), creatorName);
+            contentBuilder.append(content);
         }
         if (coms.isEmpty()) {
-            sb.append(TranslationKey.TEMPLATE_NO_COMMANDS);
+            contentBuilder.append(TranslationKey.TEMPLATE_NO_COMMANDS);
         }
-        textChannel.sendMessage(sb.build()).queue();
+        eb.setDescription(contentBuilder);
+        textChannel.sendMessage(eb.build()).queue();
     }
 }

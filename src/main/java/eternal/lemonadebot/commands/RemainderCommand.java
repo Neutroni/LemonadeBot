@@ -44,6 +44,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -227,21 +228,27 @@ public class RemainderCommand extends AdminCommand {
         final RemainderManager remainders = guildData.getRemainderManager();
         final Locale locale = guildData.getConfigManager().getLocale();
         final Set<Remainder> ev = remainders.getRemainders();
-        final MessageBuilder sb = new MessageBuilder(TranslationKey.HEADER_REMAINDERS.getTranslation(locale));
-        sb.append('\n');
-        final Formatter formatter = new Formatter(sb, locale);
+        
+        //Construct the embed
+        final String header = TranslationKey.HEADER_REMAINDERS.getTranslation(locale);
+        final EmbedBuilder eb = new EmbedBuilder();
+        eb.setTitle(header);
+        
+        //Get the list of remainders
+        final StringBuilder contentBuilder = new StringBuilder();
+        final Formatter formatter = new Formatter(contentBuilder, locale);
         for (final Remainder r : ev) {
             if (r.isValid()) {
                 r.formatTo(formatter, 0, 0, 0);
-                sb.append('\n');
             }
         }
         if (ev.isEmpty()) {
-            sb.append(TranslationKey.REMAINDER_NO_REMAINDERS.getTranslation(locale));
+            contentBuilder.append(TranslationKey.REMAINDER_NO_REMAINDERS.getTranslation(locale));
         }
+        eb.setDescription(contentBuilder);
 
         final TextChannel textChannel = matcher.getTextChannel();
-        textChannel.sendMessage(sb.build()).queue();
+        textChannel.sendMessage(eb.build()).queue();
     }
 
 }

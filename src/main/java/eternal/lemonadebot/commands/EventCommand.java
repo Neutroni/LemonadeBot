@@ -42,8 +42,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -337,22 +339,24 @@ public class EventCommand implements ChatCommand {
         final String header = String.format(TranslationKey.HEADER_EVENT_MEMBERS.getTranslation(locale), eventName);
         batchMemberList(eventMemberIDs).forEach((List<Long> idBatch) -> {
             textChannel.getGuild().retrieveMembersByIds(false, idBatch).onSuccess((List<Member> foundMembersList) -> {
-                final StringBuilder sb = new StringBuilder(header);
-                sb.append('\n');
+                final EmbedBuilder eb = new EmbedBuilder();
+                eb.setTitle(header);
 
-                //Add nicknames of all event members who could be found
-                foundMembersList.forEach((Member eventMember) -> {
-                    sb.append(' ').append(eventMember.getEffectiveName()).append('\n');
-                });
+                //Add names of all event members who could be found
+                final String mentions = foundMembersList.stream().map((Member t) -> {
+                    return t.getAsMention();
+                }).collect(Collectors.joining(","));
 
                 //Did not find any event members
                 if (foundMembersList.isEmpty()) {
                     //If any batch returns empty this might appear without reason
-                    sb.append(TranslationKey.EVENT_NO_MEMBERS.getTranslation(locale));
+                    eb.setDescription(TranslationKey.EVENT_NO_MEMBERS.getTranslation(locale));
+                } else {
+                    eb.setDescription(mentions);
                 }
 
                 //Send the message
-                textChannel.sendMessage(sb.toString()).queue();
+                textChannel.sendMessage(eb.build()).queue();
 
                 //Remove missing members from event
                 cleanEvent(event, idBatch, foundMembersList, events);
@@ -399,15 +403,17 @@ public class EventCommand implements ChatCommand {
         final Locale locale = guildData.getConfigManager().getLocale();
 
         final Set<Event> ev = events.getEvents();
-        final StringBuilder sb = new StringBuilder(TranslationKey.HEADER_EVENTS.getTranslation(locale));
-        sb.append('\n');
+        final EmbedBuilder eb = new EmbedBuilder();
+        eb.setTitle(TranslationKey.HEADER_EVENTS.getTranslation(locale));
+        final StringBuilder contentBuilder = new StringBuilder();
         for (final Event e : ev) {
-            sb.append(' ').append(e.toString()).append('\n');
+            contentBuilder.append(e.toString()).append('\n');
         }
         if (ev.isEmpty()) {
-            sb.append(TranslationKey.EVENT_NO_EVENTS.getTranslation(locale));
+            contentBuilder.append(TranslationKey.EVENT_NO_EVENTS.getTranslation(locale));
         }
-        textChannel.sendMessage(sb).queue();
+        eb.setDescription(contentBuilder);
+        textChannel.sendMessage(eb.build()).queue();
     }
 
     private void pingEventMembers(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
@@ -435,11 +441,12 @@ public class EventCommand implements ChatCommand {
         }
 
         final List<Long> memberIds = event.getMembers();
+        final String header = TranslationKey.HEADER_PING.getTranslation(locale);
         batchMemberList(memberIds).forEach((List<Long> idBatch) -> {
             textChannel.getGuild().retrieveMembersByIds(false, idBatch).onSuccess((List<Member> eventMembers) -> {
                 //Do not ping if no member was found
                 if (!eventMembers.isEmpty()) {
-                    final MessageBuilder mb = new MessageBuilder(TranslationKey.HEADER_PING.getTranslation(locale));
+                    final MessageBuilder mb = new MessageBuilder(header);
                     mb.append('\n');
                     eventMembers.forEach((Member eventMember) -> {
                         if (eventMember.equals(sender)) {
