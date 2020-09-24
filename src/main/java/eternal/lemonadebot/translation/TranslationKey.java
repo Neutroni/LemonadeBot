@@ -222,6 +222,7 @@ public enum TranslationKey {
     COOLDOWN_SQL_ERROR_ON_UPDATE("Error updating the cooldown in database, cooldown might revert to old value after reboot."),
     ERROR_COMMAND_NOT_FOUND("Could not find command with input: "),
     ERROR_NO_SUCH_COMMAND("No such command: "),
+    ERROR_UNKNOWN_DATE("Unknown date: "),
     ERROR_RECURSION_NOT_PERMITTED("User created commands cannot run user created custom command."),
     ERROR_TEMPLATE_EMPTY("Error: Template produced empty message."),
     ERROR_INSUFFICIENT_PERMISSION("Insufficient permississions to run that command."),
@@ -293,6 +294,7 @@ public enum TranslationKey {
     EVENT_PING_PERMISSION_DENIED("Only the owner of the event can ping event members."),
     EVENT_PICK_RANDOM_MISSING_NAME("Provide name of the event to pick random member from."),
     EVENT_SELECTED_MEMBER("Selected %s from the event."),
+    EVENT_COMMAND_LIST_ELEMENT("%s - %s by %s\n"),
     PERMISSION_ROLE_ANYONE("anyone"),
     PERMISSION_GET_MISSING_NAME("Provide name of permission to get curret value for."),
     PERMISSION_NOT_FOUND("No permission with that name currently set."),
@@ -308,7 +310,8 @@ public enum TranslationKey {
     REMAINDER_MISSING_DAY("Remainder needs a day to activate on."),
     REMAINDER_DAY_DAILY("daily"),
     REMAINDER_LIST_ELEMENT_TEMPLATE("%s - %s %s on channel %s by %s\n"),
-    REMAINDER_CHANNEL_MISSING("that does not exist"),
+    REMAINDER_CHANNEL_MISSING("Remainder %s deleted due to missing channel"),
+    REMAINDER_USER_MISSING("Remainder %s deleted due to missing user"),
     REMAINDER_MISSING_TIME("Remainder needs a time to activate on."),
     REMAINDER_UNKNOWN_TIME("Unknown time: %s provide time in format hh:mm"),
     REMAINDER_MISSING_MESSAGE("Remainder needs a message to send at scheduled time"),
@@ -388,15 +391,6 @@ public enum TranslationKey {
 
     private TranslationKey(String defaultText) {
         this.defaultText = defaultText;
-    }
-
-    /**
-     * Get the default translation for the key
-     *
-     * @return String without translation
-     */
-    public String getDefaultText() {
-        return this.defaultText;
     }
 
     /**

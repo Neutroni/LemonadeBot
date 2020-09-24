@@ -56,7 +56,7 @@ public enum ActionKey {
     LOG_CHANNEL(TranslationKey.ACTION_LOG_CHANNEL),
     LANGUAGE(TranslationKey.ACTION_LANGUAGE),
     COMMANDS(TranslationKey.ACTION_COMMANDS),
-    UNKOWN(TranslationKey.ACTION_UNKNOWN);
+    UNKNOWN(TranslationKey.ACTION_UNKNOWN);
 
     private final TranslationKey key;
 
@@ -79,6 +79,6 @@ public enum ActionKey {
                 return actionKey;
             }
         }
-        return ActionKey.UNKOWN;
+        return ActionKey.UNKNOWN;
     }
 }
