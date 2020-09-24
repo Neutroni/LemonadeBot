@@ -33,6 +33,7 @@ import eternal.lemonadebot.database.PermissionManager;
 import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -146,18 +147,10 @@ public class MessageListener extends ListenerAdapter {
         //Check if command is on cooldown
         if (!MemberRank.getRank(member).equals(MemberRank.ADMIN)) {
             final CooldownManager cdm = guildData.getCooldownManager();
-            final Optional<String> optCooldown = cdm.updateActivationTime(cmdMatch.getAction());
+            final Optional<Duration> optCooldown = cdm.updateActivationTime(cmdMatch.getAction());
             if (optCooldown.isPresent()) {
-                final String days = TranslationKey.TIME_DAYS.getTranslation(locale);
-                final String hours = TranslationKey.TIME_HOURS.getTranslation(locale);
-                final String minutes = TranslationKey.TIME_MINUTES.getTranslation(locale);
-                final String seconds = TranslationKey.TIME_SECONDS.getTranslation(locale);
-                final String day = TranslationKey.TIME_DAY.getTranslation(locale);
-                final String hour = TranslationKey.TIME_HOUR.getTranslation(locale);
-                final String minute = TranslationKey.TIME_MINUTE.getTranslation(locale);
-                final String second = TranslationKey.TIME_SECOND.getTranslation(locale);
-                final String currentCooldown = String.format(optCooldown.get(), days, hours, minutes, seconds, day, hour, minute, second);
                 final String template = TranslationKey.ERROR_COMMAND_COOLDOWN_TIME.getTranslation(locale);
+                final String currentCooldown = CooldownManager.formatDuration(optCooldown.get(), locale);
                 textChannel.sendMessage(template + currentCooldown).queue();
                 return;
             }
