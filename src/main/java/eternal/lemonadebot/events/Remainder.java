@@ -31,14 +31,16 @@ import eternal.lemonadebot.translation.WeekDayKey;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.TemporalAdjusters;
-import java.util.Date;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -51,7 +53,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class Remainder extends TimerTask {
+public class Remainder implements Runnable {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -63,6 +65,7 @@ public class Remainder extends TimerTask {
     private final long channelID;
     private final String remainderText;
     private final GuildDataStore guildData;
+    private volatile ScheduledFuture<?> future;
 
     /**
      * Constructor
@@ -86,6 +89,7 @@ public class Remainder extends TimerTask {
         this.remainderText = input;
         this.day = Optional.ofNullable(day);
         this.time = time;
+        this.future = null;
     }
 
     /**
@@ -206,8 +210,9 @@ public class Remainder extends TimerTask {
      *
      * @return Date for this remainder
      */
-    public Date getActivationDate() {
-        OffsetDateTime activationTime = OffsetDateTime.now(Clock.systemUTC()).with(time);
+    public Duration getTimeToActivation() {
+        final OffsetDateTime now = OffsetDateTime.now(Clock.systemUTC());
+        OffsetDateTime activationTime = now.with(time);
         if (this.day.isPresent()) {
             final DayOfWeek weekday = this.day.get();
             activationTime = activationTime.with(TemporalAdjusters.nextOrSame(weekday));
@@ -217,7 +222,7 @@ public class Remainder extends TimerTask {
         } else if (activationTime.isBefore(OffsetDateTime.now())) {
             activationTime = activationTime.plusDays(1);
         }
-        return Date.from(activationTime.toInstant());
+        return Duration.between(now, activationTime);
     }
 
     public CompletableFuture<String> toListElement(Locale locale) {
@@ -265,6 +270,33 @@ public class Remainder extends TimerTask {
             return this.name.equals(otherRemainder.name);
         }
         return false;
+    }
+
+    /**
+     * Schedule this remainder with the provided ExecutorService
+     *
+     * @param remainderTimer ScheduledExecutorService
+     */
+    public void scheduleWith(ScheduledExecutorService remainderTimer) {
+        if (this.day.isEmpty()) {
+            final long millisecondsToActivation = getTimeToActivation().toMillis();
+            final long remainderInterval = TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS);
+            this.future = remainderTimer.scheduleAtFixedRate(this, millisecondsToActivation, remainderInterval, TimeUnit.MILLISECONDS);
+
+        } else {
+            final long millisecondsToActivation = getTimeToActivation().toMillis();
+            final long remainderInterval = TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS);
+            this.future = remainderTimer.scheduleAtFixedRate(this, millisecondsToActivation, remainderInterval, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    /**
+     * Cancel the task, task will finnish if it is already running
+     */
+    public void cancel() {
+        if (this.future != null) {
+            this.future.cancel(false);
+        }
     }
 
 }

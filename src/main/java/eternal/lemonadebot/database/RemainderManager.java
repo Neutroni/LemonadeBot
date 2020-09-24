@@ -28,15 +28,16 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.DateTimeException;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalTime;
-import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import net.dv8tion.jda.api.JDA;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,7 +55,7 @@ public class RemainderManager implements AutoCloseable {
     private final long guildID;
 
     private final Set<Remainder> remainders = ConcurrentHashMap.newKeySet();
-    private final Timer remainderTimer = new Timer();
+    private final ScheduledExecutorService remainderTimer = Executors.newSingleThreadScheduledExecutor();
     private final GuildDataStore guildData;
 
     /**
@@ -80,17 +81,13 @@ public class RemainderManager implements AutoCloseable {
      * @throws SQLException If database connection failed
      */
     public boolean addRemainder(final Remainder remainder) throws SQLException {
-        LOGGER.debug("Storing remainder: " + remainder.getName());
+        LOGGER.debug("Storing remainder: {}", remainder.getName());
         final boolean added = this.remainders.add(remainder);
 
         //If timer was just added schedule the activation
         if (added) {
-            if (remainder.getDay().isEmpty()) {
-                this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS));
-            } else {
-                this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
-            }
-            LOGGER.debug("Remainder scheluded for activation at " + remainder.getActivationDate().toString());
+            remainder.scheduleWith(this.remainderTimer);
+            LOGGER.debug("Remainder scheluded for activation at {}", Instant.now().plus(remainder.getTimeToActivation()).toString());
         }
 
         //Add to database
@@ -104,7 +101,7 @@ public class RemainderManager implements AutoCloseable {
         } else {
             remainderDay = "EVERYDAY";
         }
-        final String remainderTime = remainder.getTime().toString();
+        final long remainderTime = remainder.getTime().toSecondOfDay();
         final long channelID = remainder.getChannel();
         final long authorID = remainder.getAuthor();
         try ( PreparedStatement ps = conn.prepareStatement(query)) {
@@ -114,7 +111,7 @@ public class RemainderManager implements AutoCloseable {
             ps.setString(4, remainderName);
             ps.setString(5, remainderMessage);
             ps.setString(6, remainderDay);
-            ps.setString(7, remainderTime);
+            ps.setLong(7, remainderTime);
             return ps.executeUpdate() > 0;
         }
     }
@@ -188,16 +185,16 @@ public class RemainderManager implements AutoCloseable {
                         try {
                             activationDay = DayOfWeek.valueOf(remainderDay);
                         } catch (IllegalArgumentException e) {
-                            LOGGER.error("Malformed weekday in database: " + remainderDay);
+                            LOGGER.error("Malformed weekday in database: {}", remainderDay);
                             continue;
                         }
                     }
-                    final String reminderTime = rs.getString("time");
+                    final long reminderTime = rs.getLong("time");
                     final LocalTime activationTime;
                     try {
-                        activationTime = LocalTime.parse(reminderTime);
-                    } catch (DateTimeParseException e) {
-                        LOGGER.error("Malformed time for reminder in database: " + reminderTime);
+                        activationTime = LocalTime.ofSecondOfDay(reminderTime);
+                    } catch (DateTimeException e) {
+                        LOGGER.error("Malformed time for reminder in database: {}", reminderTime);
                         return;
                     }
 
@@ -207,13 +204,8 @@ public class RemainderManager implements AutoCloseable {
                     remainders.add(remainder);
                     LOGGER.debug("Remainder loaded" + remainder.getName());
 
-                    if (activationDay == null) {
-                        this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS));
-                    } else {
-                        this.remainderTimer.scheduleAtFixedRate(remainder, remainder.getActivationDate(), TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
-                    }
-
-                    LOGGER.debug("Remainder scheluded for activation at " + remainder.getActivationDate().toString());
+                    remainder.scheduleWith(this.remainderTimer);
+                    LOGGER.debug("Remainder scheluded for activation at " + Instant.now().plus(remainder.getTimeToActivation()).toString());
                 }
             }
         } catch (SQLException e) {
@@ -225,7 +217,9 @@ public class RemainderManager implements AutoCloseable {
 
     @Override
     public void close() {
-        this.remainderTimer.cancel();
+        //Cancel all scheduled remainders
+        this.remainders.forEach(Remainder::cancel);
+        this.remainderTimer.shutdown();
     }
 
 }

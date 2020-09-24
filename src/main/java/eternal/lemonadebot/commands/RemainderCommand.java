@@ -179,7 +179,7 @@ public class RemainderCommand extends AdminCommand {
                 textChannel.sendMessage(TranslationKey.REMAINDER_ALREADY_EXISTS.getTranslation(locale)).queue();
                 return;
             }
-            final String firstActivation = dateFormat.format(remainder.getActivationDate());
+            final String firstActivation = dateFormat.format(remainder.getTimeToActivation());
             textChannel.sendMessageFormat(TranslationKey.REMAINDER_CREATE_SUCCESS.getTranslation(locale), firstActivation).queue();
         } catch (SQLException ex) {
             textChannel.sendMessage(TranslationKey.REMAINDER_SQL_ERROR_ON_CREATE.getTranslation(locale)).queue();

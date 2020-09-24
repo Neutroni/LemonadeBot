@@ -154,7 +154,7 @@ public class DatabaseManager implements AutoCloseable {
                 + "guild INTEGER NOT NULL,"
                 + "name TEXT NOT NULL,"
                 + "day TEXT NOT NULL,"
-                + "time TEXT NOT NULL,"
+                + "time INTEGER NOT NULL,"
                 + "message TEXT NOT NULL,"
                 + "author INTEGER NOT NULL,"
                 + "channel INTEGER NOT NULL,"
