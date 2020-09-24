@@ -36,12 +36,13 @@ import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
@@ -171,50 +172,46 @@ public class TemplateCommand implements ChatCommand {
 
         //Check if user has permission to remove the command
         final Member sender = matcher.getMember();
-        final Member commandOwner = textChannel.getGuild().getMemberById(command.getOwner());
-        final boolean hasPermission = PermissionUtilities.hasPermission(sender, commandOwner);
-        if (!hasPermission) {
-            textChannel.sendMessage(TranslationKey.TEMPLATE_DELETE_PERMISSION_DENIED.getTranslation(locale)).queue();
-            return;
-        }
+        textChannel.getGuild().retrieveMemberById(command.getOwner()).submit().whenComplete((Member commandOwner, Throwable u) -> {
+            final boolean hasPermission = PermissionUtilities.hasPermission(sender, commandOwner);
+            if (!hasPermission) {
+                textChannel.sendMessage(TranslationKey.TEMPLATE_DELETE_PERMISSION_DENIED.getTranslation(locale)).queue();
+                return;
+            }
 
-        //Delete the command
-        try {
-            commands.removeCommand(command);
-            textChannel.sendMessage(TranslationKey.TEMPLATE_DELETE_SUCCESS.getTranslation(locale)).queue();
-        } catch (SQLException ex) {
-            textChannel.sendMessage(TranslationKey.TEMPLATE_SQL_ERROR_ON_DELETE.getTranslation(locale)).queue();
-            LOGGER.error("Failure to delete custom command: {}", ex.getMessage());
-            LOGGER.trace("Stack trace", ex);
-        }
+            //Delete the command
+            try {
+                commands.removeCommand(command);
+                textChannel.sendMessage(TranslationKey.TEMPLATE_DELETE_SUCCESS.getTranslation(locale)).queue();
+            } catch (SQLException ex) {
+                textChannel.sendMessage(TranslationKey.TEMPLATE_SQL_ERROR_ON_DELETE.getTranslation(locale)).queue();
+                LOGGER.error("Failure to delete custom command: {}", ex.getMessage());
+                LOGGER.trace("Stack trace", ex);
+            }
+        });
     }
 
     private void listCustomCommands(CommandMatcher matcher, GuildDataStore guildData) {
-        final Set<CustomCommand> coms = guildData.getCustomCommands().getCommands();
         final Locale locale = guildData.getConfigManager().getLocale();
-        final Guild guild = matcher.getGuild();
         final TextChannel textChannel = matcher.getTextChannel();
 
-        //Construc embed
+        //Construct embed
         final String header = TranslationKey.HEADER_COMMANDS.getTranslation(locale);
         final EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle(header);
 
-        //Get the list or templates
+        //Get the list of templates
+        final Set<CustomCommand> templates = guildData.getCustomCommands().getCommands();
+        final ArrayList<CompletableFuture<String>> futures = new ArrayList<>(templates.size());
+        templates.forEach(command -> {
+            futures.add(command.toListElement(locale, textChannel.getJDA()));
+        });
+        //After all the futures all initialized start waiting for results
         final StringBuilder contentBuilder = new StringBuilder();
-        for (final CustomCommand c : coms) {
-            final Member creator = guild.getMemberById(c.getOwner());
-            final String creatorName;
-            if (creator == null) {
-                creatorName = TranslationKey.UNKNOWN_USER.getTranslation(locale);
-            } else {
-                creatorName = creator.getEffectiveName();
-            }
-            final String template = TranslationKey.TEMPLATE_COMMAND_LIST_ELEMENT.getTranslation(locale);
-            final String content = String.format(template, c.getCommand(locale), creatorName);
-            contentBuilder.append(content);
-        }
-        if (coms.isEmpty()) {
+        futures.forEach((CompletableFuture<String> desc) -> {
+            contentBuilder.append(desc.join());
+        });
+        if (templates.isEmpty()) {
             contentBuilder.append(TranslationKey.TEMPLATE_NO_COMMANDS);
         }
         eb.setDescription(contentBuilder);

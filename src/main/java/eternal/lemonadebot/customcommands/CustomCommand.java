@@ -32,11 +32,15 @@ import eternal.lemonadebot.database.PermissionManager;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.translation.TranslationKey;
+import java.time.Duration;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.User;
 
 /**
  * User defined commands that take template as input and when run return the
@@ -156,17 +160,9 @@ public class CustomCommand implements ChatCommand {
         }
 
         final CooldownManager cdm = guildData.getCooldownManager();
-        final Optional<String> optCooldown = cdm.updateActivationTime(commandString);
+        final Optional<Duration> optCooldown = cdm.updateActivationTime(commandString);
         if (optCooldown.isPresent()) {
-            final String days = TranslationKey.TIME_DAYS.getTranslation(locale);
-            final String hours = TranslationKey.TIME_HOURS.getTranslation(locale);
-            final String minutes = TranslationKey.TIME_MINUTES.getTranslation(locale);
-            final String seconds = TranslationKey.TIME_SECONDS.getTranslation(locale);
-            final String day = TranslationKey.TIME_DAY.getTranslation(locale);
-            final String hour = TranslationKey.TIME_HOUR.getTranslation(locale);
-            final String minute = TranslationKey.TIME_MINUTE.getTranslation(locale);
-            final String second = TranslationKey.TIME_SECOND.getTranslation(locale);
-            final String currentCooldown = String.format(optCooldown.get(), days, hours, minutes, seconds, day, hour, minute, second);
+            final String currentCooldown = CooldownManager.formatDuration(optCooldown.get(), locale);
             channel.sendMessage(TranslationKey.ERROR_COMMAND_COOLDOWN_TIME.getTranslation(locale) + currentCooldown).queue();
             return;
         }
@@ -186,6 +182,28 @@ public class CustomCommand implements ChatCommand {
             return this.commandName.equals(otherCommand.commandName);
         }
         return false;
+    }
+
+    /**
+     * Get string representing the commands for listing commands
+     *
+     * @param locale Locale to return the list element in
+     * @param jda JDA to use to get command owner
+     * @return String
+     */
+    public CompletableFuture<String> toListElement(Locale locale, JDA jda) {
+        final CompletableFuture<String> result = new CompletableFuture<>();
+        final String template = TranslationKey.TEMPLATE_COMMAND_LIST_ELEMENT.getTranslation(locale);
+        jda.retrieveUserById(this.owner).queue((User commandOwner) -> {
+            //Found user
+            final String creatorName = commandOwner.getAsMention();
+            result.complete(String.format(template, this.commandName, creatorName));
+        }, (Throwable t) -> {
+            //User missing
+            final String creatorName = TranslationKey.UNKNOWN_USER.getTranslation(locale);
+            result.complete(String.format(template, this.commandName, creatorName));
+        });
+        return result;
     }
 
 }

@@ -42,6 +42,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -399,16 +400,22 @@ public class EventCommand implements ChatCommand {
 
     private void listEvents(CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final EventManager events = guildData.getEventManager();
         final Locale locale = guildData.getConfigManager().getLocale();
 
-        final Set<Event> ev = events.getEvents();
         final EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle(TranslationKey.HEADER_EVENTS.getTranslation(locale));
+        
+        //Get the list of events
+        final Set<Event> ev = guildData.getEventManager().getEvents();
+        final List<CompletableFuture<String>> futures = new ArrayList<>(ev.size());
+        ev.forEach((Event event) -> {
+            futures.add(event.toListElement(locale,textChannel.getJDA()));
+        });
+        //After all the futures all initialized start waiting for results
         final StringBuilder contentBuilder = new StringBuilder();
-        for (final Event e : ev) {
-            contentBuilder.append(e.toString()).append('\n');
-        }
+        futures.forEach((CompletableFuture<String> desc) -> {
+            contentBuilder.append(desc.join());
+        });
         if (ev.isEmpty()) {
             contentBuilder.append(TranslationKey.EVENT_NO_EVENTS.getTranslation(locale));
         }

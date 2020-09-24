@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 
 /**
  * Class that holds templates for custom commands and how to substitute given
@@ -114,35 +115,45 @@ public class TemplateProvider {
                         final Guild guild = matcher.getGuild();
                         final String eventName = input.group(1);
                         final EventManager eventManager = guildData.getEventManager();
+                        final Locale locale = guildData.getConfigManager().getLocale();
                         final Optional<Event> optEvent = eventManager.getEvent(eventName);
                         if (optEvent.isEmpty()) {
-                            return "No such event: " + eventName;
+                            return String.format(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName);
                         }
 
                         final Event event = optEvent.get();
                         final List<Long> eventMemberIDs = event.getMembers();
                         if (eventMemberIDs.isEmpty()) {
-                            return "No members in that event";
+                            return TranslationKey.EVENT_NO_MEMBERS.getTranslation(locale);
                         }
                         final List<Long> memberIDsMutable = new ArrayList<>(eventMemberIDs);
                         Collections.shuffle(memberIDsMutable);
                         for (final Long l : memberIDsMutable) {
-                            final Member m = guild.getMemberById(l);
-                            if (m != null) {
-                                return m.getEffectiveName();
+                            try {
+                                final Member m = guild.retrieveMemberById(l).complete();
+                                if (m != null) {
+                                    return m.getEffectiveName();
+                                }
+                            } catch (ErrorResponseException e) {
+                                //Ignored
                             }
                         }
-                        return "Could not find members for that event";
+                        return TranslationKey.EVENT_NO_MEMBERS.getTranslation(locale);
                     }),
             new ActionTemplate("\\{daysSince (\\d+-\\d+\\d+)\\}", TranslationKey.HELP_TEMPLATE_DAYS_SINCE,
                     (commandMatcher, guildData, templateMatcher) -> {
+                        final Locale locale = guildData.getConfigManager().getLocale();
                         final String dateString = templateMatcher.group(1);
                         try {
                             final LocalDate date = LocalDate.parse(dateString);
                             final Period period = Period.between(date, LocalDate.now());
-                            return Math.abs(period.getDays()) + " days";
+                            final int dayAmount = Math.abs(period.getDays());
+                            if (dayAmount == 1) {
+                                return dayAmount + ' ' + TranslationKey.TIME_DAY.getTranslation(locale);
+                            }
+                            return dayAmount + ' ' + TranslationKey.TIME_DAYS.getTranslation(locale);
                         } catch (DateTimeParseException e) {
-                            return "Unknown date: " + dateString;
+                            return TranslationKey.ERROR_UNKNOWN_DATE.getTranslation(locale) + dateString;
                         }
                     })
     );

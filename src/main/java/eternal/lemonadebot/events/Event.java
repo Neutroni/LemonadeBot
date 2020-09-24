@@ -23,10 +23,15 @@
  */
 package eternal.lemonadebot.events;
 
+import eternal.lemonadebot.translation.TranslationKey;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.User;
 
 /**
  *
@@ -146,9 +151,26 @@ public class Event {
         return false;
     }
 
-    @Override
-    public String toString() {
-        return this.name + " - " + this.description;
+    /**
+     * Get string representation of the event for listing events
+     *
+     * @param locale Locale to return the list element in
+     * @param jda JDA to use to get the event owner
+     * @return String
+     */
+    public CompletableFuture<String> toListElement(Locale locale, JDA jda) {
+        final CompletableFuture<String> result = new CompletableFuture<>();
+        final String template = TranslationKey.EVENT_COMMAND_LIST_ELEMENT.getTranslation(locale);
+        jda.retrieveUserById(this.ownerID).queue((User eventCreator) -> {
+            //Found user
+            final String creatorName = eventCreator.getAsMention();
+            result.complete(String.format(template, this.name, this.description, creatorName));
+        }, (Throwable t) -> {
+            //User missing
+            final String creatorName = TranslationKey.UNKNOWN_USER.getTranslation(locale);
+            result.complete(String.format(template, this.name, this.description, creatorName));
+        });
+        return result;
     }
 
 }

@@ -25,6 +25,7 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.AdminCommand;
+import eternal.lemonadebot.database.ActionCooldown;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.CooldownManager;
 import eternal.lemonadebot.database.GuildDataStore;
@@ -98,22 +99,26 @@ public class CooldownCommand extends AdminCommand {
     }
 
     /**
-     * Send message reply of the cooldown set for command
+     * Send message reply of the cooldown set for action
      *
      * @param channel Channel to send message on
      * @param cooldownManager cooldown manager to get cooldown from
-     * @param action action to get cooldown for
+     * @param requestedAction action to get cooldown for
      */
-    private void getCooldown(TextChannel channel, GuildDataStore guildData, String action) {
+    private void getCooldown(TextChannel channel, GuildDataStore guildData, String requestedAction) {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
         final Locale locale = guildData.getConfigManager().getLocale();
-        final Optional<String> cd = cooldownManager.getCooldownFormatted(action);
-        if (cd.isEmpty()) {
-            channel.sendMessage(TranslationKey.COOLDOWN_NO_COOLDOWN_SET.getTranslation(locale) + action).queue();
-        } else {
+        final Optional<ActionCooldown> cd = cooldownManager.getActionCooldown(requestedAction);
+        cd.ifPresentOrElse((ActionCooldown cooldown) -> {
+            final String cooldownAction = cooldown.getAction();
+            final Duration cooldownDuration = cooldown.getDuration();
+            final String setCooldown = CooldownManager.formatDuration(cooldownDuration, locale);
             final String template = TranslationKey.COOLDOWN_CURRENT_COOLDOWN.getTranslation(locale);
-            channel.sendMessageFormat(template, cd.get(), action).queue();
-        }
+            channel.sendMessageFormat(template, setCooldown, cooldownAction).queue();
+        }, () -> {
+            //No cooldown set for action
+            channel.sendMessage(TranslationKey.COOLDOWN_NO_COOLDOWN_SET.getTranslation(locale) + requestedAction).queue();
+        });
     }
 
     /**

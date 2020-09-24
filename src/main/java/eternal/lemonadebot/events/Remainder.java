@@ -35,16 +35,14 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Date;
-import java.util.Formattable;
-import java.util.Formatter;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.TimerTask;
+import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.entities.User;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -53,7 +51,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class Remainder extends TimerTask implements Formattable {
+public class Remainder extends TimerTask {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -102,42 +100,51 @@ public class Remainder extends TimerTask implements Formattable {
         } catch (InterruptedException e) {
             LOGGER.error("JDA loading interrupted while trying to run a remainder: {}", e.getMessage());
             LOGGER.trace("Stack trace: ", e);
+            return;
         }
         //Check remainder channel can be found
         final TextChannel channel = this.jda.getTextChannelById(channelID);
         if (channel == null) {
-            LOGGER.debug("Deleting remainder for textchannel that does not exist, channel id: {}", this.channelID);
-            try {
-                this.guildData.getRemainderManager().deleteRemainder(this);
-                LOGGER.info("Deleted remainder with missing channel: {}", this.channelID);
-            } catch (SQLException ex) {
-                LOGGER.error("Error removing remainder with missing channel: {}", ex.getMessage());
-                LOGGER.trace("Stack trace: ", ex);
-            }
+            deleteDueToMissingChannel();
             return;
         }
         //Check remainder author can be found
-        final Member member = channel.getGuild().getMemberById(this.author);
-        if (member == null) {
-            LOGGER.debug("Deleting remainder with missing author, member id: {}", this.author);
-            try {
-                this.guildData.getRemainderManager().deleteRemainder(this);
-                LOGGER.info("Remainder with missing author deleted");
-            } catch (SQLException ex) {
-                LOGGER.error("Error removing remainder with missing author: {}", ex.getMessage());
-                LOGGER.trace("Stack trace: ", ex);
+        channel.getGuild().retrieveMemberById(this.author).queue((Member member) -> {
+            //Success
+            final CommandMatcher matcher = new RemainderMessageMatcher(member, channel);
+            final CharSequence reponse = TemplateProvider.parseAction(matcher, guildData, this.remainderText);
+            if (reponse.toString().isBlank()) {
+                LOGGER.debug("Ignored empty response for remainder: {} with template: {}", this.name, this.remainderText);
+                return;
             }
-            return;
-        }
+            channel.sendMessage(reponse).queue();
+            LOGGER.debug("Remainder succesfully activated on channel: {}", channel.getName());
+        }, (Throwable t) -> {
+            //Failure
+            deleteDueToMissingOwner();
+        });
+    }
 
-        final CommandMatcher matcher = new RemainderMessageMatcher(member, channel);
-        final CharSequence reponse = TemplateProvider.parseAction(matcher, guildData, this.remainderText);
-        if (reponse.toString().isBlank()) {
-            LOGGER.debug("Ignored empty response for remainder: {} with template: {}", this.name, this.remainderText);
-            return;
+    private void deleteDueToMissingOwner() {
+        LOGGER.info("Deleting remainder: {} with missing author, member id: {}", this.name, this.author);
+        try {
+            this.guildData.getRemainderManager().deleteRemainder(this);
+            LOGGER.info("Remainder with missing author deleted");
+        } catch (SQLException ex) {
+            LOGGER.error("Error removing remainder with missing author: {}", ex.getMessage());
+            LOGGER.trace("Stack trace: ", ex);
         }
-        channel.sendMessage(reponse).queue();
-        LOGGER.debug("Remainder succesfully activated on channel: {}", channel.getName());
+    }
+
+    private void deleteDueToMissingChannel() {
+        LOGGER.info("Deleting remainder: {} for textchannel that does not exist, channel id: {}", this.name, this.channelID);
+        try {
+            this.guildData.getRemainderManager().deleteRemainder(this);
+            LOGGER.info("Deleted remainder with missing channel: {}", this.channelID);
+        } catch (SQLException ex) {
+            LOGGER.error("Error removing remainder with missing channel: {}", ex.getMessage());
+            LOGGER.trace("Stack trace: ", ex);
+        }
     }
 
     /**
@@ -194,29 +201,6 @@ public class Remainder extends TimerTask implements Formattable {
         return this.day;
     }
 
-    private Optional<Member> getMember() {
-        final long guildID = this.guildData.getGuildID();
-        final Guild currentGuild = this.jda.getGuildById(guildID);
-        if (currentGuild == null) {
-            return Optional.empty();
-        }
-        try {
-            final Member member = currentGuild.retrieveMemberById(this.author).complete();
-            return Optional.ofNullable(member);
-        } catch (ErrorResponseException e) {
-            return Optional.empty();
-        }
-    }
-
-    private Optional<TextChannel> getTextChannel() {
-        final long guildID = this.guildData.getGuildID();
-        final Guild currentGuild = this.jda.getGuildById(guildID);
-        if (currentGuild == null) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(currentGuild.getTextChannelById(this.channelID));
-    }
-
     /**
      * Get the Date this remainder activates at
      *
@@ -236,31 +220,8 @@ public class Remainder extends TimerTask implements Formattable {
         return Date.from(activationTime.toInstant());
     }
 
-    /**
-     * Check if remainder is valid such that the creator and the channel for the
-     * remainder exists
-     *
-     * @return true if channel and the creator of remainder exists
-     */
-    public boolean isValid() {
-        //Check if we find the textchannel for this remainder
-        final Optional<TextChannel> channel = getTextChannel();
-        if (channel.isEmpty()) {
-            return false;
-        }
-        //Check if we find the creator of this member
-        final Optional<Member> member = getMember();
-        return member.isPresent();
-    }
-
-    @Override
-    public void formatTo(Formatter formatter, int flags, int width, int precision) {
-        final Locale locale = formatter.locale();
-        if (locale == null) {
-            formatter.format(toString());
-            return;
-        }
-
+    public CompletableFuture<String> toListElement(Locale locale) {
+        final CompletableFuture<String> result = new CompletableFuture<>();
         //Get the day remainder activates on
         final String dayName;
         if (this.day.isPresent()) {
@@ -270,64 +231,26 @@ public class Remainder extends TimerTask implements Formattable {
         }
 
         //Get the channel for remainder
-        final Optional<TextChannel> optChannel = getTextChannel();
-        final String channelName;
-        if (optChannel.isPresent()) {
-            channelName = optChannel.get().getAsMention();
-        } else {
-            channelName = TranslationKey.REMAINDER_CHANNEL_MISSING.getTranslation(locale);
+        final TextChannel channel = this.jda.getTextChannelById(this.channelID);
+        if (channel == null) {
+            deleteDueToMissingChannel();
+            final String response = TranslationKey.REMAINDER_CHANNEL_MISSING.getTranslation(locale);
+            result.complete(String.format(response, this.name));
+            return result;
         }
 
-        //Get the remainder owner
-        final Optional<Member> optMember = getMember();
-        final String ownerName;
-        if (optMember.isPresent()) {
-            ownerName = optMember.get().getEffectiveName();
-        } else {
-            ownerName = TranslationKey.UNKNOWN_USER.getTranslation(locale);
-        }
-
-        //gdds - sunday 17:00 on channel #general by author
+        final String channelName = channel.getAsMention();
         final String template = TranslationKey.REMAINDER_LIST_ELEMENT_TEMPLATE.getTranslation(locale);
-        formatter.format(template, this.name, dayName, this.time.toString(), channelName, ownerName);
-    }
-
-    /**
-     * Get the string presentation of this remainder
-     *
-     * @return String of format name day time on channel channel
-     */
-    @Override
-    public String toString() {
-        //Get the day remainder activates on
-        final String dayName;
-        if (this.day.isPresent()) {
-            dayName = this.day.get().name().toLowerCase();
-        } else {
-            dayName = TranslationKey.REMAINDER_DAY_DAILY.getDefaultText();
-        }
-
-        //Get the channel for remainder
-        final Optional<TextChannel> optChannel = getTextChannel();
-        final String channelName;
-        if (optChannel.isPresent()) {
-            channelName = optChannel.get().getAsMention();
-        } else {
-            channelName = TranslationKey.REMAINDER_CHANNEL_MISSING.getDefaultText();
-        }
-
-        //Get the remainder owner
-        final Optional<Member> optMember = getMember();
-        final String ownerName;
-        if (optMember.isPresent()) {
-            ownerName = optMember.get().getEffectiveName();
-        } else {
-            ownerName = TranslationKey.UNKNOWN_USER.getDefaultText();
-        }
-
-        //gdds - sunday 17:00 on channel #general by author
-        final String template = TranslationKey.REMAINDER_LIST_ELEMENT_TEMPLATE.getDefaultText();
-        return String.format(template, this.name, dayName, this.time.toString(), channelName, ownerName);
+        this.jda.retrieveUserById(this.author).queue((User remainderOwner) -> {
+            final String ownerName = remainderOwner.getAsMention();
+            final String response = String.format(template, this.name, dayName, this.time.toString(), channelName, ownerName);
+            result.complete(response);
+        }, (Throwable t) -> {
+            deleteDueToMissingOwner();
+            final String response = TranslationKey.REMAINDER_USER_MISSING.getTranslation(locale);
+            result.complete(String.format(response, this.name));
+        });
+        return result;
     }
 
     @Override

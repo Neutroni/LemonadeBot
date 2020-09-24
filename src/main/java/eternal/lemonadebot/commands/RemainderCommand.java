@@ -39,13 +39,14 @@ import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
-import java.util.Formatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
@@ -207,41 +208,44 @@ public class RemainderCommand extends AdminCommand {
 
         //Check if user has permission to remove the event
         final Member sender = matcher.getMember();
-        final Member remainderOwner = textChannel.getGuild().getMemberById(remainder.getAuthor());
-        final boolean hasPermission = PermissionUtilities.hasPermission(sender, remainderOwner);
-        if (!hasPermission) {
-            textChannel.sendMessage(TranslationKey.REMAINDER_DELETE_MISSING_PERMISSION.getTranslation(locale)).queue();
-            return;
-        }
+        textChannel.getGuild().retrieveMemberById(remainder.getAuthor()).submit().whenComplete((Member remainderOwner, Throwable e) -> {
+            final boolean hasPermission = PermissionUtilities.hasPermission(sender, remainderOwner);
+            if (!hasPermission) {
+                textChannel.sendMessage(TranslationKey.REMAINDER_DELETE_MISSING_PERMISSION.getTranslation(locale)).queue();
+                return;
+            }
 
-        try {
-            remainders.deleteRemainder(remainder);
-            textChannel.sendMessage(TranslationKey.REMAINDER_DELETE_SUCCESS.getTranslation(locale)).queue();
-        } catch (SQLException ex) {
-            textChannel.sendMessage(TranslationKey.REMAINDER_SQL_ERROR_ON_DELETE.getTranslation(locale)).queue();
-            LOGGER.error("Failure to delete remainder: {}", ex.getMessage());
-            LOGGER.trace("Stack trace", ex);
-        }
+            try {
+                remainders.deleteRemainder(remainder);
+                textChannel.sendMessage(TranslationKey.REMAINDER_DELETE_SUCCESS.getTranslation(locale)).queue();
+            } catch (SQLException ex) {
+                textChannel.sendMessage(TranslationKey.REMAINDER_SQL_ERROR_ON_DELETE.getTranslation(locale)).queue();
+                LOGGER.error("Failure to delete remainder: {}", ex.getMessage());
+                LOGGER.trace("Stack trace", ex);
+            }
+        });
     }
 
     private void listRemainders(CommandMatcher matcher, GuildDataStore guildData) {
-        final RemainderManager remainders = guildData.getRemainderManager();
         final Locale locale = guildData.getConfigManager().getLocale();
-        final Set<Remainder> ev = remainders.getRemainders();
-        
+
         //Construct the embed
         final String header = TranslationKey.HEADER_REMAINDERS.getTranslation(locale);
         final EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle(header);
-        
-        //Get the list of remainders
+
+        //Initialize all the futures
+        final Set<Remainder> ev = guildData.getRemainderManager().getRemainders();
+        final List<CompletableFuture<String>> futures = new ArrayList<>(ev.size());
+        ev.forEach((Remainder remainder) -> {
+            futures.add(remainder.toListElement(locale));
+        });
+
+        //After all the futures all initialized start waiting for results
         final StringBuilder contentBuilder = new StringBuilder();
-        final Formatter formatter = new Formatter(contentBuilder, locale);
-        for (final Remainder r : ev) {
-            if (r.isValid()) {
-                r.formatTo(formatter, 0, 0, 0);
-            }
-        }
+        futures.forEach(desc -> {
+            contentBuilder.append(desc.join());
+        });
         if (ev.isEmpty()) {
             contentBuilder.append(TranslationKey.REMAINDER_NO_REMAINDERS.getTranslation(locale));
         }
