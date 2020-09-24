@@ -28,9 +28,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,7 +47,7 @@ public class TemplateManager {
 
     private final Connection conn;
     private final long guildID;
-    private final Set<CustomCommand> commands = ConcurrentHashMap.newKeySet();
+    private final Map<String, CustomCommand> commands = new ConcurrentHashMap<>();
 
     private final CooldownManager cooldownManager;
 
@@ -71,7 +72,7 @@ public class TemplateManager {
      * @throws SQLException if database connection fails
      */
     public boolean addCommand(CustomCommand command) throws SQLException {
-        this.commands.add(command);
+        this.commands.putIfAbsent(command.getCommandName(), command);
 
         //Add to database
         final String query = "INSERT OR IGNORE INTO Commands(guild,name,template,owner) VALUES(?,?,?,?);";
@@ -92,7 +93,7 @@ public class TemplateManager {
      * @throws SQLException if database connection fails
      */
     public boolean removeCommand(CustomCommand command) throws SQLException {
-        this.commands.remove(command);
+        this.commands.remove(command.getCommandName());
         this.cooldownManager.removeCooldown(command.getCommandName());
 
         //Remove from database
@@ -111,13 +112,7 @@ public class TemplateManager {
      * @return optional containing the command
      */
     public Optional<CustomCommand> getCommand(String name) {
-        for (CustomCommand c : this.commands) {
-            if (!c.getCommandName().equals(name)) {
-                continue;
-            }
-            return Optional.of(c);
-        }
-        return Optional.empty();
+        return Optional.ofNullable(this.commands.get(name));
     }
 
     /**
@@ -125,8 +120,8 @@ public class TemplateManager {
      *
      * @return custom commands
      */
-    public Set<CustomCommand> getCommands() {
-        return Collections.unmodifiableSet(this.commands);
+    public Collection<CustomCommand> getCommands() {
+        return Collections.unmodifiableCollection(this.commands.values());
     }
 
     /**
@@ -140,8 +135,11 @@ public class TemplateManager {
             ps.setLong(1, this.guildID);
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    final CustomCommand newCommand = new CustomCommand(rs.getString("name"), rs.getString("template"), rs.getLong("owner"));
-                    this.commands.add(newCommand);
+                    final String commandName = rs.getString("name");
+                    final String commandTemplate = rs.getString("template");
+                    final long commandOwnerID = rs.getLong("owner");
+                    final CustomCommand newCommand = new CustomCommand(commandName, commandTemplate, commandOwnerID);
+                    this.commands.put(newCommand.getCommandName(), newCommand);
                 }
             }
         } catch (SQLException e) {

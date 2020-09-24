@@ -37,10 +37,10 @@ import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
@@ -201,7 +201,7 @@ public class TemplateCommand implements ChatCommand {
         eb.setTitle(header);
 
         //Get the list of templates
-        final Set<CustomCommand> templates = guildData.getCustomCommands().getCommands();
+        final Collection<CustomCommand> templates = guildData.getCustomCommands().getCommands();
         final ArrayList<CompletableFuture<String>> futures = new ArrayList<>(templates.size());
         templates.forEach(command -> {
             futures.add(command.toListElement(locale, textChannel.getJDA()));
