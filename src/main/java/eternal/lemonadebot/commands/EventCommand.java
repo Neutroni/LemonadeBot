@@ -36,12 +36,12 @@ import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -406,7 +406,7 @@ public class EventCommand implements ChatCommand {
         eb.setTitle(TranslationKey.HEADER_EVENTS.getTranslation(locale));
         
         //Get the list of events
-        final Set<Event> ev = guildData.getEventManager().getEvents();
+        final Collection<Event> ev = guildData.getEventManager().getEvents();
         final List<CompletableFuture<String>> futures = new ArrayList<>(ev.size());
         ev.forEach((Event event) -> {
             futures.add(event.toListElement(locale,textChannel.getJDA()));

@@ -28,9 +28,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
@@ -46,7 +47,7 @@ public class EventManager {
 
     private final Connection conn;
     private final long guildID;
-    private final Set<Event> events = ConcurrentHashMap.newKeySet();
+    private final Map<String, Event> events = new ConcurrentHashMap<>();
 
     /**
      * Constructor
@@ -68,7 +69,7 @@ public class EventManager {
      * @throws SQLException If database connection failed
      */
     public boolean addEvent(Event event) throws SQLException {
-        this.events.add(event);
+        this.events.putIfAbsent(event.getName(), event);
 
         //Add to database
         final String query = "INSERT OR IGNORE INTO Events(guild,name,description,owner) VALUES(?,?,?,?);";
@@ -89,7 +90,7 @@ public class EventManager {
      * @throws SQLException if database connection failed
      */
     public boolean removeEvent(Event event) throws SQLException {
-        this.events.remove(event);
+        this.events.remove(event.getName());
 
         //Remove from database
         final String query = "DELETE FROM Events Where guild = ? AND name = ?;";
@@ -107,12 +108,7 @@ public class EventManager {
      * @return optional containing the event
      */
     public Optional<Event> getEvent(String name) {
-        for (final Event e : this.events) {
-            if (name.equals(e.getName())) {
-                return Optional.of(e);
-            }
-        }
-        return Optional.empty();
+        return Optional.ofNullable(this.events.get(name));
     }
 
     /**
@@ -182,8 +178,8 @@ public class EventManager {
      *
      * @return list of events
      */
-    public Set<Event> getEvents() {
-        return Collections.unmodifiableSet(this.events);
+    public Collection<Event> getEvents() {
+        return Collections.unmodifiableCollection(this.events.values());
     }
 
     /**
@@ -198,9 +194,12 @@ public class EventManager {
             ps.setLong(1, this.guildID);
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    final Event ev = new Event(rs.getString("name"), rs.getString("description"), rs.getLong("owner"));
+                    final String eventName = rs.getString("name");
+                    final String eventDescription = rs.getString("description");
+                    final long eventOwnerID = rs.getLong("owner");
+                    final Event ev = new Event(eventName, eventDescription, eventOwnerID);
                     loadMembers(ev);
-                    events.add(ev);
+                    events.put(ev.getName(), ev);
                 }
             }
         } catch (SQLException e) {
