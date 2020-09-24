@@ -32,9 +32,10 @@ import java.time.DateTimeException;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalTime;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -54,7 +55,7 @@ public class RemainderManager implements AutoCloseable {
     private final JDA jda;
     private final long guildID;
 
-    private final Set<Remainder> remainders = ConcurrentHashMap.newKeySet();
+    private final Map<String, Remainder> remainders = new ConcurrentHashMap<>();
     private final ScheduledExecutorService remainderTimer = Executors.newSingleThreadScheduledExecutor();
     private final GuildDataStore guildData;
 
@@ -82,10 +83,10 @@ public class RemainderManager implements AutoCloseable {
      */
     public boolean addRemainder(final Remainder remainder) throws SQLException {
         LOGGER.debug("Storing remainder: {}", remainder.getName());
-        final boolean added = this.remainders.add(remainder);
+        final Remainder oldRemainder = this.remainders.putIfAbsent(remainder.getName(), remainder);
 
         //If timer was just added schedule the activation
-        if (added) {
+        if (oldRemainder == null) {
             remainder.scheduleWith(this.remainderTimer);
             LOGGER.debug("Remainder scheluded for activation at {}", Instant.now().plus(remainder.getTimeToActivation()).toString());
         }
@@ -124,7 +125,7 @@ public class RemainderManager implements AutoCloseable {
      */
     public boolean deleteRemainder(final Remainder remainder) throws SQLException {
         remainder.cancel();
-        this.remainders.remove(remainder);
+        this.remainders.remove(remainder.getName());
 
         //Remove from database
         final String query = "DELETE FROM Remainders Where guild = ? AND name = ?;";
@@ -142,13 +143,7 @@ public class RemainderManager implements AutoCloseable {
      * @return Optional containing the remainder if found
      */
     public Optional<Remainder> getRemainder(String name) {
-        for (Remainder r : this.remainders) {
-            if (!r.getName().equals(name)) {
-                continue;
-            }
-            return Optional.of(r);
-        }
-        return Optional.empty();
+        return Optional.ofNullable(this.remainders.get(name));
     }
 
     /**
@@ -156,8 +151,8 @@ public class RemainderManager implements AutoCloseable {
      *
      * @return List of remainders
      */
-    public Set<Remainder> getRemainders() {
-        return Collections.unmodifiableSet(this.remainders);
+    public Collection<Remainder> getRemainders() {
+        return Collections.unmodifiableCollection(this.remainders.values());
     }
 
     /**
@@ -201,7 +196,7 @@ public class RemainderManager implements AutoCloseable {
                     //Construct and add to list of remainders
                     final Remainder remainder = new Remainder(this.jda, this.guildData,
                             remainderName, remainderChannel, remainderAuthor, remainderMessage, activationDay, activationTime);
-                    remainders.add(remainder);
+                    remainders.put(remainder.getName(), remainder);
                     LOGGER.debug("Remainder loaded" + remainder.getName());
 
                     remainder.scheduleWith(this.remainderTimer);
@@ -218,7 +213,7 @@ public class RemainderManager implements AutoCloseable {
     @Override
     public void close() {
         //Cancel all scheduled remainders
-        this.remainders.forEach(Remainder::cancel);
+        this.remainders.values().forEach(Remainder::cancel);
         this.remainderTimer.shutdown();
     }
 
