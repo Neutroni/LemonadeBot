@@ -142,6 +142,7 @@ public class DatabaseManager implements AutoCloseable {
                 + "name TEXT NOT NULL,"
                 + "description TEXT,"
                 + "owner INTEGER NOT NULL,"
+                + "locked INTEGER NOT NULL,"
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,name));";
         final String EVENT_MEMBERS = "CREATE TABLE IF NOT EXISTS EventMembers("

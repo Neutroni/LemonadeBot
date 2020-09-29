@@ -72,12 +72,13 @@ public class EventManager {
         this.events.putIfAbsent(event.getName(), event);
 
         //Add to database
-        final String query = "INSERT OR IGNORE INTO Events(guild,name,description,owner) VALUES(?,?,?,?);";
+        final String query = "INSERT OR IGNORE INTO Events(guild,name,description,owner,locked) VALUES(?,?,?,?,?);";
         try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, event.getName());
             ps.setString(3, event.getDescription());
             ps.setLong(4, event.getOwner());
+            ps.setBoolean(5, event.isLocked());
             return ps.executeUpdate() > 0;
         }
     }
@@ -173,6 +174,32 @@ public class EventManager {
         }
     }
 
+    public void lockEvent(Event event) throws SQLException {
+        event.lock();
+
+        //Update database
+        final String query = "UPDATE Events SET locked = 1 WHERE guild = ? AND name = ?;";
+        event.clear();
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setLong(1, this.guildID);
+            ps.setString(2, event.getName());
+            ps.executeUpdate();
+        }
+    }
+
+    public void unlockEvent(Event event) throws SQLException {
+        event.unlock();
+
+        //Update database
+        final String query = "UPDATE Events SET locked = 0 WHERE guild = ? AND name = ?;";
+        event.clear();
+        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setLong(1, this.guildID);
+            ps.setString(2, event.getName());
+            ps.executeUpdate();
+        }
+    }
+
     /**
      * Get list of events
      *
@@ -189,7 +216,7 @@ public class EventManager {
      * @throws SQLException if database connection failed
      */
     private void loadEvents() {
-        final String query = "SELECT name,description,owner FROM Events WHERE guild = ?;";
+        final String query = "SELECT name,description,owner,locked FROM Events WHERE guild = ?;";
         try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try ( ResultSet rs = ps.executeQuery()) {
@@ -197,7 +224,8 @@ public class EventManager {
                     final String eventName = rs.getString("name");
                     final String eventDescription = rs.getString("description");
                     final long eventOwnerID = rs.getLong("owner");
-                    final Event ev = new Event(eventName, eventDescription, eventOwnerID);
+                    final boolean locked = rs.getBoolean("locked");
+                    final Event ev = new Event(eventName, eventDescription, eventOwnerID, locked);
                     loadMembers(ev);
                     events.put(ev.getName(), ev);
                 }

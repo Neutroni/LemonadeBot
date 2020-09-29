@@ -39,6 +39,8 @@ public enum ActionKey {
     JOIN,
     LEAVE,
     DISABLE,
+    LOCK,
+    UNLOCK,
     LIST_MEMBERS,
     CLEAR,
     PING,

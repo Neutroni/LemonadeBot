@@ -129,6 +129,8 @@ public class TranslationCache implements LocaleUpdateListener {
             this.actionMap.put(TranslationKey.ACTION_LEAVE.getTranslation(newLocale), ActionKey.LEAVE);
             this.actionMap.put(TranslationKey.ACTION_DISABLE.getTranslation(newLocale), ActionKey.DISABLE);
             this.actionMap.put(TranslationKey.ACTION_MEMBERS.getTranslation(newLocale), ActionKey.LIST_MEMBERS);
+            this.actionMap.put(TranslationKey.ACTION_LOCK.getTranslation(newLocale), ActionKey.LOCK);
+            this.actionMap.put(TranslationKey.ACTION_UNLOCK.getTranslation(newLocale), ActionKey.UNLOCK);
             this.actionMap.put(TranslationKey.ACTION_CLEAR.getTranslation(newLocale), ActionKey.CLEAR);
             this.actionMap.put(TranslationKey.ACTION_PING.getTranslation(newLocale), ActionKey.PING);
             this.actionMap.put(TranslationKey.ACTION_RANDOM.getTranslation(newLocale), ActionKey.RANDOM);

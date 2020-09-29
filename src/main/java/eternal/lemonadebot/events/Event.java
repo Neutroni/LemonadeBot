@@ -42,12 +42,11 @@ public class Event {
     private final String name;
     private final String description;
     private final long ownerID;
+    private volatile boolean locked;
     private final Set<Long> members = ConcurrentHashMap.newKeySet();
 
     /**
      * Constructor
-     *
-     * Remember to set database id for this event when adding to database
      *
      * @param name name of the event
      * @param description description for the event, null if no description
@@ -57,6 +56,7 @@ public class Event {
         this.name = name;
         this.description = description;
         this.ownerID = owner.getIdLong();
+        this.locked = false;
     }
 
     /**
@@ -65,11 +65,13 @@ public class Event {
      * @param name Name for this event
      * @param description Description for this event
      * @param owner Owner id for this event
+     * @param locked wheter event is locked
      */
-    public Event(String name, String description, long owner) {
+    public Event(String name, String description, long owner, boolean locked) {
         this.name = name;
         this.description = description;
         this.ownerID = owner;
+        this.locked = locked;
     }
 
     /**
@@ -137,6 +139,29 @@ public class Event {
         return this.ownerID;
     }
 
+    /**
+     * Lock the event, no members can join or leave if event is locked
+     */
+    public void lock() {
+        this.locked = true;
+    }
+
+    /**
+     * Unlock the event, members can join or leave event
+     */
+    public void unlock() {
+        this.locked = false;
+    }
+
+    /**
+     * Check if event is locked
+     *
+     * @return true if joining and leaving event is disallowed
+     */
+    public boolean isLocked() {
+        return this.locked;
+    }
+
     @Override
     public int hashCode() {
         return this.name.hashCode();
@@ -165,7 +190,7 @@ public class Event {
             //Found user
             final String creatorName = eventCreator.getAsMention();
             final String eventDescription;
-            if(this.description == null){
+            if (this.description == null) {
                 eventDescription = TranslationKey.EVENT_NO_DESCRIPTION.getTranslation(locale);
             } else {
                 eventDescription = this.description;
@@ -175,7 +200,7 @@ public class Event {
             //User missing
             final String creatorName = TranslationKey.UNKNOWN_USER.getTranslation(locale);
             final String eventDescription;
-            if(this.description == null){
+            if (this.description == null) {
                 eventDescription = TranslationKey.EVENT_NO_DESCRIPTION.getTranslation(locale);
             } else {
                 eventDescription = this.description;
