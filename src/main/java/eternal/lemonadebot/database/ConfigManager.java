@@ -23,11 +23,16 @@
  */
 package eternal.lemonadebot.database;
 
+import eternal.lemonadebot.translation.LocaleUpdateListener;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.Collator;
+import java.time.DateTimeException;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -46,8 +51,20 @@ public class ConfigManager {
     private static final Locale DEFAULT_LOCALE = Locale.ENGLISH;
     public static final Set<Locale> SUPPORTED_LOCALES = Set.of(DEFAULT_LOCALE, new Locale("fi"));
 
+    /**
+     * Updates command pattern
+     *
+     * @param prefix prefix to use in pattern
+     */
+    private static Pattern getCommandPattern(final String prefix) {
+        //Start of match, prefix, command, arguments
+        return Pattern.compile("^" + Pattern.quote(prefix) + "(\\S+) ?");
+    }
+
     //Database connection
     private final Connection conn;
+    //Locale update listeners
+    private final List<LocaleUpdateListener> localeListeners = new ArrayList<>(3);
 
     //Stored values
     private final long guildID;
@@ -56,7 +73,7 @@ public class ConfigManager {
     private volatile Optional<String> greetingTemplate = Optional.empty();
     private volatile Optional<Long> logChannelID = Optional.empty();
     private volatile Locale locale = DEFAULT_LOCALE;
-    private volatile Collator collator;
+    private volatile ZoneId timeZone = ZoneOffset.UTC;
 
     /**
      * Constructor
@@ -116,20 +133,21 @@ public class ConfigManager {
     }
 
     /**
-     * Get the case insesitive Collator for text comparisons
+     * Get the timezone for the guild
      *
-     * @return Collator
+     * @return ZoneId
      */
-    public Collator getCollator() {
-        return this.collator;
+    public ZoneId getZoneId() {
+        return this.timeZone;
     }
 
     /**
-     * Update the case-insensitive collator to current locale
+     * Register a listener that will get notfied when locale changes
+     *
+     * @param listener LocaleUpdateListener
      */
-    private void updateCollator() {
-        this.collator = Collator.getInstance(this.locale);
-        this.collator.setStrength(Collator.SECONDARY);
+    public void registerLocaleUpdateListener(LocaleUpdateListener listener) {
+        this.localeListeners.add(listener);
     }
 
     /**
@@ -185,7 +203,11 @@ public class ConfigManager {
             return false;
         }
         this.locale = newLocale;
-        updateCollator();
+
+        //Notify listeners
+        this.localeListeners.forEach((LocaleUpdateListener t) -> {
+            t.updateLocale(newLocale);
+        });
 
         final String query = "UPDATE Guilds SET locale = ? WHERE id = ?;";
         try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
@@ -214,20 +236,29 @@ public class ConfigManager {
     }
 
     /**
-     * Updates command pattern
+     * Update guild time zone
      *
-     * @param prefix prefix to use in pattern
+     * @param zoneId ZoneId to set for guild
+     * @return did update succeed
+     * @throws SQLException SQLException if database connection failed
      */
-    private Pattern getCommandPattern(final String prefix) {
-        //Start of match, prefix, command, arguments
-        return Pattern.compile("^" + Pattern.quote(prefix) + "(\\S+) ?");
+    public boolean setZoneId(final ZoneId zoneId) throws SQLException {
+        this.timeZone = zoneId;
+
+        final String query = "UPDATE Guilds SET timeZone = ? WHERE id = ?;";
+        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+            final String zone = zoneId.getId();
+            ps.setString(1, zone);
+            ps.setLong(2, this.guildID);
+            return ps.executeUpdate() > 0;
+        }
     }
 
     /**
      * Load the values this guildconfig stores
      */
     private void loadValues() {
-        final String query = "SELECT commandPrefix,greetingTemplate FROM Guilds WHERE id = ?;";
+        final String query = "SELECT commandPrefix,greetingTemplate,language,timeZone FROM Guilds WHERE id = ?;";
         try (final PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try (final ResultSet rs = ps.executeQuery()) {
@@ -250,10 +281,23 @@ public class ConfigManager {
                     }
                     //Load greeting template
                     try {
-                        this.locale = Locale.forLanguageTag(rs.getString("language"));
-                        updateCollator();
+                        final Locale loadedLocale = Locale.forLanguageTag(rs.getString("language"));
+                        if (SUPPORTED_LOCALES.contains(loadedLocale)) {
+                            this.locale = loadedLocale;
+                        } else {
+                            LOGGER.warn("Loaded unsupported locale: {} from database for guild: {}", loadedLocale.toString(), this.guildID);
+                        }
                     } catch (SQLException ex) {
                         LOGGER.error("SQL error on fetching locale: {}", ex.getMessage());
+                        LOGGER.warn("Stack trace:", ex);
+                    }
+                    //Load guild time zone
+                    try {
+                        this.timeZone = ZoneId.of(rs.getString("timeZone"));
+                    } catch (DateTimeException ex) {
+                        LOGGER.warn("Loaded malformed ZoneId for guild: {} error: {}", this.guildID, ex.getMessage());
+                    } catch (SQLException ex) {
+                        LOGGER.error("SQL error on fetching the time zone: {}", ex.getMessage());
                         LOGGER.warn("Stack trace:", ex);
                     }
                     return;

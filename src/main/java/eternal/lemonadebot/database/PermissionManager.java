@@ -27,6 +27,7 @@ import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
+import eternal.lemonadebot.translation.LocaleUpdateListener;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -43,7 +44,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class PermissionManager {
+public class PermissionManager implements LocaleUpdateListener {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -52,11 +53,11 @@ public class PermissionManager {
     private final Map<String, CommandPermission> permissions = new ConcurrentHashMap<>();
     private final CommandPermission adminPermission;
 
-    public PermissionManager(Connection conn, long guildID, ConfigManager config) {
+    public PermissionManager(Connection conn, long guildID, Locale locale) {
         this.conn = conn;
         this.guildID = guildID;
-        this.adminPermission = new CommandPermission(MemberRank.ADMIN, guildID);
-        loadPermissions(config.getLocale());
+        this.adminPermission = new CommandPermission("", MemberRank.ADMIN, guildID);
+        loadPermissions(locale);
     }
 
     /**
@@ -67,8 +68,29 @@ public class PermissionManager {
      * @return True if user can perform the action
      */
     public boolean hasPermission(Member member, String action) {
+        final Optional<CommandPermission> optPerm = getPermission(action);
+        if(optPerm.isPresent()){
+            final CommandPermission perm = optPerm.get();
+            return perm.hashPermission(member);
+        }
+        return this.adminPermission.hashPermission(member);
+    }
+
+    /**
+     * Get permission by fuzzy action string
+     *
+     * @param action action to get permission for
+     * @return Optional containing the permission
+     */
+    public Optional<CommandPermission> getPermission(String action) {
+        //If action does not contain whitespace get permission directly from map
+        if (action.indexOf(' ') == -1) {
+            return Optional.ofNullable(this.permissions.get(action));
+        }
+
+        //Action has whitespace, find longest prefix for action string
         long keyLength = 0;
-        CommandPermission perm = this.adminPermission;
+        CommandPermission perm = null;
 
         for (Map.Entry<String, CommandPermission> p : this.permissions.entrySet()) {
             final String key = p.getKey();
@@ -81,17 +103,7 @@ public class PermissionManager {
                 keyLength = newKeyLength;
             }
         }
-        return perm.hashPermission(member);
-    }
-
-    /**
-     * Get permission by action string
-     *
-     * @param action action to get permission for
-     * @return Optional containing the permission
-     */
-    public Optional<CommandPermission> getPermission(String action) {
-        return Optional.ofNullable(this.permissions.get(action));
+        return Optional.ofNullable(perm);
     }
 
     /**
@@ -119,7 +131,8 @@ public class PermissionManager {
      *
      * @param locale Translation to use
      */
-    public void updatePermissions(Locale locale) {
+    @Override
+    public void updateLocale(Locale locale) {
         this.permissions.clear();
         loadPermissions(locale);
     }
@@ -132,7 +145,9 @@ public class PermissionManager {
     private void loadPermissions(Locale locale) {
         //Load default permissions
         for (final ChatCommand c : CommandProvider.COMMANDS) {
-            this.permissions.putAll(c.getDefaultRanks(locale, this.guildID));
+            for (final CommandPermission p : c.getDefaultRanks(locale, this.guildID)) {
+                this.permissions.put(p.getAction(), p);
+            }
         }
 
         //Load permissions from database
@@ -151,7 +166,7 @@ public class PermissionManager {
                         continue;
                     }
                     final long requiredRole = rs.getLong("requiredRole");
-                    final CommandPermission perm = new CommandPermission(rank, requiredRole);
+                    final CommandPermission perm = new CommandPermission(action, rank, requiredRole);
                     permissions.put(action, perm);
                 }
             }

@@ -37,16 +37,19 @@ public class CommandPermission {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
+    private final String action;
     private final MemberRank rank;
     private final long roleID;
 
     /**
      * Constructor
      *
+     * @param action Action this CommandPermission is for
      * @param rank Rank required for this permission
      * @param role Role required for this permission
      */
-    public CommandPermission(final MemberRank rank, final long role) {
+    public CommandPermission(final String action, final MemberRank rank, final long role) {
+        this.action = action;
         this.rank = rank;
         this.roleID = role;
     }
@@ -74,10 +77,19 @@ public class CommandPermission {
         if (requiredRole == null) {
             //User has rank but role could not be found
             LOGGER.warn("Could not find a role needed for permission "
-                    + "Role: " + this.roleID + " in Guild: " + guild.getId());
+                    + "Role: {} in Guild: {}", this.roleID, guild.getId());
             return true;
         }
         return member.getRoles().contains(requiredRole);
+    }
+
+    /**
+     * Get the action this CommandPermission is for
+     *
+     * @return Action string
+     */
+    public String getAction() {
+        return this.action;
     }
 
     /**
@@ -96,11 +108,6 @@ public class CommandPermission {
      */
     public long getRequiredRoleID() {
         return this.roleID;
-    }
-
-    @Override
-    public String toString() {
-        return "Required rank: " + this.rank.name() + "required role id: " + this.roleID;
     }
 
 }

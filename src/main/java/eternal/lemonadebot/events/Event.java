@@ -50,7 +50,7 @@ public class Event {
      * Remember to set database id for this event when adding to database
      *
      * @param name name of the event
-     * @param description description for the event
+     * @param description description for the event, null if no description
      * @param owner owner of the event
      */
     public Event(String name, String description, Member owner) {
@@ -164,11 +164,23 @@ public class Event {
         jda.retrieveUserById(this.ownerID).queue((User eventCreator) -> {
             //Found user
             final String creatorName = eventCreator.getAsMention();
-            result.complete(String.format(template, this.name, this.description, creatorName));
+            final String eventDescription;
+            if(this.description == null){
+                eventDescription = TranslationKey.EVENT_NO_DESCRIPTION.getTranslation(locale);
+            } else {
+                eventDescription = this.description;
+            }
+            result.complete(String.format(template, this.name, eventDescription, creatorName));
         }, (Throwable t) -> {
             //User missing
             final String creatorName = TranslationKey.UNKNOWN_USER.getTranslation(locale);
-            result.complete(String.format(template, this.name, this.description, creatorName));
+            final String eventDescription;
+            if(this.description == null){
+                eventDescription = TranslationKey.EVENT_NO_DESCRIPTION.getTranslation(locale);
+            } else {
+                eventDescription = this.description;
+            }
+            result.complete(String.format(template, this.name, eventDescription, creatorName));
         });
         return result;
     }

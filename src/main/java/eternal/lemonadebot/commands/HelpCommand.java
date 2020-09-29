@@ -32,8 +32,9 @@ import eternal.lemonadebot.database.PermissionManager;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.translation.TranslationKey;
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
@@ -62,9 +63,8 @@ class HelpCommand implements ChatCommand {
     }
 
     @Override
-    public Map<String, CommandPermission> getDefaultRanks(Locale locale, long guildID) {
-        return Map.of(getCommand(locale),
-                new CommandPermission(MemberRank.USER, guildID));
+    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID) {
+        return List.of(new CommandPermission(getCommand(locale),MemberRank.USER, guildID));
     }
 
     @Override

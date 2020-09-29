@@ -33,8 +33,9 @@ import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.time.Duration;
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.JDA;
@@ -99,8 +100,8 @@ public class CustomCommand implements ChatCommand {
     }
 
     @Override
-    public Map<String, CommandPermission> getDefaultRanks(Locale locale, long guildID) {
-        return Map.of(getCommand(locale), new CommandPermission(MemberRank.USER, guildID));
+    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID) {
+        return List.of(new CommandPermission(getCommandName(),MemberRank.USER, guildID));
     }
 
     /**

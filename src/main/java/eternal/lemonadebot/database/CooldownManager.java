@@ -127,16 +127,13 @@ public class CooldownManager {
      * @return Optional of remaining cooldown if command still on cooldown
      */
     public Optional<Duration> updateActivationTime(String action) {
-        final Optional<Map.Entry<String, ActionCooldown>> cd = getCooldownEntry(action);
-
+        final Optional<ActionCooldown> cd = getActionCooldown(action);
         //Action does not have a cooldown
         if (cd.isEmpty()) {
             return Optional.empty();
         }
 
-        final Map.Entry<String, ActionCooldown> entry = cd.get();
-        final ActionCooldown cooldown = entry.getValue();
-
+        final ActionCooldown cooldown = cd.get();
         final Instant now = Instant.now();
         final Instant lastActivation = cooldown.getLastActivationTime();
         final Duration timeDelta = Duration.between(lastActivation, now);
@@ -155,7 +152,7 @@ public class CooldownManager {
         final String query = "INSERT OR REPLACE INTO Cooldowns(guild,command,duration,activationTime) VALUES(?,?,?,?)";
         try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            ps.setString(2, entry.getKey());
+            ps.setString(2, cooldown.getAction());
             ps.setLong(3, cooldownDuration.getSeconds());
             ps.setLong(4, now.getEpochSecond());
             ps.executeUpdate();
@@ -218,6 +215,12 @@ public class CooldownManager {
      * @return ActionCooldown if found
      */
     public Optional<ActionCooldown> getActionCooldown(String action) {
+        //If the action does not contain whitespace get the cooldown directly from map
+        if (action.indexOf(' ') == -1) {
+            return Optional.ofNullable(this.cooldowns.get(action));
+        }
+
+        //Action has whitespace, find longest prefix for action string
         long keyLength = 0;
         ActionCooldown matchingCooldown = null;
 
@@ -232,31 +235,6 @@ public class CooldownManager {
                 keyLength = newKeyLength;
             }
         }
-        return Optional.ofNullable(matchingCooldown);
-    }
-
-    /**
-     * Get matching cooldown entry for given action
-     *
-     * @param action Action to find entry for
-     * @return Optional containing the entry if found
-     */
-    private Optional<Map.Entry<String, ActionCooldown>> getCooldownEntry(String action) {
-        long keyLength = 0;
-        Map.Entry<String, ActionCooldown> matchingCooldown = null;
-
-        for (Map.Entry<String, ActionCooldown> cd : this.cooldowns.entrySet()) {
-            final String key = cd.getKey();
-            if (!action.startsWith(key)) {
-                continue;
-            }
-            final long newKeyLength = key.length();
-            if (newKeyLength > keyLength) {
-                matchingCooldown = cd;
-                keyLength = newKeyLength;
-            }
-        }
-
         return Optional.ofNullable(matchingCooldown);
     }
 

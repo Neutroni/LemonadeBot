@@ -31,6 +31,7 @@ import eternal.lemonadebot.database.PermissionManager;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.translation.ActionKey;
+import eternal.lemonadebot.translation.TranslationCache;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.util.List;
@@ -71,6 +72,7 @@ class PermissionCommand extends AdminCommand {
     public void respond(CommandMatcher message, GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
+        final TranslationCache translationCache = guildData.getTranslationCache();
         final Locale locale = guildConf.getLocale();
         final String[] arguments = message.getArguments(1);
         if (arguments.length == 0) {
@@ -79,7 +81,7 @@ class PermissionCommand extends AdminCommand {
         }
 
         final String actionString = arguments[0];
-        final ActionKey key = ActionKey.getAction(actionString, guildConf);
+        final ActionKey key = translationCache.getActionKey(actionString);
         switch (key) {
             case GET: {
                 getPermission(arguments, channel, guildData);
@@ -111,12 +113,14 @@ class PermissionCommand extends AdminCommand {
             if (r == null) {
                 final String template = TranslationKey.PERMISSION_RANK_MISSING_ROLE.getTranslation(locale);
                 final String rankName = perm.getRequiredRank().getNameKey().getTranslation(locale);
-                channel.sendMessageFormat(template, rankName).queue();
+                final String actionName = perm.getAction();
+                channel.sendMessageFormat(template, actionName, rankName).queue();
                 return;
             }
             final String template = TranslationKey.PERMISSION_REQUIRED_RANK_ROLE.getTranslation(locale);
             final String rankName = perm.getRequiredRank().getNameKey().getTranslation(locale);
-            channel.sendMessageFormat(template, rankName, r.getName()).queue();
+            final String actionName = perm.getAction();
+            channel.sendMessageFormat(template, actionName, rankName, r.getName()).queue();
         }, () -> {
             channel.sendMessage(TranslationKey.PERMISSION_NOT_FOUND.getTranslation(locale)).queue();
         });
@@ -125,6 +129,7 @@ class PermissionCommand extends AdminCommand {
     private void setPermission(CommandMatcher message, TextChannel channel, GuildDataStore guildData) {
         final PermissionManager permissions = guildData.getPermissionManager();
         final ConfigManager guildConf = guildData.getConfigManager();
+        final TranslationCache translationCache = guildData.getTranslationCache();
         final Locale locale = guildConf.getLocale();
 
         final String[] args = message.getArguments(3);
@@ -143,7 +148,7 @@ class PermissionCommand extends AdminCommand {
         final String rankName = args[1];
         final MemberRank rank;
         try {
-            rank = MemberRank.getByLocalizedName(rankName, guildConf);
+            rank = MemberRank.getByLocalizedName(rankName, guildConf.getLocale(), translationCache.getCollator());
         } catch (IllegalArgumentException e) {
             final MessageBuilder mb = new MessageBuilder();
             final String template = TranslationKey.PERMISSION_UNKNOWN_RANK.getTranslation(locale);
@@ -165,10 +170,10 @@ class PermissionCommand extends AdminCommand {
             }
             role = roles.get(0);
         }
-        final String permissionName = args[3];
-        final CommandPermission perm = new CommandPermission(rank, role.getIdLong());
+        final String actionString = args[3];
+        final CommandPermission perm = new CommandPermission(actionString, rank, role.getIdLong());
         try {
-            permissions.setPermission(permissionName, perm);
+            permissions.setPermission(actionString, perm);
         } catch (SQLException e) {
             channel.sendMessage(TranslationKey.PERMISSION_SQL_ERROR_ON_SET.getTranslation(locale)).queue();
             LOGGER.error("Failure to update permission in database: {}", e.getMessage());

@@ -37,8 +37,10 @@ import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.translation.ActionKey;
+import eternal.lemonadebot.translation.TranslationCache;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -86,12 +88,10 @@ public class MusicCommand implements ChatCommand {
     }
 
     @Override
-    public Map<String, CommandPermission> getDefaultRanks(Locale locale, long guildID) {
-        return Map.of(
-                getCommand(locale),
-                new CommandPermission(MemberRank.MEMBER, guildID),
-                getCommand(locale) + ' ' + TranslationKey.ACTION_LIST.getTranslation(locale),
-                new CommandPermission(MemberRank.USER, guildID)
+    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID) {
+        return List.of(
+                new CommandPermission(getCommand(locale), MemberRank.MEMBER, guildID),
+                new CommandPermission(getCommand(locale) + ' ' + TranslationKey.ACTION_LIST.getTranslation(locale), MemberRank.USER, guildID)
         );
     }
 
@@ -99,6 +99,7 @@ public class MusicCommand implements ChatCommand {
     public void respond(CommandMatcher message, GuildDataStore guildData) {
         final TextChannel textChannel = message.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
+        final TranslationCache translationCache = guildData.getTranslationCache();
         final Locale locale = guildConf.getLocale();
 
         //Get arguments and parse accordingly
@@ -109,7 +110,7 @@ public class MusicCommand implements ChatCommand {
         }
 
         final String action = arguments[0];
-        final ActionKey key = ActionKey.getAction(action, guildConf);
+        final ActionKey key = translationCache.getActionKey(action);
         switch (key) {
             case PLAY: {
                 if (arguments.length < 2) {

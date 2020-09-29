@@ -24,10 +24,12 @@
 package eternal.lemonadebot;
 
 import eternal.lemonadebot.database.DatabaseManager;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.Reader;
+import java.io.Writer;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
@@ -56,7 +58,7 @@ public class LemonadeBot {
      * @param args command line arguments
      */
     public static void main(String[] args) {
-        LOGGER.info("LemonadeBot starting up, version: " + BOT_VERSION);
+        LOGGER.info("LemonadeBot starting up, version: {}", BOT_VERSION);
 
         //Get property file location
         final String configLocation;
@@ -68,11 +70,12 @@ public class LemonadeBot {
 
         //Load properties
         final Properties properties = new Properties();
-        try (final InputStream inputStream = new FileInputStream(configLocation)) {
-            properties.load(inputStream);
+        try (final Reader inputReader = new FileReader(configLocation)) {
+            properties.load(inputReader);
         } catch (FileNotFoundException ex) {
             LOGGER.fatal("Could not find configuration file, {}", ex.getMessage());
             LOGGER.trace("Stack trace: ", ex);
+            generateDefaultPropertiesFile(configLocation);
             System.exit(Returnvalue.MISSING_CONFIG.ordinal());
         } catch (IOException ex) {
             LOGGER.fatal("Loading configuration file failed, {}", ex.getMessage());
@@ -128,5 +131,26 @@ public class LemonadeBot {
             LOGGER.trace("Stack trace: ", ex);
             System.exit(Returnvalue.CONFIG_READ_ERROR.ordinal());
         }
+    }
+
+    /**
+     * If configuration file could not be found attempt to write it
+     *
+     * @param configLocation location of configuration file
+     */
+    private static void generateDefaultPropertiesFile(String configLocation) {
+        LOGGER.debug("Attempting to write .properties file to: {}", configLocation);
+        final Properties properties = new Properties();
+        properties.setProperty("discord-api-key", "<discord api key here>");
+        properties.setProperty("database-location", "database.db");
+        properties.setProperty("max-messages", "1000");
+        try (final Writer f = new FileWriter(configLocation)) {
+            properties.store(f, "Configuration file for LemonadeBot");
+            LOGGER.debug("Configuration file succesfully created.");
+        } catch (IOException e) {
+            LOGGER.error("Properties file location is not writable and does not contain properties file. {}", e.getMessage());
+            LOGGER.trace("Stack trace:", e);
+        }
+
     }
 }

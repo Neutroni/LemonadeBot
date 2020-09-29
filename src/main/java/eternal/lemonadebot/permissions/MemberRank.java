@@ -23,7 +23,6 @@
  */
 package eternal.lemonadebot.permissions;
 
-import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.text.Collator;
 import java.util.Locale;
@@ -74,13 +73,12 @@ public enum MemberRank {
      * Get rank by translated name
      *
      * @param rankName name of the rank to find
-     * @param guildConf locale the name is in
+     * @param locale locale the name is in
+     * @param collator Collator to use to compate rank names
      * @return MemberRank if foud
      * @throws IllegalArgumentException if no matching rank could be found
      */
-    public static MemberRank getByLocalizedName(String rankName, ConfigManager guildConf) throws IllegalArgumentException {
-        final Locale locale = guildConf.getLocale();
-        final Collator collator = guildConf.getCollator();
+    public static MemberRank getByLocalizedName(String rankName, Locale locale, Collator collator) throws IllegalArgumentException {
         for (final MemberRank rank : MemberRank.values()) {
             if (collator.equals(rankName, rank.getNameKey().getTranslation(locale))) {
                 return rank;

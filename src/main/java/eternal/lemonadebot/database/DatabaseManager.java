@@ -140,7 +140,7 @@ public class DatabaseManager implements AutoCloseable {
         final String EVENTS = "CREATE TABLE IF NOT EXISTS Events("
                 + "guild INTEGER NOT NULL,"
                 + "name TEXT NOT NULL,"
-                + "description TEXT NOT NULL,"
+                + "description TEXT,"
                 + "owner INTEGER NOT NULL,"
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,name));";
@@ -150,14 +150,16 @@ public class DatabaseManager implements AutoCloseable {
                 + "member INTEGER NOT NULL,"
                 + "FOREIGN KEY (guild, name) REFERENCES Events(guild, name) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,name,member));";
-        final String REMAINDERS = "CREATE TABLE IF NOT EXISTS Remainders("
+        final String REMINDERS = "CREATE TABLE IF NOT EXISTS Reminders("
                 + "guild INTEGER NOT NULL,"
                 + "name TEXT NOT NULL,"
-                + "day TEXT NOT NULL,"
-                + "time INTEGER NOT NULL,"
                 + "message TEXT NOT NULL,"
                 + "author INTEGER NOT NULL,"
                 + "channel INTEGER NOT NULL,"
+                + "time INTEGER NOT NULL,"
+                + "dayOfWeek INTEGER NOT NULL,"
+                + "dayOfMonth INTEGER NOT NULL,"
+                + "monthOfYear INTEGER NOT NULL,"
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,name));";
         try (final Statement st = this.conn.createStatement()) {
@@ -168,7 +170,7 @@ public class DatabaseManager implements AutoCloseable {
             st.addBatch(COOLDOWNS);
             st.addBatch(EVENTS);
             st.addBatch(EVENT_MEMBERS);
-            st.addBatch(REMAINDERS);
+            st.addBatch(REMINDERS);
             st.executeBatch();
         }
         LOGGER.debug("Database initialized");

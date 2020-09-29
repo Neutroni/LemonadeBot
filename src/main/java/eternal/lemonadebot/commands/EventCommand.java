@@ -33,6 +33,7 @@ import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.translation.ActionKey;
+import eternal.lemonadebot.translation.TranslationCache;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -40,7 +41,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -125,15 +125,15 @@ public class EventCommand implements ChatCommand {
     }
 
     @Override
-    public Map<String, CommandPermission> getDefaultRanks(Locale locale, long guildID) {
-        return Map.of(getCommand(locale),
-                new CommandPermission(MemberRank.MEMBER, guildID));
+    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID) {
+        return List.of(new CommandPermission(getCommand(locale), MemberRank.MEMBER, guildID));
     }
 
     @Override
     public void respond(CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
+        final TranslationCache translationCache = guildData.getTranslationCache();
         final Locale locale = guildConf.getLocale();
 
         final String[] opts = matcher.getArguments(2);
@@ -143,7 +143,7 @@ public class EventCommand implements ChatCommand {
         }
 
         final String action = opts[0];
-        final ActionKey key = ActionKey.getAction(action, guildConf);
+        final ActionKey key = translationCache.getActionKey(action);
         switch (key) {
             case CREATE: {
                 createEvent(opts, matcher, guildData);
@@ -201,7 +201,7 @@ public class EventCommand implements ChatCommand {
         if (opts.length == 3) {
             description = opts[2];
         } else {
-            description = TranslationKey.EVENT_NO_DESCRIPTION.getTranslation(locale);
+            description = null;
         }
         final Event newEvent = new Event(eventName, description, sender);
 
@@ -404,12 +404,12 @@ public class EventCommand implements ChatCommand {
 
         final EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle(TranslationKey.HEADER_EVENTS.getTranslation(locale));
-        
+
         //Get the list of events
         final Collection<Event> ev = guildData.getEventManager().getEvents();
         final List<CompletableFuture<String>> futures = new ArrayList<>(ev.size());
         ev.forEach((Event event) -> {
-            futures.add(event.toListElement(locale,textChannel.getJDA()));
+            futures.add(event.toListElement(locale, textChannel.getJDA()));
         });
         //After all the futures all initialized start waiting for results
         final StringBuilder contentBuilder = new StringBuilder();

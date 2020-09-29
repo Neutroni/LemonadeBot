@@ -40,7 +40,7 @@ public enum TranslationKey {
     COMMAND_EVENT("event"),
     COMMAND_HELP("help"),
     COMMAND_PERMISSION("permission"),
-    COMMAND_REMAINDER("remainder"),
+    COMMAND_REMINDER("reminder"),
     COMMAND_ROLE("role"),
     COMMAND_TEMPLATE("template"),
     COMMAND_MUSIC("music"),
@@ -49,7 +49,7 @@ public enum TranslationKey {
     DESCRIPTION_EVENT("Manage events that people can join."),
     DESCRIPTION_HELP("Help for bot usage."),
     DESCRIPTION_PERMISSION("Manage permissions required to run commands."),
-    DESCRIPTION_REMAINDER("Manage remainders that can be sent out by the bot."),
+    DESCRIPTION_REMINDER("Manage reminders that can be sent out by the bot."),
     DESCRIPTION_ROLE("Command for getting a role from allied guilds."),
     DESCRIPTION_TEMPLATE("Manage custom commands."),
     DESCRIPTION_MUSIC("Play music."),
@@ -148,15 +148,17 @@ public enum TranslationKey {
             + "[rank] rank required for permission can be one of following\n"
             + "%s\n"
             + "[role] is a name of role needed for permission, use 'anyone' to disable role check"),
-    SYNTAX_REMAINDER("Syntax: remainder <action> <name> [day] [time] [message]\n"
+    SYNTAX_REMINDER("Syntax: reminder <action> <name> [time] [day] [month] [day of week] [message]\n"
             + "<action> can be one of the following:\n"
-            + " create - create new remainder\n"
-            + " delete - delete remainder\n"
-            + "<name> name of remainder\n"
-            + "<day> day the remainder activates on, use 'any' to create remainder that activates daily\n"
-            + "<time> time of the remainder hh:mm\n"
-            + "[message] message to be sent at the remainder activation\n"
-            + "Remainder will be activated on the channel it was created in"),
+            + " create - create new reminder\n"
+            + " delete - delete reminder\n"
+            + "<name> name of reminder\n"
+            + "<time> time of the reminder hh:mm\n"
+            + "<day> day the reminder activates on, 1-31 or *\n"
+            + "<month> month the reminder activates on 1-12 or *\n"
+            + "<day of week] day of week reminder activates on, either name of day written in full or *\n"
+            + "[message] message to be sent at the reminder activation\n"
+            + "Reminder will be activated on the channel it was created in"),
     SYNTAX_ROLE("Syntax: role [role]\n"
             + "If no role is provided try to automatically assign role.\n"
             + "Otherwise assign <role> to yourself"),
@@ -237,7 +239,7 @@ public enum TranslationKey {
     HEADER_EVENTS("Events:"),
     HEADER_PING("Ping!"),
     HEADER_GUILDS("Possible guilds:"),
-    HEADER_REMAINDERS("Remainders:"),
+    HEADER_REMINDERS("Reminders:"),
     HEADER_EVENT_MEMBERS("Members for the event %s:"),
     RANK_DESCRIPTION_USER("Account without roles."),
     RANK_DESCRIPTION_MEMBER("Account with at least one role."),
@@ -297,35 +299,42 @@ public enum TranslationKey {
     EVENT_COMMAND_LIST_ELEMENT("%s - %s by %s\n"),
     PERMISSION_ROLE_ANYONE("anyone"),
     PERMISSION_GET_MISSING_NAME("Provide name of permission to get curret value for."),
-    PERMISSION_NOT_FOUND("No permission with that name currently set."),
-    PERMISSION_RANK_MISSING_ROLE("Required rank: %s required role could not be found, defaulting to anyone."),
-    PERMISSION_REQUIRED_RANK_ROLE("Required rank: %s Required role: %s"),
+    PERMISSION_NOT_FOUND("No permission set for that action currently."),
+    PERMISSION_RANK_MISSING_ROLE("Action: %s requires rank: %s required role could not be found, defaulting to anyone."),
+    PERMISSION_REQUIRED_RANK_ROLE("Action: %s required rank: %s and role: %s"),
     PERMISSION_SET_MISSING_RANK("Provide the rank to set for permission."),
     PERMISSION_SET_MISSING_ROLE("Provide role to set for permission."),
     PERMISSION_SET_MISSING_ACTION("Provide name of permission to update."),
     PERMISSION_UNKNOWN_RANK("Unknown rank: %s\nValid rank names are:\n%s"),
     PERMISSION_ROLE_NOT_FOUND_NAME("Could not find a role with the name: "),
     PERMISSION_SQL_ERROR_ON_SET("Error setting the permission in database, old value might be restored after reboot."),
-    REMAINDER_MISSING_NAME("Remainder needs a name."),
-    REMAINDER_MISSING_DAY("Remainder needs a day to activate on."),
-    REMAINDER_DAY_DAILY("daily"),
-    REMAINDER_LIST_ELEMENT_TEMPLATE("%s - %s %s on channel %s by %s\n"),
-    REMAINDER_CHANNEL_MISSING("Remainder %s deleted due to missing channel"),
-    REMAINDER_USER_MISSING("Remainder %s deleted due to missing user"),
-    REMAINDER_MISSING_TIME("Remainder needs a time to activate on."),
-    REMAINDER_UNKNOWN_TIME("Unknown time: %s provide time in format hh:mm"),
-    REMAINDER_MISSING_MESSAGE("Remainder needs a message to send at scheduled time"),
-    REMAINDER_ALREADY_EXISTS("Matching remainder already exists."),
-    REMAINDER_CREATE_SUCCESS("Remainder succesfully created.\n First activation at: %s"),
-    REMAINDER_SQL_ERROR_ON_CREATE("Error adding remainder to database, remainder might be disappear after reboot."),
-    REMAINDER_DELETE_MISSING_NAME("Provide the name of the remainder you want to delete."),
-    REMAINDER_NOT_FOUND_NAME("Could not find remainder with name: %s"),
-    REMAINDER_DELETE_MISSING_PERMISSION("You do not have permission to remove that remainder, "
-            + "only the remainder owner and admins can remove remainders."),
-    REMAINDER_NO_REMAINDERS("No remainders found."),
-    REMAINDER_DELETE_SUCCESS("Remainder succesfully removed."),
-    REMAINDER_SQL_ERROR_ON_DELETE("Error removing remainder from database, remainder might reappear after reboot."),
-    REMAINDER_ERROR_UNKNOWN_DAY("Day must be weekday written in full, for example, 'Sunday', or special day 'Any' for daily activation."),
+    REMINDER_MISSING_NAME("Reminder needs a name."),
+    REMINDER_MISSING_DAY("Reminder needs a day to activate on, use * to denote any day."),
+    REMINDER_INVALID_DATE("Day out of valid range, such date would never occur."),
+    REMINDER_DAY_OF_MONTH_NOT_NUMBER("Reminder day of month must either be a number in range 1 to 31 or * to denote any day."),
+    REMINDER_DAY_OF_MONTH_OUT_OF_RANGE("Day must be in range of 1 to 31 use * to denote any day."),
+    REMINDER_MISSING_MONTH("Reminder needs a month to activate on, either a number in range 1 to 12 or * denote any month."),
+    REMINDER_MONTH_NOT_NUMBER("Month must either a number in range 1 to 12 or * to denote any month."),
+    REMINDER_MONTH_OUT_OF_RANGE("Month out of valid range, must either be a number in range 1 to 12 or * to denote any month."),
+    REMINDER_MISSING_DAY_OF_WEEK("Remainder needs a day of week to activate, either name of day written in full or * to denote any day."),
+    REMINDER_LIST_ELEMENT_TEMPLATE("%s - Template: %s Activates at: %s on channel %s by %s\n"),
+    REMINDER_CHANNEL_MISSING("Reminder %s deleted due to missing channel"),
+    REMINDER_USER_MISSING("Reminder %s deleted due to missing user"),
+    REMINDER_MISSING_TIME("Reminder needs a time to activate on."),
+    REMINDER_TIME_FORMAT("HH:mm"),
+    REMINDER_UNKNOWN_TIME("Unknown time: %s provide time in format hh:mm"),
+    REMINDER_MISSING_MESSAGE("Reminder needs a message to send at scheduled time"),
+    REMINDER_ALREADY_EXISTS("Matching reminder already exists."),
+    REMINDER_CREATE_SUCCESS("Reminder created succesfully."),
+    REMINDER_SQL_ERROR_ON_CREATE("Error adding reminder to database, reminder might be disappear after reboot."),
+    REMINDER_DELETE_MISSING_NAME("Provide the name of the reminder you want to delete."),
+    REMINDER_NOT_FOUND_NAME("Could not find reminder with name: %s"),
+    REMINDER_DELETE_MISSING_PERMISSION("You do not have permission to remove that reminder, "
+            + "only the reminder owner and admins can remove reminders."),
+    REMINDER_NO_REMINDERS("No reminders found."),
+    REMINDER_DELETE_SUCCESS("Reminder succesfully removed."),
+    REMINDER_SQL_ERROR_ON_DELETE("Error removing reminder from database, reminder might reappear after reboot."),
+    REMINDER_ERROR_UNKNOWN_DAY("Day must be weekday written in full, for example, 'Sunday', or special day 'Any' for daily activation."),
     ROLE_BOT_NO_PERMISSION("It appears I can't assign roles here, if you think this to be a mistake contact server adminstrators."),
     ROLE_ALREADY_HAS_ROLE("You cannot assign role to yourself using this command if you alredy have a role."),
     ROLE_CURRENT_GUILD_NOT_ALLOWED("Can't assign role for current server, check rules if you want member status."),

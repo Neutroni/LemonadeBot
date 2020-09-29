@@ -30,7 +30,7 @@ import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.CooldownManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.translation.ActionKey;
-import eternal.lemonadebot.translation.TimeKey;
+import eternal.lemonadebot.translation.TranslationCache;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.time.Duration;
@@ -70,6 +70,7 @@ public class CooldownCommand extends AdminCommand {
         final String[] arguments = message.getArguments(1);
         final TextChannel channel = message.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
+        final TranslationCache translationCache = guildData.getTranslationCache();
         final Locale locale = guildConf.getLocale();
         if (arguments.length == 0) {
             channel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
@@ -81,7 +82,7 @@ public class CooldownCommand extends AdminCommand {
         }
 
         final String option = arguments[0];
-        final ActionKey key = ActionKey.getAction(option, guildConf);
+        final ActionKey key = translationCache.getActionKey(option);
         switch (key) {
             case GET: {
                 getCooldown(channel, guildData, arguments[1]);
@@ -155,15 +156,17 @@ public class CooldownCommand extends AdminCommand {
         }
 
         final String unitName = arguments[2].toLowerCase();
+        final TranslationCache translationCache = guildData.getTranslationCache();
+        final Optional<ChronoUnit> optUnit = translationCache.getChronoUnit(unitName);
         final ChronoUnit unit;
-        try {
-            unit = TimeKey.getTimeKey(unitName, guildConf).getChronoUnit();
-        } catch (IllegalArgumentException e) {
+        if (optUnit.isPresent()) {
+            unit = optUnit.get();
+        } else {
             channel.sendMessage(TranslationKey.COOLDOWN_UNKNOWN_UNIT.getTranslation(locale) + arguments[2]).queue();
             return;
         }
-        final Duration cooldownDuration = Duration.of(timeAmount, unit);
 
+        final Duration cooldownDuration = Duration.of(timeAmount, unit);
         if (arguments.length < 4) {
             channel.sendMessage(TranslationKey.COOLDOWN_NO_ACTION.getTranslation(locale)).queue();
             return;

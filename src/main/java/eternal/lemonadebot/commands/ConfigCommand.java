@@ -27,8 +27,8 @@ import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.AdminCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.database.PermissionManager;
 import eternal.lemonadebot.translation.ActionKey;
+import eternal.lemonadebot.translation.TranslationCache;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.util.List;
@@ -66,6 +66,7 @@ class ConfigCommand extends AdminCommand {
     public void respond(CommandMatcher message, GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
         final ConfigManager config = guildData.getConfigManager();
+        final TranslationCache translationCache = guildData.getTranslationCache();
         final Locale locale = config.getLocale();
         final String[] options = message.getArguments(2);
         if (options.length == 0) {
@@ -74,7 +75,7 @@ class ConfigCommand extends AdminCommand {
         }
 
         final String action = options[0];
-        final ActionKey key = ActionKey.getAction(action, config);
+        final ActionKey key = translationCache.getActionKey(action);
         switch (key) {
             case SET: {
                 if (options.length < 2) {
@@ -119,8 +120,9 @@ class ConfigCommand extends AdminCommand {
      */
     private void setValue(String config, String value, TextChannel channel, GuildDataStore guildData, CommandMatcher matcher) {
         final ConfigManager guildConf = guildData.getConfigManager();
+        final TranslationCache translationCache = guildData.getTranslationCache();
         final Locale locale = guildConf.getLocale();
-        final ActionKey key = ActionKey.getAction(config, guildConf);
+        final ActionKey key = translationCache.getActionKey(config);
         switch (key) {
             case PREFIX: {
                 try {
@@ -166,13 +168,6 @@ class ConfigCommand extends AdminCommand {
                     final Locale newLocale = new Locale(value);
                     if (guildConf.setLocale(newLocale)) {
                         channel.sendMessage(TranslationKey.CONFIG_LANGUAGE_UPDATE_SUCCESS.getTranslation(newLocale) + newLocale.getDisplayLanguage(newLocale)).queue();
-
-                        //Update permissions to new locale
-                        final PermissionManager permissions = guildData.getPermissionManager();
-                        permissions.updatePermissions(newLocale);
-                        //update localized commandprovider for new locale
-                        final CommandProvider commands = guildData.getCommandProvider();
-                        commands.updateLocale(newLocale);
                     } else {
                         final String supportedLanguages = ConfigManager.SUPPORTED_LOCALES.stream().map((t) -> {
                             return t.getLanguage() + " - " + t.getDisplayLanguage(locale);
@@ -204,8 +199,9 @@ class ConfigCommand extends AdminCommand {
      */
     private void getValue(String option, TextChannel channel, GuildDataStore guildData) {
         final ConfigManager guildConf = guildData.getConfigManager();
+        final TranslationCache translationCache = guildData.getTranslationCache();
         final Locale locale = guildConf.getLocale();
-        final ActionKey key = ActionKey.getAction(option, guildConf);
+        final ActionKey key = translationCache.getActionKey(option);
         switch (key) {
             case PREFIX: {
                 channel.sendMessageFormat(TranslationKey.CONFIG_CURRENT_PREFIX.getTranslation(locale), guildConf.getCommandPrefix()).queue();
@@ -251,8 +247,9 @@ class ConfigCommand extends AdminCommand {
      */
     private void disableValue(String option, TextChannel channel, GuildDataStore guildData) {
         final ConfigManager guildConf = guildData.getConfigManager();
+        final TranslationCache translationCache = guildData.getTranslationCache();
         final Locale locale = guildConf.getLocale();
-        final ActionKey key = ActionKey.getAction(option, guildConf);
+        final ActionKey key = translationCache.getActionKey(option);
         switch (key) {
             case PREFIX: {
                 channel.sendMessage(TranslationKey.CONFIG_DISABLE_PREFIX.getTranslation(locale)).queue();

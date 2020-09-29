@@ -24,7 +24,9 @@
 package eternal.lemonadebot.database;
 
 import eternal.lemonadebot.commands.CommandProvider;
+import eternal.lemonadebot.translation.TranslationCache;
 import java.sql.Connection;
+import java.util.Locale;
 import net.dv8tion.jda.api.JDA;
 
 /**
@@ -39,28 +41,36 @@ public class GuildDataStore implements AutoCloseable {
     private final PermissionManager permissions;
     private final TemplateManager commands;
     private final EventManager events;
-    private final RemainderManager remainders;
+    private final ReminderManager reminders;
     private final CooldownManager cooldowns;
     private final MessageManager messages;
     private final CommandProvider commandProvider;
+    private final TranslationCache translationCache;
 
     /**
      * Constructor
      *
      * @param connection database connection to use
      * @param guild Guild this config is for
-     * @param jda JDA to use for remainders
+     * @param jda JDA to use for reminders
      */
     GuildDataStore(final Connection connection, final Long guildID, JDA jda, final int maxMessages) {
         this.guildID = guildID;
         this.config = new ConfigManager(connection, guildID);
-        this.permissions = new PermissionManager(connection, guildID, this.config);
+        final Locale locale = this.config.getLocale();
+        this.permissions = new PermissionManager(connection, guildID, locale);
         this.events = new EventManager(connection, guildID);
         this.cooldowns = new CooldownManager(connection, guildID);
         this.commands = new TemplateManager(connection, this.cooldowns, guildID);
-        this.remainders = new RemainderManager(connection, jda, this, guildID);
+        this.reminders = new ReminderManager(connection, jda, this, guildID);
         this.messages = new MessageManager(connection, maxMessages);
-        this.commandProvider = new CommandProvider(this.config, this.commands);
+        this.commandProvider = new CommandProvider(locale, this.commands);
+        this.translationCache = new TranslationCache(locale);
+        
+        //Add locale update listeners
+        this.config.registerLocaleUpdateListener(this.permissions);
+        this.config.registerLocaleUpdateListener(this.commandProvider);
+        this.config.registerLocaleUpdateListener(this.translationCache);
     }
 
     /**
@@ -109,12 +119,12 @@ public class GuildDataStore implements AutoCloseable {
     }
 
     /**
-     * Get the remaindermanager for this datastore
+     * Get the remindermanager for this datastore
      *
-     * @return RemainderManager
+     * @return ReminderManager
      */
-    public RemainderManager getRemainderManager() {
-        return this.remainders;
+    public ReminderManager getReminderManager() {
+        return this.reminders;
     }
 
     /**
@@ -144,9 +154,18 @@ public class GuildDataStore implements AutoCloseable {
         return this.commandProvider;
     }
 
+    /**
+     * Get the translationcache
+     *
+     * @return TranslationCache
+     */
+    public TranslationCache getTranslationCache() {
+        return this.translationCache;
+    }
+
     @Override
     public void close() {
-        this.remainders.close();
+        this.reminders.close();
     }
 
 }

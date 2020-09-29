@@ -25,9 +25,9 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.TemplateManager;
 import eternal.lemonadebot.music.MusicCommand;
+import eternal.lemonadebot.translation.LocaleUpdateListener;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Neutroni
  */
-public class CommandProvider {
+public class CommandProvider implements LocaleUpdateListener {
 
     /**
      * List of all the built in commands
@@ -53,7 +53,7 @@ public class CommandProvider {
             //Admin commands
             new ConfigCommand(),
             new CooldownCommand(),
-            new RemainderCommand(),
+            new ReminderCommand(),
             new PermissionCommand()
     );
 
@@ -63,12 +63,11 @@ public class CommandProvider {
     /**
      * Constructor
      *
-     * @param config ConfigManager to get locale from
+     * @param locale Locale in which to load command names in
      * @param templates TemplateManager to get templates from
      */
-    public CommandProvider(ConfigManager config, TemplateManager templates) {
+    public CommandProvider(Locale locale, TemplateManager templates) {
         this.templateManager = templates;
-        final Locale locale = config.getLocale();
         //Load translated built in commands
         COMMANDS.forEach(command -> {
             this.commandMap.put(command.getCommand(locale), command);
@@ -116,7 +115,8 @@ public class CommandProvider {
      *
      * @param newLocale
      */
-    void updateLocale(Locale newLocale) {
+    @Override
+    public void updateLocale(Locale newLocale) {
         this.commandMap.clear();
         COMMANDS.forEach(command -> {
             this.commandMap.put(command.getCommand(newLocale), command);

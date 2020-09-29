@@ -32,9 +32,9 @@ import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.stream.Collectors;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.Permission;
@@ -70,9 +70,8 @@ class RoleCommand implements ChatCommand {
     }
 
     @Override
-    public Map<String, CommandPermission> getDefaultRanks(Locale locale, long guildID) {
-        return Map.of(getCommand(locale),
-                new CommandPermission(MemberRank.USER, guildID));
+    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID) {
+        return List.of(new CommandPermission(getCommand(locale), MemberRank.USER, guildID));
     }
 
     @Override
@@ -105,14 +104,14 @@ class RoleCommand implements ChatCommand {
 
         //Ignore current server
         final String requestedRoleName = parameters[0];
-        final Collator collator = guildConf.getCollator();
+        final Collator collator = guildData.getTranslationCache().getCollator();
         if (collator.equals(guild.getName(), requestedRoleName)) {
             channel.sendMessage(TranslationKey.ROLE_CURRENT_GUILD_NOT_ALLOWED.getTranslation(locale)).queue();
             return;
         }
 
         //Try to assign the role user wants
-        assignRole(channel, sender, requestedRoleName, guildConf);
+        assignRole(channel, sender, requestedRoleName, guildData);
     }
 
     /**
@@ -123,10 +122,11 @@ class RoleCommand implements ChatCommand {
      * @param currentGuild Current guild
      * @param requestedRoleName Name of the role user wants
      */
-    private void assignRole(TextChannel channel, Member sender, String requestedRoleName, ConfigManager guildConf) {
+    private void assignRole(TextChannel channel, Member sender, String requestedRoleName, GuildDataStore guildData) {
         final Guild currentGuild = channel.getGuild();
+        final ConfigManager guildConf = guildData.getConfigManager();
         final Locale locale = guildConf.getLocale();
-        final Collator collator = guildConf.getCollator();
+        final Collator collator = guildData.getTranslationCache().getCollator();
         //Guilds we share with the user
         final List<Guild> mutualGuilds = sender.getUser().getMutualGuilds();
 

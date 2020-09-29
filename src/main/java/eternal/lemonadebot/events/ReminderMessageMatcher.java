@@ -36,19 +36,19 @@ import net.dv8tion.jda.api.entities.TextChannel;
  *
  * @author Neutroni
  */
-class RemainderMessageMatcher implements CommandMatcher {
+class ReminderMessageMatcher implements CommandMatcher {
 
     private final Member author;
     private final TextChannel channel;
 
     /**
-     * Constructor for remainder command invocations
+     * Constructor for reminder command invocations
      *
      * @param author message author
      * @param channel Channel message was sent int
      * @param fakeContent Message content
      */
-    RemainderMessageMatcher(Member author, TextChannel channel) {
+    ReminderMessageMatcher(Member author, TextChannel channel) {
         this.author = author;
         this.channel = channel;
     }
@@ -60,7 +60,7 @@ class RemainderMessageMatcher implements CommandMatcher {
      */
     @Override
     public Optional<String> getCommand() {
-        return Optional.of("remainder");
+        return Optional.of("reminder");
     }
 
     /**

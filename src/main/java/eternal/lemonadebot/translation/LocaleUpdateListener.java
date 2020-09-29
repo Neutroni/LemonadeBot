@@ -23,34 +23,14 @@
  */
 package eternal.lemonadebot.translation;
 
+import java.util.Locale;
+
 /**
- * Used help selecting action from translated input, see TranslationCache
  *
  * @author Neutroni
  */
-public enum ActionKey {
-    ADD,
-    REMOVE,
-    CREATE,
-    DELETE,
-    LIST,
-    SET,
-    GET,
-    JOIN,
-    LEAVE,
-    DISABLE,
-    LIST_MEMBERS,
-    CLEAR,
-    PING,
-    RANDOM,
-    PLAY,
-    SKIP,
-    PAUSE,
-    STOP,
-    PREFIX,
-    GREETING,
-    LOG_CHANNEL,
-    LANGUAGE,
-    COMMANDS,
-    UNKNOWN;
+public interface LocaleUpdateListener {
+
+    public void updateLocale(Locale newLocale);
+
 }

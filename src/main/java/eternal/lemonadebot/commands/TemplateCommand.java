@@ -34,12 +34,13 @@ import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.translation.ActionKey;
+import eternal.lemonadebot.translation.TranslationCache;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -75,15 +76,15 @@ public class TemplateCommand implements ChatCommand {
     }
 
     @Override
-    public Map<String, CommandPermission> getDefaultRanks(Locale locale, long guildID) {
-        return Map.of(getCommand(locale),
-                new CommandPermission(MemberRank.MEMBER, guildID));
+    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID) {
+        return List.of(new CommandPermission(getCommand(locale), MemberRank.MEMBER, guildID));
     }
 
     @Override
     public void respond(CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
+        final TranslationCache translationCache = guildData.getTranslationCache();
         final Locale locale = guildConf.getLocale();
         final String[] arguments = matcher.getArguments(2);
         if (arguments.length == 0) {
@@ -92,7 +93,7 @@ public class TemplateCommand implements ChatCommand {
         }
 
         final String actionName = arguments[0];
-        final ActionKey action = ActionKey.getAction(actionName, guildConf);
+        final ActionKey action = translationCache.getActionKey(actionName);
         switch (action) {
             case CREATE: {
                 createCustomCommand(arguments, matcher, guildData);
@@ -203,7 +204,7 @@ public class TemplateCommand implements ChatCommand {
         //Get the list of templates
         final Collection<CustomCommand> templates = guildData.getCustomCommands().getCommands();
         final ArrayList<CompletableFuture<String>> futures = new ArrayList<>(templates.size());
-        templates.forEach(command -> {
+        templates.forEach((CustomCommand command) -> {
             futures.add(command.toListElement(locale, textChannel.getJDA()));
         });
         //After all the futures all initialized start waiting for results
