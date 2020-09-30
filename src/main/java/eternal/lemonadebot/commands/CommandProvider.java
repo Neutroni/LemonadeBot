@@ -54,7 +54,8 @@ public class CommandProvider implements LocaleUpdateListener {
             new ConfigCommand(),
             new CooldownCommand(),
             new ReminderCommand(),
-            new PermissionCommand()
+            new PermissionCommand(),
+            new KeywordCommand()
     );
 
     private final Map<String, ChatCommand> commandMap = new ConcurrentHashMap<>();

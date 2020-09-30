@@ -25,10 +25,10 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.ChatCommand;
+import eternal.lemonadebot.customcommands.Event;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.customcommands.Event;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.permissions.PermissionUtilities;
@@ -284,14 +284,14 @@ public class EventCommand implements ChatCommand {
             textChannel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
             return;
         }
-        
+
         //Check if event is locked
         final Event event = oldEvent.get();
-        if(event.isLocked()){
+        if (event.isLocked()) {
             textChannel.sendMessage(TranslationKey.EVENT_JOIN_LOCKED.getTranslation(locale)).queue();
             return;
         }
-        
+
         try {
             if (events.joinEvent(event, sender)) {
                 textChannel.sendMessage(TranslationKey.EVENT_JOIN_SUCCESS.getTranslation(locale)).queue();
@@ -321,14 +321,14 @@ public class EventCommand implements ChatCommand {
             textChannel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
             return;
         }
-        
+
         //Check if event is locked
         final Event event = oldEvent.get();
-        if(event.isLocked()){
+        if (event.isLocked()) {
             textChannel.sendMessage(TranslationKey.EVENT_LEAVE_LOCKED.getTranslation(locale)).queue();
             return;
         }
-        
+
         //Leave the event
         try {
             if (events.leaveEvent(event, sender.getIdLong())) {

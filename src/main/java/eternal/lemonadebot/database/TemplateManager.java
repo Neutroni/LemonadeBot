@@ -24,8 +24,6 @@
 package eternal.lemonadebot.database;
 
 import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.permissions.CommandPermission;
-import eternal.lemonadebot.permissions.MemberRank;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

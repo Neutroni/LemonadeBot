@@ -231,7 +231,7 @@ public class ReminderManager implements AutoCloseable {
                         }
                     }
 
-                    final ReminderActivationTime reminderActivationTime = new ReminderActivationTime(activationTime,activationDay,dayOfMonth,reminderMonth);
+                    final ReminderActivationTime reminderActivationTime = new ReminderActivationTime(activationTime, activationDay, dayOfMonth, reminderMonth);
 
                     //Construct and add to list of reminders
                     final Reminder reminder = new Reminder(this.jda, this.guildData,

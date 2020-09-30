@@ -30,15 +30,10 @@ import eternal.lemonadebot.database.CooldownManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.KeywordManager;
-import eternal.lemonadebot.database.PermissionManager;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.time.Duration;
-import java.util.Locale;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.PrivateChannel;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
@@ -80,14 +75,14 @@ public class MessageKeywordListener extends ListenerAdapter {
             if (!com.matches(input)) {
                 continue;
             }
-            
+
             //Check cooldown
             final String commandName = com.getName();
             final Optional<Duration> cooldownTime = cooldownManager.updateActivationTime(commandName);
             if (cooldownTime.isPresent()) {
                 return;
             }
-            
+
             //Run the command
             final CommandMatcher fakeMatcher = new FakeMessageMatcher(commandMatcher, commandName);
             com.respond(fakeMatcher, guildData);

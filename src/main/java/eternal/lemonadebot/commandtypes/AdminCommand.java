@@ -38,6 +38,6 @@ public abstract class AdminCommand implements ChatCommand {
 
     @Override
     public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID) {
-        return List.of(new CommandPermission(getCommand(locale),MemberRank.ADMIN, guildID));
+        return List.of(new CommandPermission(getCommand(locale), MemberRank.ADMIN, guildID));
     }
 }

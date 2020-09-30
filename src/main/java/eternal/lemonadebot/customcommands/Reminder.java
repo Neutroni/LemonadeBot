@@ -24,8 +24,6 @@
 package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.CommandMatcher;
-import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.customcommands.TemplateProvider;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.translation.TranslationCache;
 import eternal.lemonadebot.translation.TranslationKey;
@@ -73,7 +71,7 @@ public class Reminder extends CustomCommand implements Runnable {
      */
     public Reminder(JDA jda, GuildDataStore guildData, String name, String input,
             long channelID, long author, ReminderActivationTime activationTime) {
-        super(name,input,author);
+        super(name, input, author);
         this.jda = jda;
         this.guildData = guildData;
         this.channelID = channelID;
@@ -163,7 +161,7 @@ public class Reminder extends CustomCommand implements Runnable {
 
     public CompletableFuture<String> toListElement(Locale locale) {
         final CompletableFuture<String> result = new CompletableFuture<>();
-        
+
         //Get the channel for reminder
         final TextChannel channel = this.jda.getTextChannelById(this.channelID);
         if (channel == null) {
@@ -175,7 +173,7 @@ public class Reminder extends CustomCommand implements Runnable {
 
         final TranslationCache translationCache = this.guildData.getTranslationCache();
         final DateTimeFormatter timeFormatter = translationCache.getTimeFormatter();
-        final String cronString = this.activationTime.getCronString(locale,timeFormatter);
+        final String cronString = this.activationTime.getCronString(locale, timeFormatter);
         final String channelName = channel.getAsMention();
         final String template = TranslationKey.REMINDER_LIST_ELEMENT_TEMPLATE.getTranslation(locale);
         this.jda.retrieveUserById(getAuthor()).queue((User reminderOwner) -> {

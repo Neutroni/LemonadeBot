@@ -25,11 +25,11 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.AdminCommand;
+import eternal.lemonadebot.customcommands.Reminder;
+import eternal.lemonadebot.customcommands.ReminderActivationTime;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.ReminderManager;
-import eternal.lemonadebot.customcommands.Reminder;
-import eternal.lemonadebot.customcommands.ReminderActivationTime;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;

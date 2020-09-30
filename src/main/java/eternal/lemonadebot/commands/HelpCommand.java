@@ -64,7 +64,7 @@ class HelpCommand implements ChatCommand {
 
     @Override
     public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID) {
-        return List.of(new CommandPermission(getCommand(locale),MemberRank.USER, guildID));
+        return List.of(new CommandPermission(getCommand(locale), MemberRank.USER, guildID));
     }
 
     @Override

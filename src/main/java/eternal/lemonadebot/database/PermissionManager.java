@@ -69,7 +69,7 @@ public class PermissionManager implements LocaleUpdateListener {
      */
     public boolean hasPermission(Member member, String action) {
         final Optional<CommandPermission> optPerm = getPermission(action);
-        if(optPerm.isPresent()){
+        if (optPerm.isPresent()) {
             final CommandPermission perm = optPerm.get();
             return perm.hashPermission(member);
         }

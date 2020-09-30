@@ -28,6 +28,7 @@ import java.time.Instant;
 
 /**
  * Class that stores cooldown set for action
+ *
  * @author Neutroni
  */
 public class ActionCooldown {
@@ -47,12 +48,13 @@ public class ActionCooldown {
         this.cooldownDuration = Duration.ofSeconds(cooldownDurationSeconds);
         this.activationTime = Instant.ofEpochSecond(activationTimeSeconds);
     }
-    
+
     /**
      * Update the cooldown set for action
+     *
      * @param duration duration to set
      */
-    void updateCooldownDuration(Duration duration){
+    void updateCooldownDuration(Duration duration) {
         this.cooldownDuration = duration;
     }
 
@@ -64,7 +66,7 @@ public class ActionCooldown {
     void updateActivationTime(Instant activation) {
         this.activationTime = activation;
     }
-    
+
     Instant getLastActivationTime() {
         return this.activationTime;
     }
