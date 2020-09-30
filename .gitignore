@@ -13,6 +13,9 @@ logfile.log
 database.db
 *.bak
 
+#Config file
+lemonadebot.properties
+
 # Compiled class file
 *.class
 
