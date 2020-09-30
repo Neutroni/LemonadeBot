@@ -54,7 +54,7 @@ public class CustomCommand implements ChatCommand {
 
     private final String commandName;
     private final String actionTemplate;
-    private final long owner;
+    private final long author;
 
     /**
      * Constructor
@@ -66,7 +66,7 @@ public class CustomCommand implements ChatCommand {
     public CustomCommand(String commandName, String actionTemplate, long owner) {
         this.commandName = commandName;
         this.actionTemplate = actionTemplate;
-        this.owner = owner;
+        this.author = owner;
     }
 
     /**
@@ -85,7 +85,7 @@ public class CustomCommand implements ChatCommand {
      *
      * @return Command name
      */
-    public String getCommandName() {
+    public String getName() {
         return this.commandName;
     }
 
@@ -101,7 +101,7 @@ public class CustomCommand implements ChatCommand {
 
     @Override
     public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID) {
-        return List.of(new CommandPermission(getCommandName(),MemberRank.USER, guildID));
+        return List.of(new CommandPermission(getName(), MemberRank.USER, guildID));
     }
 
     /**
@@ -118,8 +118,8 @@ public class CustomCommand implements ChatCommand {
      *
      * @return ID of the owner
      */
-    public long getOwner() {
-        return this.owner;
+    public long getAuthor() {
+        return this.author;
     }
 
     @Override
@@ -149,17 +149,23 @@ public class CustomCommand implements ChatCommand {
             channel.sendMessage(TranslationKey.ERROR_COMMAND_NOT_FOUND.getTranslation(locale) + commandString).queue();
             return;
         }
+
+        //Check if command is custom command, do not allow recursion
         final ChatCommand command = optCommand.get();
         if (command instanceof CustomCommand) {
             channel.sendMessage(TranslationKey.ERROR_RECURSION_NOT_PERMITTED.getTranslation(locale)).queue();
             return;
         }
+
+        //Check if user has permission to run the command
         final Member member = message.getMember();
         final PermissionManager permissions = guildData.getPermissionManager();
-        if (permissions.hasPermission(member, commandString)) {
+        if (!permissions.hasPermission(member, commandString)) {
             channel.sendMessage(TranslationKey.ERROR_INSUFFICIENT_PERMISSION.getTranslation(locale)).queue();
+            return;
         }
 
+        //Check if command is on cooldown
         final CooldownManager cdm = guildData.getCooldownManager();
         final Optional<Duration> optCooldown = cdm.updateActivationTime(commandString);
         if (optCooldown.isPresent()) {
@@ -195,7 +201,7 @@ public class CustomCommand implements ChatCommand {
     public CompletableFuture<String> toListElement(Locale locale, JDA jda) {
         final CompletableFuture<String> result = new CompletableFuture<>();
         final String template = TranslationKey.TEMPLATE_COMMAND_LIST_ELEMENT.getTranslation(locale);
-        jda.retrieveUserById(this.owner).queue((User commandOwner) -> {
+        jda.retrieveUserById(this.author).queue((User commandOwner) -> {
             //Found user
             final String creatorName = commandOwner.getAsMention();
             result.complete(String.format(template, this.commandName, creatorName));

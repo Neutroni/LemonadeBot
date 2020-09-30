@@ -46,6 +46,7 @@ public class GuildDataStore implements AutoCloseable {
     private final MessageManager messages;
     private final CommandProvider commandProvider;
     private final TranslationCache translationCache;
+    private final KeywordManager keywordManager;
 
     /**
      * Constructor
@@ -66,7 +67,8 @@ public class GuildDataStore implements AutoCloseable {
         this.messages = new MessageManager(connection, maxMessages);
         this.commandProvider = new CommandProvider(locale, this.commands);
         this.translationCache = new TranslationCache(locale);
-        
+        this.keywordManager = new KeywordManager(connection, guildID, this.cooldowns);
+
         //Add locale update listeners
         this.config.registerLocaleUpdateListener(this.permissions);
         this.config.registerLocaleUpdateListener(this.commandProvider);
@@ -161,6 +163,15 @@ public class GuildDataStore implements AutoCloseable {
      */
     public TranslationCache getTranslationCache() {
         return this.translationCache;
+    }
+
+    /**
+     * Get the keywordmanager for guild
+     *
+     * @return KeywordManager
+     */
+    public KeywordManager getKeywordManager() {
+        return this.keywordManager;
     }
 
     @Override

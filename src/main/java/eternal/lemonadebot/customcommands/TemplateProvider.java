@@ -26,7 +26,6 @@ package eternal.lemonadebot.customcommands;
 import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.events.Event;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.time.LocalDate;
 import java.time.Period;

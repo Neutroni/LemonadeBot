@@ -23,8 +23,8 @@
  */
 package eternal.lemonadebot.database;
 
-import eternal.lemonadebot.events.Reminder;
-import eternal.lemonadebot.events.ReminderActivationTime;
+import eternal.lemonadebot.customcommands.Reminder;
+import eternal.lemonadebot.customcommands.ReminderActivationTime;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -97,7 +97,7 @@ public class ReminderManager implements AutoCloseable {
         final String query = "INSERT INTO Reminders(guild,name,message,author,channel,time,dayOfWeek,dayOfMonth,monthOfYear) VALUES(?,?,?,?,?,?,?,?);";
         final ReminderActivationTime activationTime = reminder.getTime();
         final String reminderName = reminder.getName();
-        final String reminderMessage = reminder.getMessage();
+        final String reminderMessage = reminder.getTemplate();
         final long authorID = reminder.getAuthor();
         final long channelID = reminder.getChannel();
         final long secondsOfDay = activationTime.getTime().toSecondOfDay();

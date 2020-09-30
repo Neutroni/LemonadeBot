@@ -23,9 +23,9 @@
  */
 package eternal.lemonadebot.database;
 
+import eternal.lemonadebot.commands.KeywordCommand;
 import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.permissions.CommandPermission;
-import eternal.lemonadebot.permissions.MemberRank;
+import eternal.lemonadebot.customcommands.KeywordAction;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -39,17 +39,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Builder for custom commands
  *
  * @author Neutroni
  */
-public class TemplateManager {
+public class KeywordManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final Connection conn;
     private final long guildID;
-    private final Map<String, CustomCommand> commands = new ConcurrentHashMap<>();
+    private final Map<String, KeywordAction> commands = new ConcurrentHashMap<>();
     private final CooldownManager cooldownManager;
 
     /**
@@ -58,10 +57,10 @@ public class TemplateManager {
      * @param connection Database connection to use
      * @param config configuration manager to use
      */
-    TemplateManager(Connection connection, CooldownManager cooldownManager, long guildID) {
+    KeywordManager(Connection connection, long guildID, CooldownManager cooldownManager) {
         this.conn = connection;
-        this.cooldownManager = cooldownManager;
         this.guildID = guildID;
+        this.cooldownManager = cooldownManager;
         loadCommands();
     }
 
@@ -72,11 +71,11 @@ public class TemplateManager {
      * @return true if added succesfully
      * @throws SQLException if database connection fails
      */
-    public boolean addCommand(CustomCommand command) throws SQLException {
+    public boolean addKeyword(KeywordAction command) throws SQLException {
         this.commands.putIfAbsent(command.getName(), command);
 
         //Add to database
-        final String query = "INSERT OR IGNORE INTO Commands(guild,name,template,owner) VALUES(?,?,?,?);";
+        final String query = "INSERT OR IGNORE INTO Keywords(guild,name,template,owner) VALUES(?,?,?,?);";
         try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, command.getName());
@@ -93,12 +92,12 @@ public class TemplateManager {
      * @return true if command was removed
      * @throws SQLException if database connection fails
      */
-    public boolean removeCommand(CustomCommand command) throws SQLException {
+    public boolean removeKeyword(KeywordAction command) throws SQLException {
         this.commands.remove(command.getName());
         this.cooldownManager.removeCooldown(command.getName());
 
         //Remove from database
-        final String query = "DELETE FROM Commands WHERE name = ? AND guild = ?;";
+        final String query = "DELETE FROM Keywords WHERE name = ? AND guild = ?;";
         try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, command.getName());
             ps.setLong(2, this.guildID);
@@ -112,7 +111,7 @@ public class TemplateManager {
      * @param name name of the command
      * @return optional containing the command
      */
-    public Optional<CustomCommand> getCommand(String name) {
+    public Optional<KeywordAction> getCommand(String name) {
         return Optional.ofNullable(this.commands.get(name));
     }
 
@@ -121,7 +120,7 @@ public class TemplateManager {
      *
      * @return custom commands
      */
-    public Collection<CustomCommand> getCommands() {
+    public Collection<KeywordAction> getCommands() {
         return Collections.unmodifiableCollection(this.commands.values());
     }
 
@@ -131,7 +130,7 @@ public class TemplateManager {
      * @throws SQLException if Database connection failed
      */
     private void loadCommands() {
-        final String query = "SELECT name,template,owner FROM Commands WHERE guild = ?;";
+        final String query = "SELECT name,template,owner FROM Keywords WHERE guild = ?;";
         try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try ( ResultSet rs = ps.executeQuery()) {
@@ -139,12 +138,12 @@ public class TemplateManager {
                     final String commandName = rs.getString("name");
                     final String commandTemplate = rs.getString("template");
                     final long commandOwnerID = rs.getLong("owner");
-                    final CustomCommand newCommand = new CustomCommand(commandName, commandTemplate, commandOwnerID);
+                    final KeywordAction newCommand = new KeywordAction(commandName, commandTemplate, commandOwnerID);
                     this.commands.put(newCommand.getName(), newCommand);
                 }
             }
         } catch (SQLException e) {
-            LOGGER.error("Loading custom commands from database failed: {}", e.getMessage());
+            LOGGER.error("Loading Keywords from database failed: {}", e.getMessage());
             LOGGER.trace(e);
         }
     }

@@ -171,9 +171,8 @@ class PermissionCommand extends AdminCommand {
             role = roles.get(0);
         }
         final String actionString = args[3];
-        final CommandPermission perm = new CommandPermission(actionString, rank, role.getIdLong());
         try {
-            permissions.setPermission(actionString, perm);
+            permissions.setPermission(new CommandPermission(actionString, rank, role.getIdLong()));
         } catch (SQLException e) {
             channel.sendMessage(TranslationKey.PERMISSION_SQL_ERROR_ON_SET.getTranslation(locale)).queue();
             LOGGER.error("Failure to update permission in database: {}", e.getMessage());

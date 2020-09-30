@@ -21,9 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.events;
+package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.CommandMatcher;
+import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.customcommands.TemplateProvider;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.translation.TranslationCache;
@@ -49,15 +50,12 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class Reminder implements Runnable {
+public class Reminder extends CustomCommand implements Runnable {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final JDA jda;
-    private final String name;
-    private final long author;
     private final long channelID;
-    private final String reminderText;
     private final GuildDataStore guildData;
     private volatile ScheduledFuture<?> future;
     private final ReminderActivationTime activationTime;
@@ -75,12 +73,10 @@ public class Reminder implements Runnable {
      */
     public Reminder(JDA jda, GuildDataStore guildData, String name, String input,
             long channelID, long author, ReminderActivationTime activationTime) {
+        super(name,input,author);
         this.jda = jda;
         this.guildData = guildData;
-        this.name = name;
         this.channelID = channelID;
-        this.author = author;
-        this.reminderText = input;
         this.activationTime = activationTime;
         this.future = null;
     }
@@ -90,7 +86,7 @@ public class Reminder implements Runnable {
      */
     @Override
     public void run() {
-        LOGGER.debug("Reminder started: {}", this.name);
+        LOGGER.debug("Reminder started: {}", getName());
         //Make sure JDA is loaded
         try {
             //This might delay activation if connecting takes extremly long
@@ -114,16 +110,11 @@ public class Reminder implements Runnable {
             return;
         }
         //Check reminder author can be found
-        channel.getGuild().retrieveMemberById(this.author).queue((Member member) -> {
+        channel.getGuild().retrieveMemberById(getAuthor()).queue((Member member) -> {
             //Success
             final CommandMatcher matcher = new ReminderMessageMatcher(member, channel);
-            final CharSequence reponse = TemplateProvider.parseAction(matcher, guildData, this.reminderText);
-            if (reponse.toString().isBlank()) {
-                LOGGER.debug("Ignored empty response for reminder: {} with template: {}", this.name, this.reminderText);
-                return;
-            }
-            channel.sendMessage(reponse).queue();
-            LOGGER.debug("Reminder: {} succesfully activated on channel: {}", this.name, channel.getName());
+            respond(matcher, guildData);
+            LOGGER.debug("Reminder: {} succesfully activated on channel: {}", getName(), channel.getName());
         }, (Throwable t) -> {
             //Failure
             deleteDueToMissingOwner();
@@ -131,7 +122,7 @@ public class Reminder implements Runnable {
     }
 
     private void deleteDueToMissingOwner() {
-        LOGGER.info("Deleting reminder: {} with missing author, member id: {}", this.name, this.author);
+        LOGGER.info("Deleting reminder: {} with missing author, member id: {}", getName(), getAuthor());
         try {
             this.guildData.getReminderManager().deleteReminder(this);
             LOGGER.info("Reminder with missing author deleted");
@@ -142,7 +133,7 @@ public class Reminder implements Runnable {
     }
 
     private void deleteDueToMissingChannel() {
-        LOGGER.info("Deleting reminder: {} for textchannel that does not exist, channel id: {}", this.name, this.channelID);
+        LOGGER.info("Deleting reminder: {} for textchannel that does not exist, channel id: {}", getName(), this.channelID);
         try {
             this.guildData.getReminderManager().deleteReminder(this);
             LOGGER.info("Deleted reminder with missing channel: {}", this.channelID);
@@ -153,39 +144,12 @@ public class Reminder implements Runnable {
     }
 
     /**
-     * Get the name of the reminder
-     *
-     * @return name of reminder
-     */
-    public String getName() {
-        return this.name;
-    }
-
-    /**
      * Get the ID for text channel this reminder will appear in
      *
      * @return TextChannel
      */
     public long getChannel() {
         return this.channelID;
-    }
-
-    /**
-     * Get the text for the reminder
-     *
-     * @return String reminder send on activation
-     */
-    public String getMessage() {
-        return this.reminderText;
-    }
-
-    /**
-     * Get the ID of the reminder author
-     *
-     * @return id of reminder author
-     */
-    public long getAuthor() {
-        return this.author;
     }
 
     /**
@@ -205,7 +169,7 @@ public class Reminder implements Runnable {
         if (channel == null) {
             deleteDueToMissingChannel();
             final String response = TranslationKey.REMINDER_CHANNEL_MISSING.getTranslation(locale);
-            result.complete(String.format(response, this.name));
+            result.complete(String.format(response, getName()));
             return result;
         }
 
@@ -214,30 +178,30 @@ public class Reminder implements Runnable {
         final String cronString = this.activationTime.getCronString(locale,timeFormatter);
         final String channelName = channel.getAsMention();
         final String template = TranslationKey.REMINDER_LIST_ELEMENT_TEMPLATE.getTranslation(locale);
-        this.jda.retrieveUserById(this.author).queue((User reminderOwner) -> {
+        this.jda.retrieveUserById(getAuthor()).queue((User reminderOwner) -> {
             //Found reminder owner
             final String ownerName = reminderOwner.getAsMention();
-            final String response = String.format(template, this.name, this.reminderText, cronString, channelName, ownerName);
+            final String response = String.format(template, getName(), getTemplate(), cronString, channelName, ownerName);
             result.complete(response);
         }, (Throwable t) -> {
             //Reminder owner missing
             deleteDueToMissingOwner();
             final String response = TranslationKey.REMINDER_USER_MISSING.getTranslation(locale);
-            result.complete(String.format(response, this.name));
+            result.complete(String.format(response, getName()));
         });
         return result;
     }
 
     @Override
     public int hashCode() {
-        return this.name.hashCode();
+        return getName().hashCode();
     }
 
     @Override
     public boolean equals(Object other) {
         if (other instanceof Reminder) {
             final Reminder otherReminder = (Reminder) other;
-            return this.name.equals(otherReminder.name);
+            return getName().equals(otherReminder.getName());
         }
         return false;
     }

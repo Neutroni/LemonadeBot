@@ -122,7 +122,7 @@ class RoleCommand implements ChatCommand {
      * @param currentGuild Current guild
      * @param requestedRoleName Name of the role user wants
      */
-    private void assignRole(TextChannel channel, Member sender, String requestedRoleName, GuildDataStore guildData) {
+    private static void assignRole(TextChannel channel, Member sender, String requestedRoleName, GuildDataStore guildData) {
         final Guild currentGuild = channel.getGuild();
         final ConfigManager guildConf = guildData.getConfigManager();
         final Locale locale = guildConf.getLocale();
@@ -205,7 +205,7 @@ class RoleCommand implements ChatCommand {
      * @param sender Command user
      * @param guild Current guild
      */
-    private void autoAssignRole(TextChannel channel, Member member, Locale locale) {
+    private static void autoAssignRole(TextChannel channel, Member member, Locale locale) {
         final Guild currentGuild = channel.getGuild();
         final List<Guild> mutualGuilds = member.getUser().getMutualGuilds();
         //Construct the list of valid guilds

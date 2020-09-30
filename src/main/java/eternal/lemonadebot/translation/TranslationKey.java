@@ -44,6 +44,7 @@ public enum TranslationKey {
     COMMAND_ROLE("role"),
     COMMAND_TEMPLATE("template"),
     COMMAND_MUSIC("music"),
+    COMMAND_KEYWORD("keyword"),
     DESCRIPTION_CONFIG("Set configuration values used by the bot."),
     DESCRIPTION_COOLDOWN("Set cooldown for commands."),
     DESCRIPTION_EVENT("Manage events that people can join."),
@@ -54,6 +55,7 @@ public enum TranslationKey {
     DESCRIPTION_TEMPLATE("Manage custom commands."),
     DESCRIPTION_MUSIC("Play music."),
     DESCRIPTION_CUSTOMCOMMAND("Custom command: %s by %s"),
+    DESCRIPTION_KEYWORD("Manage keywords that trigger actions when seen in a message."),
     ACTION_ADD("add"),
     ACTION_REMOVE("remove"),
     ACTION_CREATE("create"),
@@ -135,6 +137,8 @@ public enum TranslationKey {
             + " list - list active events\n"
             + " ping - ping event members\n"
             + " random - pick random member from event\n"
+            + " lock - lock event such that no one can join event\n"
+            + " unlock - unlock locked event\n"
             + "<name> is the name of the event\n"
             + "[description] description for the event"),
     SYNTAX_HELP("Syntax: help [command]\n"
@@ -168,7 +172,6 @@ public enum TranslationKey {
             + "<option> can be one of the following:\n"
             + " create - create new custom command\n"
             + " delete - delete custom command\n"
-            + " keys - shows list of keys custom command can contain\n"
             + " list - show list of custom commands\n"
             + "[name] name for action\n"
             + "[template] template for custom command, see below for syntax\n"
@@ -183,8 +186,15 @@ public enum TranslationKey {
             + " stop - clears the playlist and stops music playback\n"
             + " list - prints upcoming songs in playlist\n"
             + "[url] is the url of the music to play"),
+    SYNTAX_KEYWORD("Syntax: keyword <option> [pattern] [template]\n"
+            + "<option> can be one of the following:\n"
+            + " create - create new keyword action\n"
+            + " delete - delete keyword action\n"
+            + " list - show list of defined keywords\n"
+            + "[pattern] pattern that activates the keyword, a java regular expression\n"
+            + "[template] template for the reponse to keyword"),
     SYNTAX_CUSTOMCOMMAND("Custom command with template:\n %s\n"
-            + "See \"help command\" for details on custom commands."),
+            + "See \"help template\" for details on custom commands."),
     CONFIG_SET_MISSING_OPTION("Provide the name of the setting and the value to set."),
     CONFIG_MISSING_VALUE("Provide the value to set the setting to."),
     CONFIG_GET_MISSING_OPTION("Provide the name of the setting to get the value for."),
@@ -242,6 +252,7 @@ public enum TranslationKey {
     HEADER_PING("Ping!"),
     HEADER_GUILDS("Possible guilds:"),
     HEADER_REMINDERS("Reminders:"),
+    HEADER_KEYWORDS("Keywords:"),
     HEADER_EVENT_MEMBERS("Members for the event %s:"),
     RANK_DESCRIPTION_USER("Account without roles."),
     RANK_DESCRIPTION_MEMBER("Account with at least one role."),
@@ -298,13 +309,13 @@ public enum TranslationKey {
     EVENT_PING_PERMISSION_DENIED("Only the owner of the event can ping event members."),
     EVENT_PICK_RANDOM_MISSING_NAME("Provide name of the event to pick random member from."),
     EVENT_SELECTED_MEMBER("Selected %s from the event."),
-    EVENT_LOCK_MISSING_NAME("Locking event requires the name of the event to lock."), 
-    EVENT_LOCK_PERMISSION_DENIED("You do not have permission to lock the event, only event owner and admins can lock events."), 
-    EVENT_LOCKED_SUCCESFULLY("Event locked succesfully, no one can join the event and current event members cannot leave."), 
-    EVENT_SQL_ERROR_ON_LOCK("Error locking the event in database, event might become unlocked on reboot."), 
-    EVENT_UNLOCK_MISSING_NAME("Unlocking event required the name of the event to unlock."), 
-    EVENT_UNLOCK_PERMISSION_DENIED("You do not have permission to unlock the event, only event owner and admins can unlock events."), 
-    EVENT_UNLOCKED_SUCCESFULLY("Event unlocked succesfully, people can join and leave the event again."), 
+    EVENT_LOCK_MISSING_NAME("Locking event requires the name of the event to lock."),
+    EVENT_LOCK_PERMISSION_DENIED("You do not have permission to lock the event, only event owner and admins can lock events."),
+    EVENT_LOCKED_SUCCESFULLY("Event locked succesfully, no one can join the event and current event members cannot leave."),
+    EVENT_SQL_ERROR_ON_LOCK("Error locking the event in database, event might become unlocked on reboot."),
+    EVENT_UNLOCK_MISSING_NAME("Unlocking event required the name of the event to unlock."),
+    EVENT_UNLOCK_PERMISSION_DENIED("You do not have permission to unlock the event, only event owner and admins can unlock events."),
+    EVENT_UNLOCKED_SUCCESFULLY("Event unlocked succesfully, people can join and leave the event again."),
     EVENT_SQL_ERROR_ON_UNLOCK("Unlocking event in database failed, event might become locked again after reboot."),
     EVENT_JOIN_LOCKED("Cannot join the event, event is locked."),
     EVENT_LEAVE_LOCKED("Cannot leave the event, event is locked."),
@@ -405,7 +416,19 @@ public enum TranslationKey {
     MUSIC_END_OF_PLAYLIST("No music in playlist."),
     MUSIC_UPCOMING_SONGS("Upcoming songs:"),
     MUSIC_DURATION_TEMPLATE(" %d:%02d:%02d remaining."),
-    MUSIC_PLAYLIST_LENGTH("Playlist lenght:");
+    MUSIC_PLAYLIST_LENGTH("Playlist lenght:"), 
+    KEYWORD_CREATE_MISSING_KEYWORD("Creating a keyword requires a pattern the keywords activates on."),
+    KEYWORD_CREATE_MISSING_TEMPLATE("Creating a keywords required a template for the response to keyword."),
+    KEYWORD_CREATE_SUCCESS("Keyword created succesfully."), 
+    KEYWORD_ALREADY_EXISTS("Keyword with that template already exists."),
+    KEYWORD_DELETE_MISSING_NAME("Deleting a keyword requires the name of the keyword to delete"), 
+    KEYWORD_DELETE_NOT_FOUND("No such keyword as: %s"), 
+    KEYWORD_DELETE_PERMISSION_DENIED("You do not have permission to delete the keyword, only owner of the keyword and admins can delete it."),
+    KEYWORD_DELETE_SUCCESS("Keyword deleted succesfully."), 
+    KEYWORD_SQL_ERROR_ON_DELETE("Deleting keyword from database failed, keyword might reappear after reboot."), 
+    KEYWORD_NO_KEYWORDS("No keywords defined."), 
+    KEYWORD_SQL_ERROR_ON_CREATE("Adding keyword to database failed, keyword might disappear after reboot."), 
+    KEYWORD_PATTERN_SYNTAX_ERROR("Not a valid keyword pattern, Some characters are reserved in pattern creation and must be escaped with '\\' usefull site for figuring out regex rules is https://regex101.com/");
 
     private static final Logger LOGGER = LogManager.getLogger();
     private final String defaultText;

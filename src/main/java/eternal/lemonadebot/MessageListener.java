@@ -141,6 +141,8 @@ public class MessageListener extends ListenerAdapter {
         final String inputString = cmdMatch.getAction();
 
         if (!permissions.hasPermission(member, inputString)) {
+            final String response = TranslationKey.ERROR_INSUFFICIENT_PERMISSION.getTranslation(locale);
+            textChannel.sendMessage(response).queue();
             return;
         }
 

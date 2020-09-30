@@ -238,6 +238,9 @@ public class CooldownManager {
         return Optional.ofNullable(matchingCooldown);
     }
 
+    /**
+     * Load cooldowns from database for current guild
+     */
     private void loadCooldowns() {
         final String query = "SELECT command,duration,activationTime FROM Cooldowns WHERE guild = ?;";
         try ( PreparedStatement ps = conn.prepareStatement(query)) {
