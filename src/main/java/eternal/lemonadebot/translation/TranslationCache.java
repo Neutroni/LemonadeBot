@@ -167,8 +167,8 @@ public class TranslationCache implements LocaleUpdateListener {
     /**
      * Get ActionKey by translated name
      *
-     * @param name
-     * @return
+     * @param name Translated action name to get a key for
+     * @return Key for given action if found ActionKey.UNKNOWN if not found
      */
     public ActionKey getActionKey(String name) {
         this.rwLock.readLock().lock();

@@ -114,7 +114,7 @@ public class CommandProvider implements LocaleUpdateListener {
     /**
      * Update the locale of the commands
      *
-     * @param newLocale
+     * @param newLocale Locale to switch to
      */
     @Override
     public void updateLocale(Locale newLocale) {
