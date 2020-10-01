@@ -270,6 +270,7 @@ public enum TranslationKey {
     HELP_TEMPLATE_MENTIONS("{mentions} - Lists the mentioned users"),
     HELP_TEMPLATE_SENDER("{sender} - The name of the command sender"),
     HELP_TEMPLATE_RANDOM_EVENT_MEMBER("{randomEventMember <eventname>} - Pick random member from event"),
+    HELP_TEMPLATE_ARGUMENT("{argument split,n} - Part of the input, split message into n elements and return n:th element"),
     MESSAGE_UPDATE_HEADER("Message Edited"),
     MESSAGE_LOG_USER("User: "),
     MESSAGE_CONTENT_BEFORE("Before:"),

@@ -67,7 +67,7 @@ public class TemplateProvider {
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
                         final int start = Integer.parseInt(input.group(1));
                         final int end = Integer.parseInt(input.group(2));
-                        return "" + (RNG.nextInt(end) + start);
+                        return "" + (RNG.nextInt(end + 1) + start);
                     }),
             new ActionTemplate("message", TranslationKey.HELP_TEMPLATE_MESSAGE,
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
@@ -76,6 +76,16 @@ public class TemplateProvider {
                             return "";
                         }
                         return messageText[0];
+                    }),
+            new ActionTemplate("argument (\\d+),(\\d+)", TranslationKey.HELP_TEMPLATE_ARGUMENT,
+                    (commandMatcher, guildData, templateMatcher) -> {
+                        final int groups = Integer.parseUnsignedInt(templateMatcher.group(1));
+                        final int n = Integer.parseUnsignedInt(templateMatcher.group(2));
+                        final String[] args = commandMatcher.getArguments(groups - 1);
+                        if (args.length > n) {
+                            return args[n];
+                        }
+                        return "";
                     }),
             new ActionTemplate("messageText", TranslationKey.HELP_TEMPLATE_MESSAGE_TEXT,
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
