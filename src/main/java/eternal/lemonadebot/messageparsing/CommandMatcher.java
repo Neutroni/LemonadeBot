@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot;
+package eternal.lemonadebot.messageparsing;
 
 import java.util.List;
 import java.util.Optional;
@@ -77,13 +77,6 @@ public interface CommandMatcher {
      * @return Same as message.getMember()
      */
     Member getMember();
-
-    /**
-     * Get text content of the message
-     *
-     * @return Same as message.getContentRaw()
-     */
-    String getMessageText();
 
     /**
      * Return the channel which the message was sent in

@@ -21,12 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot;
+package eternal.lemonadebot.messageparsing;
 
 import eternal.lemonadebot.database.ConfigManager;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -39,106 +38,77 @@ import net.dv8tion.jda.api.entities.TextChannel;
  *
  * @author Neutroni
  */
-class MessageMatcher implements CommandMatcher {
+public class MessageMatcher implements CommandMatcher {
+
+    private static final Pattern SPLIT_PATTERN = Pattern.compile(" ");
 
     private final Message message;
-    private final String messageText;
-    private final Matcher matcher;
-    private final boolean matches;
+    private final Optional<String> command;
+    private final String arguments;
+    private final String action;
 
     /**
      * Constructor
      *
-     * @param guildDataStore datastore for guild
+     * @param configManager ConfigManager to get command prefix from
      * @param msg command message
      */
-    MessageMatcher(final ConfigManager configManager, final Message msg) {
+    public MessageMatcher(final ConfigManager configManager, final Message msg) {
         if (!msg.isFromGuild()) {
             throw new IllegalArgumentException("Only messages from guilds supported");
         }
 
         this.message = msg;
-        this.messageText = msg.getContentRaw();
-        final Pattern pattern = configManager.getCommandPattern();
-        this.matcher = pattern.matcher(this.messageText);
-        this.matches = this.matcher.find();
-    }
-
-    /**
-     * Get the command from the match
-     *
-     * @return optional containing command string if found
-     */
-    @Override
-    public Optional<String> getCommand() {
-        if (this.matches) {
-            return Optional.of(matcher.group(1));
+        final String messageText = msg.getContentRaw();
+        final String commandPrefix = configManager.getCommandPrefix();
+        if (messageText.startsWith(commandPrefix)) {
+            //Command name starts at the character after prefix
+            final int actionStart = commandPrefix.length();
+            this.action = messageText.substring(actionStart);
+            //Command name ends at either before space or at the end of message
+            final int i = this.action.indexOf(' ');
+            if (i == -1) {
+                //Message does not contain arguments
+                this.command = Optional.of(this.action);
+                this.arguments = "";
+            } else {
+                //Message has at least a space after command name
+                this.command = Optional.of(this.action.substring(0, i));
+                this.arguments = this.action.substring(i + 1);
+            }
+        } else {
+            //Not a command
+            this.command = Optional.empty();
+            this.action = null;
+            this.arguments = null;
         }
-        return Optional.empty();
     }
 
-    /**
-     * Get parameters limited by whitespace and the rest of the message as last
-     * entry in returned array
-     *
-     * @param count number of parameters to return
-     * @return array of parameters
-     */
-    @Override
-    public String[] getArguments(int count) {
-        int parameterStart = matcher.end();
-
-        final String parameterString = this.messageText.substring(parameterStart);
-        return parameterString.split(" ", count + 1);
-    }
-
-    /**
-     * Get the action from this matcher including the command but excluding the
-     * command prefix
-     *
-     * @return Action String
-     */
     @Override
     public String getAction() {
-        int argumentStart = matcher.start(1);
-        return this.messageText.substring(argumentStart);
+        return this.action;
     }
 
-    /**
-     * Get member who sent the message
-     *
-     * @return Member who sent the message
-     */
+    @Override
+    public Optional<String> getCommand() {
+        return this.command;
+    }
+
+    @Override
+    public String[] getArguments(int count) {
+        return SPLIT_PATTERN.split(this.arguments, count + 1);
+    }
+
     @Override
     public Member getMember() {
         return this.message.getMember();
     }
 
-    /**
-     * Get text content of the message
-     *
-     * @return Same as message.getContentRaw()
-     */
-    @Override
-    public String getMessageText() {
-        return this.messageText;
-    }
-
-    /**
-     * Return the channel which the message was sent in
-     *
-     * @return TextChannel of the message
-     */
     @Override
     public TextChannel getTextChannel() {
         return this.message.getTextChannel();
     }
 
-    /**
-     * Get the guild the message was sent in
-     *
-     * @return Guild
-     */
     @Override
     public Guild getGuild() {
         return this.message.getGuild();

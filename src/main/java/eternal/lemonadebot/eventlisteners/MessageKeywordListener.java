@@ -21,15 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot;
+package eternal.lemonadebot.eventlisteners;
 
-import eternal.lemonadebot.customcommands.FakeMessageMatcher;
-import eternal.lemonadebot.customcommands.KeywordAction;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.CooldownManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.KeywordManager;
+import eternal.lemonadebot.dataobjects.KeywordAction;
+import eternal.lemonadebot.messageparsing.CommandMatcher;
+import eternal.lemonadebot.messageparsing.FakeMessageMatcher;
+import eternal.lemonadebot.messageparsing.MessageMatcher;
 import java.time.Duration;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;

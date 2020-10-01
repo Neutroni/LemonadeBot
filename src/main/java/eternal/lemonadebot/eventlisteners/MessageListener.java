@@ -21,8 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot;
+package eternal.lemonadebot.eventlisteners;
 
+import eternal.lemonadebot.LemonadeBot;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
@@ -30,6 +31,7 @@ import eternal.lemonadebot.database.CooldownManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.PermissionManager;
+import eternal.lemonadebot.messageparsing.MessageMatcher;
 import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
@@ -132,7 +134,7 @@ public class MessageListener extends ListenerAdapter {
 
         //Log the message if debug is enabled
         LOGGER.debug(() -> {
-            return "Found command: " + cmdMatch.getAction() + " in:\n" + cmdMatch.getMessageText();
+            return "Found command: " + cmdMatch.getAction() + " in:\n" + message.getContentRaw();
         });
 
         //Check if user has permission

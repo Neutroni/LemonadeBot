@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.customcommands;
+package eternal.lemonadebot.dataobjects;
 
 import java.time.DayOfWeek;
 import java.time.Duration;
@@ -68,7 +68,7 @@ public class ReminderActivationTime {
      * @param timeZone TimeZone the activation check happens in
      * @return Duration to next check
      */
-    Duration getTimeToActivation(ZoneId timeZone) {
+    public Duration getTimeToActivation(ZoneId timeZone) {
         final ZonedDateTime now = ZonedDateTime.now(timeZone);
         ZonedDateTime activationTime = now.with(this.time);
         if (activationTime.isBefore(now)) {
@@ -83,7 +83,7 @@ public class ReminderActivationTime {
      * @param timeZone ZoneId the activation happens at
      * @return true if reminder should activate today
      */
-    boolean shouldActivate(ZoneId timeZone) {
+    public boolean shouldActivate(ZoneId timeZone) {
         final ZonedDateTime now = ZonedDateTime.now(timeZone);
         if (this.dayOfWeek != null) {
             if (now.getDayOfWeek() != this.dayOfWeek) {
@@ -125,9 +125,10 @@ public class ReminderActivationTime {
      * Get cron like representation of the activation time
      *
      * @param locale Locale use for day of week and time format
+     * @param formatter Formattern to use for formatting activation time
      * @return String representation of activation time
      */
-    String getCronString(Locale locale, DateTimeFormatter formatter) {
+    public String getCronString(Locale locale, DateTimeFormatter formatter) {
         final StringBuilder sb = new StringBuilder();
         sb.append(this.time.format(formatter));
         sb.append(' ');

@@ -23,7 +23,7 @@
  */
 package eternal.lemonadebot.database;
 
-import eternal.lemonadebot.StoredMessage;
+import eternal.lemonadebot.dataobjects.StoredMessage;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

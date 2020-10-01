@@ -21,39 +21,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.customcommands;
-
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
+package eternal.lemonadebot.dataobjects;
 
 /**
+ * Message stored in the database
  *
  * @author Neutroni
  */
-public class KeywordAction extends CustomCommand {
+public class StoredMessage {
 
-    private final Pattern keywordPattern;
+    private final long author;
+    private final String content;
 
-    /**
-     * Constructor
-     *
-     * @param patternString pattern for keyword
-     * @param actionTemplate template for action
-     * @param owner owner of the command
-     */
-    public KeywordAction(String patternString, String actionTemplate, long owner) throws PatternSyntaxException {
-        super(patternString, actionTemplate, owner);
-        this.keywordPattern = Pattern.compile(patternString);
+    public StoredMessage(long author, String content) {
+        this.author = author;
+        this.content = content;
     }
 
     /**
-     * Check if the input contains keyword for this command
+     * Get the auhor of the message
      *
-     * @param input input to check
-     * @return true if input contains keyword
+     * @return ID for the message author
      */
-    public boolean matches(String input) {
-        return this.keywordPattern.matcher(input).find();
+    public long getAuthor() {
+        return this.author;
+    }
+
+    /**
+     * Text content of the stored message
+     *
+     * @return Message.getContentRaw()
+     */
+    public String getContent() {
+        return this.content;
     }
 
 }

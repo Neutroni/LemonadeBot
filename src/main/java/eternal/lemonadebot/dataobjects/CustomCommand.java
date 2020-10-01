@@ -21,14 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.customcommands;
+package eternal.lemonadebot.dataobjects;
 
-import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
+import eternal.lemonadebot.customcommands.TemplateProvider;
 import eternal.lemonadebot.database.CooldownManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.PermissionManager;
+import eternal.lemonadebot.messageparsing.CommandMatcher;
+import eternal.lemonadebot.messageparsing.FakeMessageMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.translation.TranslationKey;

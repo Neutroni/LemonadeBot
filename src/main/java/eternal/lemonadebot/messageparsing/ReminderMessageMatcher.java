@@ -21,9 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.customcommands;
+package eternal.lemonadebot.messageparsing;
 
-import eternal.lemonadebot.CommandMatcher;
 import java.util.List;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
@@ -32,94 +31,51 @@ import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
- * Matches given message for command pattern
+ * Matcher given to ActionTemplates when reminder activates
  *
  * @author Neutroni
  */
-class ReminderMessageMatcher implements CommandMatcher {
+public class ReminderMessageMatcher implements CommandMatcher {
 
     private final Member author;
     private final TextChannel channel;
 
     /**
-     * Constructor for reminder command invocations
+     * Constructor
      *
-     * @param author message author
-     * @param channel Channel message was sent int
-     * @param fakeContent Message content
+     * @param author reminder author
+     * @param channel Channel reminder should be sent in
      */
-    ReminderMessageMatcher(Member author, TextChannel channel) {
+    public ReminderMessageMatcher(Member author, TextChannel channel) {
         this.author = author;
         this.channel = channel;
     }
 
-    /**
-     * Get the command from the match
-     *
-     * @return optional containing command string if found
-     */
     @Override
     public Optional<String> getCommand() {
-        return Optional.of("reminder");
+        return Optional.empty();
     }
 
-    /**
-     * Get the arguments from this matcher including the command
-     *
-     * @return String of arguments
-     */
     @Override
     public String getAction() {
         return "";
     }
 
-    /**
-     * Get parameters limited by whitespace and the rest of the message as last
-     * entry in returned array
-     *
-     * @param count number of parameters to return
-     * @return array of parameters
-     */
     @Override
     public String[] getArguments(int count) {
         return new String[0];
     }
 
-    /**
-     * Get member who sent the message
-     *
-     * @return Member who sent the message
-     */
     @Override
     public Member getMember() {
         return this.author;
     }
 
-    /**
-     * Get text content of the message
-     *
-     * @return Same as message.getContentRaw()
-     */
-    @Override
-    public String getMessageText() {
-        return "";
-    }
-
-    /**
-     * Return the channel which the message was sent in
-     *
-     * @return TextChannel of the message
-     */
     @Override
     public TextChannel getTextChannel() {
         return this.channel;
     }
 
-    /**
-     * Get the guild the message was sent in
-     *
-     * @return Guild
-     */
     @Override
     public Guild getGuild() {
         return this.channel.getGuild();

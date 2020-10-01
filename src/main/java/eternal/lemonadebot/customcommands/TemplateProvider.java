@@ -23,9 +23,10 @@
  */
 package eternal.lemonadebot.customcommands;
 
-import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.dataobjects.Event;
+import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.time.LocalDate;
 import java.time.Period;
@@ -121,7 +122,6 @@ public class TemplateProvider {
                     }),
             new ActionTemplate("randomEventMember (\\S+)", TranslationKey.HELP_TEMPLATE_RANDOM_EVENT_MEMBER,
                     (CommandMatcher matcher, GuildDataStore guildData, Matcher input) -> {
-                        final Guild guild = matcher.getGuild();
                         final String eventName = input.group(1);
                         final EventManager eventManager = guildData.getEventManager();
                         final Locale locale = guildData.getConfigManager().getLocale();
@@ -137,6 +137,7 @@ public class TemplateProvider {
                         }
                         final List<Long> memberIDsMutable = new ArrayList<>(eventMemberIDs);
                         Collections.shuffle(memberIDsMutable);
+                        final Guild guild = matcher.getGuild();
                         for (final Long l : memberIDsMutable) {
                             try {
                                 final Member m = guild.retrieveMemberById(l).complete();

@@ -23,9 +23,9 @@
  */
 package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.TemplateManager;
+import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.music.MusicCommand;
 import eternal.lemonadebot.translation.LocaleUpdateListener;
 import java.util.List;

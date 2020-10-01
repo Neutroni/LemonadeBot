@@ -21,55 +21,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot;
+package eternal.lemonadebot.dataobjects;
 
-import java.util.Optional;
-import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.exceptions.ErrorResponseException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
- * Message stored in the database
  *
  * @author Neutroni
  */
-public class StoredMessage {
+public class KeywordAction extends CustomCommand {
 
-    private static final Logger LOGGER = LogManager.getLogger();
+    private final Pattern keywordPattern;
 
-    private final long author;
-    private final String content;
-
-    public StoredMessage(long author, String content) {
-        this.author = author;
-        this.content = content;
+    /**
+     * Constructor
+     *
+     * @param patternString pattern for keyword
+     * @param actionTemplate template for action
+     * @param owner owner of the command
+     */
+    public KeywordAction(String patternString, String actionTemplate, long owner) throws PatternSyntaxException {
+        super(patternString, actionTemplate, owner);
+        this.keywordPattern = Pattern.compile(patternString);
     }
 
     /**
-     * Get the auhor of the message
+     * Check if the input contains keyword for this command
      *
-     * @param jda JDA to use to fetch the user
-     * @return Optional containing the user if found
+     * @param input input to check
+     * @return true if input contains keyword
      */
-    public Optional<User> getAuthor(JDA jda) {
-        try {
-            final User user = jda.retrieveUserById(author).complete();
-            return Optional.ofNullable(user);
-        } catch (ErrorResponseException e) {
-            LOGGER.debug("User for a stored message could not be found", e);
-            return Optional.empty();
-        }
-    }
-
-    /**
-     * Text content of the stored message
-     *
-     * @return Message.getContentRaw()
-     */
-    public String getContent() {
-        return this.content;
+    public boolean matches(String input) {
+        return this.keywordPattern.matcher(input).find();
     }
 
 }

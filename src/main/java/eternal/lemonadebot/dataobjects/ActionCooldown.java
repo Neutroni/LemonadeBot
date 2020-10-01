@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.database;
+package eternal.lemonadebot.dataobjects;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -37,13 +37,25 @@ public class ActionCooldown {
     private volatile Duration cooldownDuration;
     private volatile Instant activationTime;
 
-    ActionCooldown(String action, Duration cooldownDuration, Instant activationTime) {
+    /**
+     * Constructor
+     * @param action Action this cooldown is for
+     * @param cooldownDuration Duration the cooldown is
+     * @param activationTime Last time of activation for action
+     */
+    public ActionCooldown(String action, Duration cooldownDuration, Instant activationTime) {
         this.command = action;
         this.cooldownDuration = cooldownDuration;
         this.activationTime = activationTime;
     }
 
-    ActionCooldown(String action, long cooldownDurationSeconds, long activationTimeSeconds) {
+    /**
+     * Constructor
+     * @param action Action this cooldown is for
+     * @param cooldownDurationSeconds Duration the cooldown is
+     * @param activationTimeSeconds Last time of activation for action
+     */
+    public ActionCooldown(String action, long cooldownDurationSeconds, long activationTimeSeconds) {
         this.command = action;
         this.cooldownDuration = Duration.ofSeconds(cooldownDurationSeconds);
         this.activationTime = Instant.ofEpochSecond(activationTimeSeconds);
@@ -54,7 +66,7 @@ public class ActionCooldown {
      *
      * @param duration duration to set
      */
-    void updateCooldownDuration(Duration duration) {
+    public void updateCooldownDuration(Duration duration) {
         this.cooldownDuration = duration;
     }
 
@@ -63,11 +75,11 @@ public class ActionCooldown {
      *
      * @param activation
      */
-    void updateActivationTime(Instant activation) {
+    public void updateActivationTime(Instant activation) {
         this.activationTime = activation;
     }
 
-    Instant getLastActivationTime() {
+    public Instant getLastActivationTime() {
         return this.activationTime;
     }
 

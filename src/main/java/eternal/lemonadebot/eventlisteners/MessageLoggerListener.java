@@ -21,12 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot;
+package eternal.lemonadebot.eventlisteners;
 
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.MessageManager;
+import eternal.lemonadebot.dataobjects.StoredMessage;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.time.OffsetDateTime;
 import java.util.Locale;
@@ -142,16 +143,17 @@ public class MessageLoggerListener extends ListenerAdapter {
         oldContent.ifPresent((StoredMessage t) -> {
             final EmbedBuilder eb = new EmbedBuilder();
             eb.setAuthor(TranslationKey.MESSAGE_DELETE_HEADER.getTranslation(locale));
-            final Optional<User> user = t.getAuthor(event.getJDA());
-            user.ifPresentOrElse((User u) -> {
-                eb.setTitle(TranslationKey.MESSAGE_LOG_USER + u.getAsMention());
-            }, () -> {
-                eb.setTitle(TranslationKey.MESSAGE_LOG_USER_UNKNOWN.getTranslation(locale));
+            event.getJDA().retrieveUserById(t.getAuthor()).submit().whenComplete((User user, Throwable error) -> {
+                if (user == null) {
+                    eb.setTitle(TranslationKey.MESSAGE_LOG_USER_UNKNOWN.getTranslation(locale));
+                } else {
+                    eb.setTitle(TranslationKey.MESSAGE_LOG_USER + user.getAsMention());
+                }
+                eb.addField(TranslationKey.MESSAGE_CONTENT.getTranslation(locale), t.getContent(), false);
+                final OffsetDateTime dt = TimeUtil.getTimeCreated(messageID);
+                eb.setFooter(TranslationKey.MESSAGE_CREATION_TIME.getTranslation(locale) + dt.toString());
+                logChannel.sendMessage(eb.build()).queue();
             });
-            eb.addField(TranslationKey.MESSAGE_CONTENT.getTranslation(locale), t.getContent(), false);
-            final OffsetDateTime dt = TimeUtil.getTimeCreated(messageID);
-            eb.setFooter(TranslationKey.MESSAGE_CREATION_TIME.getTranslation(locale) + dt.toString());
-            logChannel.sendMessage(eb.build()).queue();
         });
     }
 }

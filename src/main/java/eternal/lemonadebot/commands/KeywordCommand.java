@@ -23,13 +23,13 @@
  */
 package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.AdminCommand;
-import eternal.lemonadebot.customcommands.KeywordAction;
 import eternal.lemonadebot.customcommands.TemplateProvider;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.KeywordManager;
+import eternal.lemonadebot.dataobjects.KeywordAction;
+import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;

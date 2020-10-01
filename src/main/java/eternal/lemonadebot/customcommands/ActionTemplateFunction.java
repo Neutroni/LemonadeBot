@@ -23,8 +23,8 @@
  */
 package eternal.lemonadebot.customcommands;
 
-import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.messageparsing.CommandMatcher;
 import java.util.regex.Matcher;
 
 /**

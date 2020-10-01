@@ -23,14 +23,14 @@
  */
 package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.customcommands.TemplateProvider;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.PermissionManager;
 import eternal.lemonadebot.database.TemplateManager;
+import eternal.lemonadebot.dataobjects.CustomCommand;
+import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.permissions.PermissionUtilities;

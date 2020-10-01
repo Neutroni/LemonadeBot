@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot;
+package eternal.lemonadebot.eventlisteners;
 
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
@@ -102,8 +102,8 @@ public class JoinListener extends ListenerAdapter {
     @Override
     public void onGuildJoin(GuildJoinEvent event) {
         final Guild eventGuild = event.getGuild();
-        LOGGER.info("Joined guild: " + eventGuild.getName());
-        LOGGER.info("Guild id: " + eventGuild.getId());
+        LOGGER.info("Joined guild: {}", eventGuild.getName());
+        LOGGER.info("Guild id: {}", eventGuild.getId());
 
         //Send greeting if we can on system channel
         final TextChannel channel = eventGuild.getSystemChannel();

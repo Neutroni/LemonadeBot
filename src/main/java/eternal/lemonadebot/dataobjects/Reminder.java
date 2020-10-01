@@ -21,10 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.customcommands;
+package eternal.lemonadebot.dataobjects;
 
-import eternal.lemonadebot.CommandMatcher;
 import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.messageparsing.CommandMatcher;
+import eternal.lemonadebot.messageparsing.ReminderMessageMatcher;
 import eternal.lemonadebot.translation.TranslationCache;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
@@ -107,6 +108,7 @@ public class Reminder extends CustomCommand implements Runnable {
             deleteDueToMissingChannel();
             return;
         }
+
         //Check reminder author can be found
         channel.getGuild().retrieveMemberById(getAuthor()).queue((Member member) -> {
             //Success

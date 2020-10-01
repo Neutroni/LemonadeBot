@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -51,16 +50,6 @@ public class ConfigManager {
     private static final Locale DEFAULT_LOCALE = Locale.ENGLISH;
     public static final Set<Locale> SUPPORTED_LOCALES = Set.of(DEFAULT_LOCALE, new Locale("fi"));
 
-    /**
-     * Updates command pattern
-     *
-     * @param prefix prefix to use in pattern
-     */
-    private static Pattern getCommandPattern(final String prefix) {
-        //Start of match, prefix, command, arguments
-        return Pattern.compile("^" + Pattern.quote(prefix) + "(\\S+) ?");
-    }
-
     //Database connection
     private final Connection conn;
     //Locale update listeners
@@ -69,7 +58,6 @@ public class ConfigManager {
     //Stored values
     private final long guildID;
     private volatile String commandPrefix = "lemonbot#";
-    private volatile Pattern commandPattern = getCommandPattern(commandPrefix);
     private volatile Optional<String> greetingTemplate = Optional.empty();
     private volatile Optional<Long> logChannelID = Optional.empty();
     private volatile Locale locale = DEFAULT_LOCALE;
@@ -94,15 +82,6 @@ public class ConfigManager {
      */
     public String getCommandPrefix() {
         return this.commandPrefix;
-    }
-
-    /**
-     * Get command pattern
-     *
-     * @return command pattern
-     */
-    public Pattern getCommandPattern() {
-        return this.commandPattern;
     }
 
     /**
@@ -159,7 +138,6 @@ public class ConfigManager {
      */
     public boolean setCommandPrefix(final String prefix) throws SQLException {
         this.commandPrefix = prefix;
-        this.commandPattern = getCommandPattern(prefix);
 
         final String query = "UPDATE Guilds SET commandPrefix = ? WHERE id = ?;";
         try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
@@ -183,8 +161,9 @@ public class ConfigManager {
                 this.logChannelID = Optional.empty();
                 ps.setLong(1, 0);
             } else {
-                this.logChannelID = Optional.of(channel.getIdLong());
-                ps.setLong(1, channel.getIdLong());
+                final long channelID = channel.getIdLong();
+                this.logChannelID = Optional.of(channelID);
+                ps.setLong(1, channelID);
             }
             ps.setLong(2, this.guildID);
             return ps.executeUpdate() > 0;
@@ -258,7 +237,7 @@ public class ConfigManager {
      * Load the values this guildconfig stores
      */
     private void loadValues() {
-        final String query = "SELECT commandPrefix,greetingTemplate,language,timeZone FROM Guilds WHERE id = ?;";
+        final String query = "SELECT commandPrefix,greetingTemplate,logChannel,language,timeZone FROM Guilds WHERE id = ?;";
         try (final PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try (final ResultSet rs = ps.executeQuery()) {
@@ -267,7 +246,6 @@ public class ConfigManager {
                     //Load command prefix
                     try {
                         this.commandPrefix = rs.getString("commandPrefix");
-                        this.commandPattern = getCommandPattern(commandPrefix);
                     } catch (SQLException ex) {
                         LOGGER.error("SQL error on fetching the command prefix: {}", ex.getMessage());
                         LOGGER.warn("Stack trace:", ex);
@@ -279,7 +257,19 @@ public class ConfigManager {
                         LOGGER.error("SQL error on fetching greeting template: {}", ex.getMessage());
                         LOGGER.warn("Stack trace:", ex);
                     }
-                    //Load greeting template
+                    //Load logchannel
+                    try {
+                        final long channelID = rs.getLong("logChannel");
+                        if (channelID == 0) {
+                            this.logChannelID = Optional.empty();
+                        } else {
+                            this.logChannelID = Optional.of(channelID);
+                        }
+                    } catch (SQLException ex) {
+                        LOGGER.error("SQL error on fetching log channel: {}", ex.getMessage());
+                        LOGGER.warn("Stack trace:", ex);
+                    }
+                    //Load language
                     try {
                         final Locale loadedLocale = Locale.forLanguageTag(rs.getString("language"));
                         if (SUPPORTED_LOCALES.contains(loadedLocale)) {
@@ -322,7 +312,7 @@ public class ConfigManager {
     private boolean addGuild() throws SQLException {
         LOGGER.debug("Adding guild to database: {}", this.guildID);
         final String query = "INSERT OR IGNORE INTO Guilds("
-                + "id,commandPrefix,greetingTemplate,language,logChannel) VALUES (?,?,?,?,?);";
+                + "id,commandPrefix,greetingTemplate,language,logChannel,timeZone) VALUES (?,?,?,?,?);";
         try (final PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, "lemonbot#");

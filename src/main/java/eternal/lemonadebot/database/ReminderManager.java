@@ -23,8 +23,8 @@
  */
 package eternal.lemonadebot.database;
 
-import eternal.lemonadebot.customcommands.Reminder;
-import eternal.lemonadebot.customcommands.ReminderActivationTime;
+import eternal.lemonadebot.dataobjects.Reminder;
+import eternal.lemonadebot.dataobjects.ReminderActivationTime;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

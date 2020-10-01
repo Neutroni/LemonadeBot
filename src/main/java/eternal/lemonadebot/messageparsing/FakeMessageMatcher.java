@@ -21,12 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.customcommands;
+package eternal.lemonadebot.messageparsing;
 
-import eternal.lemonadebot.CommandMatcher;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -40,11 +38,12 @@ import net.dv8tion.jda.api.entities.TextChannel;
  */
 public class FakeMessageMatcher implements CommandMatcher {
 
-    private static final Pattern PATTERN = Pattern.compile("^!(\\S+) ?");
+    private static final Pattern SPLIT_PATTERN = Pattern.compile(" ");
+
     private final CommandMatcher commandMatcher;
-    private final String messageText;
-    private final Matcher matcher;
-    private final boolean matches;
+    private final Optional<String> command;
+    private final String arguments;
+    private final String action;
 
     /**
      * Constructor
@@ -55,35 +54,50 @@ public class FakeMessageMatcher implements CommandMatcher {
     public FakeMessageMatcher(CommandMatcher originalMatcher, String fakeContent) {
         this.commandMatcher = originalMatcher;
         final String[] args = originalMatcher.getArguments(0);
+        final String messageText;
         if (args.length == 0) {
-            this.messageText = fakeContent;
+            messageText = fakeContent;
         } else {
-            this.messageText = fakeContent + ' ' + args[0];
+            messageText = fakeContent + ' ' + args[0];
         }
-        this.matcher = PATTERN.matcher(this.messageText);
-        this.matches = this.matcher.find();
+
+        final String commandPrefix = "!";
+        if (messageText.startsWith(commandPrefix)) {
+            //Command name starts at the character after prefix
+            final int actionStart = commandPrefix.length();
+            this.action = messageText.substring(actionStart);
+            //Command name ends at either before space or at the end of message
+            final int i = this.action.indexOf(' ');
+            if (i == -1) {
+                //Message does not contain arguments
+                this.command = Optional.of(this.action);
+                this.arguments = "";
+            } else {
+                //Message has at least a space after command name
+                this.command = Optional.of(this.action.substring(0, i));
+                this.arguments = this.action.substring(i + 1);
+            }
+        } else {
+            //Not a command
+            this.command = Optional.empty();
+            this.action = null;
+            this.arguments = null;
+        }
     }
 
     @Override
     public Optional<String> getCommand() {
-        if (this.matches) {
-            return Optional.of(matcher.group(1));
-        }
-        return Optional.empty();
+        return this.command;
     }
 
     @Override
     public String[] getArguments(int count) {
-        int parameterStart = matcher.end();
-
-        final String parameterString = this.messageText.substring(parameterStart);
-        return parameterString.split(" ", count + 1);
+        return SPLIT_PATTERN.split(this.arguments, count + 1);
     }
 
     @Override
     public String getAction() {
-        int argumentStart = matcher.start(1);
-        return this.messageText.substring(argumentStart);
+        return this.action;
     }
 
     @Override
@@ -94,11 +108,6 @@ public class FakeMessageMatcher implements CommandMatcher {
     @Override
     public Member getMember() {
         return this.commandMatcher.getMember();
-    }
-
-    @Override
-    public String getMessageText() {
-        return this.messageText;
     }
 
     @Override

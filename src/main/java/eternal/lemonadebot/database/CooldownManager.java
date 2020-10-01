@@ -23,6 +23,7 @@
  */
 package eternal.lemonadebot.database;
 
+import eternal.lemonadebot.dataobjects.ActionCooldown;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
