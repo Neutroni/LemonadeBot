@@ -39,6 +39,7 @@ public class ActionCooldown {
 
     /**
      * Constructor
+     *
      * @param action Action this cooldown is for
      * @param cooldownDuration Duration the cooldown is
      * @param activationTime Last time of activation for action
@@ -51,6 +52,7 @@ public class ActionCooldown {
 
     /**
      * Constructor
+     *
      * @param action Action this cooldown is for
      * @param cooldownDurationSeconds Duration the cooldown is
      * @param activationTimeSeconds Last time of activation for action
@@ -73,12 +75,17 @@ public class ActionCooldown {
     /**
      * Update the time command was last activated
      *
-     * @param activation
+     * @param activation time to set
      */
     public void updateActivationTime(Instant activation) {
         this.activationTime = activation;
     }
 
+    /**
+     * Get the time action was last performed
+     *
+     * @return Instant of last activation
+     */
     public Instant getLastActivationTime() {
         return this.activationTime;
     }
