@@ -325,7 +325,7 @@ public enum TranslationKey {
     PERMISSION_GET_MISSING_NAME("Provide name of permission to get curret value for."),
     PERMISSION_NOT_FOUND("No permission set for that action currently."),
     PERMISSION_RANK_MISSING_ROLE("Action: %s requires rank: %s required role could not be found, defaulting to anyone."),
-    PERMISSION_REQUIRED_RANK_ROLE("Action: %s required rank: %s and role: %s"),
+    PERMISSION_REQUIRED_RANK_ROLE("Required rank: %s and role: %s"),
     PERMISSION_SET_MISSING_RANK("Provide the rank to set for permission."),
     PERMISSION_SET_MISSING_ROLE("Provide role to set for permission."),
     PERMISSION_SET_MISSING_ACTION("Provide name of permission to update."),
@@ -431,7 +431,9 @@ public enum TranslationKey {
     KEYWORD_SQL_ERROR_ON_CREATE("Adding keyword to database failed, keyword might disappear after reboot."),
     KEYWORD_PATTERN_SYNTAX_ERROR("Not a valid keyword pattern, Some characters are reserved in pattern creation and must be escaped with '\\' usefull site for figuring out regex rules is https://regex101.com/"),
     EVENT_ALREADY_LOCKED("Event already locked."),
-    EVENT_ALREADY_UNLOCKED("Event already unlocked.");
+    EVENT_ALREADY_UNLOCKED("Event already unlocked."), 
+    HEADER_REQUIRED_PERMISSION("Permission required:"), 
+    HEADER_ACTION("Action:");
 
     private static final Logger LOGGER = LogManager.getLogger();
     private final String defaultText;
