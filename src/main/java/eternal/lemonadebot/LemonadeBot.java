@@ -54,7 +54,7 @@ import org.apache.logging.log4j.Logger;
  * @author Neutroni
  */
 public class LemonadeBot {
-    
+
     public static final String BOT_VERSION = LemonadeBot.class.getPackage().getImplementationVersion();
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -126,11 +126,8 @@ public class LemonadeBot {
 
             //Initialize connected guilds
             jda.awaitReady();
-            for (final Guild g : jda.getGuilds()) {
-                final GuildDataStore guildData = DB.getGuildData(g);
-                LOGGER.debug("Loaded guild: {} succesfully", guildData.getGuildID());
-            }
-            
+            jda.getGuilds().forEach(DB::getGuildData);
+
             LOGGER.debug("Startup succesfull");
         } catch (SQLException ex) {
             LOGGER.fatal("Failed to connect to database during startup: {}", ex.getMessage());
@@ -169,6 +166,6 @@ public class LemonadeBot {
             LOGGER.error("Properties file location is not writable and does not contain properties file. {}", e.getMessage());
             LOGGER.trace("Stack trace:", e);
         }
-        
+
     }
 }
