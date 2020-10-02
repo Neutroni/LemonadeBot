@@ -93,6 +93,10 @@ public class CooldownCommand extends AdminCommand {
                 setCooldown(channel, guildData, setArguments);
                 break;
             }
+            case DISABLE: {
+                disableCooldown(channel, guildData, arguments[1]);
+                break;
+            }
             default: {
                 channel.sendMessage(TranslationKey.ERROR_UNKNOWN_OPERATION.getTranslation(locale) + option).queue();
             }
@@ -181,5 +185,33 @@ public class CooldownCommand extends AdminCommand {
             LOGGER.error("Failure to set cooldown in database: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);
         }
+    }
+
+    /**
+     * Disable cooldown for command
+     *
+     * @param channel Channel to send messages on
+     * @param guildData CooldownManager to remove cooldown in
+     * @param requestedAction Action which to remove cooldown from
+     */
+    private void disableCooldown(TextChannel channel, GuildDataStore guildData, String requestedAction) {
+        final CooldownManager cooldownManager = guildData.getCooldownManager();
+        final Locale locale = guildData.getConfigManager().getLocale();
+        final Optional<ActionCooldown> cd = cooldownManager.getActionCooldownByName(requestedAction);
+        cd.ifPresentOrElse((ActionCooldown t) -> {
+            //Found cooldown for action
+            try {
+                cooldownManager.removeCooldown(t.getAction());
+                channel.sendMessage(TranslationKey.COOLDOWN_DISABLE_SUCCESS.getTranslation(locale)).queue();
+            } catch (SQLException ex) {
+                channel.sendMessage(TranslationKey.COOLDOWN_SQL_ERROR_ON_DISABLE.getTranslation(locale)).queue();
+                LOGGER.error("Failure to remove cooldown from database: {}", ex.getMessage());
+                LOGGER.trace("Stack trace", ex);
+            }
+        }, () -> {
+            //No cooldown for action
+            channel.sendMessage(TranslationKey.COOLDOWN_NO_COOLDOWN_SET.getTranslation(locale) + requestedAction).queue();
+        });
+
     }
 }

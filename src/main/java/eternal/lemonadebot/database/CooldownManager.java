@@ -150,12 +150,11 @@ public class CooldownManager {
         cooldown.updateActivationTime(now);
 
         //Store in database
-        final String query = "INSERT OR REPLACE INTO Cooldowns(guild,command,duration,activationTime) VALUES(?,?,?,?)";
+        final String query = "UPDATE Cooldowns SET activationTime = ? WHERE guild = ? AND command = ?) VALUES(?,?,?)";
         try ( PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
-            ps.setString(2, cooldown.getAction());
-            ps.setLong(3, cooldownDuration.getSeconds());
-            ps.setLong(4, now.getEpochSecond());
+            ps.setLong(1, now.getEpochSecond());
+            ps.setLong(2, this.guildID);
+            ps.setString(3, cooldown.getAction());
             ps.executeUpdate();
         } catch (SQLException e) {
             LOGGER.error("Updating command activation time failed!");
@@ -206,6 +205,16 @@ public class CooldownManager {
             ps.setLong(4, cooldown.getLastActivationTime().getEpochSecond());
             return ps.executeUpdate() > 0;
         }
+    }
+
+    /**
+     * Get ActionCooldown by exact name
+     *
+     * @param name Name of cooldown to get
+     * @return Optional for cooldown if found
+     */
+    public Optional<ActionCooldown> getActionCooldownByName(String name) {
+        return Optional.ofNullable(this.cooldowns.get(name));
     }
 
     /**

@@ -234,6 +234,8 @@ public enum TranslationKey {
     COOLDOWN_NO_ACTION("Provide the name of the action to set cooldown for."),
     COOLDOWN_UPDATED_SUCCESFULLY("Action cooldown updated succesfully."),
     COOLDOWN_SQL_ERROR_ON_UPDATE("Error updating the cooldown in database, cooldown might revert to old value after reboot."),
+    COOLDOWN_DISABLE_SUCCESS("Cooldown disabled succesfully."),
+    COOLDOWN_SQL_ERROR_ON_DISABLE("Error disable the cooldown in database, cooldown might be restored on reboot."),
     ERROR_COMMAND_NOT_FOUND("Could not find command with input: "),
     ERROR_NO_SUCH_COMMAND("No such command: "),
     ERROR_UNKNOWN_DATE("Unknown date: "),
@@ -426,6 +428,9 @@ public enum TranslationKey {
     KEYWORD_CREATE_MISSING_KEYWORD("Creating a keyword requires a pattern the keywords activates on."),
     KEYWORD_CREATE_MISSING_TEMPLATE("Creating a keywords required a template for the response to keyword."),
     KEYWORD_CREATE_SUCCESS("Keyword created succesfully."),
+    KEYWORD_PATTERN_SYNTAX_ERROR("Not a valid keyword pattern,"
+            + " Some characters are reserved in pattern creation and must be escaped with '\\'"
+            + " usefull site for figuring out regex rules is https://regex101.com/"),
     KEYWORD_ALREADY_EXISTS("Keyword with that template already exists."),
     KEYWORD_DELETE_MISSING_NAME("Deleting a keyword requires the name of the keyword to delete"),
     KEYWORD_DELETE_NOT_FOUND("No such keyword as: %s"),
@@ -433,10 +438,7 @@ public enum TranslationKey {
     KEYWORD_DELETE_SUCCESS("Keyword deleted succesfully."),
     KEYWORD_SQL_ERROR_ON_DELETE("Deleting keyword from database failed, keyword might reappear after reboot."),
     KEYWORD_NO_KEYWORDS("No keywords defined."),
-    KEYWORD_SQL_ERROR_ON_CREATE("Adding keyword to database failed, keyword might disappear after reboot."),
-    KEYWORD_PATTERN_SYNTAX_ERROR("Not a valid keyword pattern,"
-            + " Some characters are reserved in pattern creation and must be escaped with '\\'"
-            + " usefull site for figuring out regex rules is https://regex101.com/");
+    KEYWORD_SQL_ERROR_ON_CREATE("Adding keyword to database failed, keyword might disappear after reboot.");
 
     private static final Logger LOGGER = LogManager.getLogger();
     private final String defaultText;
