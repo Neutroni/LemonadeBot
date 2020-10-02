@@ -28,6 +28,7 @@ import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.dataobjects.Event;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.translation.TranslationKey;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeParseException;
@@ -47,6 +48,8 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Class that holds templates for custom commands and how to substitute given
@@ -56,6 +59,7 @@ import net.dv8tion.jda.api.exceptions.ErrorResponseException;
  */
 public class TemplateProvider {
 
+    private static final Logger LOGGER = LogManager.getLogger();
     private static final Random RNG = new Random();
     private static final List<ActionTemplate> actions = List.of(
             new ActionTemplate("choice (.*(\\|.*)+)", TranslationKey.HELP_TEMPLATE_CHOICE,
@@ -145,7 +149,15 @@ public class TemplateProvider {
                                     return m.getEffectiveName();
                                 }
                             } catch (ErrorResponseException e) {
-                                //Ignored
+                                LOGGER.info("Found user {} in event {} members who could not be found, removing from event", l, eventName);
+                                LOGGER.debug("Error: ", e.getMessage());
+                                try {
+                                    eventManager.leaveEvent(event, l);
+                                    LOGGER.info("Succesfully removed missing member from event");
+                                } catch (SQLException ex) {
+                                    LOGGER.error("Failure to remove member from event: {}", ex.getMessage());
+                                    LOGGER.trace("Stack trace", ex);
+                                }
                             }
                         }
                         return TranslationKey.EVENT_NO_MEMBERS.getTranslation(locale);
