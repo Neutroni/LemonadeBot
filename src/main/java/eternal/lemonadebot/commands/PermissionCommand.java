@@ -120,16 +120,14 @@ class PermissionCommand extends AdminCommand {
             }
             //Construct embed for response
             final EmbedBuilder eb = new EmbedBuilder();
-            eb.setTitle(TranslationKey.HEADER_REQUIRED_PERMISSION.getTranslation(locale));
+            eb.setTitle(TranslationKey.HEADER_ACTION.getTranslation(locale));
+            eb.setDescription(perm.getAction());
             //Get required rank and role
+            final String fieldName = TranslationKey.HEADER_REQUIRED_PERMISSION.getTranslation(locale);
             final String template = TranslationKey.PERMISSION_REQUIRED_RANK_ROLE.getTranslation(locale);
             final String rankName = perm.getRequiredRank().getNameKey().getTranslation(locale);
-            final String description = String.format(template, rankName, r.getAsMention());
-            eb.setDescription(description);
-            //Get the action the permission is for
-            final String actionTemplate = TranslationKey.HEADER_ACTION.getTranslation(locale);
-            final String actionName = perm.getAction();
-            eb.addField(actionTemplate, actionName, false);
+            final String fiedlValue = String.format(template, rankName, r.getAsMention());
+            eb.addField(fieldName, fiedlValue, false);
             channel.sendMessage(eb.build()).queue();
         }, () -> {
             //No permission set for action
@@ -184,6 +182,7 @@ class PermissionCommand extends AdminCommand {
         final String actionString = args[3];
         try {
             permissions.setPermission(new CommandPermission(actionString, rank, role.getIdLong()));
+            channel.sendMessage(TranslationKey.PERMISSION_UPDATE_SUCCESS.getTranslation(locale)).queue();
         } catch (SQLException e) {
             channel.sendMessage(TranslationKey.PERMISSION_SQL_ERROR_ON_SET.getTranslation(locale)).queue();
             LOGGER.error("Failure to update permission in database: {}", e.getMessage());
