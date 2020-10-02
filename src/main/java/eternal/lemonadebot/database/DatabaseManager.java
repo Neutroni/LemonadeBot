@@ -41,9 +41,9 @@ import org.apache.logging.log4j.Logger;
  * @author Neutroni
  */
 public class DatabaseManager implements AutoCloseable {
-    
+
     private static final Logger LOGGER = LogManager.getLogger();
-    
+
     private final Connection conn;
     private final JDA jda;
     private final Map<Long, GuildDataStore> guildDataStores = new ConcurrentHashMap<>();
@@ -66,7 +66,7 @@ public class DatabaseManager implements AutoCloseable {
             this.maxMessages = Integer.parseInt(numberString);
             LOGGER.info("Set max messages to: {}", maxMessages);
         }
-        
+
         this.conn = DriverManager.getConnection("jdbc:sqlite:" + databaseLocation);
         this.jda = jda;
 
@@ -75,7 +75,7 @@ public class DatabaseManager implements AutoCloseable {
         //load guilds from database
         loadGuilds();
     }
-    
+
     @Override
     public void close() throws SQLException {
         this.conn.close();
@@ -185,7 +185,7 @@ public class DatabaseManager implements AutoCloseable {
         }
         LOGGER.debug("Database initialized");
     }
-    
+
     private void loadGuilds() throws SQLException {
         LOGGER.debug("Loading guilds from database");
         final String query = "SELECT id FROM Guilds;";

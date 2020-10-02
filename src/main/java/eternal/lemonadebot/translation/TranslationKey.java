@@ -429,8 +429,8 @@ public enum TranslationKey {
     KEYWORD_SQL_ERROR_ON_DELETE("Deleting keyword from database failed, keyword might reappear after reboot."),
     KEYWORD_NO_KEYWORDS("No keywords defined."),
     KEYWORD_SQL_ERROR_ON_CREATE("Adding keyword to database failed, keyword might disappear after reboot."),
-    KEYWORD_PATTERN_SYNTAX_ERROR("Not a valid keyword pattern, Some characters are reserved in pattern creation and must be escaped with '\\' usefull site for figuring out regex rules is https://regex101.com/"), 
-    EVENT_ALREADY_LOCKED("Event already locked."), 
+    KEYWORD_PATTERN_SYNTAX_ERROR("Not a valid keyword pattern, Some characters are reserved in pattern creation and must be escaped with '\\' usefull site for figuring out regex rules is https://regex101.com/"),
+    EVENT_ALREADY_LOCKED("Event already locked."),
     EVENT_ALREADY_UNLOCKED("Event already unlocked.");
 
     private static final Logger LOGGER = LogManager.getLogger();
