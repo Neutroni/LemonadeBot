@@ -33,13 +33,13 @@ import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.KeywordManager;
 import eternal.lemonadebot.dataobjects.KeywordAction;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
-import eternal.lemonadebot.messageparsing.FakeMessageMatcher;
 import eternal.lemonadebot.messageparsing.MessageMatcher;
 import eternal.lemonadebot.messageparsing.SimpleMessageMatcher;
 import java.time.Duration;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
@@ -67,24 +67,40 @@ public class KeywordListener extends ListenerAdapter {
      */
     @Override
     public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
+        //Don't reply to bots
+        if (event.getAuthor().isBot()) {
+            return;
+        }
+
+        //Don't reply to webhook messages
+        if (event.isWebhookMessage()) {
+            return;
+        }
+
+        //Check if we can talk on this channel
+        final TextChannel textChannel = event.getChannel();
+        if (!textChannel.canTalk()) {
+            return;
+        }
+
         final Guild eventGuild = event.getGuild();
         final Message message = event.getMessage();
         final String input = message.getContentRaw();
         final GuildDataStore guildData = this.db.getGuildData(eventGuild);
         final KeywordManager keywordManager = guildData.getKeywordManager();
         final CooldownManager cooldownManager = guildData.getCooldownManager();
-        
+
         //Check to make sure we are not reacting to our own creation
         final ConfigManager guildConf = guildData.getConfigManager();
         final CommandProvider commandProvider = guildData.getCommandProvider();
         final MessageMatcher matcher = new MessageMatcher(guildConf, message);
         final Optional<ChatCommand> optCommand = commandProvider.getAction(matcher);
         String name = null;
-        if(optCommand.isPresent()){
+        if (optCommand.isPresent()) {
             final ChatCommand command = optCommand.get();
-            if(command instanceof KeywordCommand){
+            if (command instanceof KeywordCommand) {
                 final String[] args = matcher.getArguments(2);
-                if(args.length > 2){
+                if (args.length > 2) {
                     name = args[1];
                 }
             }
@@ -95,9 +111,9 @@ public class KeywordListener extends ListenerAdapter {
             if (!com.matches(input)) {
                 continue;
             }
-            
+
             //Ignore modification to the keyword
-            if(com.getName().equals(name)){
+            if (com.getName().equals(name)) {
                 continue;
             }
 
