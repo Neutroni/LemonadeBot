@@ -171,6 +171,7 @@ public class DatabaseManager implements AutoCloseable {
                 + "owner INTEGER NOT NULL,"
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,name));";
+        final String ENABLE_FOREIGN_KEYS = "PRAGMA foreign_keys = ON;";
         try (final Statement st = this.conn.createStatement()) {
             st.addBatch(GUILDCONF);
             st.addBatch(PERMISSIONS);
@@ -181,6 +182,7 @@ public class DatabaseManager implements AutoCloseable {
             st.addBatch(EVENT_MEMBERS);
             st.addBatch(REMINDERS);
             st.addBatch(KEYWORDS);
+            st.addBatch(ENABLE_FOREIGN_KEYS);
             st.executeBatch();
         }
         LOGGER.debug("Database initialized");
