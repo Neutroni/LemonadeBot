@@ -59,8 +59,8 @@ public enum Returnvalue {
      */
     CONFIG_READ_ERROR,
     /**
-     * If loading version number from META-INF failed
+     * If JDA loading was interrupted
      */
-    VERSION_LOAD_FAILED;
+    LOADING_INTERRUPTED;
 
 }

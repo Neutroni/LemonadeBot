@@ -35,7 +35,7 @@ import net.dv8tion.jda.api.entities.TextChannel;
  *
  * @author Neutroni
  */
-public class ReminderMessageMatcher implements CommandMatcher {
+public class SimpleMessageMatcher implements CommandMatcher {
 
     private final Member author;
     private final TextChannel channel;
@@ -46,7 +46,7 @@ public class ReminderMessageMatcher implements CommandMatcher {
      * @param author reminder author
      * @param channel Channel reminder should be sent in
      */
-    public ReminderMessageMatcher(Member author, TextChannel channel) {
+    public SimpleMessageMatcher(Member author, TextChannel channel) {
         this.author = author;
         this.channel = channel;
     }

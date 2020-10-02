@@ -25,7 +25,7 @@ package eternal.lemonadebot.dataobjects;
 
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
-import eternal.lemonadebot.messageparsing.ReminderMessageMatcher;
+import eternal.lemonadebot.messageparsing.SimpleMessageMatcher;
 import eternal.lemonadebot.translation.TranslationCache;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
@@ -112,7 +112,7 @@ public class Reminder extends CustomCommand implements Runnable {
         //Check reminder author can be found
         channel.getGuild().retrieveMemberById(getAuthor()).queue((Member member) -> {
             //Success
-            final CommandMatcher matcher = new ReminderMessageMatcher(member, channel);
+            final CommandMatcher matcher = new SimpleMessageMatcher(member, channel);
             respond(matcher, guildData);
             LOGGER.debug("Reminder: {} succesfully activated on channel: {}", getName(), channel.getName());
         }, (Throwable t) -> {

@@ -218,7 +218,7 @@ public class TemplateCommand implements ChatCommand {
             contentBuilder.append(desc.join());
         });
         if (templates.isEmpty()) {
-            contentBuilder.append(TranslationKey.TEMPLATE_NO_COMMANDS);
+            contentBuilder.append(TranslationKey.TEMPLATE_NO_COMMANDS.getTranslation(locale));
         }
         eb.setDescription(contentBuilder);
         textChannel.sendMessage(eb.build()).queue();

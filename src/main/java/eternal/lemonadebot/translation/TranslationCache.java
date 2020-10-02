@@ -45,25 +45,16 @@ import org.apache.logging.log4j.Logger;
 public class TranslationCache implements LocaleUpdateListener {
 
     private static final Logger LOGGER = LogManager.getLogger();
-    private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
-    private final Map<String, ChronoUnit> chronoMap;
+    private final ReadWriteLock rwLock;
+    private volatile Map<String, ChronoUnit> chronoMap;
     private final Map<String, ActionKey> actionMap;
     private volatile Collator collator;
     private volatile DateTimeFormatter timeFormat;
 
     public TranslationCache(Locale locale) {
-        this.collator = Collator.getInstance(locale);
-        this.chronoMap = new TreeMap<>(collator);
+        this.rwLock = new ReentrantReadWriteLock();
         this.actionMap = new HashMap<>();
-        //Pattern used for parsing 24h time such as 14:07 or 21.40 depending on locale
-        final String timePattern = TranslationKey.REMINDER_TIME_FORMAT.getTranslation(locale);
-        try {
-            this.timeFormat = DateTimeFormatter.ofPattern(timePattern);
-        } catch (IllegalArgumentException e) {
-            LOGGER.error("Error updating DateTimeFormatter for time parsing: {}", e.getMessage());
-            LOGGER.error("Malformed time pattern for formatter: {}", timePattern);
-            this.timeFormat = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).localizedBy(Locale.ROOT);
-        }
+        localeUpdate(locale);
     }
 
     /**
@@ -86,6 +77,10 @@ public class TranslationCache implements LocaleUpdateListener {
 
     @Override
     public void updateLocale(Locale newLocale) {
+        localeUpdate(newLocale);
+    }
+
+    private void localeUpdate(Locale newLocale) {
         this.rwLock.writeLock().lock();
         try {
             //Update collator
@@ -101,7 +96,7 @@ public class TranslationCache implements LocaleUpdateListener {
                 this.timeFormat = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).localizedBy(Locale.ROOT);
             }
             //Update chronoMap
-            this.chronoMap.clear();
+            this.chronoMap = new TreeMap<>(this.collator);
             this.chronoMap.put(TranslationKey.TIME_SECOND.getTranslation(newLocale), ChronoUnit.SECONDS);
             this.chronoMap.put(TranslationKey.TIME_MINUTE.getTranslation(newLocale), ChronoUnit.MINUTES);
             this.chronoMap.put(TranslationKey.TIME_HOUR.getTranslation(newLocale), ChronoUnit.HOURS);
@@ -118,31 +113,12 @@ public class TranslationCache implements LocaleUpdateListener {
             this.chronoMap.put(TranslationKey.TIME_YEARS.getTranslation(newLocale), ChronoUnit.YEARS);
             //Update actionMap
             this.actionMap.clear();
-            this.actionMap.put(TranslationKey.ACTION_ADD.getTranslation(newLocale), ActionKey.ADD);
-            this.actionMap.put(TranslationKey.ACTION_REMOVE.getTranslation(newLocale), ActionKey.REMOVE);
-            this.actionMap.put(TranslationKey.ACTION_CREATE.getTranslation(newLocale), ActionKey.CREATE);
-            this.actionMap.put(TranslationKey.ACTION_DELETE.getTranslation(newLocale), ActionKey.DELETE);
-            this.actionMap.put(TranslationKey.ACTION_LIST.getTranslation(newLocale), ActionKey.LIST);
-            this.actionMap.put(TranslationKey.ACTION_SET.getTranslation(newLocale), ActionKey.SET);
-            this.actionMap.put(TranslationKey.ACTION_GET.getTranslation(newLocale), ActionKey.GET);
-            this.actionMap.put(TranslationKey.ACTION_JOIN.getTranslation(newLocale), ActionKey.JOIN);
-            this.actionMap.put(TranslationKey.ACTION_LEAVE.getTranslation(newLocale), ActionKey.LEAVE);
-            this.actionMap.put(TranslationKey.ACTION_DISABLE.getTranslation(newLocale), ActionKey.DISABLE);
-            this.actionMap.put(TranslationKey.ACTION_MEMBERS.getTranslation(newLocale), ActionKey.LIST_MEMBERS);
-            this.actionMap.put(TranslationKey.ACTION_LOCK.getTranslation(newLocale), ActionKey.LOCK);
-            this.actionMap.put(TranslationKey.ACTION_UNLOCK.getTranslation(newLocale), ActionKey.UNLOCK);
-            this.actionMap.put(TranslationKey.ACTION_CLEAR.getTranslation(newLocale), ActionKey.CLEAR);
-            this.actionMap.put(TranslationKey.ACTION_PING.getTranslation(newLocale), ActionKey.PING);
-            this.actionMap.put(TranslationKey.ACTION_RANDOM.getTranslation(newLocale), ActionKey.RANDOM);
-            this.actionMap.put(TranslationKey.ACTION_PLAY.getTranslation(newLocale), ActionKey.PLAY);
-            this.actionMap.put(TranslationKey.ACTION_SKIP.getTranslation(newLocale), ActionKey.SKIP);
-            this.actionMap.put(TranslationKey.ACTION_PAUSE.getTranslation(newLocale), ActionKey.PAUSE);
-            this.actionMap.put(TranslationKey.ACTION_STOP.getTranslation(newLocale), ActionKey.STOP);
-            this.actionMap.put(TranslationKey.ACTION_PREFIX.getTranslation(newLocale), ActionKey.PREFIX);
-            this.actionMap.put(TranslationKey.ACTION_GREETING.getTranslation(newLocale), ActionKey.GREETING);
-            this.actionMap.put(TranslationKey.ACTION_LOG_CHANNEL.getTranslation(newLocale), ActionKey.LOG_CHANNEL);
-            this.actionMap.put(TranslationKey.ACTION_LANGUAGE.getTranslation(newLocale), ActionKey.LANGUAGE);
-            this.actionMap.put(TranslationKey.ACTION_COMMANDS.getTranslation(newLocale), ActionKey.COMMANDS);
+            for (final ActionKey key : ActionKey.values()) {
+                final TranslationKey translationKey = key.getTranslationKey();
+                if (translationKey != null) {
+                    this.actionMap.put(translationKey.getTranslation(newLocale), key);
+                }
+            }
         } finally {
             this.rwLock.writeLock().unlock();
         }

@@ -224,11 +224,11 @@ public class ReminderCommand extends AdminCommand {
         final ReminderActivationTime reminderActivationTime = new ReminderActivationTime(timeOfDay, dayOfWeek, dayOfMonth, monthOfYear);
 
         //Get the reminder message
-        if (arguments.length < 5) {
+        if (arguments.length < 7) {
             channel.sendMessage(TranslationKey.REMINDER_MISSING_MESSAGE.getTranslation(locale)).queue();
             return;
         }
-        final String messageInput = arguments[4];
+        final String messageInput = arguments[6];
 
         //Construct reminder
         final JDA jda = channel.getJDA();

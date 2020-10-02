@@ -565,6 +565,10 @@ public class EventCommand implements ChatCommand {
             return;
         }
         final Event event = oldEvent.get();
+        if (event.isLocked()) {
+            channel.sendMessage(TranslationKey.EVENT_ALREADY_LOCKED.getTranslation(locale)).queue();
+            return;
+        }
         channel.getGuild().retrieveMemberById(event.getOwner()).submit().whenComplete((Member eventOwner, Throwable error) -> {
             //Check if user has permission to remove the event
             final Member sender = matcher.getMember();
@@ -608,6 +612,10 @@ public class EventCommand implements ChatCommand {
             return;
         }
         final Event event = oldEvent.get();
+        if (!event.isLocked()) {
+            textChannel.sendMessage(TranslationKey.EVENT_ALREADY_UNLOCKED.getTranslation(locale)).queue();
+            return;
+        }
         textChannel.getGuild().retrieveMemberById(event.getOwner()).submit().whenComplete((Member eventOwner, Throwable error) -> {
             //Check if user has permission to remove the event
             final boolean hasPermission = PermissionUtilities.hasPermission(sender, eventOwner);

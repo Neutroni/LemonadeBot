@@ -197,10 +197,8 @@ public class TemplateProvider {
         //Construct stack to hold the parsed responses
         final Deque<StringBuilder> stack = new ArrayDeque<>();
 
-        //Initialize the stack if needed
-        if (action.charAt(0) != '{') {
-            stack.addFirst(new StringBuilder(action.length()));
-        }
+        //Initialize the stack
+        stack.addFirst(new StringBuilder(action.length()));
 
         //Parse the action
         for (int i = 0; i < action.length(); i++) {

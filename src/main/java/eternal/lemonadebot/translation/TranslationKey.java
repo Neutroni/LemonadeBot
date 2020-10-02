@@ -54,7 +54,7 @@ public enum TranslationKey {
     DESCRIPTION_ROLE("Command for getting a role from allied guilds."),
     DESCRIPTION_TEMPLATE("Manage custom commands."),
     DESCRIPTION_MUSIC("Play music."),
-    DESCRIPTION_CUSTOMCOMMAND("Custom command: %s by %s"),
+    DESCRIPTION_CUSTOMCOMMAND("User created custom command"),
     DESCRIPTION_KEYWORD("Manage keywords that trigger actions when seen in a message."),
     ACTION_ADD("add"),
     ACTION_REMOVE("remove"),
@@ -72,7 +72,7 @@ public enum TranslationKey {
     ACTION_CLEAR("clear"),
     ACTION_PING("ping"),
     ACTION_RANDOM("random"),
-    ACTION_PLAY("pause"),
+    ACTION_PLAY("play"),
     ACTION_STOP("stop"),
     ACTION_SKIP("skip"),
     ACTION_PAUSE("pause"),
@@ -193,7 +193,7 @@ public enum TranslationKey {
             + " list - show list of defined keywords\n"
             + "[pattern] pattern that activates the keyword, a java regular expression\n"
             + "[template] template for the reponse to keyword"),
-    SYNTAX_CUSTOMCOMMAND("Custom command with template:\n %s\n"
+    SYNTAX_CUSTOMCOMMAND("Template based custom command with template:\n %s\n"
             + "See \"help template\" for details on custom commands."),
     CONFIG_SET_MISSING_OPTION("Provide the name of the setting and the value to set."),
     CONFIG_MISSING_VALUE("Provide the value to set the setting to."),
@@ -341,7 +341,7 @@ public enum TranslationKey {
     REMINDER_MONTH_NOT_NUMBER("Month must either a number in range 1 to 12 or * to denote any month."),
     REMINDER_MONTH_OUT_OF_RANGE("Month out of valid range, must either be a number in range 1 to 12 or * to denote any month."),
     REMINDER_MISSING_DAY_OF_WEEK("Remainder needs a day of week to activate, either name of day written in full or * to denote any day."),
-    REMINDER_LIST_ELEMENT_TEMPLATE("%s - Template: %s Activates at: %s on channel %s by %s\n"),
+    REMINDER_LIST_ELEMENT_TEMPLATE("%s - Template: %s\n Activates at: %s on channel %s by %s\n"),
     REMINDER_CHANNEL_MISSING("Reminder %s deleted due to missing channel"),
     REMINDER_USER_MISSING("Reminder %s deleted due to missing user"),
     REMINDER_MISSING_TIME("Reminder needs a time to activate on."),
@@ -429,7 +429,9 @@ public enum TranslationKey {
     KEYWORD_SQL_ERROR_ON_DELETE("Deleting keyword from database failed, keyword might reappear after reboot."),
     KEYWORD_NO_KEYWORDS("No keywords defined."),
     KEYWORD_SQL_ERROR_ON_CREATE("Adding keyword to database failed, keyword might disappear after reboot."),
-    KEYWORD_PATTERN_SYNTAX_ERROR("Not a valid keyword pattern, Some characters are reserved in pattern creation and must be escaped with '\\' usefull site for figuring out regex rules is https://regex101.com/");
+    KEYWORD_PATTERN_SYNTAX_ERROR("Not a valid keyword pattern, Some characters are reserved in pattern creation and must be escaped with '\\' usefull site for figuring out regex rules is https://regex101.com/"), 
+    EVENT_ALREADY_LOCKED("Event already locked."), 
+    EVENT_ALREADY_UNLOCKED("Event already unlocked.");
 
     private static final Logger LOGGER = LogManager.getLogger();
     private final String defaultText;

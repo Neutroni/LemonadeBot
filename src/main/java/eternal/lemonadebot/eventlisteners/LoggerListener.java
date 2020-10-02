@@ -47,7 +47,7 @@ import net.dv8tion.jda.api.utils.TimeUtil;
  *
  * @author Neutroni
  */
-public class MessageLoggerListener extends ListenerAdapter {
+public class LoggerListener extends ListenerAdapter {
 
     private final DatabaseManager db;
 
@@ -56,7 +56,7 @@ public class MessageLoggerListener extends ListenerAdapter {
      *
      * @param database Database to use for operations
      */
-    public MessageLoggerListener(DatabaseManager database) {
+    public LoggerListener(DatabaseManager database) {
         this.db = database;
     }
 

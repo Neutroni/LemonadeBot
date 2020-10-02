@@ -237,7 +237,7 @@ public class ConfigManager {
      * Load the values this guildconfig stores
      */
     private void loadValues() {
-        final String query = "SELECT commandPrefix,greetingTemplate,logChannel,language,timeZone FROM Guilds WHERE id = ?;";
+        final String query = "SELECT commandPrefix,greetingTemplate,logChannel,locale,timeZone FROM Guilds WHERE id = ?;";
         try (final PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try (final ResultSet rs = ps.executeQuery()) {
@@ -271,7 +271,7 @@ public class ConfigManager {
                     }
                     //Load language
                     try {
-                        final Locale loadedLocale = Locale.forLanguageTag(rs.getString("language"));
+                        final Locale loadedLocale = Locale.forLanguageTag(rs.getString("locale"));
                         if (SUPPORTED_LOCALES.contains(loadedLocale)) {
                             this.locale = loadedLocale;
                         } else {
@@ -312,13 +312,14 @@ public class ConfigManager {
     private boolean addGuild() throws SQLException {
         LOGGER.debug("Adding guild to database: {}", this.guildID);
         final String query = "INSERT OR IGNORE INTO Guilds("
-                + "id,commandPrefix,greetingTemplate,language,logChannel,timeZone) VALUES (?,?,?,?,?);";
+                + "id,commandPrefix,greetingTemplate,locale,logChannel,timeZone) VALUES (?,?,?,?,?,?);";
         try (final PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, "lemonbot#");
             ps.setString(3, this.greetingTemplate.orElse(null));
             ps.setString(4, DEFAULT_LOCALE.toLanguageTag());
-            ps.setString(5, null);
+            ps.setLong(5, 0);
+            ps.setString(6, this.timeZone.getId());
             return ps.executeUpdate() > 0;
         }
     }

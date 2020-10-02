@@ -200,7 +200,7 @@ public class KeywordCommand extends AdminCommand {
             contentBuilder.append(desc.join());
         });
         if (templates.isEmpty()) {
-            contentBuilder.append(TranslationKey.KEYWORD_NO_KEYWORDS);
+            contentBuilder.append(TranslationKey.KEYWORD_NO_KEYWORDS.getTranslation(locale));
         }
         eb.setDescription(contentBuilder);
         textChannel.sendMessage(eb.build()).queue();

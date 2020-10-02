@@ -23,6 +23,9 @@
  */
 package eternal.lemonadebot.eventlisteners;
 
+import eternal.lemonadebot.commands.CommandProvider;
+import eternal.lemonadebot.commands.KeywordCommand;
+import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.CooldownManager;
 import eternal.lemonadebot.database.DatabaseManager;
@@ -32,6 +35,7 @@ import eternal.lemonadebot.dataobjects.KeywordAction;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.FakeMessageMatcher;
 import eternal.lemonadebot.messageparsing.MessageMatcher;
+import eternal.lemonadebot.messageparsing.SimpleMessageMatcher;
 import java.time.Duration;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
@@ -43,7 +47,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
  *
  * @author Neutroni
  */
-public class MessageKeywordListener extends ListenerAdapter {
+public class KeywordListener extends ListenerAdapter {
 
     private final DatabaseManager db;
 
@@ -52,7 +56,7 @@ public class MessageKeywordListener extends ListenerAdapter {
      *
      * @param database Database to use for operations
      */
-    public MessageKeywordListener(DatabaseManager database) {
+    public KeywordListener(DatabaseManager database) {
         this.db = database;
     }
 
@@ -67,14 +71,33 @@ public class MessageKeywordListener extends ListenerAdapter {
         final Message message = event.getMessage();
         final String input = message.getContentRaw();
         final GuildDataStore guildData = this.db.getGuildData(eventGuild);
-        final ConfigManager configManager = guildData.getConfigManager();
         final KeywordManager keywordManager = guildData.getKeywordManager();
         final CooldownManager cooldownManager = guildData.getCooldownManager();
-        final CommandMatcher commandMatcher = new MessageMatcher(configManager, message);
+        
+        //Check to make sure we are not reacting to our own creation
+        final ConfigManager guildConf = guildData.getConfigManager();
+        final CommandProvider commandProvider = guildData.getCommandProvider();
+        final MessageMatcher matcher = new MessageMatcher(guildConf, message);
+        final Optional<ChatCommand> optCommand = commandProvider.getAction(matcher);
+        String name = null;
+        if(optCommand.isPresent()){
+            final ChatCommand command = optCommand.get();
+            if(command instanceof KeywordCommand){
+                final String[] args = matcher.getArguments(2);
+                if(args.length > 2){
+                    name = args[1];
+                }
+            }
+        }
 
         //Find if message contains any keyword
         for (KeywordAction com : keywordManager.getCommands()) {
             if (!com.matches(input)) {
+                continue;
+            }
+            
+            //Ignore modification to the keyword
+            if(com.getName().equals(name)){
                 continue;
             }
 
@@ -86,7 +109,7 @@ public class MessageKeywordListener extends ListenerAdapter {
             }
 
             //Run the command
-            final CommandMatcher fakeMatcher = new FakeMessageMatcher(commandMatcher, commandName);
+            final CommandMatcher fakeMatcher = new SimpleMessageMatcher(event.getMember(), event.getChannel());
             com.respond(fakeMatcher, guildData);
 
         }

@@ -98,7 +98,8 @@ public class CustomCommand implements ChatCommand {
 
     @Override
     public String getHelpText(Locale locale) {
-        return TranslationKey.SYNTAX_CUSTOMCOMMAND.getTranslation(locale);
+        final String template = TranslationKey.SYNTAX_CUSTOMCOMMAND.getTranslation(locale);
+        return String.format(template, this.actionTemplate);
     }
 
     @Override

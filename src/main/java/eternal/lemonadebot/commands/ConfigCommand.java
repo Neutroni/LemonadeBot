@@ -105,7 +105,7 @@ class ConfigCommand extends AdminCommand {
                 break;
             }
             default: {
-                channel.sendMessage(TranslationKey.ERROR_UNKNOWN_OPERATION.getTranslation(locale) + options[0]).queue();
+                channel.sendMessage(TranslationKey.ERROR_UNKNOWN_OPERATION.getTranslation(locale) + action).queue();
                 break;
             }
         }

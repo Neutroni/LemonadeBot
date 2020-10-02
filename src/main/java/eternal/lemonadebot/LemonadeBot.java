@@ -24,9 +24,11 @@
 package eternal.lemonadebot;
 
 import eternal.lemonadebot.database.DatabaseManager;
+import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.eventlisteners.CommandListener;
 import eternal.lemonadebot.eventlisteners.JoinListener;
-import eternal.lemonadebot.eventlisteners.MessageListener;
-import eternal.lemonadebot.eventlisteners.MessageLoggerListener;
+import eternal.lemonadebot.eventlisteners.KeywordListener;
+import eternal.lemonadebot.eventlisteners.LoggerListener;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -39,6 +41,7 @@ import java.util.Properties;
 import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
@@ -51,7 +54,7 @@ import org.apache.logging.log4j.Logger;
  * @author Neutroni
  */
 public class LemonadeBot {
-
+    
     public static final String BOT_VERSION = LemonadeBot.class.getPackage().getImplementationVersion();
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -116,10 +119,18 @@ public class LemonadeBot {
             LOGGER.debug("Connected to database succefully");
 
             //Start listening for messages
-            jda.addEventListener(new MessageListener(DB));
-            jda.addEventListener(new MessageLoggerListener(DB));
             jda.addEventListener(new JoinListener(DB));
+            jda.addEventListener(new CommandListener(DB));
+            jda.addEventListener(new LoggerListener(DB));
+            jda.addEventListener(new KeywordListener(DB));
 
+            //Initialize connected guilds
+            jda.awaitReady();
+            for (final Guild g : jda.getGuilds()) {
+                final GuildDataStore guildData = DB.getGuildData(g);
+                LOGGER.debug("Loaded guild: {} succesfully", guildData.getGuildID());
+            }
+            
             LOGGER.debug("Startup succesfull");
         } catch (SQLException ex) {
             LOGGER.fatal("Failed to connect to database during startup: {}", ex.getMessage());
@@ -133,6 +144,10 @@ public class LemonadeBot {
             LOGGER.fatal("Loading max messages value from configuration file failed: {}", ex.getMessage());
             LOGGER.trace("Stack trace: ", ex);
             System.exit(Returnvalue.CONFIG_READ_ERROR.ordinal());
+        } catch (InterruptedException ex) {
+            LOGGER.fatal("Waiting for JDA to load was interrupted: {}", ex.getMessage());
+            LOGGER.trace("Stack trace: ", ex);
+            System.exit(Returnvalue.LOADING_INTERRUPTED.ordinal());
         }
     }
 
@@ -154,6 +169,6 @@ public class LemonadeBot {
             LOGGER.error("Properties file location is not writable and does not contain properties file. {}", e.getMessage());
             LOGGER.trace("Stack trace:", e);
         }
-
+        
     }
 }

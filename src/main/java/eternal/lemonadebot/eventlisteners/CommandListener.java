@@ -57,7 +57,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class MessageListener extends ListenerAdapter {
+public class CommandListener extends ListenerAdapter {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -68,7 +68,7 @@ public class MessageListener extends ListenerAdapter {
      *
      * @param database Database to use for operations
      */
-    public MessageListener(DatabaseManager database) {
+    public CommandListener(DatabaseManager database) {
         this.db = database;
     }
 

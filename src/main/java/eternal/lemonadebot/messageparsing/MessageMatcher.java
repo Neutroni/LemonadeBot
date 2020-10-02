@@ -79,8 +79,8 @@ public class MessageMatcher implements CommandMatcher {
         } else {
             //Not a command
             this.command = Optional.empty();
-            this.action = null;
-            this.arguments = null;
+            this.action = "";
+            this.arguments = "";
         }
     }
 
@@ -96,6 +96,11 @@ public class MessageMatcher implements CommandMatcher {
 
     @Override
     public String[] getArguments(int count) {
+        //If there is not arguments return empty array
+        if (this.arguments.isEmpty()) {
+            return new String[0];
+        }
+        //Otherwise split the argument string
         return SPLIT_PATTERN.split(this.arguments, count + 1);
     }
 

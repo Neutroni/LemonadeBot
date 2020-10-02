@@ -41,9 +41,9 @@ import org.apache.logging.log4j.Logger;
  * @author Neutroni
  */
 public class DatabaseManager implements AutoCloseable {
-
+    
     private static final Logger LOGGER = LogManager.getLogger();
-
+    
     private final Connection conn;
     private final JDA jda;
     private final Map<Long, GuildDataStore> guildDataStores = new ConcurrentHashMap<>();
@@ -66,7 +66,7 @@ public class DatabaseManager implements AutoCloseable {
             this.maxMessages = Integer.parseInt(numberString);
             LOGGER.info("Set max messages to: {}", maxMessages);
         }
-
+        
         this.conn = DriverManager.getConnection("jdbc:sqlite:" + databaseLocation);
         this.jda = jda;
 
@@ -75,7 +75,7 @@ public class DatabaseManager implements AutoCloseable {
         //load guilds from database
         loadGuilds();
     }
-
+    
     @Override
     public void close() throws SQLException {
         this.conn.close();
@@ -108,6 +108,7 @@ public class DatabaseManager implements AutoCloseable {
                 + "id INTEGER PRIMARY KEY NOT NULL,"
                 + "commandPrefix TEXT NOT NULL,"
                 + "locale TEXT NOT NULL,"
+                + "timeZone TEXT NOT NULL,"
                 + "logChannel INTEGER NOT NULL,"
                 + "greetingTemplate TEXT);";
         final String PERMISSIONS = "CREATE TABLE IF NOT EXISTS Permissions("
@@ -116,12 +117,12 @@ public class DatabaseManager implements AutoCloseable {
                 + "requiredRank TEXT NOT NULL,"
                 + "requiredRole INTEGER NOT NULL,"
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
-                + "PRIMARY KEY (guild,name));";
+                + "PRIMARY KEY (guild,action));";
         final String MESSAGES = "CREATE TABLE IF NOT EXISTS Messages("
                 + "id INTEGER PRIMARY KEY NOT NULL,"
-                + "guild INTEGER NOT NULL"
+                + "guild INTEGER NOT NULL,"
                 + "author INTEGER NOT NULL,"
-                + "content TEXT NOT NULL"
+                + "content TEXT NOT NULL,"
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE);";
         final String COMMANDS = "CREATE TABLE IF NOT EXISTS Commands("
                 + "guild INTEGER NOT NULL,"
@@ -163,6 +164,13 @@ public class DatabaseManager implements AutoCloseable {
                 + "monthOfYear INTEGER NOT NULL,"
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,name));";
+        final String KEYWORDS = "Create TABLE IF NOT EXISTS Keywords("
+                + "guild INTEGER NOT NULL,"
+                + "name TEXT NOT NULL,"
+                + "template TEXT NOT NULL,"
+                + "owner INTEGER NOT NULL,"
+                + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
+                + "PRIMARY KEY (guild,name));";
         try (final Statement st = this.conn.createStatement()) {
             st.addBatch(GUILDCONF);
             st.addBatch(PERMISSIONS);
@@ -172,11 +180,12 @@ public class DatabaseManager implements AutoCloseable {
             st.addBatch(EVENTS);
             st.addBatch(EVENT_MEMBERS);
             st.addBatch(REMINDERS);
+            st.addBatch(KEYWORDS);
             st.executeBatch();
         }
         LOGGER.debug("Database initialized");
     }
-
+    
     private void loadGuilds() throws SQLException {
         LOGGER.debug("Loading guilds from database");
         final String query = "SELECT id FROM Guilds;";
