@@ -80,7 +80,8 @@ public enum MemberRank {
      */
     public static MemberRank getByLocalizedName(String rankName, Locale locale, Collator collator) throws IllegalArgumentException {
         for (final MemberRank rank : MemberRank.values()) {
-            if (collator.equals(rankName, rank.getNameKey().getTranslation(locale))) {
+            final String localRankName = rank.getNameKey().getTranslation(locale);
+            if (collator.equals(rankName, localRankName)) {
                 return rank;
             }
         }
