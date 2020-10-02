@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="INFO">
+<Configuration status="WARNING">
     <Appenders>
         <File name="File_Appender" fileName="logfile.log">
             <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
         </File>
     </Appenders>
     <Loggers>
-        <Root level="debug">
+        <Root level="warning">
             <AppenderRef ref="File_Appender"/>
         </Root>
     </Loggers>
