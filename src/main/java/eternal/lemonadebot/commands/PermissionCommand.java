@@ -37,6 +37,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -117,11 +118,21 @@ class PermissionCommand extends AdminCommand {
                 channel.sendMessageFormat(template, actionName, rankName).queue();
                 return;
             }
+            //Construct embed for response
+            final EmbedBuilder eb = new EmbedBuilder();
+            eb.setTitle(TranslationKey.HEADER_REQUIRED_PERMISSION.getTranslation(locale));
+            //Get required rank and role
             final String template = TranslationKey.PERMISSION_REQUIRED_RANK_ROLE.getTranslation(locale);
             final String rankName = perm.getRequiredRank().getNameKey().getTranslation(locale);
+            final String description = String.format(template, rankName, r.getAsMention());
+            eb.setDescription(description);
+            //Get the action the permission is for
+            final String actionTemplate = TranslationKey.HEADER_ACTION.getTranslation(locale);
             final String actionName = perm.getAction();
-            channel.sendMessageFormat(template, actionName, rankName, r.getName()).queue();
+            eb.addField(actionTemplate, actionName, false);
+            channel.sendMessage(eb.build()).queue();
         }, () -> {
+            //No permission set for action
             channel.sendMessage(TranslationKey.PERMISSION_NOT_FOUND.getTranslation(locale)).queue();
         });
     }
