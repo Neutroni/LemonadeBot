@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>eternal</groupId>
     <artifactId>LemonadeBot</artifactId>
-    <version>1.1</version>
+    <version>1.2</version>
     <packaging>jar</packaging>
     
     <properties>
@@ -25,7 +25,7 @@
         <dependency>
             <groupId>net.dv8tion</groupId>
             <artifactId>JDA</artifactId>
-            <version>4.2.0_204</version>
+            <version>4.2.0_207</version>
         </dependency>
         <dependency>
             <groupId>com.sedmelluq</groupId>
