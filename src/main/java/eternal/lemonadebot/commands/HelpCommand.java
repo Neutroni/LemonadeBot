@@ -79,7 +79,9 @@ class HelpCommand implements ChatCommand {
             eb.setTitle(getCommand(locale) + " - " + getDescription(locale));
             final String helpText = TranslationKey.SYNTAX_HELP.getTranslation(locale);
             eb.setDescription(helpText);
-            eb.setFooter(TranslationKey.BOT_VERSION.getTranslation(locale) + LemonadeBot.BOT_VERSION);
+            final String template = TranslationKey.BOT_VERSION.getTranslation(locale);
+            final String footer = String.format(template, LemonadeBot.BOT_VERSION);
+            eb.setFooter(footer);
             textChannel.sendMessage(eb.build()).queue();
             return;
         }
