@@ -425,6 +425,7 @@ public enum TranslationKey {
     MUSIC_UPCOMING_SONGS("Upcoming songs:"),
     MUSIC_DURATION_TEMPLATE(" %d:%02d:%02d remaining."),
     MUSIC_PLAYLIST_LENGTH("Playlist lenght:"),
+    MUSIC_SKIP_PLAYLIST_END("Track skipped and end of playlist reached."),
     KEYWORD_CREATE_MISSING_KEYWORD("Creating a keyword requires a pattern the keywords activates on."),
     KEYWORD_CREATE_MISSING_TEMPLATE("Creating a keywords required a template for the response to keyword."),
     KEYWORD_CREATE_SUCCESS("Keyword created succesfully."),

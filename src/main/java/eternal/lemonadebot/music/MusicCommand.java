@@ -219,8 +219,11 @@ public class MusicCommand implements ChatCommand {
 
         //No url, skip current track
         if (trackUrl == null) {
-            musicManager.scheduler.nextTrack();
+            if(musicManager.scheduler.nextTrack()){
             channel.sendMessage(TranslationKey.MUSIC_TRACK_SKIPPED.getTranslation(locale)).queue();
+            } else {
+                channel.sendMessage(TranslationKey.MUSIC_SKIP_PLAYLIST_END.getTranslation(locale)).queue();
+            }
             return;
         }
 

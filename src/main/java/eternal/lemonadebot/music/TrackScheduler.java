@@ -50,9 +50,12 @@ class TrackScheduler extends AudioEventAdapter {
     }
 
     /**
+     *
      * Start the next track, stopping the current one if it is playing.
+     *
+     * @return true if there is next track to skip to, false if end of playlist.
      */
-    public void nextTrack() {
+    public boolean nextTrack() {
         // Start the next track, regardless of if something is already playing or not. In case queue was empty, we are
         // giving null to startTrack, which is a valid argument and will simply stop the player.
         final AudioTrack track = queue.poll();
@@ -61,6 +64,7 @@ class TrackScheduler extends AudioEventAdapter {
             this.manager.getJDA().getPresence().setActivity(null);
             this.manager.closeAudioConnection();
         }
+        return (track != null);
     }
 
     /**
