@@ -112,6 +112,9 @@ public class LoggerListener extends ListenerAdapter {
             eb.setFooter(TranslationKey.MESSAGE_CREATION_TIME.getTranslation(locale) + dt.toString());
             logChannel.sendMessage(eb.build()).queue();
         });
+
+        //Log the message
+        messageManager.logMessage(message, guildConf);
     }
 
     /**
