@@ -85,7 +85,6 @@ public class KeywordListener extends ListenerAdapter {
 
         final Guild eventGuild = event.getGuild();
         final Message message = event.getMessage();
-        final String input = message.getContentRaw();
         final GuildDataStore guildData = this.db.getGuildData(eventGuild);
         final KeywordManager keywordManager = guildData.getKeywordManager();
         final CooldownManager cooldownManager = guildData.getCooldownManager();
@@ -107,6 +106,7 @@ public class KeywordListener extends ListenerAdapter {
         }
 
         //Find if message contains any keyword
+        final String input = message.getContentDisplay();
         for (KeywordAction com : keywordManager.getCommands()) {
             if (!com.matches(input)) {
                 continue;
