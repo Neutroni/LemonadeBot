@@ -162,7 +162,7 @@ public class TemplateProvider {
                         }
                         return TranslationKey.EVENT_NO_MEMBERS.getTranslation(locale);
                     }),
-            new ActionTemplate("\\{daysSince (\\d+-\\d+\\d+)\\}", TranslationKey.HELP_TEMPLATE_DAYS_SINCE,
+            new ActionTemplate("daysSince (\\d+-\\d+\\d+)", TranslationKey.HELP_TEMPLATE_DAYS_SINCE,
                     (commandMatcher, guildData, templateMatcher) -> {
                         final Locale locale = guildData.getConfigManager().getLocale();
                         final String dateString = templateMatcher.group(1);
