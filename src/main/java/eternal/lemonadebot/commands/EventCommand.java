@@ -47,7 +47,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -172,10 +171,6 @@ public class EventCommand implements ChatCommand {
             }
             case LIST: {
                 listEvents(matcher, guildData);
-                break;
-            }
-            case PING: {
-                pingEventMembers(opts, matcher, guildData);
                 break;
             }
             case RANDOM: {
@@ -446,54 +441,6 @@ public class EventCommand implements ChatCommand {
         }
         eb.setDescription(contentBuilder);
         textChannel.sendMessage(eb.build()).queue();
-    }
-
-    private void pingEventMembers(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
-        final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
-
-        if (opts.length < 2) {
-            textChannel.sendMessage(TranslationKey.EVENT_PING_MISSING_NAME.getTranslation(locale)).queue();
-            return;
-        }
-        final String eventName = opts[1];
-
-        final EventManager events = guildData.getEventManager();
-        final Optional<Event> opt = events.getEvent(eventName);
-        if (opt.isEmpty()) {
-            textChannel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
-            return;
-        }
-
-        final Event event = opt.get();
-        final Member sender = matcher.getMember();
-        if (event.getOwner() != sender.getIdLong()) {
-            textChannel.sendMessage(TranslationKey.EVENT_PING_PERMISSION_DENIED.getTranslation(locale)).queue();
-            return;
-        }
-
-        final List<Long> memberIds = event.getMembers();
-        final String header = TranslationKey.HEADER_PING.getTranslation(locale);
-        batchMemberList(memberIds).forEach((List<Long> idBatch) -> {
-            textChannel.getGuild().retrieveMembersByIds(false, idBatch).onSuccess((List<Member> eventMembers) -> {
-                //Do not ping if no member was found
-                if (!eventMembers.isEmpty()) {
-                    final MessageBuilder mb = new MessageBuilder(header);
-                    mb.append('\n');
-                    eventMembers.forEach((Member eventMember) -> {
-                        if (eventMember.equals(sender)) {
-                            //Do not ping event owner
-                            return;
-                        }
-                        mb.append(eventMember);
-                    });
-                    textChannel.sendMessage(mb.build()).queue();
-                }
-                //Clean up the event
-                cleanEvent(event, idBatch, eventMembers, events);
-            });
-        });
-
     }
 
     private void pickRandomEventMember(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {

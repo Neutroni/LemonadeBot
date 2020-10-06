@@ -112,7 +112,8 @@ public class Reminder extends CustomCommand implements Runnable {
         //Check reminder author can be found
         channel.getGuild().retrieveMemberById(getAuthor()).queue((Member member) -> {
             //Success
-            final CommandMatcher matcher = new SimpleMessageMatcher(member, channel);
+            final Locale locale = guildData.getConfigManager().getLocale();
+            final CommandMatcher matcher = new SimpleMessageMatcher(member, channel, locale);
             respond(matcher, guildData);
             LOGGER.debug("Reminder: {} succesfully activated on channel: {}", getName(), channel.getName());
         }, (Throwable t) -> {

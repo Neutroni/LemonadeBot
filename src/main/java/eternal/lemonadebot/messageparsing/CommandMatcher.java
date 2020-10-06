@@ -23,7 +23,9 @@
  */
 package eternal.lemonadebot.messageparsing;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -58,11 +60,29 @@ public interface CommandMatcher {
     String[] getArguments(int count);
 
     /**
+     * Parse arguments from command, Collection will contain at most count
+     * elements and the last element will contain all the input beyond the
+     * count - 1 arguments input beyond n - 1 arguments will not be validated.
+     *
+     * @param count Maximum size of collection
+     * @return Collection of argument strings
+     * @throws IllegalArgumentException If maxArguments is negative
+     */
+    List<String> parseArguments(int count);
+
+    /**
      * Get the action for this command
      *
      * @return String of command name and arguments
      */
     String getAction();
+
+    /**
+     * Get the locale at the time for the guild message was sent in.
+     *
+     * @return Locale
+     */
+    Locale getLocale();
 
     /**
      * Get the guild the message was sent in

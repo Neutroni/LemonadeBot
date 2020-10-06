@@ -25,6 +25,7 @@ package eternal.lemonadebot.database;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -92,7 +93,7 @@ public class DatabaseManager implements AutoCloseable {
      */
     public GuildDataStore getGuildData(final Guild guild) {
         return this.guildDataStores.computeIfAbsent(guild.getIdLong(), (Long newGuildID) -> {
-            return new GuildDataStore(this.conn, newGuildID, this.jda, this.maxMessages);
+            return new GuildDataStore(this.conn, newGuildID, this.jda);
         });
     }
 
@@ -124,6 +125,10 @@ public class DatabaseManager implements AutoCloseable {
                 + "author INTEGER NOT NULL,"
                 + "content TEXT NOT NULL,"
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE);";
+        final String DROP_TRIGGER_CLEANUP = "DROP TRIGGER IF EXISTS MessageCleanup;";
+        final String MESSAGE_CLEANUP = "CREATE TRIGGER IF NOT EXISTS MessageCleanup AFTER INSERT ON Messages BEGIN "
+                + "DELETE FROM Messages WHERE id IN "
+                + "(SELECT id FROM Messages WHERE guild = NEW.guild ORDER BY id DESC LIMIT -1 OFFSET ?); END;";
         final String COMMANDS = "CREATE TABLE IF NOT EXISTS Commands("
                 + "guild INTEGER NOT NULL,"
                 + "name TEXT NOT NULL,"
@@ -146,6 +151,12 @@ public class DatabaseManager implements AutoCloseable {
                 + "locked INTEGER NOT NULL,"
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,name));";
+        final String ROLES = "CREATE TABLE IF NOT EXISTS Roles("
+                + "guild INTEGER NOT NULL,"
+                + "role INTEGER NOT NULL,"
+                + "description TEXT,"
+                + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
+                + "PRIMARY KEY (guild,role));";
         final String EVENT_MEMBERS = "CREATE TABLE IF NOT EXISTS EventMembers("
                 + "guild INTEGER NOT NULL,"
                 + "name TEXT NOT NULL,"
@@ -179,11 +190,17 @@ public class DatabaseManager implements AutoCloseable {
             st.addBatch(COMMANDS);
             st.addBatch(COOLDOWNS);
             st.addBatch(EVENTS);
+            st.addBatch(ROLES);
             st.addBatch(EVENT_MEMBERS);
             st.addBatch(REMINDERS);
             st.addBatch(KEYWORDS);
             st.addBatch(ENABLE_FOREIGN_KEYS);
+            st.addBatch(DROP_TRIGGER_CLEANUP);
             st.executeBatch();
+        }
+        try (final PreparedStatement ps = this.conn.prepareStatement(MESSAGE_CLEANUP)) {
+            ps.setInt(1, maxMessages);
+            ps.executeUpdate();
         }
         LOGGER.debug("Database initialized");
     }
@@ -194,7 +211,7 @@ public class DatabaseManager implements AutoCloseable {
         try ( Statement st = conn.createStatement();  ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
                 final long guildID = rs.getLong("id");
-                this.guildDataStores.put(guildID, new GuildDataStore(this.conn, guildID, this.jda, this.maxMessages));
+                this.guildDataStores.put(guildID, new GuildDataStore(this.conn, guildID, this.jda));
             }
         }
         LOGGER.debug("Loaded guilds succesfully");

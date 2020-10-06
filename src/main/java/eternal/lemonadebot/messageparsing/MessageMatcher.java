@@ -24,7 +24,10 @@
 package eternal.lemonadebot.messageparsing;
 
 import eternal.lemonadebot.database.ConfigManager;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import net.dv8tion.jda.api.entities.Guild;
@@ -43,6 +46,7 @@ public class MessageMatcher implements CommandMatcher {
     private static final Pattern SPLIT_PATTERN = Pattern.compile(" ");
 
     private final Message message;
+    private final Locale locale;
     private final Optional<String> command;
     private final String arguments;
     private final String action;
@@ -59,6 +63,7 @@ public class MessageMatcher implements CommandMatcher {
         }
 
         this.message = msg;
+        this.locale = configManager.getLocale();
         final String messageText = msg.getContentRaw();
         final String commandPrefix = configManager.getCommandPrefix();
         if (messageText.startsWith(commandPrefix)) {
@@ -103,6 +108,74 @@ public class MessageMatcher implements CommandMatcher {
         //Otherwise split the argument string
         return SPLIT_PATTERN.split(this.arguments, count + 1);
     }
+    
+    @Override
+    public List<String> parseArguments(int maxArguments) {
+        //Check to make sure maxArguments is positive
+        if (maxArguments < 0) {
+            throw new IllegalArgumentException("Error parsing arguments, maxArguments can not be negative.");
+        }
+        //For empty imput return empty collection
+        final List<String> args = new ArrayList<>();
+        if (this.arguments.isEmpty()) {
+            return args;
+        }
+        //If user only asks for one element, just add the input and return
+        if (maxArguments == 1) {
+            args.add(this.arguments);
+            return args;
+        }
+        //limit is one less than maxArguments so we can rest of input as last element
+        final int limit = maxArguments - 1;
+        final StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+        boolean escaped = false;
+        for (int i = 0; i < this.arguments.length(); i++) {
+            final char c = this.arguments.charAt(i);
+            switch (c) {
+                case '"': {
+                    if (escaped) {
+                        current.append(c);
+                        escaped = false;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                    break;
+                }
+                case ' ': {
+                    escaped = false;
+                    if (inQuotes) {
+                        current.append(c);
+                    } else {
+                        args.add(current.toString());
+                        //Reset stringbuilder
+                        current.setLength(0);
+                        //Check if we have enough arguments
+                        if (args.size() == limit) {
+                            args.add(this.arguments.substring(i + 1, this.arguments.length()));
+                            return args;
+                        }
+                    }
+                    break;
+                }
+                case '\\': {
+                    if (escaped) {
+                        current.append(c);
+                        escaped = false;
+                    } else {
+                        escaped = true;
+                    }
+                    break;
+                }
+                default: {
+                    escaped = false;
+                    current.append(c);
+                }
+            }
+        }
+        args.add(current.toString());
+        return args;
+    }
 
     @Override
     public Member getMember() {
@@ -112,6 +185,11 @@ public class MessageMatcher implements CommandMatcher {
     @Override
     public TextChannel getTextChannel() {
         return this.message.getTextChannel();
+    }
+    
+    @Override
+    public Locale getLocale(){
+        return this.locale;
     }
 
     @Override

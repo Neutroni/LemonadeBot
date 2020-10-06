@@ -23,7 +23,9 @@
  */
 package eternal.lemonadebot.messageparsing;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -39,16 +41,19 @@ public class SimpleMessageMatcher implements CommandMatcher {
 
     private final Member author;
     private final TextChannel channel;
+    private final Locale locale;
 
     /**
      * Constructor
      *
      * @param author reminder author
      * @param channel Channel reminder should be sent in
+     * @param locale Locale for guild the matcher was created for
      */
-    public SimpleMessageMatcher(Member author, TextChannel channel) {
+    public SimpleMessageMatcher(Member author, TextChannel channel, Locale locale) {
         this.author = author;
         this.channel = channel;
+        this.locale = locale;
     }
 
     @Override
@@ -67,6 +72,11 @@ public class SimpleMessageMatcher implements CommandMatcher {
     }
 
     @Override
+    public List<String> parseArguments(int count) {
+        return List.of();
+    }
+
+    @Override
     public Member getMember() {
         return this.author;
     }
@@ -79,6 +89,11 @@ public class SimpleMessageMatcher implements CommandMatcher {
     @Override
     public Guild getGuild() {
         return this.channel.getGuild();
+    }
+
+    @Override
+    public Locale getLocale() {
+        return this.locale;
     }
 
     @Override

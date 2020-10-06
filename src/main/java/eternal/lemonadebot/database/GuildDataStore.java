@@ -41,6 +41,7 @@ public class GuildDataStore implements AutoCloseable {
     private final PermissionManager permissions;
     private final TemplateManager commands;
     private final EventManager events;
+    private final RoleManager roleManager;
     private final ReminderManager reminders;
     private final CooldownManager cooldowns;
     private final MessageManager messages;
@@ -55,16 +56,17 @@ public class GuildDataStore implements AutoCloseable {
      * @param guild Guild this config is for
      * @param jda JDA to use for reminders
      */
-    GuildDataStore(final Connection connection, final Long guildID, JDA jda, final int maxMessages) {
+    GuildDataStore(final Connection connection, final Long guildID, JDA jda) {
         this.guildID = guildID;
         this.config = new ConfigManager(connection, guildID);
         final Locale locale = this.config.getLocale();
         this.permissions = new PermissionManager(connection, guildID, locale);
         this.events = new EventManager(connection, guildID);
+        this.roleManager = new RoleManager(connection, guildID);
         this.cooldowns = new CooldownManager(connection, guildID);
         this.commands = new TemplateManager(connection, this.cooldowns, guildID);
         this.reminders = new ReminderManager(connection, jda, this, guildID);
-        this.messages = new MessageManager(connection, maxMessages);
+        this.messages = new MessageManager(connection);
         this.commandProvider = new CommandProvider(locale, this.commands);
         this.translationCache = new TranslationCache(locale);
         this.keywordManager = new KeywordManager(connection, guildID, this.cooldowns);
@@ -118,6 +120,15 @@ public class GuildDataStore implements AutoCloseable {
      */
     public EventManager getEventManager() {
         return this.events;
+    }
+
+    /**
+     * Get the rolemanager for this guild
+     *
+     * @return RoleManager
+     */
+    public RoleManager getRoleManager() {
+        return this.roleManager;
     }
 
     /**

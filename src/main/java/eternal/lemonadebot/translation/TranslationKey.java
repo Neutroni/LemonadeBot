@@ -150,10 +150,13 @@ public enum TranslationKey {
             + "<action> can be one of the following:\n"
             + " get to get current permission\n"
             + " set to update permission\n"
-            + "<name> is the name of permission to update\n"
             + "[rank] rank required for permission can be one of following\n"
             + "%s\n"
-            + "[role] is a name of role needed for permission, use 'anyone' to disable role check"),
+            + "[role] is a name of role needed for permission, use 'anyone' to disable role check,\n"
+            + "if rolename contains space use double quotes around role name.\n"
+            + "if rolename contains double quote use \\ before the quote to escape it.\n"
+            + "if rolename contains \\ use \\\\ to include it in the role name.\n"
+            + "<name> is the name of permission to update."),
     SYNTAX_REMINDER("Syntax: reminder <action> <name> [time] [day] [month] [day of week] [message]\n"
             + "<action> can be one of the following:\n"
             + " create - create new reminder\n"
@@ -165,9 +168,18 @@ public enum TranslationKey {
             + "<day of week] day of week reminder activates on, either name of day written in full or *\n"
             + "[message] message to be sent at the reminder activation\n"
             + "Reminder will be activated on the channel it was created in"),
-    SYNTAX_ROLE("Syntax: role [role]\n"
-            + "If no role is provided try to automatically assign role.\n"
-            + "Otherwise assign <role> to yourself"),
+    SYNTAX_ROLE("Syntax: role <action> [name for role] [description]\n"
+            + "<action> can be one of the following:\n"
+            + " guild - Get role for another guild you are also on that is allied with current guild.\n"
+            + " get - get role if role has been marked as obtainable.\n"
+            + " remove - remove role from yourself.\n"
+            + " allow - allow role to be assigned using this command.\n"
+            + " disallow - disallow role from being assigned with this command, default.\n"
+            + "[name for role] name of role you want to obtain if action is guild and no role is provided bot will try to automatically assign role.\n"
+            + "if rolename contains space use double quotes around role name.\n"
+            + "if rolename contains double quote use \\ before the quote to escape it.\n"
+            + "if rolename contains \\ use \\\\ to include it in the role name.\n"
+            + "[description] When allowing role to be assigned a description can be added for role."),
     SYNTAX_TEMPLATE("Syntax: template <option> [name] [template]\n"
             + "<option> can be one of the following:\n"
             + " create - create new custom command\n"
@@ -439,7 +451,35 @@ public enum TranslationKey {
     KEYWORD_DELETE_SUCCESS("Keyword deleted succesfully."),
     KEYWORD_SQL_ERROR_ON_DELETE("Deleting keyword from database failed, keyword might reappear after reboot."),
     KEYWORD_NO_KEYWORDS("No keywords defined."),
-    KEYWORD_SQL_ERROR_ON_CREATE("Adding keyword to database failed, keyword might disappear after reboot.");
+    KEYWORD_SQL_ERROR_ON_CREATE("Adding keyword to database failed, keyword might disappear after reboot."),
+    ACTION_ALLOW("allow"),
+    ACTION_DISALLOW("disallow"),
+    ACTION_GUILD("guild"),
+    ACTION_DESCRIPTION("description"),
+    ROLE_COMMAND_LIST_ELEMENT("%s - %s\n"),
+    ROLE_MISSING("Role could not be found."),
+    ROLE_NO_DESCRIPTION("No description for role."),
+    HEADER_ALLOWED_ROLES("Available roles:"),
+    ROLE_USER_NO_PERMISSION("Permission denied. You do not have permission to manage roles."),
+    ROLE_ALLOW_MISSING_ROLE_NAME("Adding a role to list of allowed roles required the name of the role to add."),
+    ROLE_NO_ROLE_WITH_NAME("Could not find a role with name: %s"),
+    ROLE_DISALLOW_MISSING_ROLE_NAME("Disallowing role requires the name of the role to disallow."),
+    ROLE_REMOVED_SUCCESFULLY("Role removed succesfully."),
+    ROLE_MULTIPLE_ROLES_WITH_NAME("Found multiple roles with name: %s at the moment bot does not have functionality to select corretct one."),
+    ROLE_NO_MEMBERS("No member has the role: %s"),
+    ROLE_BOT_PRIVILIGE_MISSING("It appears I do not have permission to view all the members of the guild, as such finding random member with role failed."),
+    ROLE_SELECTED_USER("Selected %s"),
+    ROLE_RANDOM_MISSING_ROLE_NAME("Selecting a random member with role requires the name of the role."),
+    ROLE_ROLE_NOT_ALLOWED("Role %s is not currently selected as a role bot can assign, see 'roles list' for list of allowed roles."),
+    ROLE_DISALLOW_SUCCESS("Role succesfully removed from the list of allowed roles."),
+    ROLE_DISALLOW_ALREADY_DISALLOWED("Role was already not allowed."),
+    ROLE_SQL_ERROR_ON_DISALLOW("Removing the role from the list of allowed roles in the database failed, role might become allowed again after reboot."),
+    ROLE_ALLOW_SUCCESS("Role added to list of roles bot can assign succesfully."),
+    ROLE_ALLOW_ALREADY_ALLOWED("Role was already allowed."),
+    ROLE_SQL_ERROR_ON_ALLOW("Adding role to list of allowed roles in database failed, bot might not allow assigning the role after reboot."),
+    ROLE_GET_MISSING_ROLE_NAME("Obtaining a role requires the name of the role to obtain."),
+    ROLE_ASSIGNED_SUCCESFULLY("Assigned role: %s succesfully"),
+    ROLE_REMOVE_MISSING_ROLE_NAME("Remocing a role required the name of the role for bot to remove from you.");
 
     private static final Logger LOGGER = LogManager.getLogger();
     private final String defaultText;

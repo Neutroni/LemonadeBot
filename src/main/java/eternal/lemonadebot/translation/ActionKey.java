@@ -56,6 +56,9 @@ public enum ActionKey {
     LOG_CHANNEL(TranslationKey.ACTION_LOG_CHANNEL),
     LANGUAGE(TranslationKey.ACTION_LANGUAGE),
     COMMANDS(TranslationKey.ACTION_COMMANDS),
+    ALLOW(TranslationKey.ACTION_ALLOW),
+    DISALLOW(TranslationKey.ACTION_DISALLOW),
+    GUILD(TranslationKey.ACTION_GUILD),
     UNKNOWN(null);
 
     private final TranslationKey translationKey;

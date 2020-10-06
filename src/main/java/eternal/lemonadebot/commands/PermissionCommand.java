@@ -141,20 +141,20 @@ class PermissionCommand extends AdminCommand {
         final TranslationCache translationCache = guildData.getTranslationCache();
         final Locale locale = guildConf.getLocale();
 
-        final String[] args = message.getArguments(3);
-        if (args.length < 2) {
+        final List<String> args = message.parseArguments(4);
+        if (args.size() < 2) {
             channel.sendMessage(TranslationKey.PERMISSION_SET_MISSING_RANK.getTranslation(locale)).queue();
             return;
         }
-        if (args.length < 3) {
+        if (args.size() < 3) {
             channel.sendMessage(TranslationKey.PERMISSION_SET_MISSING_ROLE.getTranslation(locale)).queue();
             return;
         }
-        if (args.length < 4) {
+        if (args.size() < 4) {
             channel.sendMessage(TranslationKey.PERMISSION_SET_MISSING_ACTION.getTranslation(locale)).queue();
             return;
         }
-        final String rankName = args[1];
+        final String rankName = args.get(1);
         final MemberRank rank;
         try {
             rank = MemberRank.getByLocalizedName(rankName, guildConf.getLocale(), translationCache.getCollator());
@@ -165,7 +165,7 @@ class PermissionCommand extends AdminCommand {
             channel.sendMessage(mb.build()).queue();
             return;
         }
-        final String roleName = args[2];
+        final String roleName = args.get(2);
         final Role role;
         final String localAnyRole = TranslationKey.PERMISSION_ROLE_ANYONE.getTranslation(locale);
         if (localAnyRole.equals(roleName)) {
@@ -179,7 +179,7 @@ class PermissionCommand extends AdminCommand {
             }
             role = roles.get(0);
         }
-        final String actionString = args[3];
+        final String actionString = args.get(3);
         try {
             permissions.setPermission(new CommandPermission(actionString, rank, role.getIdLong()));
             channel.sendMessage(TranslationKey.PERMISSION_UPDATE_SUCCESS.getTranslation(locale)).queue();

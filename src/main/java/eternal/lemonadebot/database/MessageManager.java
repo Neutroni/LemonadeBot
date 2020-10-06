@@ -44,11 +44,9 @@ public class MessageManager {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final Connection conn;
-    private final int maxMessages;
 
-    MessageManager(Connection connection, int maxMessages) {
+    MessageManager(Connection connection) {
         this.conn = connection;
-        this.maxMessages = maxMessages;
     }
 
     /**
@@ -73,18 +71,6 @@ public class MessageManager {
             ps.executeUpdate();
         } catch (SQLException ex) {
             LOGGER.error("Failed to log message in database: {}", ex.getMessage());
-            LOGGER.trace("Stack trace: ", ex);
-        }
-
-        final String cleanup = "DELETE FROM Messages WHERE id IN"
-                + " (SELECT id FROM Messages WHERE guild = ? ORDER BY id DESC LIMIT -1 OFFSET ?);";
-        try ( PreparedStatement ps = conn.prepareStatement(cleanup)) {
-            ps.setLong(1, currentguildID);
-            ps.setInt(2, this.maxMessages);
-            int count = ps.executeUpdate();
-            LOGGER.debug("Deleted {} rows from message database on cleanup", count);
-        } catch (SQLException ex) {
-            LOGGER.error("Failed to clean up message log in database: {}", ex.getMessage());
             LOGGER.trace("Stack trace: ", ex);
         }
     }

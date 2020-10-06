@@ -125,7 +125,7 @@ public class KeywordListener extends ListenerAdapter {
             }
 
             //Run the command
-            final CommandMatcher fakeMatcher = new SimpleMessageMatcher(event.getMember(), event.getChannel());
+            final CommandMatcher fakeMatcher = new SimpleMessageMatcher(event.getMember(), event.getChannel(), guildConf.getLocale());
             com.respond(fakeMatcher, guildData);
 
         }
