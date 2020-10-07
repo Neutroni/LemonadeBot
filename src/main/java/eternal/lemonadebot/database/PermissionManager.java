@@ -116,7 +116,7 @@ public class PermissionManager implements LocaleUpdateListener {
     public boolean setPermission(CommandPermission perm) throws SQLException {
         final String action = perm.getAction();
         this.permissions.put(action, perm);
-        final String query = "INSERT OR REPLACE INTO Permissions(guild,action,requiredRank,requiredRole) VALUES(?,?,?,?)";
+        final String query = "INSERT OR REPLACE INTO Permissions(guild,action,requiredRank,requiredRole) VALUES(?,?,?,?);";
         try ( PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, action);
