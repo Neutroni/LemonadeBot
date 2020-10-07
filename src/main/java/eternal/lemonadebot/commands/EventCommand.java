@@ -63,51 +63,6 @@ public class EventCommand implements ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    /**
-     * Used to split event members to groups of 100 to limit amount of members
-     * retrieved per call
-     *
-     * @param source All the event member ids
-     * @return stream of lists where each list has 100 or less ids
-     */
-    private static Stream<List<Long>> batchMemberList(final List<Long> source) {
-        final int maxCount = 100;
-        if (source.isEmpty()) {
-            return Stream.empty();
-        }
-        final int size = source.size();
-        final int fullChunks = (size - 1) / maxCount;
-        return IntStream.range(0, fullChunks + 1).mapToObj(
-                n -> source.subList(n * maxCount, n == fullChunks ? size : (n + 1) * maxCount));
-    }
-
-    /**
-     * Used to remove members from event who are no longer in guild
-     *
-     * @param event Event to clean
-     * @param memberIDList list of members who were attempted to retrieve
-     * @param foundMembersList Members who could still be found
-     * @param eventManager EventManager the event is from
-     */
-    private static void cleanEvent(Event event, List<Long> memberIDList, List<Member> foundMembersList, EventManager eventManager) {
-        //Clear all the members from the event who could not be found
-        memberIDList.stream().filter((Long eventMemberID) -> {
-            //Get the IDs of event members who do not appear in the found members list
-            return foundMembersList.stream().noneMatch((Member foundMember) -> {
-                return foundMember.getIdLong() == eventMemberID;
-            });
-        }).forEach((Long missingMemberID) -> {
-            LOGGER.info("Found user: {} in event: {} members who could not be found, removing from event", missingMemberID, event.getName());
-            try {
-                eventManager.leaveEvent(event, missingMemberID);
-                LOGGER.info("Succesfully removed missing member from event\n");
-            } catch (SQLException ex) {
-                LOGGER.error("Failure to remove member: {} from event: {}, Error: {}", missingMemberID, event.getName(), ex.getMessage());
-                LOGGER.trace("Stack trace", ex);
-            }
-        });
-    }
-
     @Override
     public String getCommand(Locale locale) {
         return TranslationKey.COMMAND_EVENT.getTranslation(locale);
@@ -191,7 +146,7 @@ public class EventCommand implements ChatCommand {
         }
     }
 
-    private void createEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void createEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final Member sender = matcher.getMember();
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
@@ -226,7 +181,7 @@ public class EventCommand implements ChatCommand {
         }
     }
 
-    private void deleteEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void deleteEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final Member sender = matcher.getMember();
         final TextChannel textChannel = matcher.getTextChannel();
         final EventManager events = guildData.getEventManager();
@@ -262,7 +217,7 @@ public class EventCommand implements ChatCommand {
 
     }
 
-    private void joinEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void joinEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
         final Member sender = matcher.getMember();
@@ -300,7 +255,7 @@ public class EventCommand implements ChatCommand {
         }
     }
 
-    private void leaveEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void leaveEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
         final Member sender = matcher.getMember();
@@ -338,7 +293,7 @@ public class EventCommand implements ChatCommand {
         }
     }
 
-    private void showEventMembers(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void showEventMembers(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
 
@@ -386,7 +341,7 @@ public class EventCommand implements ChatCommand {
 
     }
 
-    private void clearEventMembers(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void clearEventMembers(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
         final Member sender = matcher.getMember();
@@ -418,7 +373,7 @@ public class EventCommand implements ChatCommand {
         }
     }
 
-    private void listEvents(CommandMatcher matcher, GuildDataStore guildData) {
+    private static void listEvents(CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
 
@@ -443,7 +398,7 @@ public class EventCommand implements ChatCommand {
         textChannel.sendMessage(eb.build()).queue();
     }
 
-    private void pickRandomEventMember(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void pickRandomEventMember(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
 
@@ -497,7 +452,7 @@ public class EventCommand implements ChatCommand {
      * @param matcher Matcher for request
      * @param guildData guildData for guild
      */
-    private void lockEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void lockEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel channel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
         if (opts.length < 2) {
@@ -542,7 +497,7 @@ public class EventCommand implements ChatCommand {
      * @param matcher commandMatcher to get requester from
      * @param guildData guildData for guild to find event in
      */
-    private void unlockEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void unlockEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final Member sender = matcher.getMember();
         final TextChannel textChannel = matcher.getTextChannel();
         final EventManager events = guildData.getEventManager();
@@ -576,6 +531,51 @@ public class EventCommand implements ChatCommand {
             } catch (SQLException ex) {
                 textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_UNLOCK.getTranslation(locale)).queue();
                 LOGGER.error("Failure to unlock event: {}", ex.getMessage());
+                LOGGER.trace("Stack trace", ex);
+            }
+        });
+    }
+
+    /**
+     * Used to split event members to groups of 100 to limit amount of members
+     * retrieved per call
+     *
+     * @param source All the event member ids
+     * @return stream of lists where each list has 100 or less ids
+     */
+    private static Stream<List<Long>> batchMemberList(final List<Long> source) {
+        final int maxCount = 100;
+        if (source.isEmpty()) {
+            return Stream.empty();
+        }
+        final int size = source.size();
+        final int fullChunks = (size - 1) / maxCount;
+        return IntStream.range(0, fullChunks + 1).mapToObj(
+                n -> source.subList(n * maxCount, n == fullChunks ? size : (n + 1) * maxCount));
+    }
+
+    /**
+     * Used to remove members from event who are no longer in guild
+     *
+     * @param event Event to clean
+     * @param memberIDList list of members who were attempted to retrieve
+     * @param foundMembersList Members who could still be found
+     * @param eventManager EventManager the event is from
+     */
+    private static void cleanEvent(Event event, List<Long> memberIDList, List<Member> foundMembersList, EventManager eventManager) {
+        //Clear all the members from the event who could not be found
+        memberIDList.stream().filter((Long eventMemberID) -> {
+            //Get the IDs of event members who do not appear in the found members list
+            return foundMembersList.stream().noneMatch((Member foundMember) -> {
+                return foundMember.getIdLong() == eventMemberID;
+            });
+        }).forEach((Long missingMemberID) -> {
+            LOGGER.info("Found user: {} in event: {} members who could not be found, removing from event", missingMemberID, event.getName());
+            try {
+                eventManager.leaveEvent(event, missingMemberID);
+                LOGGER.info("Succesfully removed missing member from event\n");
+            } catch (SQLException ex) {
+                LOGGER.error("Failure to remove member: {} from event: {}, Error: {}", missingMemberID, event.getName(), ex.getMessage());
                 LOGGER.trace("Stack trace", ex);
             }
         });
