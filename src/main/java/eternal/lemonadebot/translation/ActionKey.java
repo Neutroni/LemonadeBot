@@ -45,7 +45,6 @@ public enum ActionKey {
     UNLOCK(TranslationKey.ACTION_UNLOCK),
     LIST_MEMBERS(TranslationKey.ACTION_MEMBERS),
     CLEAR(TranslationKey.ACTION_CLEAR),
-    PING(TranslationKey.ACTION_PING),
     RANDOM(TranslationKey.ACTION_RANDOM),
     PLAY(TranslationKey.ACTION_PLAY),
     SKIP(TranslationKey.ACTION_SKIP),
