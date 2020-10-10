@@ -37,6 +37,7 @@ import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -79,7 +80,7 @@ public class KeywordCommand extends AdminCommand {
         final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
         final Locale locale = guildConf.getLocale();
-        final String[] arguments = matcher.getArguments(2);
+        final String[] arguments = matcher.getArguments(1);
         if (arguments.length == 0) {
             textChannel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
             return;
@@ -89,7 +90,7 @@ public class KeywordCommand extends AdminCommand {
         final ActionKey action = translationCache.getActionKey(actionName);
         switch (action) {
             case CREATE: {
-                createKeywords(arguments, matcher, guildData);
+                createKeywords(matcher, guildData);
                 break;
             }
             case DELETE: {
@@ -106,21 +107,23 @@ public class KeywordCommand extends AdminCommand {
         }
     }
 
-    private void createKeywords(String[] arguments, CommandMatcher matcher, GuildDataStore guildData) {
+    private void createKeywords(CommandMatcher matcher, GuildDataStore guildData) {
+        //create regex template
+        final List<String> arguments = matcher.parseArguments(3);
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
 
-        if (arguments.length < 2) {
+        if (arguments.size() < 2) {
             textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_MISSING_KEYWORD.getTranslation(locale)).queue();
             return;
         }
-        if (arguments.length < 3) {
+        if (arguments.size() < 3) {
             textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_MISSING_TEMPLATE.getTranslation(locale)).queue();
             return;
         }
 
-        final String commandName = arguments[1];
-        final String commandTemplate = arguments[2];
+        final String commandName = arguments.get(1);
+        final String commandTemplate = arguments.get(2);
         final Member sender = matcher.getMember();
         final KeywordManager commands = guildData.getKeywordManager();
         try {

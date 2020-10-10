@@ -58,6 +58,7 @@ public enum ActionKey {
     ALLOW(TranslationKey.ACTION_ALLOW),
     DISALLOW(TranslationKey.ACTION_DISALLOW),
     GUILD(TranslationKey.ACTION_GUILD),
+    PAY(TranslationKey.ACTION_PAY),
     UNKNOWN(null);
 
     private final TranslationKey translationKey;

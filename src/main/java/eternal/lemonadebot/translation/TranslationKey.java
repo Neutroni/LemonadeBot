@@ -45,6 +45,7 @@ public enum TranslationKey {
     COMMAND_TEMPLATE("template"),
     COMMAND_MUSIC("music"),
     COMMAND_KEYWORD("keyword"),
+    COMMAND_INVENTORY("inventory"),
     DESCRIPTION_CONFIG("Set configuration values used by the bot."),
     DESCRIPTION_COOLDOWN("Set cooldown for commands."),
     DESCRIPTION_EVENT("Manage events that people can join."),
@@ -56,6 +57,7 @@ public enum TranslationKey {
     DESCRIPTION_MUSIC("Play music."),
     DESCRIPTION_CUSTOMCOMMAND("User created custom command"),
     DESCRIPTION_KEYWORD("Manage keywords that trigger actions when seen in a message."),
+    DESCRIPTION_INVENTORY("Command used to manage inventory."),
     ACTION_ADD("add"),
     ACTION_REMOVE("remove"),
     ACTION_CREATE("create"),
@@ -83,6 +85,7 @@ public enum TranslationKey {
     ACTION_ALLOW("allow"),
     ACTION_DISALLOW("disallow"),
     ACTION_GUILD("guild"),
+    ACTION_PAY("pay"),
     TIME_SECOND("second"),
     TIME_MINUTE("minute"),
     TIME_HOUR("hour"),
@@ -116,7 +119,7 @@ public enum TranslationKey {
             + " greeting - Text used to greet new members with.\n"
             + " logchannel - Channel used to send log messages to.\n"
             + " language - Language for the bot to reply in.\n"
-            + "[value] - Value to set configuration to, valid value formats for settings are\n"
+            + "[value] Value to set configuration to, valid value formats for settings are\n"
             + " prefix - Any string.\n"
             + " greeting - Template with additional keys {name} and {mention} to add name of the new person or mention them in the message.\n"
             + " logchannel - Mention the channel using #channel\n"
@@ -206,6 +209,19 @@ public enum TranslationKey {
             + " list - show list of defined keywords\n"
             + "[pattern] pattern that activates the keyword, a java regular expression\n"
             + "[template] template for the reponse to keyword"),
+    SYNTAX_INVENTORY("Syntax: inventory <action> [item] [amount] [user] [type]\n"
+            + "<action> can be one of the following:\n"
+            + " list - list users inventory contents\n"
+            + " pay - give item from your inventory to another user\n"
+            + " add - add item to users inventory\n"
+            + "[item] The name of the item to add or give\n"
+            + "[amount] The amount of items to add or give\n"
+            + "[user] Name of user who to list inventory for, or add or give items to\n"
+            + "[type] Defines how [user] is interpreted, can be one of following:\n"
+            + " user - Name of user, default\n"
+            + " role - Name of role\n"
+            + "If name of item or user/role contains space surround the name with quotes\n"
+            + "If name contains quote escape it with backslash, escape backslashes with another backshlash."),
     SYNTAX_CUSTOMCOMMAND("Template based custom command with template:\n %s\n"
             + "See \"help template\" for details on custom commands."),
     CONFIG_SET_MISSING_OPTION("Provide the name of the setting and the value to set."),
@@ -421,7 +437,7 @@ public enum TranslationKey {
     ROLE_SQL_ERROR_ON_ALLOW("Adding role to list of allowed roles in database failed, bot might not allow assigning the role after reboot."),
     ROLE_GET_MISSING_ROLE_NAME("Obtaining a role requires the name of the role to obtain."),
     ROLE_ASSIGNED_SUCCESFULLY("Assigned role: %s succesfully"),
-    ROLE_REMOVE_MISSING_ROLE_NAME("Remocing a role required the name of the role for bot to remove from you."),
+    ROLE_REMOVE_MISSING_ROLE_NAME("Removing a role requires the name of the role for bot to remove from you."),
     ROLE_COMMAND_LIST_ELEMENT("%s - %s\n"),
     ROLE_MISSING("Role could not be found."),
     ROLE_NO_DESCRIPTION("No description for role."),
@@ -475,7 +491,39 @@ public enum TranslationKey {
     KEYWORD_DELETE_SUCCESS("Keyword deleted succesfully."),
     KEYWORD_SQL_ERROR_ON_DELETE("Deleting keyword from database failed, keyword might reappear after reboot."),
     KEYWORD_NO_KEYWORDS("No keywords defined."),
-    KEYWORD_SQL_ERROR_ON_CREATE("Adding keyword to database failed, keyword might disappear after reboot.");
+    KEYWORD_SQL_ERROR_ON_CREATE("Adding keyword to database failed, keyword might disappear after reboot."),    
+    INVENTORY_NO_USER_WITH_NAME("Could not find user with name: %s"),
+    INVENTORY_MULTIPLE_USERS_WITH_NAME("Found multiple users with name: %s You can use users full discord name including the tag to specify users accurately."),
+    INVENTORY_BOT_NO_PERMISSION("It appears I do not have permission to view members of the guild, can not find member with the provided name."),
+    INVENTORY_FOR_USER("Inventory for %s"),
+    INVENTORY_ITEM_ELEMENT("%sx %s\n"),
+    INVENTORY_ADD_MISSING_ITEM_NAME("Adding item requires the name of the item to add."),
+    INVENTORY_ADD_MISSING_ITEM_COUNT("Adding items requires the amount of items to add."),
+    INVENTORY_COUNT_NOT_NUMBER("Amount of items does not appear to be a number."),
+    INVENTORY_ITEM_ADDED_SUCCESS("Succesfully added %sx %s to inventory of %s."),
+    INVENTORY_ITEM_REMOVED_SUCCESS("Succesfully removed %sx %s from inventory of %s."),
+    INVENTORY_COUNT_ZERO("Amount of items to add can no be zero."),
+    INVENTORY_NO_ITEMS_IN_INVENTORY("No items."),
+    INVENTORY_USER_NOT_ENOUGH_ITEMS("Could not remove items, not enough items in inventory."),
+    INVENTORY_SQL_ERROR_ON_ADD("Database error adding items, amount of items might revert after reboot."),
+    INVENTORY_MODE_USER("user"),
+    INVENTORY_MODE_ROLE("role"),
+    INVENTORY_NOT_ENOUGH_ITEMS("Could not remove items, not enough items in inventory."),
+    INVENTORY_USER_ITEM_ADDED_SUCCESS("Succesfully added %sx %s to your inventory."),
+    INVENTORY_USER_ITEM_REMOVED_SUCCESS("Succesfully removed %sx %s from your inventory."),
+    INVENTORY_UNKNOWN_MODE("Unknown mode for the target name specified: %s valid modes are 'user' and 'role'"),
+    INVENTORY_PAY_MISSING_ITEM_NAME("Paying items to another user requires the name of the item to pay."),
+    INVENTORY_PAY_MISSING_ITEM_COUNT("Paying items to another user requires the amount of items to pay."),
+    INVENTORY_REMOVE_ROLE_SUCCESS_SOME_NOT_MODIFIED("Removed items from users inventory,"
+            + " some of the users did not have enough items and no items were removed from their inventory."),
+    INVENTORY_ADD_ROLE_SUCCESS("Succesfully added %sx %s to inventory of %s users."),
+    INVENTORY_COUNT_NEGATIVE("Paid item amount can not be negative, that's not a payment."), 
+    INVENTORY_PAY_USER_MISSING("Paying items to another user requires the name of the user to pay items to."), 
+    INVENTORY_PAY_TARGET_SELF("Can not pay items to self, that's not a payment."), 
+    INVENTORY_ITEM_PAID_SUCCESS("Succesfully paid %sx %s to %s"), 
+    INVENTORY_SQL_ERROR_ON_PAY("Database error processing payment, items might revert to old amount after reboot."), 
+    INVENTORY_PAY_USER_NOT_ENOUGH_ITEMS_FOR_EVERYONE("You do not have enough items to pay everyone, payment cancelled."), 
+    INVENTORY_PAY_ROLE_SUCCESS("Succesfully paid %sx %s to %s users.");
 
     private static final Logger LOGGER = LogManager.getLogger();
     private final String defaultText;
@@ -499,6 +547,12 @@ public enum TranslationKey {
             LOGGER.warn(ex.getMessage());
         }
         return this.defaultText;
+    }
+    
+    public static void printDefault(){
+        for(TranslationKey key: TranslationKey.values()){
+            System.out.println(key.name() + '=' + key.defaultText.replaceAll("\n", "\\\\n"));
+        }
     }
 
 }

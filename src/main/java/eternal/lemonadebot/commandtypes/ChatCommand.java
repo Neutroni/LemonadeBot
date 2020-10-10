@@ -37,14 +37,6 @@ import java.util.Locale;
 public interface ChatCommand {
 
     /**
-     * Responds to a message
-     *
-     * @param message Message contents
-     * @param guildData data for the guild the message was sent in
-     */
-    void respond(CommandMatcher message, GuildDataStore guildData);
-
-    /**
      * Every action has a command it is called with
      *
      * @param locale Locale to get the command name inF
@@ -76,5 +68,13 @@ public interface ChatCommand {
      * @return The default rank needed to run this command
      */
     public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID);
+    
+    /**
+     * Responds to a message
+     *
+     * @param message Message contents
+     * @param guildData data for the guild the message was sent in
+     */
+    void respond(CommandMatcher message, GuildDataStore guildData);
 
 }

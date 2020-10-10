@@ -48,15 +48,16 @@ public class GuildDataStore implements AutoCloseable {
     private final CommandProvider commandProvider;
     private final TranslationCache translationCache;
     private final KeywordManager keywordManager;
+    private final InventoryManager inventoryManager;
 
     /**
      * Constructor
      *
      * @param connection database connection to use
-     * @param guild Guild this config is for
+     * @param guildID Guild this config is for
      * @param jda JDA to use for reminders
      */
-    GuildDataStore(final Connection connection, final Long guildID, JDA jda) {
+    GuildDataStore(final Connection connection, final long guildID, JDA jda) {
         this.guildID = guildID;
         this.config = new ConfigManager(connection, guildID);
         final Locale locale = this.config.getLocale();
@@ -70,6 +71,7 @@ public class GuildDataStore implements AutoCloseable {
         this.commandProvider = new CommandProvider(locale, this.commands);
         this.translationCache = new TranslationCache(locale);
         this.keywordManager = new KeywordManager(connection, guildID, this.cooldowns);
+        this.inventoryManager = new InventoryManager(connection, guildID);
 
         //Add locale update listeners
         this.config.registerLocaleUpdateListener(this.permissions);
@@ -183,6 +185,15 @@ public class GuildDataStore implements AutoCloseable {
      */
     public KeywordManager getKeywordManager() {
         return this.keywordManager;
+    }
+
+    /**
+     * Get hte inventorymanager for guild
+     *
+     * @return inventorymanager
+     */
+    public InventoryManager getInventoryManager() {
+        return this.inventoryManager;
     }
 
     @Override

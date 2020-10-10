@@ -498,7 +498,7 @@ class RoleCommand implements ChatCommand {
         }
     }
 
-    private void listAllowedRoles(CommandMatcher matcher, GuildDataStore guildData) {
+    private static void listAllowedRoles(CommandMatcher matcher, GuildDataStore guildData) {
         final RoleManager roleManager = guildData.getRoleManager();
         final Locale locale = guildData.getConfigManager().getLocale();
         final Guild guild = matcher.getGuild();
@@ -514,7 +514,7 @@ class RoleCommand implements ChatCommand {
         channel.sendMessage(eb.build()).queue();
     }
 
-    private void getRandomMemberWithRole(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void getRandomMemberWithRole(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel channel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
         if (opts.length < 2) {

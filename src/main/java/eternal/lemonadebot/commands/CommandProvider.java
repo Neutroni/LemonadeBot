@@ -50,6 +50,7 @@ public class CommandProvider implements LocaleUpdateListener {
             new EventCommand(),
             new TemplateCommand(),
             new RoleCommand(),
+            new InventoryCommand(),
             //Admin commands
             new ConfigCommand(),
             new CooldownCommand(),
