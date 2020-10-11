@@ -23,8 +23,11 @@
  */
 package eternal.lemonadebot.dataobjects;
 
+import eternal.lemonadebot.database.CooldownManager;
+import eternal.lemonadebot.translation.TranslationKey;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Locale;
 
 /**
  * Class that stores cooldown set for action
@@ -106,5 +109,16 @@ public class ActionCooldown {
      */
     public Duration getDuration() {
         return this.cooldownDuration;
+    }
+
+    /**
+     * Format the actioncooldown for usage in a list.
+     *
+     * @param locale Locale to format to
+     * @return String description for cooldown.
+     */
+    public String toListElement(Locale locale) {
+        final String template = TranslationKey.COOLDOWN_LIST_ELEMENT.getTranslation(locale);
+        return String.format(template, this.command, CooldownManager.formatDuration(this.cooldownDuration, locale));
     }
 }

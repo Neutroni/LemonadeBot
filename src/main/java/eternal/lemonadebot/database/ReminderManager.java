@@ -168,6 +168,13 @@ public class ReminderManager implements AutoCloseable {
         return Collections.unmodifiableCollection(this.reminders.values());
     }
 
+    @Override
+    public void close() {
+        //Cancel all scheduled reminders
+        this.reminders.values().forEach(Reminder::cancel);
+        this.reminderTimer.shutdown();
+    }
+
     /**
      * Load reminders from database
      *
@@ -249,13 +256,6 @@ public class ReminderManager implements AutoCloseable {
             LOGGER.warn(e.getMessage());
             LOGGER.trace(e);
         }
-    }
-
-    @Override
-    public void close() {
-        //Cancel all scheduled reminders
-        this.reminders.values().forEach(Reminder::cancel);
-        this.reminderTimer.shutdown();
     }
 
 }

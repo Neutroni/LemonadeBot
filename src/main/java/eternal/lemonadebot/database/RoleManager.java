@@ -63,7 +63,7 @@ public class RoleManager {
     /**
      * Add event to database
      *
-     * @param role
+     * @param role Role to allow bot to assign
      * @return true if event was added
      * @throws SQLException If database connection failed
      */
@@ -83,7 +83,7 @@ public class RoleManager {
     /**
      * Remove event from database
      *
-     * @param role
+     * @param role Role to remove from the list of allowed roles
      * @return true if event was removed succesfully
      * @throws SQLException if database connection failed
      */
@@ -109,6 +109,16 @@ public class RoleManager {
     }
 
     /**
+     * Check if role is allowed to assing
+     *
+     * @param role Role to check
+     * @return true if role can be assigned.
+     */
+    public boolean isAllowed(Role role) {
+        return this.roles.containsKey(role.getIdLong());
+    }
+
+    /**
      * Load event from database
      *
      * @return
@@ -131,15 +141,5 @@ public class RoleManager {
             LOGGER.warn(e.getMessage());
             LOGGER.trace(e);
         }
-    }
-
-    /**
-     * Check if role is allowed to assing
-     *
-     * @param role Role to check
-     * @return true if role can be assigned.
-     */
-    public boolean isAllowed(Role role) {
-        return this.roles.containsKey(role.getIdLong());
     }
 }

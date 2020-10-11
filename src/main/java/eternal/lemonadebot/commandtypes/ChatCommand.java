@@ -72,9 +72,9 @@ public interface ChatCommand {
     /**
      * Responds to a message
      *
-     * @param message Message contents
+     * @param matcher Message contents
      * @param guildData data for the guild the message was sent in
      */
-    void respond(CommandMatcher message, GuildDataStore guildData);
+    void respond(CommandMatcher matcher, GuildDataStore guildData);
 
 }

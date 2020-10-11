@@ -35,8 +35,10 @@ import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.Locale;
 import java.util.Optional;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -66,9 +68,9 @@ public class CooldownCommand extends AdminCommand {
     }
 
     @Override
-    public void respond(CommandMatcher message, GuildDataStore guildData) {
-        final String[] arguments = message.getArguments(1);
-        final TextChannel channel = message.getTextChannel();
+    public void respond(CommandMatcher matcher, GuildDataStore guildData) {
+        final String[] arguments = matcher.getArguments(1);
+        final TextChannel channel = matcher.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
         final Locale locale = guildConf.getLocale();
@@ -89,12 +91,16 @@ public class CooldownCommand extends AdminCommand {
                 break;
             }
             case SET: {
-                final String[] setArguments = message.getArguments(3);
+                final String[] setArguments = matcher.getArguments(3);
                 setCooldown(channel, guildData, setArguments);
                 break;
             }
             case DISABLE: {
                 disableCooldown(channel, guildData, arguments[1]);
+                break;
+            }
+            case LIST: {
+                listCooldowns(matcher, guildData);
                 break;
             }
             default: {
@@ -110,7 +116,7 @@ public class CooldownCommand extends AdminCommand {
      * @param cooldownManager cooldown manager to get cooldown from
      * @param requestedAction action to get cooldown for
      */
-    private void getCooldown(TextChannel channel, GuildDataStore guildData, String requestedAction) {
+    private static void getCooldown(TextChannel channel, GuildDataStore guildData, String requestedAction) {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
         final Locale locale = guildData.getConfigManager().getLocale();
         final Optional<ActionCooldown> cd = cooldownManager.getActionCooldown(requestedAction);
@@ -133,7 +139,7 @@ public class CooldownCommand extends AdminCommand {
      * @param cooldownManager cooldown manager to use for setting cooldown
      * @param arguments arguments time,amount,action to use for setting cooldown
      */
-    private void setCooldown(TextChannel channel, GuildDataStore guildData, String[] arguments) {
+    private static void setCooldown(TextChannel channel, GuildDataStore guildData, String[] arguments) {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
         final ConfigManager guildConf = guildData.getConfigManager();
         final Locale locale = guildConf.getLocale();
@@ -194,7 +200,7 @@ public class CooldownCommand extends AdminCommand {
      * @param guildData CooldownManager to remove cooldown in
      * @param requestedAction Action which to remove cooldown from
      */
-    private void disableCooldown(TextChannel channel, GuildDataStore guildData, String requestedAction) {
+    private static void disableCooldown(TextChannel channel, GuildDataStore guildData, String requestedAction) {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
         final Locale locale = guildData.getConfigManager().getLocale();
         final Optional<ActionCooldown> cd = cooldownManager.getActionCooldownByName(requestedAction);
@@ -213,5 +219,23 @@ public class CooldownCommand extends AdminCommand {
             channel.sendMessage(TranslationKey.COOLDOWN_NO_COOLDOWN_SET.getTranslation(locale) + requestedAction).queue();
         });
 
+    }
+
+    private static void listCooldowns(CommandMatcher matcher, GuildDataStore guildData) {
+        final CooldownManager cooldownManager = guildData.getCooldownManager();
+        final Locale locale = matcher.getLocale();
+        final Collection<ActionCooldown> cooldowns = cooldownManager.getCooldowns();
+        final EmbedBuilder eb = new EmbedBuilder();
+        eb.setTitle(TranslationKey.HEADER_COOLDOWNS.getTranslation(locale));
+        final StringBuilder description = new StringBuilder();
+        for (final ActionCooldown cd : cooldowns) {
+            description.append(cd.toListElement(locale));
+        }
+        if (cooldowns.isEmpty()) {
+            description.append(TranslationKey.COOLDOWN_NO_COOLDOWNS.getTranslation(locale));
+        }
+        eb.setDescription(description);
+        final TextChannel channel = matcher.getTextChannel();
+        channel.sendMessage(eb.build()).queue();
     }
 }

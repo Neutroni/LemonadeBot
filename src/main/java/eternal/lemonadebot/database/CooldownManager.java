@@ -31,6 +31,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -47,69 +49,6 @@ public class CooldownManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    /**
-     * Format duratio to a string in locale
-     *
-     * @param duration Duration to format
-     * @param locale Locale to return the duration string in
-     * @return Duration as string
-     */
-    public static String formatDuration(Duration duration, Locale locale) {
-        if (duration.isNegative() || duration.isZero()) {
-            return "00:00:00";
-        }
-        final long remainingDays = duration.toDays();
-        final long remainingHours = duration.toHoursPart();
-        final long remainingMinutes = duration.toMinutesPart();
-        final long remainingSeconds = duration.toSecondsPart();
-
-        final String days = TranslationKey.TIME_DAYS.getTranslation(locale);
-        final String hours = TranslationKey.TIME_HOURS.getTranslation(locale);
-        final String minutes = TranslationKey.TIME_MINUTES.getTranslation(locale);
-        final String seconds = TranslationKey.TIME_SECONDS.getTranslation(locale);
-        final String day = TranslationKey.TIME_DAY.getTranslation(locale);
-        final String hour = TranslationKey.TIME_HOUR.getTranslation(locale);
-        final String minute = TranslationKey.TIME_MINUTE.getTranslation(locale);
-        final String second = TranslationKey.TIME_SECOND.getTranslation(locale);
-
-        final StringBuilder sb = new StringBuilder();
-        boolean printRemaining = false;
-        if (remainingDays != 0) {
-            printRemaining = true;
-            sb.append(remainingDays);
-            if (remainingDays == 1) {
-                sb.append(' ').append(day).append(' ');
-            } else {
-                sb.append(' ').append(days).append(' ');
-            }
-        }
-        if (printRemaining || (remainingHours != 0)) {
-            printRemaining = true;
-            sb.append(remainingHours);
-            if (remainingHours == 1) {
-                sb.append(' ').append(hour).append(' ');
-            } else {
-                sb.append(' ').append(hours).append(' ');
-            }
-        }
-        if (printRemaining || (remainingMinutes != 0)) {
-            sb.append(remainingMinutes);
-            if (remainingMinutes == 1) {
-                sb.append(' ').append(minute).append(' ');
-            } else {
-                sb.append(' ').append(minutes).append(' ');
-            }
-        }
-        sb.append(remainingSeconds);
-        if (remainingSeconds == 1) {
-            sb.append(' ').append(second);
-        } else {
-            sb.append(' ').append(seconds);
-        }
-
-        return sb.toString();
-    }
-
     private final Connection conn;
     private final long guildID;
     private final Map<String, ActionCooldown> cooldowns = new ConcurrentHashMap<>();
@@ -118,6 +57,15 @@ public class CooldownManager {
         this.conn = connection;
         this.guildID = guildID;
         loadCooldowns();
+    }
+
+    /**
+     * Get the list of set cooldowns
+     *
+     * @return Unmodifiable collection of cooldowns
+     */
+    public Collection<ActionCooldown> getCooldowns() {
+        return Collections.unmodifiableCollection(this.cooldowns.values());
     }
 
     /**
@@ -268,6 +216,69 @@ public class CooldownManager {
             LOGGER.error("Loading cooldowns from database failed: {}", e.getMessage());
             LOGGER.trace(e);
         }
+    }
+
+    /**
+     * Format duratio to a string in locale
+     *
+     * @param duration Duration to format
+     * @param locale Locale to return the duration string in
+     * @return Duration as string
+     */
+    public static String formatDuration(Duration duration, Locale locale) {
+        if (duration.isNegative() || duration.isZero()) {
+            return "00:00:00";
+        }
+        final long remainingDays = duration.toDays();
+        final long remainingHours = duration.toHoursPart();
+        final long remainingMinutes = duration.toMinutesPart();
+        final long remainingSeconds = duration.toSecondsPart();
+
+        final String days = TranslationKey.TIME_DAYS.getTranslation(locale);
+        final String hours = TranslationKey.TIME_HOURS.getTranslation(locale);
+        final String minutes = TranslationKey.TIME_MINUTES.getTranslation(locale);
+        final String seconds = TranslationKey.TIME_SECONDS.getTranslation(locale);
+        final String day = TranslationKey.TIME_DAY.getTranslation(locale);
+        final String hour = TranslationKey.TIME_HOUR.getTranslation(locale);
+        final String minute = TranslationKey.TIME_MINUTE.getTranslation(locale);
+        final String second = TranslationKey.TIME_SECOND.getTranslation(locale);
+
+        final StringBuilder sb = new StringBuilder();
+        boolean printRemaining = false;
+        if (remainingDays != 0) {
+            printRemaining = true;
+            sb.append(remainingDays);
+            if (remainingDays == 1) {
+                sb.append(' ').append(day).append(' ');
+            } else {
+                sb.append(' ').append(days).append(' ');
+            }
+        }
+        if (printRemaining || (remainingHours != 0)) {
+            printRemaining = true;
+            sb.append(remainingHours);
+            if (remainingHours == 1) {
+                sb.append(' ').append(hour).append(' ');
+            } else {
+                sb.append(' ').append(hours).append(' ');
+            }
+        }
+        if (printRemaining || (remainingMinutes != 0)) {
+            sb.append(remainingMinutes);
+            if (remainingMinutes == 1) {
+                sb.append(' ').append(minute).append(' ');
+            } else {
+                sb.append(' ').append(minutes).append(' ');
+            }
+        }
+        sb.append(remainingSeconds);
+        if (remainingSeconds == 1) {
+            sb.append(' ').append(second);
+        } else {
+            sb.append(' ').append(seconds);
+        }
+
+        return sb.toString();
     }
 
 }
