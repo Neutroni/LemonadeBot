@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.sql.DataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,7 +46,7 @@ public class TemplateManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final Connection conn;
+    private final DataSource dataSource;
     private final long guildID;
     private final Map<String, CustomCommand> commands = new ConcurrentHashMap<>();
     private final CooldownManager cooldownManager;
@@ -53,11 +54,11 @@ public class TemplateManager {
     /**
      * Constructor
      *
-     * @param connection Database connection to use
+     * @param ds Database connection to use
      * @param config configuration manager to use
      */
-    TemplateManager(Connection connection, CooldownManager cooldownManager, long guildID) {
-        this.conn = connection;
+    TemplateManager(DataSource ds, CooldownManager cooldownManager, long guildID) {
+        this.dataSource = ds;
         this.cooldownManager = cooldownManager;
         this.guildID = guildID;
         loadCommands();
@@ -75,7 +76,8 @@ public class TemplateManager {
 
         //Add to database
         final String query = "INSERT OR IGNORE INTO Commands(guild,name,template,owner) VALUES(?,?,?,?);";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, command.getName());
             ps.setString(3, command.getTemplate());
@@ -97,7 +99,8 @@ public class TemplateManager {
 
         //Remove from database
         final String query = "DELETE FROM Commands WHERE name = ? AND guild = ?;";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, command.getName());
             ps.setLong(2, this.guildID);
             return ps.executeUpdate() > 0;
@@ -130,7 +133,8 @@ public class TemplateManager {
      */
     private void loadCommands() {
         final String query = "SELECT name,template,owner FROM Commands WHERE guild = ?;";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

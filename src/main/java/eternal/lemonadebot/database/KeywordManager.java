@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.sql.DataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,7 +45,7 @@ public class KeywordManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final Connection conn;
+    private final DataSource dataSource;
     private final long guildID;
     private final Map<String, KeywordAction> commands = new ConcurrentHashMap<>();
     private final CooldownManager cooldownManager;
@@ -52,11 +53,11 @@ public class KeywordManager {
     /**
      * Constructor
      *
-     * @param connection Database connection to use
+     * @param ds Database connection to use
      * @param config configuration manager to use
      */
-    KeywordManager(Connection connection, long guildID, CooldownManager cooldownManager) {
-        this.conn = connection;
+    KeywordManager(DataSource ds, long guildID, CooldownManager cooldownManager) {
+        this.dataSource = ds;
         this.guildID = guildID;
         this.cooldownManager = cooldownManager;
         loadCommands();
@@ -74,7 +75,8 @@ public class KeywordManager {
 
         //Add to database
         final String query = "INSERT OR IGNORE INTO Keywords(guild,name,template,owner) VALUES(?,?,?,?);";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, command.getName());
             ps.setString(3, command.getTemplate());
@@ -96,7 +98,8 @@ public class KeywordManager {
 
         //Remove from database
         final String query = "DELETE FROM Keywords WHERE name = ? AND guild = ?;";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, command.getName());
             ps.setLong(2, this.guildID);
             return ps.executeUpdate() > 0;
@@ -129,7 +132,8 @@ public class KeywordManager {
      */
     private void loadCommands() {
         final String query = "SELECT name,template,owner FROM Keywords WHERE guild = ?;";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

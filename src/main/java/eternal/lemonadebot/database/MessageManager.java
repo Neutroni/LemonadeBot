@@ -29,6 +29,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Optional;
+import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.Message;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,10 +44,10 @@ public class MessageManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final Connection conn;
+    private final DataSource dataSource;
 
-    MessageManager(Connection connection) {
-        this.conn = connection;
+    MessageManager(DataSource ds) {
+        this.dataSource = ds;
     }
 
     /**
@@ -63,7 +64,8 @@ public class MessageManager {
         }
         final long currentguildID = message.getGuild().getIdLong();
         final String query = "INSERT INTO Messages(id,guild,author,content) VALUES(?,?,?)";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, message.getIdLong());
             ps.setLong(2, currentguildID);
             ps.setLong(3, message.getAuthor().getIdLong());
@@ -83,7 +85,8 @@ public class MessageManager {
      */
     public Optional<StoredMessage> getMessageContent(long messageID) {
         final String query = "SELECT author,content from Messages WHERE id = ?";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, messageID);
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

@@ -36,6 +36,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,13 +49,13 @@ public class PermissionManager implements LocaleUpdateListener {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final Connection conn;
+    private final DataSource dataSource;
     private final long guildID;
     private final Map<String, CommandPermission> permissions = new ConcurrentHashMap<>();
     private final CommandPermission adminPermission;
 
-    public PermissionManager(Connection conn, long guildID, Locale locale) {
-        this.conn = conn;
+    public PermissionManager(DataSource ds, long guildID, Locale locale) {
+        this.dataSource = ds;
         this.guildID = guildID;
         this.adminPermission = new CommandPermission("", MemberRank.ADMIN, guildID);
         loadPermissions(locale);
@@ -117,7 +118,8 @@ public class PermissionManager implements LocaleUpdateListener {
         final String action = perm.getAction();
         this.permissions.put(action, perm);
         final String query = "INSERT OR REPLACE INTO Permissions(guild,action,requiredRank,requiredRole) VALUES(?,?,?,?);";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, action);
             ps.setString(3, perm.getRequiredRank().name());
@@ -152,7 +154,8 @@ public class PermissionManager implements LocaleUpdateListener {
 
         //Load permissions from database
         final String query = "SELECT action,requiredRank,requiredRole FROM Permissions WHERE guild = ?;";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

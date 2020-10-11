@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -51,7 +52,7 @@ public class ConfigManager {
     public static final Set<Locale> SUPPORTED_LOCALES = Set.of(DEFAULT_LOCALE, new Locale("fi"));
 
     //Database connection
-    private final Connection conn;
+    private final DataSource dataSource;
     //Locale update listeners
     private final List<LocaleUpdateListener> localeListeners = new ArrayList<>(3);
 
@@ -69,8 +70,8 @@ public class ConfigManager {
      * @param connection database connection to use
      * @param guild Guild this config is for
      */
-    ConfigManager(Connection connection, long guild) {
-        this.conn = connection;
+    ConfigManager(DataSource connection, long guild) {
+        this.dataSource = connection;
         this.guildID = guild;
         loadValues();
     }
@@ -140,7 +141,8 @@ public class ConfigManager {
         this.commandPrefix = prefix;
 
         final String query = "UPDATE Guilds SET commandPrefix = ? WHERE id = ?;";
-        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, prefix);
             ps.setLong(2, this.guildID);
             return ps.executeUpdate() > 0;
@@ -156,7 +158,8 @@ public class ConfigManager {
      */
     public boolean setLogChannel(final TextChannel channel) throws SQLException {
         final String query = "UPDATE Guilds SET logChannel = ? WHERE id = ?;";
-        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             if (channel == null) {
                 this.logChannelID = Optional.empty();
                 ps.setLong(1, 0);
@@ -189,7 +192,8 @@ public class ConfigManager {
         });
 
         final String query = "UPDATE Guilds SET locale = ? WHERE id = ?;";
-        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, newLocale.toLanguageTag());
             ps.setLong(2, this.guildID);
             return ps.executeUpdate() > 0;
@@ -207,7 +211,8 @@ public class ConfigManager {
         this.greetingTemplate = Optional.ofNullable(newTemplate);
 
         final String query = "UPDATE Guilds SET greetingTemplate = ? WHERE id = ?;";
-        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, newTemplate);
             ps.setLong(2, this.guildID);
             return ps.executeUpdate() > 0;
@@ -225,7 +230,8 @@ public class ConfigManager {
         this.timeZone = zoneId;
 
         final String query = "UPDATE Guilds SET timeZone = ? WHERE id = ?;";
-        try (final PreparedStatement ps = this.conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             final String zone = zoneId.getId();
             ps.setString(1, zone);
             ps.setLong(2, this.guildID);
@@ -238,7 +244,8 @@ public class ConfigManager {
      */
     private void loadValues() {
         final String query = "SELECT commandPrefix,greetingTemplate,logChannel,locale,timeZone FROM Guilds WHERE id = ?;";
-        try (final PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try (final ResultSet rs = ps.executeQuery()) {
                 //Check that database contains this guild
@@ -313,7 +320,8 @@ public class ConfigManager {
         LOGGER.debug("Adding guild to database: {}", this.guildID);
         final String query = "INSERT OR IGNORE INTO Guilds("
                 + "id,commandPrefix,greetingTemplate,locale,logChannel,timeZone) VALUES (?,?,?,?,?,?);";
-        try (final PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, "lemonbot#");
             ps.setString(3, this.greetingTemplate.orElse(null));

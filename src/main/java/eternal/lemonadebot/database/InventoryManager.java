@@ -30,6 +30,7 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,13 +43,13 @@ public class InventoryManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final Connection conn;
+    private final DataSource dataSource;
     private final long guildID;
     //Map of UserID to map of item name to count of items
     private final Map<Long, Map<String, Long>> inventory = new ConcurrentHashMap<>();
 
-    InventoryManager(Connection conn, long guildID) {
-        this.conn = conn;
+    InventoryManager(DataSource ds, long guildID) {
+        this.dataSource = ds;
         this.guildID = guildID;
         loadInventory();
     }
@@ -95,7 +96,8 @@ public class InventoryManager {
 
     private boolean deleteItemFromUser(long userID, String item) throws SQLException {
         final String query = "DELETE FROM Inventory WHERE guild = ? AND owner = ? AND item = ?;";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setLong(2, userID);
             ps.setString(3, item);
@@ -105,7 +107,8 @@ public class InventoryManager {
 
     private boolean setItemCountForUser(long userID, String item, long count) throws SQLException {
         final String query = "INSERT OR  REPLACE INTO Inventory(guild,owner,item,count) VALUES(?,?,?,?);";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setLong(2, userID);
             ps.setString(3, item);
@@ -116,7 +119,8 @@ public class InventoryManager {
 
     private void loadInventory() {
         final String query = "SELECT owner,item,count FROM Inventory WHERE guild = ?;";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

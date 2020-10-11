@@ -23,8 +23,9 @@
  */
 package eternal.lemonadebot.database;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -45,7 +46,7 @@ public class DatabaseManager implements AutoCloseable {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final Connection conn;
+    private final HikariDataSource dataSource;
     private final JDA jda;
     private final Map<Long, GuildDataStore> guildDataStores = new ConcurrentHashMap<>();
     private final int maxMessages;
@@ -58,7 +59,6 @@ public class DatabaseManager implements AutoCloseable {
      * @throws SQLException if loading database fails
      */
     public DatabaseManager(final Properties config, final JDA jda) throws SQLException, NumberFormatException {
-        final String databaseLocation = config.getProperty("database-location", "database.db");
         final String numberString = config.getProperty("max-messages");
         if (numberString == null) {
             this.maxMessages = 4096;
@@ -67,9 +67,13 @@ public class DatabaseManager implements AutoCloseable {
             this.maxMessages = Integer.parseInt(numberString);
             LOGGER.info("Set max messages to: {}", maxMessages);
         }
-
-        this.conn = DriverManager.getConnection("jdbc:sqlite:" + databaseLocation);
         this.jda = jda;
+
+        //Connect to database
+        final String databaseLocation = config.getProperty("database-location", "database.db");
+        final HikariConfig hikariConfig = new HikariConfig(config);
+        hikariConfig.setJdbcUrl("jdbc:sqlite:" + databaseLocation);
+        this.dataSource = new HikariDataSource(hikariConfig);
 
         //Initialize database
         initialize();
@@ -79,7 +83,7 @@ public class DatabaseManager implements AutoCloseable {
 
     @Override
     public void close() throws SQLException {
-        this.conn.close();
+        this.dataSource.close();
         this.guildDataStores.forEach((Long t, GuildDataStore u) -> {
             u.close();
         });
@@ -93,7 +97,7 @@ public class DatabaseManager implements AutoCloseable {
      */
     public GuildDataStore getGuildData(final Guild guild) {
         return this.guildDataStores.computeIfAbsent(guild.getIdLong(), (Long newGuildID) -> {
-            return new GuildDataStore(this.conn, newGuildID, this.jda);
+            return new GuildDataStore(this.dataSource, newGuildID, this.jda);
         });
     }
 
@@ -182,8 +186,8 @@ public class DatabaseManager implements AutoCloseable {
                 + "owner INTEGER NOT NULL,"
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,name));";
-        final String ENABLE_FOREIGN_KEYS = "PRAGMA foreign_keys = ON;";
-        try (final Statement st = this.conn.createStatement()) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final Statement st = connection.createStatement()) {
             st.addBatch(GUILDCONF);
             st.addBatch(PERMISSIONS);
             st.addBatch(MESSAGES);
@@ -194,11 +198,11 @@ public class DatabaseManager implements AutoCloseable {
             st.addBatch(EVENT_MEMBERS);
             st.addBatch(REMINDERS);
             st.addBatch(KEYWORDS);
-            st.addBatch(ENABLE_FOREIGN_KEYS);
             st.addBatch(DROP_TRIGGER_CLEANUP);
             st.executeBatch();
         }
-        try (final PreparedStatement ps = this.conn.prepareStatement(MESSAGE_CLEANUP)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(MESSAGE_CLEANUP)) {
             ps.setInt(1, maxMessages);
             ps.executeUpdate();
         }
@@ -208,10 +212,12 @@ public class DatabaseManager implements AutoCloseable {
     private void loadGuilds() throws SQLException {
         LOGGER.debug("Loading guilds from database");
         final String query = "SELECT id FROM Guilds;";
-        try ( Statement st = conn.createStatement();  ResultSet rs = st.executeQuery(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final Statement st = connection.createStatement();
+                final ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
                 final long guildID = rs.getLong("id");
-                this.guildDataStores.put(guildID, new GuildDataStore(this.conn, guildID, this.jda));
+                this.guildDataStores.put(guildID, new GuildDataStore(this.dataSource, guildID, this.jda));
             }
         }
         LOGGER.debug("Loaded guilds succesfully");
