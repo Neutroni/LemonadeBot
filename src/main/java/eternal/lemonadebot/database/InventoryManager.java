@@ -90,7 +90,7 @@ public class InventoryManager {
      * @return true if paid succesfully, false if not enough items on sender
      * @throws SQLException If database connection failed, payment will rollback
      */
-    public synchronized boolean payItem(Member sender, Member receiver, String itemName, long count) throws SQLException {
+    public boolean payItem(Member sender, Member receiver, String itemName, long count) throws SQLException {
         final Map<String, Long> userItems = getInventory(sender.getIdLong());
         final Map<String, Long> receiverItems = getInventory(receiver.getIdLong());
 
