@@ -494,7 +494,7 @@ public enum TranslationKey {
     KEYWORD_DELETE_SUCCESS("Keyword deleted succesfully."),
     KEYWORD_SQL_ERROR_ON_DELETE("Deleting keyword from database failed, keyword might reappear after reboot."),
     KEYWORD_NO_KEYWORDS("No keywords defined."),
-    KEYWORD_SQL_ERROR_ON_CREATE("Adding keyword to database failed, keyword might disappear after reboot."),    
+    KEYWORD_SQL_ERROR_ON_CREATE("Adding keyword to database failed, keyword might disappear after reboot."),
     INVENTORY_NO_USER_WITH_NAME("Could not find user with name: %s"),
     INVENTORY_MULTIPLE_USERS_WITH_NAME("Found multiple users with name: %s You can use users full discord name including the tag to specify users accurately."),
     INVENTORY_BOT_NO_PERMISSION("It appears I do not have permission to view members of the guild, can not find member with the provided name."),
@@ -520,13 +520,15 @@ public enum TranslationKey {
     INVENTORY_REMOVE_ROLE_SUCCESS_SOME_NOT_MODIFIED("Removed items from users inventory,"
             + " some of the users did not have enough items and no items were removed from their inventory."),
     INVENTORY_ADD_ROLE_SUCCESS("Succesfully added %sx %s to inventory of %s users."),
-    INVENTORY_COUNT_NEGATIVE("Paid item amount can not be negative, that's not a payment."), 
-    INVENTORY_PAY_USER_MISSING("Paying items to another user requires the name of the user to pay items to."), 
-    INVENTORY_PAY_TARGET_SELF("Can not pay items to self, that's not a payment."), 
-    INVENTORY_ITEM_PAID_SUCCESS("Succesfully paid %sx %s to %s"), 
-    INVENTORY_SQL_ERROR_ON_PAY("Database error processing payment, items might revert to old amount after reboot."), 
-    INVENTORY_PAY_USER_NOT_ENOUGH_ITEMS_FOR_EVERYONE("You do not have enough items to pay everyone, payment cancelled."), 
-    INVENTORY_PAY_ROLE_SUCCESS("Succesfully paid %sx %s to %s users.");
+    INVENTORY_COUNT_NEGATIVE("Paid item amount can not be negative, that's not a payment."),
+    INVENTORY_PAY_USER_MISSING("Paying items to another user requires the name of the user to pay items to."),
+    INVENTORY_PAY_TARGET_SELF("Can not pay items to self, that's not a payment."),
+    INVENTORY_ITEM_PAID_SUCCESS("Succesfully paid %sx %s to %s"),
+    INVENTORY_SQL_ERROR_ON_PAY("Database error processing payment, payment cancelled."),
+    INVENTORY_PAY_USER_NOT_ENOUGH_ITEMS_FOR_EVERYONE("You do not have enough items to pay everyone, payment cancelled."),
+    INVENTORY_PAY_ROLE_SUCCESS("Succesfully paid %sx %s to %s users."),
+    INVENTORY_PAY_INTERRUPTED_NOT_ENOUGH_FOR_EVERYONE("Could not pay everyone due to not having enough items, the following people were not paid:\n%s"), 
+    INVENTORY_ROLE_SQL_ERROR_ON_PAY("Database error processing payment, following people did not receive payment:\n%s");
 
     private static final Logger LOGGER = LogManager.getLogger();
     private final String defaultText;
@@ -551,9 +553,9 @@ public enum TranslationKey {
         }
         return this.defaultText;
     }
-    
-    public static void printDefault(){
-        for(TranslationKey key: TranslationKey.values()){
+
+    public static void printDefault() {
+        for (TranslationKey key : TranslationKey.values()) {
             System.out.println(key.name() + '=' + key.defaultText.replaceAll("\n", "\\\\n"));
         }
     }

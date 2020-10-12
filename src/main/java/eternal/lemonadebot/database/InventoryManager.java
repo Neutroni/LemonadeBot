@@ -27,6 +27,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,10 +55,8 @@ public class InventoryManager {
     }
 
     public boolean addItem(Member member, String itemName, long count) throws SQLException {
-        final Map<String, Long> userItems = this.inventory.computeIfAbsent(member.getIdLong(), (Long t) -> {
-            //If user has no inventory add a empty one
-            return new ConcurrentHashMap<>();
-        });
+        final long memberID = member.getIdLong();
+        final Map<String, Long> userItems = getInventory(memberID);
 
         //Synchronize on users items so no concurrent modification
         synchronized (userItems) {
@@ -69,15 +68,85 @@ public class InventoryManager {
             }
             if (newCount == 0) {
                 //User does not have any more of the item, remove from items
+                deleteItemFromUser(memberID, itemName);
                 userItems.remove(itemName);
-                deleteItemFromUser(member.getIdLong(), itemName);
             } else {
                 //Update users item count
+                setItemCountForUser(memberID, itemName, newCount);
                 userItems.put(itemName, newCount);
-                setItemCountForUser(member.getIdLong(), itemName, newCount);
             }
             return true;
         }
+    }
+
+    /**
+     * Pay item from user to another
+     *
+     * @param sender item sender
+     * @param receiver item receiver
+     * @param itemName name of item
+     * @param count amount of items
+     * @return true if paid succesfully, false if not enough items on sender
+     * @throws SQLException If database connection failed, payment will rollback
+     */
+    public synchronized boolean payItem(Member sender, Member receiver, String itemName, long count) throws SQLException {
+        final Map<String, Long> userItems = getInventory(sender.getIdLong());
+        final Map<String, Long> receiverItems = getInventory(receiver.getIdLong());
+
+        final String transactionBegin = "BEGIN TRANSACTION;";
+        try (final Statement st = this.conn.createStatement()) {
+            st.execute(transactionBegin);
+        }
+
+        synchronized (userItems) {
+            final long itemCount = userItems.getOrDefault(itemName, 0l);
+            final long newCount = itemCount - count;
+            if (newCount < 0) {
+                //User does not have enough items
+                return false;
+            }
+            if (newCount == 0) {
+                //User does not have any more of the item, remove from items
+                deleteItemFromUser(sender.getIdLong(), itemName);
+                userItems.remove(itemName);
+            } else {
+                //Update users item count
+                setItemCountForUser(sender.getIdLong(), itemName, newCount);
+                userItems.put(itemName, newCount);
+            }
+        }
+        try {
+            synchronized (receiverItems) {
+                final long itemCount = receiverItems.getOrDefault(itemName, 0l);
+                final long newCount = itemCount + count;
+
+                //Update users item count
+                setItemCountForUser(receiver.getIdLong(), itemName, newCount);
+                userItems.put(itemName, newCount);
+
+                //Commit transaction
+                final String transactionCommit = "COMMIT TRANSACTION;";
+                try (final Statement st = this.conn.createStatement()) {
+                    st.execute(transactionCommit);
+                }
+            }
+        } catch (SQLException e) {
+            //Failed, rollback
+            synchronized (userItems) {
+                final long itemCount = userItems.getOrDefault(itemName, 0l);
+                final long newCount = itemCount + count;
+
+                //Update users item count
+                userItems.put(itemName, newCount);
+            }
+            final String transactionRollback = "ROLLBACK TRANSACTION;";
+            try (final Statement st = this.conn.createStatement()) {
+                st.execute(transactionRollback);
+            }
+            //Throw the exception so we do not indicate success accidentally
+            throw e;
+        }
+        return true;
     }
 
     /**
@@ -88,9 +157,13 @@ public class InventoryManager {
      * items
      */
     public Map<String, Long> getUserInventory(Member member) {
-        return Collections.unmodifiableMap(this.inventory.computeIfAbsent(member.getIdLong(), (Long t) -> {
+        return Collections.unmodifiableMap(getInventory(member.getIdLong()));
+    }
+
+    private Map<String, Long> getInventory(long memberID) {
+        return this.inventory.computeIfAbsent(memberID, (Long t) -> {
             return new ConcurrentHashMap<>();
-        }));
+        });
     }
 
     private boolean deleteItemFromUser(long userID, String item) throws SQLException {

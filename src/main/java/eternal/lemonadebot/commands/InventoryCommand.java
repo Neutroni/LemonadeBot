@@ -37,6 +37,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -299,7 +300,7 @@ public class InventoryCommand implements ChatCommand {
                         channel.sendMessage(TranslationKey.INVENTORY_REMOVE_ROLE_SUCCESS_SOME_NOT_MODIFIED.getTranslation(locale)).queue();
                     } else {
                         final String template = TranslationKey.INVENTORY_ADD_ROLE_SUCCESS.getTranslation(locale);
-                        channel.sendMessageFormat(template, itemCount,itemName,members.size()).queue();
+                        channel.sendMessageFormat(template, itemCount, itemName, members.size()).queue();
                     }
                 }
             }).onError((Throwable t) -> {
@@ -385,11 +386,10 @@ public class InventoryCommand implements ChatCommand {
 
                 //Add items to targets inventory
                 try {
-                    if (!inventoryManager.addItem(requester, itemName, -itemCount)) {
+                    if (!inventoryManager.payItem(requester, target, itemName, itemCount)) {
                         channel.sendMessage(TranslationKey.INVENTORY_USER_NOT_ENOUGH_ITEMS.getTranslation(locale)).queue();
                         return;
                     }
-                    inventoryManager.addItem(target, itemName, itemCount);
                     final String template = TranslationKey.INVENTORY_ITEM_PAID_SUCCESS.getTranslation(locale);
                     channel.sendMessageFormat(template, itemCount, itemName, target.getEffectiveName()).queue();
                 } catch (SQLException e) {
@@ -418,19 +418,39 @@ public class InventoryCommand implements ChatCommand {
             }).onSuccess((List<Member> members) -> {
                 //Remove items from users inventory
                 final long requiredCount = members.size() * itemCount;
+                int paidPeople = 0;
                 try {
-                    if (!inventoryManager.addItem(requester, itemName, -requiredCount)) {
+                    final Map<String, Long> userInv = inventoryManager.getUserInventory(requester);
+                    if (userInv.getOrDefault(itemName, 0l) < requiredCount) {
                         channel.sendMessage(TranslationKey.INVENTORY_PAY_USER_NOT_ENOUGH_ITEMS_FOR_EVERYONE.getTranslation(locale)).queue();
                         return;
                     }
-                    //This is technically bit bad without transactions but it's just a silly inventory system.
-                    for (final Member member : members) {
-                        inventoryManager.addItem(member, itemName, itemCount);
+                    for (int i = 0; i < members.size(); i++) {
+                        final Member member = members.get(i);
+                        if (inventoryManager.payItem(requester, member, itemName, itemCount)) {
+                            paidPeople++;
+                            continue;
+                        }
+                        break;
+                    }
+                    if (paidPeople < members.size()) {
+                        final String template = TranslationKey.INVENTORY_PAY_INTERRUPTED_NOT_ENOUGH_FOR_EVERYONE.getTranslation(locale);
+                        final List<Member> unpaid = members.subList(paidPeople, members.size());
+                        final String names = unpaid.stream().map((Member t) -> {
+                            return t.getEffectiveName();
+                        }).collect(Collectors.joining(","));
+                        channel.sendMessageFormat(template, names).queue();
+                        return;
                     }
                     final String template = TranslationKey.INVENTORY_PAY_ROLE_SUCCESS.getTranslation(locale);
-                    channel.sendMessageFormat(template,itemCount,itemName,members.size()).queue();
+                    channel.sendMessageFormat(template, itemCount, itemName, members.size()).queue();
                 } catch (SQLException ex) {
-                    channel.sendMessage(TranslationKey.INVENTORY_SQL_ERROR_ON_PAY.getTranslation(locale)).queue();
+                    final List<Member> unpaid = members.subList(paidPeople, members.size());
+                    final String names = unpaid.stream().map((Member t) -> {
+                        return t.getEffectiveName();
+                    }).collect(Collectors.joining(","));
+                    final String template = TranslationKey.INVENTORY_ROLE_SQL_ERROR_ON_PAY.getTranslation(locale);
+                    channel.sendMessageFormat(template, names).queue();
                     LOGGER.error("Failure for user to pay items to another: {}", ex.getMessage());
                     LOGGER.trace("Stack trace", ex);
                 }
