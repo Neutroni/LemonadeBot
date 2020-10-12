@@ -41,6 +41,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import javax.sql.DataSource;
 import net.dv8tion.jda.api.JDA;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -53,7 +54,7 @@ public class ReminderManager implements AutoCloseable {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final Connection conn;
+    private final DataSource dataSource;
     private final JDA jda;
     private final long guildID;
 
@@ -64,12 +65,12 @@ public class ReminderManager implements AutoCloseable {
     /**
      * Constructor
      *
-     * @param conn database connectionF
-     * @param guildData EventManager to fetch events from
+     * @param ds DataSource to get connection from
+     * @param guildData GuildData to pass to reminders
      * @param jda JDA to pass to reminders
      */
-    ReminderManager(Connection conn, JDA jda, GuildDataStore guildData, long guild) {
-        this.conn = conn;
+    ReminderManager(DataSource ds, JDA jda, GuildDataStore guildData, long guild) {
+        this.dataSource = ds;
         this.jda = jda;
         this.guildData = guildData;
         this.guildID = guild;
@@ -116,7 +117,8 @@ public class ReminderManager implements AutoCloseable {
         } else {
             monthOfYear = month.getValue();
         }
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, reminderName);
             ps.setString(3, reminderMessage);
@@ -142,7 +144,8 @@ public class ReminderManager implements AutoCloseable {
 
         //Remove from database
         final String query = "DELETE FROM Reminders Where guild = ? AND name = ?;";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, reminder.getName());
             return ps.executeUpdate() > 0;
@@ -184,7 +187,8 @@ public class ReminderManager implements AutoCloseable {
     private void loadReminders() {
         LOGGER.debug("Started loading reminders for guild: {} from database", this.guildID);
         final String query = "SELECT name,message,author,channel,time,dayOfWeek,dayOfMonth,monthOfYear FROM Reminders WHERE guild = ?;";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

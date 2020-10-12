@@ -25,8 +25,8 @@ package eternal.lemonadebot.database;
 
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.translation.TranslationCache;
-import java.sql.Connection;
 import java.util.Locale;
+import javax.sql.DataSource;
 import net.dv8tion.jda.api.JDA;
 
 /**
@@ -53,25 +53,25 @@ public class GuildDataStore implements AutoCloseable {
     /**
      * Constructor
      *
-     * @param connection database connection to use
+     * @param dataSource database connection to use
      * @param guildID Guild this config is for
      * @param jda JDA to use for reminders
      */
-    GuildDataStore(final Connection connection, final long guildID, JDA jda) {
+    GuildDataStore(final DataSource dataSource, final long guildID, JDA jda) {
         this.guildID = guildID;
-        this.config = new ConfigManager(connection, guildID);
+        this.config = new ConfigManager(dataSource, guildID);
         final Locale locale = this.config.getLocale();
-        this.permissions = new PermissionManager(connection, guildID, locale);
-        this.events = new EventManager(connection, guildID);
-        this.roleManager = new RoleManager(connection, guildID);
-        this.cooldowns = new CooldownManager(connection, guildID);
-        this.commands = new TemplateManager(connection, this.cooldowns, guildID);
-        this.reminders = new ReminderManager(connection, jda, this, guildID);
-        this.messages = new MessageManager(connection);
+        this.permissions = new PermissionManager(dataSource, guildID, locale);
+        this.events = new EventManager(dataSource, guildID);
+        this.roleManager = new RoleManager(dataSource, guildID);
+        this.cooldowns = new CooldownManager(dataSource, guildID);
+        this.commands = new TemplateManager(dataSource, this.cooldowns, guildID);
+        this.reminders = new ReminderManager(dataSource, jda, this, guildID);
+        this.messages = new MessageManager(dataSource);
         this.commandProvider = new CommandProvider(locale, this.commands);
         this.translationCache = new TranslationCache(locale);
-        this.keywordManager = new KeywordManager(connection, guildID, this.cooldowns);
-        this.inventoryManager = new InventoryManager(connection, guildID);
+        this.keywordManager = new KeywordManager(dataSource, guildID, this.cooldowns);
+        this.inventoryManager = new InventoryManager(dataSource, guildID);
 
         //Add locale update listeners
         this.config.registerLocaleUpdateListener(this.permissions);

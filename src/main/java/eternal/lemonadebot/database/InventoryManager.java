@@ -31,6 +31,7 @@ import java.sql.Statement;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,13 +44,13 @@ public class InventoryManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final Connection conn;
+    private final DataSource dataSource;
     private final long guildID;
     //Map of UserID to map of item name to count of items
     private final Map<Long, Map<String, Long>> inventory = new ConcurrentHashMap<>();
 
-    InventoryManager(Connection conn, long guildID) {
-        this.conn = conn;
+    InventoryManager(DataSource ds, long guildID) {
+        this.dataSource = ds;
         this.guildID = guildID;
         loadInventory();
     }
@@ -94,66 +95,69 @@ public class InventoryManager {
         final Map<String, Long> receiverItems = getInventory(receiver.getIdLong());
 
         final String transactionBegin = "BEGIN TRANSACTION;";
-        try (final Statement st = this.conn.createStatement()) {
-            st.execute(transactionBegin);
-        }
-
-        synchronized (userItems) {
-            final long itemCount = userItems.getOrDefault(itemName, 0l);
-            final long newCount = itemCount - count;
-            if (newCount < 0) {
-                //User does not have enough items
-                return false;
+        try (final Connection connection = this.dataSource.getConnection()) {
+            try (final Statement st = connection.createStatement()) {
+                st.execute(transactionBegin);
             }
-            if (newCount == 0) {
-                //User does not have any more of the item, remove from items
-                deleteItemFromUser(sender.getIdLong(), itemName);
-                userItems.remove(itemName);
-            } else {
-                //Update users item count
-                setItemCountForUser(sender.getIdLong(), itemName, newCount);
-                userItems.put(itemName, newCount);
-            }
-        }
-        try {
-            synchronized (receiverItems) {
-                final long itemCount = receiverItems.getOrDefault(itemName, 0l);
-                final long newCount = itemCount + count;
 
-                //Update users item count
-                setItemCountForUser(receiver.getIdLong(), itemName, newCount);
-                userItems.put(itemName, newCount);
-
-                //Commit transaction
-                final String transactionCommit = "COMMIT TRANSACTION;";
-                try (final Statement st = this.conn.createStatement()) {
-                    st.execute(transactionCommit);
-                }
-            }
-        } catch (SQLException e) {
-            //Failed, rollback
             synchronized (userItems) {
                 final long itemCount = userItems.getOrDefault(itemName, 0l);
-                final long newCount = itemCount + count;
+                final long newCount = itemCount - count;
+                if (newCount < 0) {
+                    //User does not have enough items
+                    return false;
+                }
+                if (newCount == 0) {
+                    //User does not have any more of the item, remove from items
+                    deleteItemFromUser(sender.getIdLong(), itemName);
+                    userItems.remove(itemName);
+                } else {
+                    //Update users item count
+                    setItemCountForUser(sender.getIdLong(), itemName, newCount);
+                    userItems.put(itemName, newCount);
+                }
+            }
+            try {
+                synchronized (receiverItems) {
+                    final long itemCount = receiverItems.getOrDefault(itemName, 0l);
+                    final long newCount = itemCount + count;
 
-                //Update users item count
-                userItems.put(itemName, newCount);
+                    //Update users item count
+                    setItemCountForUser(receiver.getIdLong(), itemName, newCount);
+                    userItems.put(itemName, newCount);
+
+                    //Commit transaction
+                    final String transactionCommit = "COMMIT TRANSACTION;";
+                    try (final Statement st = connection.createStatement()) {
+                        st.execute(transactionCommit);
+                    }
+                }
+            } catch (SQLException e) {
+                //Failed, rollback
+                synchronized (userItems) {
+                    final long itemCount = userItems.getOrDefault(itemName, 0l);
+                    final long newCount = itemCount + count;
+
+                    //Update users item count
+                    userItems.put(itemName, newCount);
+                }
+                final String transactionRollback = "ROLLBACK TRANSACTION;";
+                try (final Statement st = connection.createStatement()) {
+                    st.execute(transactionRollback);
+                }
+                //Throw the exception so we do not indicate success accidentally
+                throw e;
             }
-            final String transactionRollback = "ROLLBACK TRANSACTION;";
-            try (final Statement st = this.conn.createStatement()) {
-                st.execute(transactionRollback);
-            }
-            //Throw the exception so we do not indicate success accidentally
-            throw e;
+            return true;
         }
-        return true;
     }
 
     /**
      * Get view of users inventory
      *
      * @param member Member to get inventory for
-     * @return Map of users items, with key as item name and value as count of
+     * @return Map of users items, with key as item name and value as count
+     * of
      * items
      */
     public Map<String, Long> getUserInventory(Member member) {
@@ -168,7 +172,8 @@ public class InventoryManager {
 
     private boolean deleteItemFromUser(long userID, String item) throws SQLException {
         final String query = "DELETE FROM Inventory WHERE guild = ? AND owner = ? AND item = ?;";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setLong(2, userID);
             ps.setString(3, item);
@@ -178,7 +183,8 @@ public class InventoryManager {
 
     private boolean setItemCountForUser(long userID, String item, long count) throws SQLException {
         final String query = "INSERT OR  REPLACE INTO Inventory(guild,owner,item,count) VALUES(?,?,?,?);";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setLong(2, userID);
             ps.setString(3, item);
@@ -189,7 +195,8 @@ public class InventoryManager {
 
     private void loadInventory() {
         final String query = "SELECT owner,item,count FROM Inventory WHERE guild = ?;";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.Role;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,24 +45,24 @@ public class RoleManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final Connection conn;
+    private final DataSource dataSource;
     private final long guildID;
     private final Map<Long, AllowedRole> roles = new ConcurrentHashMap<>();
 
     /**
      * Constructor
      *
-     * @param conn database connectionF
+     * @param ds database connection
      * @param guildID
      */
-    RoleManager(Connection conn, long guildID) {
-        this.conn = conn;
+    RoleManager(DataSource ds, long guildID) {
+        this.dataSource = ds;
         this.guildID = guildID;
         loadRoles();
     }
 
     /**
-     * Add event to database
+     * Add role to list of allowed roles
      *
      * @param role Role to allow bot to assign
      * @return true if event was added
@@ -72,7 +73,8 @@ public class RoleManager {
 
         //Add to database
         final String query = "INSERT OR IGNORE INTO Roles(guild,role,description) VALUES(?,?,?);";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setLong(2, role.getRoleID());
             ps.setString(3, role.getDescription());
@@ -81,7 +83,7 @@ public class RoleManager {
     }
 
     /**
-     * Remove event from database
+     * Remove role from list of allowed roles
      *
      * @param role Role to remove from the list of allowed roles
      * @return true if event was removed succesfully
@@ -92,7 +94,8 @@ public class RoleManager {
 
         //Remove from database
         final String query = "DELETE FROM Roles Where guild = ? AND role = ?;";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setLong(2, role.getIdLong());
             return ps.executeUpdate() > 0;
@@ -126,7 +129,8 @@ public class RoleManager {
      */
     private void loadRoles() {
         final String query = "SELECT role,description FROM Roles WHERE guild = ?;";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

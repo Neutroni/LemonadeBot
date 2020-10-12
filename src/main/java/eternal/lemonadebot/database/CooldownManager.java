@@ -37,6 +37,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.sql.DataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -49,12 +50,12 @@ public class CooldownManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final Connection conn;
+    private final DataSource dataSource;
     private final long guildID;
     private final Map<String, ActionCooldown> cooldowns = new ConcurrentHashMap<>();
 
-    CooldownManager(Connection connection, long guildID) {
-        this.conn = connection;
+    CooldownManager(DataSource ds, long guildID) {
+        this.dataSource = ds;
         this.guildID = guildID;
         loadCooldowns();
     }
@@ -99,7 +100,8 @@ public class CooldownManager {
 
         //Store in database
         final String query = "UPDATE Cooldowns SET activationTime = ? WHERE guild = ? AND command = ?) VALUES(?,?,?)";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, now.getEpochSecond());
             ps.setLong(2, this.guildID);
             ps.setString(3, cooldown.getAction());
@@ -124,7 +126,8 @@ public class CooldownManager {
 
         //Remove from database
         final String query = "DELETE FROM Cooldowns Where guild = ? AND command = ?;";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, action);
             return ps.executeUpdate() > 0;
@@ -146,7 +149,8 @@ public class CooldownManager {
         cooldown.updateCooldownDuration(duration);
 
         final String query = "INSERT OR REPLACE INTO Cooldowns(guild,command,duration,activationTime) VALUES(?,?,?,?)";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, action);
             ps.setLong(3, duration.getSeconds());
@@ -201,7 +205,8 @@ public class CooldownManager {
      */
     private void loadCooldowns() {
         final String query = "SELECT command,duration,activationTime FROM Cooldowns WHERE guild = ?;";
-        try ( PreparedStatement ps = conn.prepareStatement(query)) {
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
