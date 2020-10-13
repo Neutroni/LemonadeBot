@@ -26,7 +26,6 @@ package eternal.lemonadebot.database;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -71,8 +70,9 @@ public class DatabaseManager implements AutoCloseable {
 
         //Connect to database
         final String databaseLocation = config.getProperty("database-location", "database.db");
-        final HikariConfig hikariConfig = new HikariConfig(config);
+        final HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setJdbcUrl("jdbc:sqlite:" + databaseLocation);
+        hikariConfig.setConnectionInitSql("PRAGMA foreign_keys = ON;");
         this.dataSource = new HikariDataSource(hikariConfig);
 
         //Initialize database
@@ -130,9 +130,10 @@ public class DatabaseManager implements AutoCloseable {
                 + "content TEXT NOT NULL,"
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE);";
         final String DROP_TRIGGER_CLEANUP = "DROP TRIGGER IF EXISTS MessageCleanup;";
+        //Trigger called to remove old messages, yes there is string concatenation but maxMessage is numeric
         final String MESSAGE_CLEANUP = "CREATE TRIGGER IF NOT EXISTS MessageCleanup AFTER INSERT ON Messages BEGIN "
                 + "DELETE FROM Messages WHERE id IN "
-                + "(SELECT id FROM Messages WHERE guild = NEW.guild ORDER BY id DESC LIMIT -1 OFFSET ?); END;";
+                + "(SELECT id FROM Messages WHERE guild = NEW.guild ORDER BY id DESC LIMIT -1 OFFSET " + this.maxMessages + "); END;";
         final String COMMANDS = "CREATE TABLE IF NOT EXISTS Commands("
                 + "guild INTEGER NOT NULL,"
                 + "name TEXT NOT NULL,"
@@ -186,11 +187,20 @@ public class DatabaseManager implements AutoCloseable {
                 + "owner INTEGER NOT NULL,"
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,name));";
+        final String INVENTORY = "CREATE TABLE IF NOT EXISTS Inventory("
+                + "guild INTEGER NOT NULL,"
+                + "owner INTEGER NOT NULL,"
+                + "item TEXT NOT NULL,"
+                + "count INTEGER NOT NULL,"
+                + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
+                + "PRIMARY KEY (guild,owner,item));";
         try (final Connection connection = this.dataSource.getConnection();
                 final Statement st = connection.createStatement()) {
             st.addBatch(GUILDCONF);
             st.addBatch(PERMISSIONS);
             st.addBatch(MESSAGES);
+            st.addBatch(DROP_TRIGGER_CLEANUP);
+            st.addBatch(MESSAGE_CLEANUP);
             st.addBatch(COMMANDS);
             st.addBatch(COOLDOWNS);
             st.addBatch(EVENTS);
@@ -198,13 +208,8 @@ public class DatabaseManager implements AutoCloseable {
             st.addBatch(EVENT_MEMBERS);
             st.addBatch(REMINDERS);
             st.addBatch(KEYWORDS);
-            st.addBatch(DROP_TRIGGER_CLEANUP);
+            st.addBatch(INVENTORY);
             st.executeBatch();
-        }
-        try (final Connection connection = this.dataSource.getConnection();
-                final PreparedStatement ps = connection.prepareStatement(MESSAGE_CLEANUP)) {
-            ps.setInt(1, maxMessages);
-            ps.executeUpdate();
         }
         LOGGER.debug("Database initialized");
     }

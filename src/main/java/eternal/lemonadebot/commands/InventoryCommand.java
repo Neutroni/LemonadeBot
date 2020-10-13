@@ -212,7 +212,7 @@ public class InventoryCommand implements ChatCommand {
                         template = TranslationKey.INVENTORY_USER_ITEM_REMOVED_SUCCESS.getTranslation(locale);
                     }
 
-                    channel.sendMessageFormat(template, itemCount, itemName).queue();
+                    channel.sendMessageFormat(template, Math.abs(itemCount), itemName).queue();
                     return;
                 }
                 channel.sendMessage(TranslationKey.INVENTORY_USER_NOT_ENOUGH_ITEMS.getTranslation(locale)).queue();
