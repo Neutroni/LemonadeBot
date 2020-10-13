@@ -27,15 +27,14 @@ import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
+import eternal.lemonadebot.radixtree.RadixTree;
 import eternal.lemonadebot.translation.LocaleUpdateListener;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
@@ -51,8 +50,7 @@ public class PermissionManager implements LocaleUpdateListener {
 
     private final DataSource dataSource;
     private final long guildID;
-    private final Map<String, CommandPermission> permissions = new ConcurrentHashMap<>();
-    private final CommandPermission adminPermission;
+    private final RadixTree<CommandPermission> permissions;
 
     /**
      * Constructor
@@ -64,7 +62,7 @@ public class PermissionManager implements LocaleUpdateListener {
     public PermissionManager(DataSource ds, long guildID, Locale locale) {
         this.dataSource = ds;
         this.guildID = guildID;
-        this.adminPermission = new CommandPermission("", MemberRank.ADMIN, guildID);
+        this.permissions = new RadixTree<>(new CommandPermission("", MemberRank.ADMIN, guildID));
         loadPermissions(locale);
     }
 
@@ -76,42 +74,23 @@ public class PermissionManager implements LocaleUpdateListener {
      * @return True if user can perform the action
      */
     public boolean hasPermission(Member member, String action) {
-        final Optional<CommandPermission> optPerm = getPermission(action);
-        if (optPerm.isPresent()) {
-            final CommandPermission perm = optPerm.get();
-            return perm.hashPermission(member);
-        }
-        return this.adminPermission.hashPermission(member);
+        final CommandPermission perm = this.permissions.get(action);
+        return perm.hashPermission(member);
     }
 
     /**
      * Get permission by fuzzy action string
      *
      * @param action action to get permission for
-     * @return Optional containing the permission
+     * @return CommandPermission for action, if no permission has been set the
+     * returned permission will have rank of ADMIN and any role
      */
-    public Optional<CommandPermission> getPermission(String action) {
-        //If action does not contain whitespace get permission directly from map
-        if (action.indexOf(' ') == -1) {
-            return Optional.ofNullable(this.permissions.get(action));
-        }
-
-        //Action has whitespace, find longest prefix for action string
-        long keyLength = 0;
-        CommandPermission perm = null;
-
-        for (Map.Entry<String, CommandPermission> p : this.permissions.entrySet()) {
-            final String key = p.getKey();
-            if (!action.startsWith(key)) {
-                continue;
-            }
-            final long newKeyLength = key.length();
-            if (newKeyLength > keyLength) {
-                perm = p.getValue();
-                keyLength = newKeyLength;
-            }
-        }
-        return Optional.ofNullable(perm);
+    public CommandPermission getPermission(String action) {
+        return this.permissions.get(action);
+    }
+    
+    public Collection<CommandPermission> getPermissions(){
+        return this.permissions.getValues();
     }
 
     /**
@@ -123,7 +102,7 @@ public class PermissionManager implements LocaleUpdateListener {
      */
     public boolean setPermission(CommandPermission perm) throws SQLException {
         final String action = perm.getAction();
-        this.permissions.put(action, perm);
+        this.permissions.add(action, perm);
         final String query = "INSERT OR REPLACE INTO Permissions(guild,action,requiredRank,requiredRole) VALUES(?,?,?,?);";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -155,7 +134,7 @@ public class PermissionManager implements LocaleUpdateListener {
         //Load default permissions
         for (final ChatCommand c : CommandProvider.COMMANDS) {
             for (final CommandPermission p : c.getDefaultRanks(locale, this.guildID)) {
-                this.permissions.put(p.getAction(), p);
+                this.permissions.add(p.getAction(), p);
             }
         }
 
@@ -177,7 +156,7 @@ public class PermissionManager implements LocaleUpdateListener {
                     }
                     final long requiredRole = rs.getLong("requiredRole");
                     final CommandPermission perm = new CommandPermission(action, rank, requiredRole);
-                    permissions.put(action, perm);
+                    permissions.add(action, perm);
                 }
             }
         } catch (SQLException e) {

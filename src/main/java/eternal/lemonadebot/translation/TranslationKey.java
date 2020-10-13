@@ -290,6 +290,7 @@ public enum TranslationKey {
     HEADER_REQUIRED_PERMISSION("Permission required:"),
     HEADER_ALLOWED_ROLES("Available roles:"),
     HEADER_ACTION("Action:"),
+    HEADER_PERMISSIONS("Permissions:"),
     RANK_DESCRIPTION_USER("Account without roles."),
     RANK_DESCRIPTION_MEMBER("Account with at least one role."),
     RANK_DESCRIPTION_ADMIN("Account with permission ADMINSTRATOR."),
@@ -361,7 +362,11 @@ public enum TranslationKey {
     EVENT_COMMAND_LIST_ELEMENT("%s - %s by %s\n"),
     PERMISSION_ROLE_ANYONE("anyone"),
     PERMISSION_GET_MISSING_NAME("Provide name of permission to get curret value for."),
-    PERMISSION_NOT_FOUND("No permission set for that action currently."),
+    PERMISSION_NO_COMMAND("Could not find a command for that action."),
+    PERMISSION_NO_PERMISSION("No permission set for action."),
+    PERMISSION_NO_PERMISSIONS("No command has permissions set."),
+    PERMISSION_DEFAULTING_TO("Using default permissions."),
+    PERMISSION_LIST_ELEMENT("%s - Rank: %s Role: %s\n"),
     PERMISSION_RANK_MISSING_ROLE("Action: %s requires rank: %s required role could not be found, defaulting to anyone."),
     PERMISSION_REQUIRED_RANK_ROLE("Required rank: %s Required role: %s"),
     PERMISSION_SET_MISSING_RANK("Provide the rank to set for permission."),
@@ -527,7 +532,7 @@ public enum TranslationKey {
     INVENTORY_SQL_ERROR_ON_PAY("Database error processing payment, payment cancelled."),
     INVENTORY_PAY_USER_NOT_ENOUGH_ITEMS_FOR_EVERYONE("You do not have enough items to pay everyone, payment cancelled."),
     INVENTORY_PAY_ROLE_SUCCESS("Succesfully paid %sx %s to %s users."),
-    INVENTORY_PAY_INTERRUPTED_NOT_ENOUGH_FOR_EVERYONE("Could not pay everyone due to not having enough items, the following people were not paid:\n%s"), 
+    INVENTORY_PAY_INTERRUPTED_NOT_ENOUGH_FOR_EVERYONE("Could not pay everyone due to not having enough items, the following people were not paid:\n%s"),
     INVENTORY_ROLE_SQL_ERROR_ON_PAY("Database error processing payment, following people did not receive payment:\n%s");
 
     private static final Logger LOGGER = LogManager.getLogger();
@@ -552,12 +557,6 @@ public enum TranslationKey {
             LOGGER.warn(ex.getMessage());
         }
         return this.defaultText;
-    }
-
-    public static void printDefault() {
-        for (TranslationKey key : TranslationKey.values()) {
-            System.out.println(key.name() + '=' + key.defaultText.replaceAll("\n", "\\\\n"));
-        }
     }
 
 }

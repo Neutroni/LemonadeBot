@@ -24,6 +24,7 @@
 package eternal.lemonadebot.database;
 
 import eternal.lemonadebot.dataobjects.ActionCooldown;
+import eternal.lemonadebot.radixtree.RadixTree;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -36,7 +37,6 @@ import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,11 +52,12 @@ public class CooldownManager {
 
     private final DataSource dataSource;
     private final long guildID;
-    private final Map<String, ActionCooldown> cooldowns = new ConcurrentHashMap<>();
+    private final RadixTree<ActionCooldown> cooldowns;
 
     CooldownManager(DataSource ds, long guildID) {
         this.dataSource = ds;
         this.guildID = guildID;
+        this.cooldowns = new RadixTree<>(new ActionCooldown("", Duration.ZERO, Instant.EPOCH));
         loadCooldowns();
     }
 
@@ -66,7 +67,7 @@ public class CooldownManager {
      * @return Unmodifiable collection of cooldowns
      */
     public Collection<ActionCooldown> getCooldowns() {
-        return Collections.unmodifiableCollection(this.cooldowns.values());
+        return this.cooldowns.getValues();
     }
 
     /**
@@ -143,10 +144,14 @@ public class CooldownManager {
      * @throws SQLException If database connection failed
      */
     public boolean setCooldown(String action, Duration duration) throws SQLException {
-        final ActionCooldown cooldown = this.cooldowns.computeIfAbsent(action, (String cooldownAction) -> {
-            return new ActionCooldown(cooldownAction, duration, Instant.EPOCH);
-        });
-        cooldown.updateCooldownDuration(duration);
+        final ActionCooldown cd = this.cooldowns.get(action);
+        if (cd.getAction().equals(action)) {
+            //Old cooldown set for action, update the duration
+            cd.updateCooldownDuration(duration);
+        } else {
+            //No cooldown set for action, add cooldown
+            this.cooldowns.add(action, new ActionCooldown(action, duration, Instant.EPOCH));
+        }
 
         final String query = "INSERT OR REPLACE INTO Cooldowns(guild,command,duration,activationTime) VALUES(?,?,?,?)";
         try (final Connection connection = this.dataSource.getConnection();
@@ -154,7 +159,7 @@ public class CooldownManager {
             ps.setLong(1, this.guildID);
             ps.setString(2, action);
             ps.setLong(3, duration.getSeconds());
-            ps.setLong(4, cooldown.getLastActivationTime().getEpochSecond());
+            ps.setLong(4, cd.getLastActivationTime().getEpochSecond());
             return ps.executeUpdate() > 0;
         }
     }
@@ -177,27 +182,11 @@ public class CooldownManager {
      * @return ActionCooldown if found
      */
     public Optional<ActionCooldown> getActionCooldown(String action) {
-        //If the action does not contain whitespace get the cooldown directly from map
-        if (action.indexOf(' ') == -1) {
-            return Optional.ofNullable(this.cooldowns.get(action));
+        final ActionCooldown cd = this.cooldowns.get(action);
+        if (cd.getDuration().isZero()) {
+            return Optional.empty();
         }
-
-        //Action has whitespace, find longest prefix for action string
-        long keyLength = 0;
-        ActionCooldown matchingCooldown = null;
-
-        for (Map.Entry<String, ActionCooldown> cd : this.cooldowns.entrySet()) {
-            final String key = cd.getKey();
-            if (!action.startsWith(key)) {
-                continue;
-            }
-            final long newKeyLength = key.length();
-            if (newKeyLength > keyLength) {
-                matchingCooldown = cd.getValue();
-                keyLength = newKeyLength;
-            }
-        }
-        return Optional.ofNullable(matchingCooldown);
+        return Optional.of(cd);
     }
 
     /**
@@ -214,7 +203,7 @@ public class CooldownManager {
                     final long cooldownDurationSeconds = rs.getLong("duration");
                     final long lastActivationTime = rs.getLong("activationTime");
                     final ActionCooldown cd = new ActionCooldown(action, cooldownDurationSeconds, lastActivationTime);
-                    cooldowns.put(action, cd);
+                    cooldowns.add(action, cd);
                 }
             }
         } catch (SQLException e) {

@@ -24,6 +24,7 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.commandtypes.AdminCommand;
+import eternal.lemonadebot.commandtypes.ChatCommand;
 import eternal.lemonadebot.database.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.PermissionManager;
@@ -34,11 +35,13 @@ import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.MessageBuilder;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
@@ -70,12 +73,12 @@ class PermissionCommand extends AdminCommand {
     }
 
     @Override
-    public void respond(CommandMatcher message, GuildDataStore guildData) {
-        final TextChannel channel = message.getTextChannel();
+    public void respond(CommandMatcher matcher, GuildDataStore guildData) {
+        final TextChannel channel = matcher.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
         final Locale locale = guildConf.getLocale();
-        final String[] arguments = message.getArguments(1);
+        final String[] arguments = matcher.getArguments(1);
         if (arguments.length == 0) {
             channel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
             return;
@@ -89,7 +92,11 @@ class PermissionCommand extends AdminCommand {
                 break;
             }
             case SET: {
-                setPermission(message, channel, guildData);
+                setPermission(matcher, guildData);
+                break;
+            }
+            case LIST: {
+                listPermissions(matcher, guildData);
                 break;
             }
             default: {
@@ -107,39 +114,61 @@ class PermissionCommand extends AdminCommand {
             return;
         }
         final String permissionName = arguments[1];
-        final Optional<CommandPermission> optPerm = permissions.getPermission(permissionName);
-        optPerm.ifPresentOrElse((CommandPermission perm) -> {
-            final long roleID = perm.getRequiredRoleID();
-            final Role r = channel.getGuild().getRoleById(roleID);
-            if (r == null) {
-                final String template = TranslationKey.PERMISSION_RANK_MISSING_ROLE.getTranslation(locale);
-                final String rankName = perm.getRequiredRank().getNameKey().getTranslation(locale);
-                final String actionName = perm.getAction();
-                channel.sendMessageFormat(template, actionName, rankName).queue();
+
+        //Check if there is a command for the given action
+        final CommandProvider commands = guildData.getCommandProvider();
+        final int i = permissionName.indexOf(' ');
+        if (i == -1) {
+            final Optional<ChatCommand> optCommand = commands.getCommand(permissionName);
+            if (optCommand.isEmpty()) {
+                //No command for the action
+                channel.sendMessage(TranslationKey.PERMISSION_NO_COMMAND.getTranslation(locale)).queue();
                 return;
             }
-            //Construct embed for response
-            final EmbedBuilder eb = new EmbedBuilder();
+        } else {
+            final String commandName = permissionName.substring(0, i);
+            final Optional<ChatCommand> optCommand = commands.getCommand(commandName);
+            if (optCommand.isEmpty()) {
+                //No command for the action
+                channel.sendMessage(TranslationKey.PERMISSION_NO_COMMAND.getTranslation(locale)).queue();
+                return;
+            }
+        }
+
+        //Get the permission for the action
+        final CommandPermission perm = permissions.getPermission(permissionName);
+        final long roleID = perm.getRequiredRoleID();
+        final Role r = channel.getGuild().getRoleById(roleID);
+        if (r == null) {
+            final String template = TranslationKey.PERMISSION_RANK_MISSING_ROLE.getTranslation(locale);
+            final String rankName = perm.getRequiredRank().getNameKey().getTranslation(locale);
+            final String actionName = perm.getAction();
+            channel.sendMessageFormat(template, actionName, rankName).queue();
+            return;
+        }
+        //Construct embed for response
+        final EmbedBuilder eb = new EmbedBuilder();
+        if (perm.getAction().isEmpty()) {
+            eb.setTitle(TranslationKey.PERMISSION_NO_PERMISSION.getTranslation(locale));
+            eb.setDescription(TranslationKey.PERMISSION_DEFAULTING_TO.getTranslation(locale));
+        } else {
             eb.setTitle(TranslationKey.HEADER_ACTION.getTranslation(locale));
             eb.setDescription(perm.getAction());
-            //Get required rank and role
-            final String fieldName = TranslationKey.HEADER_REQUIRED_PERMISSION.getTranslation(locale);
-            final String template = TranslationKey.PERMISSION_REQUIRED_RANK_ROLE.getTranslation(locale);
-            final String rankName = perm.getRequiredRank().getNameKey().getTranslation(locale);
-            final String fiedlValue = String.format(template, rankName, r.getAsMention());
-            eb.addField(fieldName, fiedlValue, false);
-            channel.sendMessage(eb.build()).queue();
-        }, () -> {
-            //No permission set for action
-            channel.sendMessage(TranslationKey.PERMISSION_NOT_FOUND.getTranslation(locale)).queue();
-        });
+        }
+        //Get required rank and role
+        final String fieldName = TranslationKey.HEADER_REQUIRED_PERMISSION.getTranslation(locale);
+        final String template = TranslationKey.PERMISSION_REQUIRED_RANK_ROLE.getTranslation(locale);
+        final String rankName = perm.getRequiredRank().getNameKey().getTranslation(locale);
+        final String fiedlValue = String.format(template, rankName, r.getAsMention());
+        eb.addField(fieldName, fiedlValue, false);
+        channel.sendMessage(eb.build()).queue();
     }
 
-    private void setPermission(CommandMatcher message, TextChannel channel, GuildDataStore guildData) {
+    private void setPermission(CommandMatcher message, GuildDataStore guildData) {
+        final TextChannel channel = message.getTextChannel();
         final PermissionManager permissions = guildData.getPermissionManager();
-        final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildConf.getLocale();
+        final Locale locale = message.getLocale();
 
         final List<String> args = message.parseArguments(4);
         if (args.size() < 2) {
@@ -157,7 +186,7 @@ class PermissionCommand extends AdminCommand {
         final String rankName = args.get(1);
         final MemberRank rank;
         try {
-            rank = MemberRank.getByLocalizedName(rankName, guildConf.getLocale(), translationCache.getCollator());
+            rank = MemberRank.getByLocalizedName(rankName, locale, translationCache.getCollator());
         } catch (IllegalArgumentException e) {
             final MessageBuilder mb = new MessageBuilder();
             final String template = TranslationKey.PERMISSION_UNKNOWN_RANK.getTranslation(locale);
@@ -188,5 +217,38 @@ class PermissionCommand extends AdminCommand {
             LOGGER.error("Failure to update permission in database: {}", e.getMessage());
             LOGGER.trace("Stack trace:", e);
         }
+    }
+
+    private void listPermissions(CommandMatcher matcher, GuildDataStore guildData) {
+        final TextChannel channel = matcher.getTextChannel();
+        final Guild guild = matcher.getGuild();
+        final PermissionManager permissionManager = guildData.getPermissionManager();
+        final Locale locale = matcher.getLocale();
+
+        final Collection<CommandPermission> permissions = permissionManager.getPermissions();
+        final EmbedBuilder eb = new EmbedBuilder();
+        eb.setTitle(TranslationKey.HEADER_PERMISSIONS.getTranslation(locale));
+        final StringBuilder description = new StringBuilder();
+        final String template = TranslationKey.PERMISSION_LIST_ELEMENT.getTranslation(locale);
+        for (final CommandPermission perm : permissions) {
+            final String rankName = perm.getRequiredRank().getNameKey().getTranslation(locale);
+            //Get the name of role
+            final String roleName;
+            final long roleID = perm.getRequiredRoleID();
+            final Role r = guild.getRoleById(roleID);
+            if (r == null) {
+                roleName = TranslationKey.ROLE_MISSING.getTranslation(locale);
+            } else {
+                roleName = r.getName();
+            }
+            //Format response
+            final String line = String.format(template, perm.getAction(), rankName, roleName);
+            description.append(line);
+        }
+        if (permissions.isEmpty()) {
+            description.append(TranslationKey.PERMISSION_NO_PERMISSIONS.getTranslation(locale));
+        }
+        eb.setDescription(description);
+        channel.sendMessage(eb.build()).queue();
     }
 }
