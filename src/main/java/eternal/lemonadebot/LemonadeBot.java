@@ -37,6 +37,9 @@ import java.io.Writer;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -108,6 +111,10 @@ public class LemonadeBot {
         );
         jdabuilder.disableCache(cacheFlagsToDisable);
         jdabuilder.setMemberCachePolicy(MemberCachePolicy.ALL);
+        jdabuilder.setEventPool(new ThreadPoolExecutor(
+                1, Runtime.getRuntime().availableProcessors(),
+                60, TimeUnit.SECONDS, new SynchronousQueue<>(),
+                new ThreadPoolExecutor.CallerRunsPolicy()), true);
         try {
             //Start loading JDA
             final JDA jda = jdabuilder.build();
