@@ -60,13 +60,8 @@ public class MessageManager {
      * stored
      *
      * @param message Message to log
-     * @param guildConf ConfigManager to get log channel from
      */
-    public void logMessage(Message message, ConfigManager guildConf) {
-        //Do not log if guild has logging disabled
-        if (guildConf.getLogChannelID().isEmpty()) {
-            return;
-        }
+    public void logMessage(Message message) {
         final long currentguildID = message.getGuild().getIdLong();
         final String query = "INSERT INTO Messages(id,guild,author,content) VALUES(?,?,?)";
         try (final Connection connection = this.dataSource.getConnection();

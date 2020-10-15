@@ -72,7 +72,13 @@ public class LoggerListener extends ListenerAdapter {
         final Message message = event.getMessage();
         final GuildDataStore guildData = this.db.getGuildData(eventGuild);
         final ConfigManager guildConf = guildData.getConfigManager();
-        guildData.getMessageManager().logMessage(message, guildConf);
+        
+        //Check if guild has logging enabled
+        final Optional<Long> logID = guildConf.getLogChannelID();
+        if (logID.isEmpty()) {
+            return;
+        }
+        guildData.getMessageManager().logMessage(message);
     }
 
     /**
@@ -114,7 +120,7 @@ public class LoggerListener extends ListenerAdapter {
         });
 
         //Log the message
-        messageManager.logMessage(message, guildConf);
+        messageManager.logMessage(message);
     }
 
     /**
