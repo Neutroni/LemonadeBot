@@ -192,7 +192,14 @@ public class EventCommand implements ChatCommand {
         }
         final String eventName = opts[1];
 
-        final Optional<Event> oldEvent = events.getEvent(eventName);
+        //Get the event to remove
+        final Optional<Event> oldEvent;
+        try {
+            oldEvent = events.getEvent(eventName);
+        } catch (SQLException e) {
+            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
+            return;
+        }
         if (oldEvent.isEmpty()) {
             textChannel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
             return;
@@ -227,9 +234,16 @@ public class EventCommand implements ChatCommand {
             return;
         }
         final String eventName = opts[1];
-
         final EventManager events = guildData.getEventManager();
-        final Optional<Event> oldEvent = events.getEvent(eventName);
+
+        //Get the event to join
+        final Optional<Event> oldEvent;
+        try {
+            oldEvent = events.getEvent(eventName);
+        } catch (SQLException e) {
+            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
+            return;
+        }
         if (oldEvent.isEmpty()) {
             textChannel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
             return;
@@ -266,7 +280,15 @@ public class EventCommand implements ChatCommand {
         }
         final String eventName = opts[1];
         final EventManager events = guildData.getEventManager();
-        final Optional<Event> oldEvent = events.getEvent(eventName);
+
+        //Get the event to leave
+        final Optional<Event> oldEvent;
+        try {
+            oldEvent = events.getEvent(eventName);
+        } catch (SQLException e) {
+            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
+            return;
+        }
         if (oldEvent.isEmpty()) {
             textChannel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
             return;
@@ -302,15 +324,28 @@ public class EventCommand implements ChatCommand {
             return;
         }
         final String eventName = opts[1];
-
         final EventManager events = guildData.getEventManager();
-        final Optional<Event> opt = events.getEvent(eventName);
+
+        //Get the event
+        final Optional<Event> opt;
+        try {
+            opt = events.getEvent(eventName);
+        } catch (SQLException e) {
+            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
+            return;
+        }
         if (opt.isEmpty()) {
             textChannel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
             return;
         }
         final Event event = opt.get();
-        final List<Long> eventMemberIDs = event.getMembers();
+        final List<Long> eventMemberIDs;
+        try {
+            eventMemberIDs = events.getMembers(event);
+        } catch (SQLException e) {
+            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_LOADING_MEMBERS.getTranslation(locale)).queue();
+            return;
+        }
 
         final String header = String.format(TranslationKey.HEADER_EVENT_MEMBERS.getTranslation(locale), eventName);
         batchMemberList(eventMemberIDs).forEach((List<Long> idBatch) -> {
@@ -351,9 +386,16 @@ public class EventCommand implements ChatCommand {
             return;
         }
         final String eventName = opts[1];
-
         final EventManager events = guildData.getEventManager();
-        final Optional<Event> opt = events.getEvent(eventName);
+
+        //Get the event
+        final Optional<Event> opt;
+        try {
+            opt = events.getEvent(eventName);
+        } catch (SQLException e) {
+            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
+            return;
+        }
         if (opt.isEmpty()) {
             textChannel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
             return;
@@ -376,12 +418,19 @@ public class EventCommand implements ChatCommand {
     private static void listEvents(CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
+        final EventManager eventManager = guildData.getEventManager();
 
         final EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle(TranslationKey.HEADER_EVENTS.getTranslation(locale));
 
         //Get the list of events
-        final Collection<Event> ev = guildData.getEventManager().getEvents();
+        final Collection<Event> ev;
+        try {
+            ev = eventManager.getEvents();
+        } catch (SQLException e) {
+            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_LOADING_EVENTS.getTranslation(locale)).queue();
+            return;
+        }
         final List<CompletableFuture<String>> futures = new ArrayList<>(ev.size());
         ev.forEach((Event event) -> {
             futures.add(event.toListElement(locale, textChannel.getJDA()));
@@ -409,14 +458,28 @@ public class EventCommand implements ChatCommand {
         final String eventName = opts[1];
         final Guild guild = matcher.getGuild();
         final EventManager events = guildData.getEventManager();
-        final Optional<Event> optEvent = events.getEvent(eventName);
+
+        //Get the event
+        final Optional<Event> optEvent;
+        try {
+            optEvent = events.getEvent(eventName);
+        } catch (SQLException e) {
+            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
+            return;
+        }
         if (optEvent.isEmpty()) {
             textChannel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
             return;
         }
 
         final Event event = optEvent.get();
-        final Collection<Long> eventMemberIDs = event.getMembers();
+        final Collection<Long> eventMemberIDs;
+        try {
+            eventMemberIDs = events.getMembers(event);
+        } catch (SQLException e) {
+            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_LOADING_MEMBERS.getTranslation(locale)).queue();
+            return;
+        }
         if (eventMemberIDs.isEmpty()) {
             textChannel.sendMessage(TranslationKey.EVENT_NO_MEMBERS.getTranslation(locale)).queue();
             return;
@@ -461,7 +524,15 @@ public class EventCommand implements ChatCommand {
         }
         final String eventName = opts[1];
         final EventManager events = guildData.getEventManager();
-        final Optional<Event> oldEvent = events.getEvent(eventName);
+
+        //Get the event to unlock
+        final Optional<Event> oldEvent;
+        try {
+            oldEvent = events.getEvent(eventName);
+        } catch (SQLException e) {
+            channel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
+            return;
+        }
         if (oldEvent.isEmpty()) {
             channel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
             return;
@@ -508,16 +579,27 @@ public class EventCommand implements ChatCommand {
         }
         final String eventName = opts[1];
 
-        final Optional<Event> oldEvent = events.getEvent(eventName);
+        //Get the event to unlock
+        final Optional<Event> oldEvent;
+        try {
+            oldEvent = events.getEvent(eventName);
+        } catch (SQLException e) {
+            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
+            return;
+        }
         if (oldEvent.isEmpty()) {
             textChannel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
             return;
         }
+
+        //Check if event is locked
         final Event event = oldEvent.get();
         if (!event.isLocked()) {
             textChannel.sendMessage(TranslationKey.EVENT_ALREADY_UNLOCKED.getTranslation(locale)).queue();
             return;
         }
+
+        //Find the member of the event for permission check
         textChannel.getGuild().retrieveMemberById(event.getOwner()).submit().whenComplete((Member eventOwner, Throwable error) -> {
             //Check if user has permission to remove the event
             final boolean hasPermission = PermissionUtilities.hasPermission(sender, eventOwner);

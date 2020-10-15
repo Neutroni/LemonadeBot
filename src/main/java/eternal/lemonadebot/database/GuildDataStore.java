@@ -25,6 +25,7 @@ package eternal.lemonadebot.database;
 
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.database.cache.CacheConfig;
+import eternal.lemonadebot.database.cache.EventCache;
 import eternal.lemonadebot.database.cache.InventoryCache;
 import eternal.lemonadebot.translation.TranslationCache;
 import java.util.Locale;
@@ -65,7 +66,11 @@ public class GuildDataStore implements AutoCloseable {
         this.config = new ConfigManager(dataSource, guildID);
         final Locale locale = this.config.getLocale();
         this.permissions = new PermissionManager(dataSource, guildID, locale);
-        this.events = new EventManager(dataSource, guildID);
+        if(cacheConf.eventCacheEnabled()){
+            this.events = new EventCache(dataSource, guildID);
+        } else {
+            this.events = new EventManager(dataSource, guildID);
+        }
         this.roleManager = new RoleManager(dataSource, guildID);
         this.cooldowns = new CooldownManager(dataSource, guildID);
         this.commands = new TemplateManager(dataSource, this.cooldowns, guildID);

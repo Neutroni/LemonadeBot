@@ -129,13 +129,23 @@ public class TemplateProvider {
                         final String eventName = input.group(1);
                         final EventManager eventManager = guildData.getEventManager();
                         final Locale locale = guildData.getConfigManager().getLocale();
-                        final Optional<Event> optEvent = eventManager.getEvent(eventName);
+                        final Optional<Event> optEvent;
+                        try {
+                            optEvent = eventManager.getEvent(eventName);
+                        } catch (SQLException e) {
+                            return TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale);
+                        }
                         if (optEvent.isEmpty()) {
                             return String.format(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName);
                         }
 
                         final Event event = optEvent.get();
-                        final List<Long> eventMemberIDs = event.getMembers();
+                        final List<Long> eventMemberIDs;
+                        try {
+                            eventMemberIDs = eventManager.getMembers(event);
+                        } catch (SQLException e) {
+                            return TranslationKey.EVENT_SQL_ERROR_LOADING_MEMBERS.getTranslation(locale);
+                        }
                         if (eventMemberIDs.isEmpty()) {
                             return TranslationKey.EVENT_NO_MEMBERS.getTranslation(locale);
                         }

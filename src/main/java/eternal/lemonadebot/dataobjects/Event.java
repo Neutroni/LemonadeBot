@@ -43,7 +43,6 @@ public class Event {
     private final String description;
     private final long ownerID;
     private volatile boolean locked;
-    private final Set<Long> members = ConcurrentHashMap.newKeySet();
 
     /**
      * Constructor
@@ -72,44 +71,6 @@ public class Event {
         this.description = description;
         this.ownerID = owner;
         this.locked = locked;
-    }
-
-    /**
-     * Join this event
-     *
-     * @param member member id who wants to join
-     * @return true if succesfully joined, false otherwise
-     */
-    public boolean join(long member) {
-        return this.members.add(member);
-    }
-
-    /**
-     * Leave this event
-     *
-     * @param member member who wants to leave
-     * @return true if left event succesfully, false otherwise
-     */
-    public boolean leave(long member) {
-        return this.members.remove(member);
-    }
-
-    /**
-     * Clears the list of joined people
-     */
-    public void clear() {
-        this.members.clear();
-        this.members.add(this.ownerID);
-    }
-
-    /**
-     * Get the list of members who have joined this event. This returns a list
-     * to make partitioning easier when retrieving members
-     *
-     * @return list of members in the event
-     */
-    public List<Long> getMembers() {
-        return List.copyOf(this.members);
     }
 
     /**
