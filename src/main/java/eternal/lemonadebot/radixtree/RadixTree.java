@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  *
@@ -66,7 +65,7 @@ public class RadixTree<T> {
      * @param node value to associate with name
      * @return true if opearation overwrote a value
      */
-    public boolean add(String name, T node) {
+    public boolean put(String name, T node) {
         final RadixTree<T> newNode = new RadixTree<>(node);
         int i = name.indexOf(' ');
         //name is single part, just check if we have a node with given name
@@ -82,9 +81,10 @@ public class RadixTree<T> {
         final String key = name.substring(0, i);
         final String remaining = name.substring(i + 1);
         final RadixTree<T> oldNode = this.children.computeIfAbsent(key, (String t) -> {
-            return newNode;
+            //Non existent middle node, mark value as null
+            return new RadixTree<>(null);
         });
-        return oldNode.add(remaining, node);
+        return oldNode.put(remaining, node);
     }
 
     /**
@@ -97,8 +97,26 @@ public class RadixTree<T> {
         int i = name.indexOf(' ');
         //name is single part, just check if we have a node with given name
         if (i == -1) {
-            final RadixTree<T> oldNode = this.children.remove(name);
-            return oldNode != null;
+            final RadixTree<T> oldNode = this.children.get(name);
+            if (oldNode == null) {
+                //Could not find node to remove
+                return false;
+            }
+            final Map<String, RadixTree<T>> branches = oldNode.getChildren();
+            if (branches.isEmpty()) {
+                //Node has no children, remove the node
+                final RadixTree<T> tempNode = this.children.remove(name);
+                return tempNode != null;
+            }
+            //Node has children, set the nodes value to null
+            if (oldNode.getValue() == null) {
+                //Node already null
+                return false;
+            }
+            final RadixTree<T> leaf = new RadixTree<>(null);
+            leaf.addChildren(branches);
+            final RadixTree<T> x = this.children.put(name, leaf);
+            return x != null;
         }
         //Multiple part name
         final String key = name.substring(0, i);
@@ -108,7 +126,14 @@ public class RadixTree<T> {
         if (oldNode == null) {
             return false;
         }
-        return oldNode.remove(remaining);
+        final boolean removed = oldNode.remove(remaining);
+        final var branches = oldNode.getChildren();
+        if (branches.isEmpty() && (oldNode.getValue() == null)) {
+            //Child has no more children, and has no value, remove from map
+            final var x = this.children.remove(key);
+            return (x != null);
+        }
+        return removed;
     }
 
     /**
@@ -123,9 +148,13 @@ public class RadixTree<T> {
         if (i == -1) {
             final RadixTree<T> oldNode = this.children.get(name);
             if (oldNode == null) {
-                return this.value;
+                return getValue();
             }
-            return oldNode.getValue();
+            final T val = oldNode.getValue();
+            if (val == null) {
+                return getValue();
+            }
+            return val;
         }
         //Multiple part name
         final String key = name.substring(0, i);
@@ -135,8 +164,11 @@ public class RadixTree<T> {
         if (oldNode == null) {
             return this.value;
         }
-        //Found children with key
-        return oldNode.get(remaining);
+        final T val = oldNode.get(remaining);
+        if (val == null) {
+            return getValue();
+        }
+        return val;
     }
 
     /**
@@ -148,7 +180,10 @@ public class RadixTree<T> {
         final List<T> values = new ArrayList<>();
         //Get every child of this node and add to map
         for (RadixTree<T> child : this.children.values()) {
-            values.add(child.getValue());
+            final T val = child.getValue();
+            if (val != null) {
+                values.add(val);
+            }
             values.addAll(child.getValues());
         }
         return Collections.unmodifiableCollection(values);

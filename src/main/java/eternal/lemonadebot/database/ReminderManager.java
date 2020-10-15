@@ -95,7 +95,7 @@ public class ReminderManager implements AutoCloseable {
         }
 
         //Add to database
-        final String query = "INSERT INTO Reminders(guild,name,message,author,channel,time,dayOfWeek,dayOfMonth,monthOfYear) VALUES(?,?,?,?,?,?,?,?,?);";
+        final String query = "INSERT OR IGNORE INTO Reminders(guild,name,message,author,channel,time,dayOfWeek,dayOfMonth,monthOfYear) VALUES(?,?,?,?,?,?,?,?,?);";
         final ReminderActivationTime activationTime = reminder.getTime();
         final String reminderName = reminder.getName();
         final String reminderMessage = reminder.getTemplate();

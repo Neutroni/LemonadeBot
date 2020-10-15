@@ -33,9 +33,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import javax.sql.DataSource;
 import org.apache.logging.log4j.LogManager;
@@ -100,7 +98,7 @@ public class CooldownManager {
         cooldown.updateActivationTime(now);
 
         //Store in database
-        final String query = "UPDATE Cooldowns SET activationTime = ? WHERE guild = ? AND command = ?) VALUES(?,?,?)";
+        final String query = "UPDATE Cooldowns SET activationTime = ? WHERE guild = ? AND command = ? VALUES(?,?,?)";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, now.getEpochSecond());
@@ -108,9 +106,8 @@ public class CooldownManager {
             ps.setString(3, cooldown.getAction());
             ps.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.error("Updating command activation time failed!");
-            LOGGER.error(e.getMessage());
-            LOGGER.trace(e);
+            LOGGER.error("Updating command activation time failed! {}", e.getMessage());
+            LOGGER.trace("Stack trace: ", e);
         }
         return Optional.empty();
     }
@@ -150,7 +147,7 @@ public class CooldownManager {
             cd.updateCooldownDuration(duration);
         } else {
             //No cooldown set for action, add cooldown
-            this.cooldowns.add(action, new ActionCooldown(action, duration, Instant.EPOCH));
+            this.cooldowns.put(action, new ActionCooldown(action, duration, Instant.EPOCH));
         }
 
         final String query = "INSERT OR REPLACE INTO Cooldowns(guild,command,duration,activationTime) VALUES(?,?,?,?)";
@@ -171,7 +168,11 @@ public class CooldownManager {
      * @return Optional for cooldown if found
      */
     public Optional<ActionCooldown> getActionCooldownByName(String name) {
-        return Optional.ofNullable(this.cooldowns.get(name));
+        final ActionCooldown cd = this.cooldowns.get(name);
+        if (cd.getAction().equals(name)) {
+            return Optional.of(cd);
+        }
+        return Optional.empty();
     }
 
     /**
@@ -203,7 +204,7 @@ public class CooldownManager {
                     final long cooldownDurationSeconds = rs.getLong("duration");
                     final long lastActivationTime = rs.getLong("activationTime");
                     final ActionCooldown cd = new ActionCooldown(action, cooldownDurationSeconds, lastActivationTime);
-                    cooldowns.add(action, cd);
+                    cooldowns.put(action, cd);
                 }
             }
         } catch (SQLException e) {

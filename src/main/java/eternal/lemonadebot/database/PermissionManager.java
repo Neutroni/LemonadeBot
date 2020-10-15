@@ -102,7 +102,7 @@ public class PermissionManager implements LocaleUpdateListener {
      */
     public boolean setPermission(CommandPermission perm) throws SQLException {
         final String action = perm.getAction();
-        this.permissions.add(action, perm);
+        this.permissions.put(action, perm);
         final String query = "INSERT OR REPLACE INTO Permissions(guild,action,requiredRank,requiredRole) VALUES(?,?,?,?);";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -134,7 +134,7 @@ public class PermissionManager implements LocaleUpdateListener {
         //Load default permissions
         for (final ChatCommand c : CommandProvider.COMMANDS) {
             for (final CommandPermission p : c.getDefaultRanks(locale, this.guildID)) {
-                this.permissions.add(p.getAction(), p);
+                this.permissions.put(p.getAction(), p);
             }
         }
 
@@ -156,7 +156,7 @@ public class PermissionManager implements LocaleUpdateListener {
                     }
                     final long requiredRole = rs.getLong("requiredRole");
                     final CommandPermission perm = new CommandPermission(action, rank, requiredRole);
-                    permissions.add(action, perm);
+                    permissions.put(action, perm);
                 }
             }
         } catch (SQLException e) {
