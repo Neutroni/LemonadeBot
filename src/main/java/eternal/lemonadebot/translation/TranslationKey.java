@@ -533,7 +533,8 @@ public enum TranslationKey {
     INVENTORY_PAY_USER_NOT_ENOUGH_ITEMS_FOR_EVERYONE("You do not have enough items to pay everyone, payment cancelled."),
     INVENTORY_PAY_ROLE_SUCCESS("Succesfully paid %sx %s to %s users."),
     INVENTORY_PAY_INTERRUPTED_NOT_ENOUGH_FOR_EVERYONE("Could not pay everyone due to not having enough items, the following people were not paid:\n%s"),
-    INVENTORY_ROLE_SQL_ERROR_ON_PAY("Database error processing payment, following people did not receive payment:\n%s");
+    INVENTORY_ROLE_SQL_ERROR_ON_PAY("Database error processing payment, following people did not receive payment:\n%s"), 
+    INVENTORY_SQL_ERROR_ON_FETCHING_INVENTORY("Database error retrieving list of items, can not show inventory contents.");
 
     private static final Logger LOGGER = LogManager.getLogger();
     private final String defaultText;

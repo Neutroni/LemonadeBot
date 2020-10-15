@@ -24,8 +24,11 @@
 package eternal.lemonadebot.database;
 
 import eternal.lemonadebot.commands.CommandProvider;
+import eternal.lemonadebot.database.cache.CacheConfig;
+import eternal.lemonadebot.database.cache.InventoryCache;
 import eternal.lemonadebot.translation.TranslationCache;
 import java.util.Locale;
+import java.util.Properties;
 import javax.sql.DataSource;
 import net.dv8tion.jda.api.JDA;
 
@@ -57,7 +60,7 @@ public class GuildDataStore implements AutoCloseable {
      * @param guildID Guild this config is for
      * @param jda JDA to use for reminders
      */
-    GuildDataStore(final DataSource dataSource, final long guildID, JDA jda) {
+    GuildDataStore(final DataSource dataSource, final long guildID, JDA jda, CacheConfig cacheConf) {
         this.guildID = guildID;
         this.config = new ConfigManager(dataSource, guildID);
         final Locale locale = this.config.getLocale();
@@ -71,7 +74,11 @@ public class GuildDataStore implements AutoCloseable {
         this.commandProvider = new CommandProvider(locale, this.commands);
         this.translationCache = new TranslationCache(locale);
         this.keywordManager = new KeywordManager(dataSource, guildID, this.cooldowns);
-        this.inventoryManager = new InventoryManager(dataSource, guildID);
+        if (cacheConf.inventoryCacheEnabled()) {
+            this.inventoryManager = new InventoryCache(dataSource, guildID);
+        } else {
+            this.inventoryManager = new InventoryManager(dataSource, guildID);
+        }
 
         //Add locale update listeners
         this.config.registerLocaleUpdateListener(this.permissions);

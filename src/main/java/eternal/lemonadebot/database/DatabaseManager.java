@@ -25,6 +25,7 @@ package eternal.lemonadebot.database;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import eternal.lemonadebot.database.cache.CacheConfig;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -46,6 +47,7 @@ public class DatabaseManager implements AutoCloseable {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final HikariDataSource dataSource;
+    private final CacheConfig cacheConfig;
     private final JDA jda;
     private final Map<Long, GuildDataStore> guildDataStores = new ConcurrentHashMap<>();
     private final int maxMessages;
@@ -67,6 +69,7 @@ public class DatabaseManager implements AutoCloseable {
             LOGGER.info("Set max messages to: {}", maxMessages);
         }
         this.jda = jda;
+        this.cacheConfig = new CacheConfig(config);
 
         //Connect to database
         final String databaseLocation = config.getProperty("database-location", "database.db");
@@ -97,7 +100,7 @@ public class DatabaseManager implements AutoCloseable {
      */
     public GuildDataStore getGuildData(final Guild guild) {
         return this.guildDataStores.computeIfAbsent(guild.getIdLong(), (Long newGuildID) -> {
-            return new GuildDataStore(this.dataSource, newGuildID, this.jda);
+            return new GuildDataStore(this.dataSource, newGuildID, this.jda, this.cacheConfig);
         });
     }
 
@@ -226,7 +229,7 @@ public class DatabaseManager implements AutoCloseable {
                 final ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
                 final long guildID = rs.getLong("id");
-                this.guildDataStores.put(guildID, new GuildDataStore(this.dataSource, guildID, this.jda));
+                this.guildDataStores.put(guildID, new GuildDataStore(this.dataSource, guildID, this.jda, this.cacheConfig));
             }
         }
         LOGGER.debug("Loaded guilds succesfully");

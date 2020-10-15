@@ -157,7 +157,13 @@ public class InventoryCommand implements ChatCommand {
         final String title = String.format(titleTemplate, userName);
         eb.setTitle(title);
         final StringBuilder sb = new StringBuilder();
-        final Map<String, Long> inv = inventoryManager.getUserInventory(member);
+        final Map<String, Long> inv;
+        try {
+            inv = inventoryManager.getUserInventory(member);
+        } catch (SQLException e) {
+            channel.sendMessage(TranslationKey.INVENTORY_SQL_ERROR_ON_FETCHING_INVENTORY.getTranslation(locale)).queue();
+            return;
+        }
         final String listElementTemplate = TranslationKey.INVENTORY_ITEM_ELEMENT.getTranslation(locale);
         inv.forEach((String item, Long count) -> {
             sb.append(String.format(listElementTemplate, count, item));
