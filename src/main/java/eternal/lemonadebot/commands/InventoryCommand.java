@@ -204,7 +204,7 @@ public class InventoryCommand implements ChatCommand {
         if (args.size() < 4) {
             //Add item to users own inventory
             try {
-                if (inventoryManager.addItem(requester, itemName, itemCount)) {
+                if (inventoryManager.updateCount(requester, itemName, itemCount)) {
                     final String template;
                     if (itemCount > 0) {
                         template = TranslationKey.INVENTORY_USER_ITEM_ADDED_SUCCESS.getTranslation(locale);
@@ -249,7 +249,7 @@ public class InventoryCommand implements ChatCommand {
                 //Add items to targets inventory
                 final Member target = members.get(0);
                 try {
-                    if (inventoryManager.addItem(target, itemName, itemCount)) {
+                    if (inventoryManager.updateCount(target, itemName, itemCount)) {
                         final String template = TranslationKey.INVENTORY_ITEM_ADDED_SUCCESS.getTranslation(locale);
                         channel.sendMessageFormat(template, itemCount, itemName, target.getEffectiveName()).queue();
                         return;
@@ -284,7 +284,7 @@ public class InventoryCommand implements ChatCommand {
                 boolean anyPrevented = false;
                 for (final Member member : members) {
                     try {
-                        if (!inventoryManager.addItem(member, itemName, itemCount)) {
+                        if (!inventoryManager.updateCount(member, itemName, itemCount)) {
                             anyPrevented = true;
                         }
                     } catch (SQLException ex) {

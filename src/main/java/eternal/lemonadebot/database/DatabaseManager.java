@@ -131,7 +131,7 @@ public class DatabaseManager implements AutoCloseable {
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE);";
         final String DROP_TRIGGER_CLEANUP = "DROP TRIGGER IF EXISTS MessageCleanup;";
         //Trigger called to remove old messages, yes there is string concatenation but maxMessage is numeric
-        final String MESSAGE_CLEANUP = "CREATE TRIGGER IF NOT EXISTS MessageCleanup AFTER INSERT ON Messages BEGIN "
+        final String MESSAGE_CLEANUP = "CREATE TRIGGER MessageCleanup AFTER INSERT ON Messages BEGIN "
                 + "DELETE FROM Messages WHERE id IN "
                 + "(SELECT id FROM Messages WHERE guild = NEW.guild ORDER BY id DESC LIMIT -1 OFFSET " + this.maxMessages + "); END;";
         final String COMMANDS = "CREATE TABLE IF NOT EXISTS Commands("
@@ -191,9 +191,12 @@ public class DatabaseManager implements AutoCloseable {
                 + "guild INTEGER NOT NULL,"
                 + "owner INTEGER NOT NULL,"
                 + "item TEXT NOT NULL,"
-                + "count INTEGER NOT NULL,"
+                + "count INTEGER NOT NULL CHECK(count >= 0),"
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,owner,item));";
+        final String INVENTORY_CLEANUP = "CREATE TRIGGER IF NOT EXISTS InventoryCleanup "
+                + "AFTER UPDATE ON Inventory BEGIN "
+                + "DELETE FROM Inventory WHERE count = 0; END;";
         try (final Connection connection = this.dataSource.getConnection();
                 final Statement st = connection.createStatement()) {
             st.addBatch(GUILDCONF);
@@ -209,6 +212,7 @@ public class DatabaseManager implements AutoCloseable {
             st.addBatch(REMINDERS);
             st.addBatch(KEYWORDS);
             st.addBatch(INVENTORY);
+            st.addBatch(INVENTORY_CLEANUP);
             st.executeBatch();
         }
         LOGGER.debug("Database initialized");
