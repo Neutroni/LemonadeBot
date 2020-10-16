@@ -51,7 +51,7 @@ public class CooldownCache extends CooldownManager {
      */
     CooldownCache(DataSource ds, long guildID) {
         super(ds, guildID);
-        this.cooldowns = new RadixTree<>(new ActionCooldown("", Duration.ZERO, Instant.EPOCH));
+        this.cooldowns = new RadixTree<>(null);
     }
 
     @Override
@@ -75,33 +75,38 @@ public class CooldownCache extends CooldownManager {
 
     @Override
     public boolean setCooldown(String action, Duration duration) throws SQLException {
-        final ActionCooldown cd = this.cooldowns.get(action);
-        if (cd.getAction().equals(action)) {
-            //Old cooldown set for action, update the duration
-            cd.updateCooldownDuration(duration);
-        } else {
-            //No cooldown set for action, add cooldown
+        final Optional<ActionCooldown> cd = this.cooldowns.get(action);
+        cd.ifPresentOrElse((ActionCooldown t) -> {
+            if (t.getAction().equals(action)) {
+                //Old cooldown set for action, update the duration
+                t.updateCooldownDuration(duration);
+            } else {
+                //Found wrong cooldown, add correct one
+                this.cooldowns.put(action, new ActionCooldown(action, duration, Instant.EPOCH));
+            }
+        }, () -> {
+            //No cooldown set for action, add a new one
             this.cooldowns.put(action, new ActionCooldown(action, duration, Instant.EPOCH));
-        }
+        });
 
         //Update database
         return super.setCooldown(action, duration);
     }
 
     @Override
-    public Optional<ActionCooldown> getActionCooldown(String action) throws SQLException{
-        final ActionCooldown cd = this.cooldowns.get(action);
+    public Optional<ActionCooldown> getActionCooldown(String action) throws SQLException {
+        final Optional<ActionCooldown> cd = this.cooldowns.get(action);
         if (cooldownsLoaded) {
-            return Optional.of(cd);
+            return cd;
         }
-        if (cd.getDuration().isZero()) {
+        if (cd.isEmpty()) {
             final Optional<ActionCooldown> optCooldown = super.getActionCooldown(action);
             optCooldown.ifPresent((ActionCooldown t) -> {
                 this.cooldowns.put(t.getAction(), t);
             });
             return optCooldown;
         }
-        return Optional.of(cd);
+        return cd;
     }
 
     @Override
@@ -114,10 +119,10 @@ public class CooldownCache extends CooldownManager {
 
         //Action has no cooldown
         final ActionCooldown cooldown = cd.get();
-        if(cooldown.getDuration().isZero()){
+        if (cooldown.getDuration().isZero()) {
             return false;
         }
-        
+
         //Update activationTime
         cooldown.updateActivationTime(Instant.now());
 

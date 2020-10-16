@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -38,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RadixTree<T> {
 
     private final Map<String, RadixTree<T>> children = new ConcurrentHashMap<>();
-    private final T value;
+    private final Optional<T> value;
 
     /**
      * Constructor
@@ -46,7 +47,7 @@ public class RadixTree<T> {
      * @param value value to store in the tree
      */
     public RadixTree(T value) {
-        this.value = value;
+        this.value = Optional.ofNullable(value);
     }
 
     /**
@@ -54,7 +55,7 @@ public class RadixTree<T> {
      *
      * @return value stored
      */
-    public T getValue() {
+    public Optional<T> getValue() {
         return this.value;
     }
 
@@ -109,7 +110,7 @@ public class RadixTree<T> {
                 return tempNode != null;
             }
             //Node has children, set the nodes value to null
-            if (oldNode.getValue() == null) {
+            if (oldNode.getValue().isEmpty()) {
                 //Node already null
                 return false;
             }
@@ -128,7 +129,7 @@ public class RadixTree<T> {
         }
         final boolean removed = oldNode.remove(remaining);
         final var branches = oldNode.getChildren();
-        if (branches.isEmpty() && (oldNode.getValue() == null)) {
+        if (branches.isEmpty() && (oldNode.getValue().isEmpty())) {
             //Child has no more children, and has no value, remove from map
             final var x = this.children.remove(key);
             return (x != null);
@@ -142,7 +143,7 @@ public class RadixTree<T> {
      * @param name key to get value for
      * @return stored value or this nodes value if no match for key
      */
-    public T get(String name) {
+    public Optional<T> get(String name) {
         int i = name.indexOf(' ');
         //name is single part, just check if we have a node with given name
         if (i == -1) {
@@ -150,11 +151,9 @@ public class RadixTree<T> {
             if (oldNode == null) {
                 return getValue();
             }
-            final T val = oldNode.getValue();
-            if (val == null) {
+            return oldNode.getValue().or(() -> {
                 return getValue();
-            }
-            return val;
+            });
         }
         //Multiple part name
         final String key = name.substring(0, i);
@@ -164,11 +163,10 @@ public class RadixTree<T> {
         if (oldNode == null) {
             return this.value;
         }
-        final T val = oldNode.get(remaining);
-        if (val == null) {
+        final Optional<T> val = oldNode.get(remaining);
+        return val.or(() -> {
             return getValue();
-        }
-        return val;
+        });
     }
 
     /**
@@ -180,10 +178,9 @@ public class RadixTree<T> {
         final List<T> values = new ArrayList<>();
         //Get every child of this node and add to map
         for (RadixTree<T> child : this.children.values()) {
-            final T val = child.getValue();
-            if (val != null) {
-                values.add(val);
-            }
+            child.getValue().ifPresent((T t) -> {
+                values.add(t);
+            });
             values.addAll(child.getValues());
         }
         return Collections.unmodifiableCollection(values);

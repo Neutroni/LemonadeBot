@@ -35,6 +35,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Locale;
+import java.util.Optional;
 import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
@@ -51,6 +52,7 @@ public class PermissionManager implements LocaleUpdateListener {
     private final DataSource dataSource;
     private final long guildID;
     private final RadixTree<CommandPermission> permissions;
+    private final CommandPermission adminPermission;
 
     /**
      * Constructor
@@ -62,7 +64,8 @@ public class PermissionManager implements LocaleUpdateListener {
     public PermissionManager(DataSource ds, long guildID, Locale locale) {
         this.dataSource = ds;
         this.guildID = guildID;
-        this.permissions = new RadixTree<>(new CommandPermission("", MemberRank.ADMIN, guildID));
+        this.permissions = new RadixTree<>(null);
+        this.adminPermission = new CommandPermission("", MemberRank.ADMIN, guildID);
         loadPermissions(locale);
     }
 
@@ -74,7 +77,7 @@ public class PermissionManager implements LocaleUpdateListener {
      * @return True if user can perform the action
      */
     public boolean hasPermission(Member member, String action) {
-        final CommandPermission perm = this.permissions.get(action);
+        final CommandPermission perm = getPermission(action);
         return perm.hashPermission(member);
     }
 
@@ -86,10 +89,10 @@ public class PermissionManager implements LocaleUpdateListener {
      * returned permission will have rank of ADMIN and any role
      */
     public CommandPermission getPermission(String action) {
-        return this.permissions.get(action);
+        return this.permissions.get(action).orElse(this.adminPermission);
     }
-    
-    public Collection<CommandPermission> getPermissions(){
+
+    public Collection<CommandPermission> getPermissions() {
         return this.permissions.getValues();
     }
 
