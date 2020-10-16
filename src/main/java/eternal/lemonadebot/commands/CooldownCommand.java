@@ -119,7 +119,15 @@ public class CooldownCommand extends AdminCommand {
     private static void getCooldown(TextChannel channel, GuildDataStore guildData, String requestedAction) {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
         final Locale locale = guildData.getConfigManager().getLocale();
-        final Optional<ActionCooldown> cd = cooldownManager.getActionCooldown(requestedAction);
+        final Optional<ActionCooldown> cd;
+        try {
+            cd = cooldownManager.getActionCooldown(requestedAction);
+        } catch (SQLException ex) {
+            channel.sendMessage(TranslationKey.COOLDOWN_SQL_ERROR_ON_RETRIEVE.getTranslation(locale)).queue();
+            LOGGER.error("Failure to get cooldown for action from database: {}", ex.getMessage());
+            LOGGER.trace("Stack trace", ex);
+            return;
+        }
         cd.ifPresentOrElse((ActionCooldown cooldown) -> {
             final String cooldownAction = cooldown.getAction();
             final Duration cooldownDuration = cooldown.getDuration();
@@ -203,28 +211,38 @@ public class CooldownCommand extends AdminCommand {
     private static void disableCooldown(TextChannel channel, GuildDataStore guildData, String requestedAction) {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
         final Locale locale = guildData.getConfigManager().getLocale();
-        final Optional<ActionCooldown> cd = cooldownManager.getActionCooldownByName(requestedAction);
-        cd.ifPresentOrElse((ActionCooldown t) -> {
-            //Found cooldown for action
-            try {
-                cooldownManager.removeCooldown(t.getAction());
+        try {
+            if (cooldownManager.removeCooldown(requestedAction)) {
+                //Found cooldown for action
                 channel.sendMessage(TranslationKey.COOLDOWN_DISABLE_SUCCESS.getTranslation(locale)).queue();
-            } catch (SQLException ex) {
-                channel.sendMessage(TranslationKey.COOLDOWN_SQL_ERROR_ON_DISABLE.getTranslation(locale)).queue();
-                LOGGER.error("Failure to remove cooldown from database: {}", ex.getMessage());
-                LOGGER.trace("Stack trace", ex);
+            } else {
+                //No cooldown for action
+                channel.sendMessage(TranslationKey.COOLDOWN_NO_COOLDOWN_SET.getTranslation(locale) + requestedAction).queue();
             }
-        }, () -> {
-            //No cooldown for action
-            channel.sendMessage(TranslationKey.COOLDOWN_NO_COOLDOWN_SET.getTranslation(locale) + requestedAction).queue();
-        });
-
+        } catch (SQLException ex) {
+            channel.sendMessage(TranslationKey.COOLDOWN_SQL_ERROR_ON_DISABLE.getTranslation(locale)).queue();
+            LOGGER.error("Failure to remove cooldown from database: {}", ex.getMessage());
+            LOGGER.trace("Stack trace", ex);
+        }
     }
 
     private static void listCooldowns(CommandMatcher matcher, GuildDataStore guildData) {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
+        final TextChannel channel = matcher.getTextChannel();
         final Locale locale = matcher.getLocale();
-        final Collection<ActionCooldown> cooldowns = cooldownManager.getCooldowns();
+
+        //Fetch the list of set cooldowns from database
+        final Collection<ActionCooldown> cooldowns;
+        try {
+            cooldowns = cooldownManager.getCooldowns();
+        } catch (SQLException ex) {
+            channel.sendMessage(TranslationKey.COOLDOWN_SQL_ERROR_ON_LOADING.getTranslation(locale)).queue();
+            LOGGER.error("Failure to load cooldown from database: {}", ex.getMessage());
+            LOGGER.trace("Stack trace", ex);
+            return;
+        }
+
+        //Construct embed for response
         final EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle(TranslationKey.HEADER_COOLDOWNS.getTranslation(locale));
         final StringBuilder description = new StringBuilder();
@@ -235,7 +253,6 @@ public class CooldownCommand extends AdminCommand {
             description.append(TranslationKey.COOLDOWN_NO_COOLDOWNS.getTranslation(locale));
         }
         eb.setDescription(description);
-        final TextChannel channel = matcher.getTextChannel();
         channel.sendMessage(eb.build()).queue();
     }
 }

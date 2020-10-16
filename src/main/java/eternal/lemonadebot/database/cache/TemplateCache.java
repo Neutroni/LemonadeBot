@@ -68,6 +68,9 @@ public class TemplateCache extends TemplateManager {
     @Override
     public Optional<CustomCommand> getCommand(String name) throws SQLException {
         final CustomCommand command = this.commands.get(name);
+        if (templatesLoaded) {
+            return Optional.ofNullable(command);
+        }
         if (command == null) {
             final Optional<CustomCommand> optCommand = super.getCommand(name);
             optCommand.ifPresent((CustomCommand t) -> {

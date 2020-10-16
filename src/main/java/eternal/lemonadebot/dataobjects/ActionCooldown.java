@@ -112,6 +112,16 @@ public class ActionCooldown {
     }
 
     /**
+     * Get the time remaining on cooldown.
+     *
+     * @return Duration
+     */
+    public Duration getRemainingDuration() {
+        final Instant now = Instant.now();
+        return Duration.between(this.activationTime.plus(this.cooldownDuration), now);
+    }
+
+    /**
      * Format the actioncooldown for usage in a list.
      *
      * @param locale Locale to format to

@@ -59,6 +59,9 @@ public class EventCache extends EventManager {
     @Override
     public Optional<Event> getEvent(String name) throws SQLException {
         final Event event = this.events.get(name);
+        if (eventsLoaded) {
+            return Optional.ofNullable(event);
+        }
         if (event == null) {
             final Optional<Event> optEvent = super.getEvent(name);
             optEvent.ifPresent((Event t) -> {

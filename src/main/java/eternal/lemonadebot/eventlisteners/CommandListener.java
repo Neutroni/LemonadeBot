@@ -31,6 +31,8 @@ import eternal.lemonadebot.database.CooldownManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.PermissionManager;
+import eternal.lemonadebot.dataobjects.ActionCooldown;
+import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.MessageMatcher;
 import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.translation.TranslationKey;
@@ -149,19 +151,16 @@ public class CommandListener extends ListenerAdapter {
         }
 
         //Check if command is on cooldown
-        if (!MemberRank.getRank(member).equals(MemberRank.ADMIN)) {
-            final CooldownManager cdm = guildData.getCooldownManager();
-            final Optional<Duration> optCooldown = cdm.updateActivationTime(cmdMatch.getAction());
-            if (optCooldown.isPresent()) {
-                final String template = TranslationKey.ERROR_COMMAND_COOLDOWN_TIME.getTranslation(locale);
-                final String currentCooldown = CooldownManager.formatDuration(optCooldown.get(), locale);
-                textChannel.sendMessage(template + currentCooldown).queue();
-                return;
-            }
-        }
-
-        //Run the command
-        command.respond(cmdMatch, guildData);
+        final CooldownManager cooldownManager = guildData.getCooldownManager();
+        cooldownManager.checkCooldown(member, inputString).ifPresentOrElse((t) -> {
+            //Command on cooldown
+            final String template = TranslationKey.ERROR_COMMAND_COOLDOWN_TIME.getTranslation(locale);
+            final String currentCooldown = CooldownManager.formatDuration(t, locale);
+            textChannel.sendMessage(template + currentCooldown).queue();
+        }, () -> {
+            //Run the command
+            command.respond(cmdMatch, guildData);
+        });
 
     }
 

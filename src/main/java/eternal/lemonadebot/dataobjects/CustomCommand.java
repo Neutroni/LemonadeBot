@@ -170,14 +170,13 @@ public class CustomCommand implements ChatCommand {
 
         //Check if command is on cooldown
         final CooldownManager cdm = guildData.getCooldownManager();
-        final Optional<Duration> optCooldown = cdm.updateActivationTime(commandString);
-        if (optCooldown.isPresent()) {
-            final String currentCooldown = CooldownManager.formatDuration(optCooldown.get(), locale);
-            channel.sendMessage(TranslationKey.ERROR_COMMAND_COOLDOWN_TIME.getTranslation(locale) + currentCooldown).queue();
-            return;
-        }
-
-        command.respond(fakeMatcher, guildData);
+        cdm.checkCooldown(member, commandString).ifPresentOrElse((Duration remainingCooldown) -> {
+            final String currentCooldown = CooldownManager.formatDuration(remainingCooldown, locale);
+            final String template = TranslationKey.ERROR_COMMAND_COOLDOWN_TIME.getTranslation(locale);
+            channel.sendMessage(template + currentCooldown).queue();
+        }, () -> {
+            command.respond(fakeMatcher, guildData);
+        });
     }
 
     @Override
@@ -189,7 +188,7 @@ public class CustomCommand implements ChatCommand {
     public boolean equals(Object other) {
         if (other instanceof CustomCommand) {
             final CustomCommand otherCommand = (CustomCommand) other;
-            return this.commandName.equals(otherCommand.commandName);
+            return this.commandName.equals(otherCommand.getName());
         }
         return false;
     }

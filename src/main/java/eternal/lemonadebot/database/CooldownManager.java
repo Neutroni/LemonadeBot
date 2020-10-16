@@ -24,7 +24,8 @@
 package eternal.lemonadebot.database;
 
 import eternal.lemonadebot.dataobjects.ActionCooldown;
-import eternal.lemonadebot.radixtree.RadixTree;
+import eternal.lemonadebot.messageparsing.MessageMatcher;
+import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -32,10 +33,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import javax.sql.DataSource;
+import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,66 +55,10 @@ public class CooldownManager {
 
     private final DataSource dataSource;
     private final long guildID;
-    private final RadixTree<ActionCooldown> cooldowns;
 
-    CooldownManager(DataSource ds, long guildID) {
+    public CooldownManager(DataSource ds, long guildID) {
         this.dataSource = ds;
         this.guildID = guildID;
-        this.cooldowns = new RadixTree<>(new ActionCooldown("", Duration.ZERO, Instant.EPOCH));
-        loadCooldowns();
-    }
-
-    /**
-     * Get the list of set cooldowns
-     *
-     * @return Unmodifiable collection of cooldowns
-     */
-    public Collection<ActionCooldown> getCooldowns() {
-        return this.cooldowns.getValues();
-    }
-
-    /**
-     * Set action last seen time to current time if action is not on cooldown
-     * and has set cooldown time
-     *
-     * @param action Action string to chechk cooldown for
-     * @return Optional of remaining cooldown if command still on cooldown
-     */
-    public Optional<Duration> updateActivationTime(String action) {
-        final Optional<ActionCooldown> cd = getActionCooldown(action);
-        //Action does not have a cooldown
-        if (cd.isEmpty()) {
-            return Optional.empty();
-        }
-
-        final ActionCooldown cooldown = cd.get();
-        final Instant now = Instant.now();
-        final Instant lastActivation = cooldown.getLastActivationTime();
-        final Duration timeDelta = Duration.between(lastActivation, now);
-
-        //Command still on cooldown
-        final Duration cooldownDuration = cooldown.getDuration();
-        if (timeDelta.compareTo(cooldownDuration) < 0) {
-            final Duration remainingCooldown = cooldownDuration.minus(timeDelta);
-            return Optional.of(remainingCooldown);
-        }
-
-        //Update activationTime
-        cooldown.updateActivationTime(now);
-
-        //Store in database
-        final String query = "UPDATE Cooldowns SET activationTime = ? WHERE guild = ? AND command = ? VALUES(?,?,?)";
-        try (final Connection connection = this.dataSource.getConnection();
-                final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, now.getEpochSecond());
-            ps.setLong(2, this.guildID);
-            ps.setString(3, cooldown.getAction());
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            LOGGER.error("Updating command activation time failed! {}", e.getMessage());
-            LOGGER.trace("Stack trace: ", e);
-        }
-        return Optional.empty();
     }
 
     /**
@@ -120,9 +69,6 @@ public class CooldownManager {
      * @throws SQLException if database connection failed
      */
     public boolean removeCooldown(String action) throws SQLException {
-        this.cooldowns.remove(action);
-
-        //Remove from database
         final String query = "DELETE FROM Cooldowns Where guild = ? AND command = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -141,38 +87,16 @@ public class CooldownManager {
      * @throws SQLException If database connection failed
      */
     public boolean setCooldown(String action, Duration duration) throws SQLException {
-        final ActionCooldown cd = this.cooldowns.get(action);
-        if (cd.getAction().equals(action)) {
-            //Old cooldown set for action, update the duration
-            cd.updateCooldownDuration(duration);
-        } else {
-            //No cooldown set for action, add cooldown
-            this.cooldowns.put(action, new ActionCooldown(action, duration, Instant.EPOCH));
-        }
-
-        final String query = "INSERT OR REPLACE INTO Cooldowns(guild,command,duration,activationTime) VALUES(?,?,?,?)";
+        final String query = "INSERT INTO Cooldowns(guild,command,duration,activationTime) VALUES(?,?,?,?) ON CONFLICT DO UPDATE SET duration = ?";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, action);
             ps.setLong(3, duration.getSeconds());
-            ps.setLong(4, cd.getLastActivationTime().getEpochSecond());
+            ps.setLong(4, Instant.EPOCH.getEpochSecond());
+            ps.setLong(5, duration.getSeconds());
             return ps.executeUpdate() > 0;
         }
-    }
-
-    /**
-     * Get ActionCooldown by exact name
-     *
-     * @param name Name of cooldown to get
-     * @return Optional for cooldown if found
-     */
-    public Optional<ActionCooldown> getActionCooldownByName(String name) {
-        final ActionCooldown cd = this.cooldowns.get(name);
-        if (cd.getAction().equals(name)) {
-            return Optional.of(cd);
-        }
-        return Optional.empty();
     }
 
     /**
@@ -181,19 +105,35 @@ public class CooldownManager {
      * @param action Action to get cooldown for, cooldown only needs to match
      * start of action
      * @return ActionCooldown if found
+     * @throws SQLException
      */
-    public Optional<ActionCooldown> getActionCooldown(String action) {
-        final ActionCooldown cd = this.cooldowns.get(action);
-        if (cd.getDuration().isZero()) {
-            return Optional.empty();
+    public Optional<ActionCooldown> getActionCooldown(String action) throws SQLException {
+        final String query = "SELECT command,duration,activationTime FROM Cooldowns "
+                + "WHERE guild = ? AND (command = ? OR ? LIKE command || ' %') "
+                + "ORDER BY length(command) DESC LIMIT 1;";
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
+            ps.setLong(1, this.guildID);
+            try ( ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    final String command = rs.getString("command");
+                    final long cooldownDurationSeconds = rs.getLong("duration");
+                    final long lastActivationTime = rs.getLong("activationTime");
+                    return Optional.of(new ActionCooldown(command, cooldownDurationSeconds, lastActivationTime));
+                }
+            }
         }
-        return Optional.of(cd);
+        return Optional.empty();
     }
 
     /**
-     * Load cooldowns from database for current guild
+     * Get the list of set cooldowns
+     *
+     * @return Unmodifiable collection of cooldowns
+     * @throws SQLException if database connection failed
      */
-    private void loadCooldowns() {
+    public Collection<ActionCooldown> getCooldowns() throws SQLException {
+        final List<ActionCooldown> cooldowns = new ArrayList<>();
         final String query = "SELECT command,duration,activationTime FROM Cooldowns WHERE guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -204,12 +144,64 @@ public class CooldownManager {
                     final long cooldownDurationSeconds = rs.getLong("duration");
                     final long lastActivationTime = rs.getLong("activationTime");
                     final ActionCooldown cd = new ActionCooldown(action, cooldownDurationSeconds, lastActivationTime);
-                    cooldowns.put(action, cd);
+                    cooldowns.add(cd);
                 }
             }
-        } catch (SQLException e) {
-            LOGGER.error("Loading cooldowns from database failed: {}", e.getMessage());
-            LOGGER.trace(e);
+        }
+        return Collections.unmodifiableCollection(cooldowns);
+    }
+
+    /**
+     * Check if command is on cooldown
+     *
+     * @param member Member to check, if rank admin or greater cooldown not used
+     * @param action Action user is trying to perform
+     * @return optional containing the cooldown remaining for the action
+     */
+    public Optional<Duration> checkCooldown(Member member, String action) {
+        if (MemberRank.getRank(member).ordinal() > MemberRank.ADMIN.ordinal()) {
+            //Command is never on cooldown for admins
+            return Optional.empty();
+        }
+
+        try {
+            final Optional<ActionCooldown> optCooldown = getActionCooldown(action);
+            if (optCooldown.isEmpty()) {
+                //No cooldown set for action
+                return Optional.empty();
+            }
+
+            final ActionCooldown cd = optCooldown.get();
+            final Duration duration = cd.getRemainingDuration();
+            if (duration.compareTo(Duration.ZERO) >= 0) {
+                //Active cooldown
+                return Optional.of(duration);
+            }
+            //Inactive cooldown, update most recent activation
+            updateActivationTime(cd.getAction());
+        } catch (SQLException ex) {
+            LOGGER.error("Failure to get cooldown for action from database: {}", ex.getMessage());
+            LOGGER.trace("Stack trace", ex);
+        }
+        return Optional.empty();
+
+    }
+
+    /**
+     * Set action last seen time to current time.
+     *
+     * @param action Action string to set last seen time
+     * @return true if activate time updated succesfully
+     * @throws SQLException
+     */
+    protected boolean updateActivationTime(String action) throws SQLException {
+        final String query = "UPDATE Cooldowns SET activationTime = ? WHERE guild = ? AND command = ? VALUES(?,?,?)";
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
+            ps.setLong(1, Instant.now().getEpochSecond());
+            ps.setLong(2, this.guildID);
+            ps.setString(3, action);
+            return ps.executeUpdate() > 0;
         }
     }
 

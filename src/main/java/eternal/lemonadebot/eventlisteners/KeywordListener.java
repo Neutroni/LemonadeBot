@@ -38,6 +38,7 @@ import eternal.lemonadebot.messageparsing.SimpleMessageMatcher;
 import java.time.Duration;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
@@ -119,16 +120,13 @@ public class KeywordListener extends ListenerAdapter {
 
             //Check cooldown
             final String commandName = com.getName();
-            final Optional<Duration> cooldownTime = cooldownManager.updateActivationTime(commandName);
-            if (cooldownTime.isPresent()) {
-                return;
+            final Member member = matcher.getMember();
+            Optional<Duration> cooldownTime = cooldownManager.checkCooldown(member, commandName);
+            if (cooldownTime.isEmpty()) {
+                //Run the command
+                final CommandMatcher fakeMatcher = new SimpleMessageMatcher(event.getMember(), event.getChannel(), guildConf.getLocale());
+                com.respond(fakeMatcher, guildData);
             }
-
-            //Run the command
-            final CommandMatcher fakeMatcher = new SimpleMessageMatcher(event.getMember(), event.getChannel(), guildConf.getLocale());
-            com.respond(fakeMatcher, guildData);
-
         }
-
     }
 }
