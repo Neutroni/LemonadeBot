@@ -466,6 +466,8 @@ public enum TranslationKey {
             + "only the custom command owner and admins can delete custom commands."),
     TEMPLATE_DELETE_SUCCESS("Custom command deleted succesfully."),
     TEMPLATE_SQL_ERROR_ON_DELETE("Deleting custom command from database failed, command might reappear after reboot."),
+    TEMPLATE_SQL_ERROR_ON_FINDING_COMMAND("Database error retrieving command, can not find template."), 
+    TEMPLATE_SQL_ERROR_ON_LOADING_COMMANDS("Database error retrieving commands from database, can not list available commands."),
     MUSIC_ADDED_SONG("Adding to queue: %s"),
     MUSIC_ADDED_PLAYLIST("Added playlist: %s"),
     MUSIC_NOT_FOUND("Nothing found by: %s"),

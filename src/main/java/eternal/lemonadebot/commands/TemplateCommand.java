@@ -168,7 +168,13 @@ public class TemplateCommand implements ChatCommand {
         }
         final String commandName = arguments[1];
         final TemplateManager commands = guildData.getCustomCommands();
-        final Optional<CustomCommand> optCommand = commands.getCommand(commandName);
+        final Optional<CustomCommand> optCommand;
+        try {
+            optCommand = commands.getCommand(commandName);
+        } catch (SQLException e) {
+            textChannel.sendMessage(TranslationKey.TEMPLATE_SQL_ERROR_ON_FINDING_COMMAND.getTranslation(locale)).queue();
+            return;
+        }
         if (optCommand.isEmpty()) {
             final String template = TranslationKey.TEMPLATE_DELETE_NOT_FOUND.getTranslation(locale);
             textChannel.sendMessageFormat(template, commandName).queue();
@@ -207,7 +213,13 @@ public class TemplateCommand implements ChatCommand {
         eb.setTitle(header);
 
         //Get the list of templates
-        final Collection<CustomCommand> templates = guildData.getCustomCommands().getCommands();
+        final Collection<CustomCommand> templates;
+        try {
+            templates = guildData.getCustomCommands().getCommands();
+        } catch (SQLException e) {
+            textChannel.sendMessage(TranslationKey.TEMPLATE_SQL_ERROR_ON_LOADING_COMMANDS.getTranslation(locale)).queue();
+            return;
+        }
         final ArrayList<CompletableFuture<String>> futures = new ArrayList<>(templates.size());
         templates.forEach((CustomCommand command) -> {
             futures.add(command.toListElement(locale, textChannel.getJDA()));

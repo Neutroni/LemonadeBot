@@ -27,9 +27,9 @@ import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.database.cache.CacheConfig;
 import eternal.lemonadebot.database.cache.EventCache;
 import eternal.lemonadebot.database.cache.InventoryCache;
+import eternal.lemonadebot.database.cache.TemplateCache;
 import eternal.lemonadebot.translation.TranslationCache;
 import java.util.Locale;
-import java.util.Properties;
 import javax.sql.DataSource;
 import net.dv8tion.jda.api.JDA;
 
@@ -66,14 +66,18 @@ public class GuildDataStore implements AutoCloseable {
         this.config = new ConfigManager(dataSource, guildID);
         final Locale locale = this.config.getLocale();
         this.permissions = new PermissionManager(dataSource, guildID, locale);
-        if(cacheConf.eventCacheEnabled()){
+        if (cacheConf.eventCacheEnabled()) {
             this.events = new EventCache(dataSource, guildID);
         } else {
             this.events = new EventManager(dataSource, guildID);
         }
         this.roleManager = new RoleManager(dataSource, guildID);
         this.cooldowns = new CooldownManager(dataSource, guildID);
-        this.commands = new TemplateManager(dataSource, this.cooldowns, guildID);
+        if (cacheConf.templateCacheEnabled()) {
+            this.commands = new TemplateCache(dataSource, guildID);
+        } else {
+            this.commands = new TemplateManager(dataSource, guildID);
+        }
         this.reminders = new ReminderManager(dataSource, jda, this, guildID);
         this.messages = new MessageManager(dataSource);
         this.commandProvider = new CommandProvider(locale, this.commands);

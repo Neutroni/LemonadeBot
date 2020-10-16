@@ -28,40 +28,32 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
- * Builder for custom commands
+ * Storage of custom commands
  *
  * @author Neutroni
  */
 public class TemplateManager {
 
-    private static final Logger LOGGER = LogManager.getLogger();
-
     private final DataSource dataSource;
     private final long guildID;
-    private final Map<String, CustomCommand> commands = new ConcurrentHashMap<>();
-    private final CooldownManager cooldownManager;
 
     /**
      * Constructor
      *
      * @param ds Database connection to use
-     * @param config configuration manager to use
+     * @param guildID guild to store templates for
      */
-    TemplateManager(DataSource ds, CooldownManager cooldownManager, long guildID) {
+    public TemplateManager(DataSource ds, long guildID) {
         this.dataSource = ds;
-        this.cooldownManager = cooldownManager;
         this.guildID = guildID;
-        loadCommands();
     }
 
     /**
@@ -72,9 +64,6 @@ public class TemplateManager {
      * @throws SQLException if database connection fails
      */
     public boolean addCommand(CustomCommand command) throws SQLException {
-        this.commands.putIfAbsent(command.getName(), command);
-
-        //Add to database
         final String query = "INSERT OR IGNORE INTO Commands(guild,name,template,owner) VALUES(?,?,?,?);";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -94,10 +83,6 @@ public class TemplateManager {
      * @throws SQLException if database connection fails
      */
     public boolean removeCommand(CustomCommand command) throws SQLException {
-        this.commands.remove(command.getName());
-        this.cooldownManager.removeCooldown(command.getName());
-
-        //Remove from database
         final String query = "DELETE FROM Commands WHERE name = ? AND guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -112,26 +97,34 @@ public class TemplateManager {
      *
      * @param name name of the command
      * @return optional containing the command
+     * @throws SQLException if database connection failed
      */
-    public Optional<CustomCommand> getCommand(String name) {
-        return Optional.ofNullable(this.commands.get(name));
+    public Optional<CustomCommand> getCommand(String name) throws SQLException {
+        final String query = "SELECT template,owner FROM Commands WHERE guild = ? AND name = ?;";
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
+            ps.setLong(1, this.guildID);
+            ps.setString(2, name);
+            try ( ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    final String commandTemplate = rs.getString("template");
+                    final long commandOwnerID = rs.getLong("owner");
+                    final CustomCommand newCommand = new CustomCommand(name, commandTemplate, commandOwnerID);
+                    return Optional.of(newCommand);
+                }
+            }
+        }
+        return Optional.empty();
     }
 
     /**
      * Get list of commands
      *
      * @return custom commands
+     * @throws SQLException of database connection failed
      */
-    public Collection<CustomCommand> getCommands() {
-        return Collections.unmodifiableCollection(this.commands.values());
-    }
-
-    /**
-     * Loads custom commands from database
-     *
-     * @throws SQLException if Database connection failed
-     */
-    private void loadCommands() {
+    public Collection<CustomCommand> getCommands() throws SQLException {
+        final List<CustomCommand> commands = new ArrayList<>();
         final String query = "SELECT name,template,owner FROM Commands WHERE guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -142,13 +135,11 @@ public class TemplateManager {
                     final String commandTemplate = rs.getString("template");
                     final long commandOwnerID = rs.getLong("owner");
                     final CustomCommand newCommand = new CustomCommand(commandName, commandTemplate, commandOwnerID);
-                    this.commands.put(newCommand.getName(), newCommand);
+                    commands.add(newCommand);
                 }
             }
-        } catch (SQLException e) {
-            LOGGER.error("Loading custom commands from database failed: {}", e.getMessage());
-            LOGGER.trace(e);
         }
+        return Collections.unmodifiableCollection(commands);
     }
 
 }

@@ -28,11 +28,14 @@ import eternal.lemonadebot.database.TemplateManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.music.MusicCommand;
 import eternal.lemonadebot.translation.LocaleUpdateListener;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Class used to find command by name
@@ -59,6 +62,7 @@ public class CommandProvider implements LocaleUpdateListener {
             new KeywordCommand()
     );
 
+    private static final Logger LOGGER = LogManager.getLogger();
     private final Map<String, ChatCommand> commandMap = new ConcurrentHashMap<>();
     private final TemplateManager templateManager;
 
@@ -108,7 +112,13 @@ public class CommandProvider implements LocaleUpdateListener {
         //Checks if we find built in command by that name
         return getBuiltInCommand(name).or(() -> {
             //Did not find built in command, return optional from templateManager
-            return this.templateManager.getCommand(name);
+            try {
+                return this.templateManager.getCommand(name);
+            } catch (SQLException e) {
+                LOGGER.error("Loading templates from database failed: {}", e.getMessage());
+                LOGGER.trace("Stack trace: ", e);
+                return Optional.empty();
+            }
         });
     }
 
