@@ -24,7 +24,6 @@
 package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.events.Event;
 import eternal.lemonadebot.events.EventManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.translation.TranslationKey;
@@ -33,12 +32,11 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Random;
 import java.util.regex.Matcher;
@@ -47,7 +45,6 @@ import java.util.stream.Collectors;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -128,49 +125,23 @@ public class TemplateProvider {
                     (CommandMatcher matcher, GuildDataStore guildData, Matcher input) -> {
                         final String eventName = input.group(1);
                         final EventManager eventManager = guildData.getEventManager();
-                        final Locale locale = guildData.getConfigManager().getLocale();
-                        final Optional<Event> optEvent;
+                        final Guild guild = matcher.getGuild();
+                        final Locale locale = matcher.getLocale();
+
                         try {
-                            optEvent = eventManager.getEvent(eventName);
+                            final Optional<Member> optMember = eventManager.getRandomMember(eventName, guild);
+                            if (optMember.isEmpty()) {
+                                return TranslationKey.EVENT_NO_MEMBERS.getTranslation(locale);
+                            }
+                            final Member member = optMember.get();
+                            return member.getEffectiveName();
+                        } catch (NoSuchElementException e) {
+                            //Could not find event with provided name
+                            return String.format(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName);
                         } catch (SQLException e) {
+                            //Database failed to retrieve event or members for event
                             return TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale);
                         }
-                        if (optEvent.isEmpty()) {
-                            return String.format(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName);
-                        }
-
-                        final Event event = optEvent.get();
-                        final List<Long> eventMemberIDs;
-                        try {
-                            eventMemberIDs = eventManager.getMembers(event);
-                        } catch (SQLException e) {
-                            return TranslationKey.EVENT_SQL_ERROR_LOADING_MEMBERS.getTranslation(locale);
-                        }
-                        if (eventMemberIDs.isEmpty()) {
-                            return TranslationKey.EVENT_NO_MEMBERS.getTranslation(locale);
-                        }
-                        final List<Long> memberIDsMutable = new ArrayList<>(eventMemberIDs);
-                        Collections.shuffle(memberIDsMutable);
-                        final Guild guild = matcher.getGuild();
-                        for (final Long l : memberIDsMutable) {
-                            try {
-                                final Member m = guild.retrieveMemberById(l).complete();
-                                if (m != null) {
-                                    return m.getEffectiveName();
-                                }
-                            } catch (ErrorResponseException e) {
-                                LOGGER.info("Found user {} in event {} members who could not be found, removing from event", l, eventName);
-                                LOGGER.debug("Error: ", e.getMessage());
-                                try {
-                                    eventManager.leaveEvent(event, l);
-                                    LOGGER.info("Succesfully removed missing member from event");
-                                } catch (SQLException ex) {
-                                    LOGGER.error("Failure to remove member from event: {}", ex.getMessage());
-                                    LOGGER.trace("Stack trace", ex);
-                                }
-                            }
-                        }
-                        return TranslationKey.EVENT_NO_MEMBERS.getTranslation(locale);
                     }),
             new ActionTemplate("daysSince (\\d+-\\d+\\d+)", TranslationKey.HELP_TEMPLATE_DAYS_SINCE,
                     (commandMatcher, guildData, templateMatcher) -> {

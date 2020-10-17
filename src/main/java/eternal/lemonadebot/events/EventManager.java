@@ -31,15 +31,22 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import javax.sql.DataSource;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
  * @author Neutroni
  */
 public class EventManager {
+
+    private static final Logger LOGGER = LogManager.getLogger();
 
     private final DataSource dataSource;
     private final long guildID;
@@ -56,6 +63,38 @@ public class EventManager {
     }
 
     /**
+     * Get random event member from event
+     *
+     * @param eventName Name of event to get member for
+     * @param guild guild to retrieve member from
+     * @return Optional containing event if any event member can be found
+     * @throws SQLException If database connection failed
+     * @throws NoSuchElementException If there is no event with provided name
+     */
+    public Optional<Member> getRandomMember(String eventName, Guild guild) throws SQLException, NoSuchElementException {
+        final Event ev = getEvent(eventName).orElseThrow();
+        final List<Long> eventMemberIDs = getMembersMutable(ev);
+        Collections.shuffle(eventMemberIDs);
+        for (final Long l : eventMemberIDs) {
+            try {
+                final Member m = guild.retrieveMemberById(l).complete();
+                return Optional.of(m);
+            } catch (ErrorResponseException ex) {
+                LOGGER.info("Found user {} in event {} members who could not be found, removing from event", l, eventName);
+                LOGGER.debug("Error: ", ex.getMessage());
+                try {
+                    leaveEvent(ev, l);
+                    LOGGER.info("Succesfully removed missing member from event");
+                } catch (SQLException e) {
+                    LOGGER.error("Failure to remove member from event: {}", e.getMessage());
+                    LOGGER.trace("Stack trace", e);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
      * Remove user from event
      *
      * @param event event to remove user from
@@ -63,7 +102,7 @@ public class EventManager {
      * @return true if user was removed from event
      * @throws SQLException if database connection failed
      */
-    public boolean leaveEvent(Event event, long memberID) throws SQLException {
+    boolean leaveEvent(Event event, long memberID) throws SQLException {
         final String query = "DELETE FROM EventMembers WHERE guild = ? AND name = ? AND member = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -81,7 +120,7 @@ public class EventManager {
      * @return optional containing the event
      * @throws SQLException if database connection failed
      */
-    public Optional<Event> getEvent(String name) throws SQLException {
+    Optional<Event> getEvent(String name) throws SQLException {
         final String query = "SELECT description,owner,locked FROM Events WHERE guild = ? AND name = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -109,20 +148,8 @@ public class EventManager {
      * @return Collection containing id:s of the members for the event
      * @throws SQLException if database connection failed
      */
-    public List<Long> getMembers(Event event) throws SQLException {
-        final List<Long> members = new ArrayList<>();
-        final String query = "SELECT member FROM EventMembers WHERE guild = ? AND name = ?;";
-        try (final Connection connection = this.dataSource.getConnection();
-                final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
-            ps.setString(2, event.getName());
-            try ( ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    members.add(rs.getLong("member"));
-                }
-            }
-        }
-        return Collections.unmodifiableList(members);
+    List<Long> getMembers(Event event) throws SQLException {
+        return Collections.unmodifiableList(getMembersMutable(event));
     }
 
     /**
@@ -256,6 +283,22 @@ public class EventManager {
             }
         }
         return Collections.unmodifiableCollection(events);
+    }
+
+    protected List<Long> getMembersMutable(Event event) throws SQLException {
+        final List<Long> members = new ArrayList<>();
+        final String query = "SELECT member FROM EventMembers WHERE guild = ? AND name = ?;";
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
+            ps.setLong(1, this.guildID);
+            ps.setString(2, event.getName());
+            try ( ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    members.add(rs.getLong("member"));
+                }
+            }
+        }
+        return members;
     }
 
 }

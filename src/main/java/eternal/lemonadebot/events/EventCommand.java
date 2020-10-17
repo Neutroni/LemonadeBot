@@ -36,9 +36,9 @@ import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -48,7 +48,6 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -446,64 +445,33 @@ public class EventCommand implements ChatCommand {
     }
 
     private static void pickRandomEventMember(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
-        final TextChannel textChannel = matcher.getTextChannel();
+        final TextChannel channel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
 
         if (opts.length < 2) {
-            textChannel.sendMessage(TranslationKey.EVENT_PICK_RANDOM_MISSING_NAME.getTranslation(locale)).queue();
+            channel.sendMessage(TranslationKey.EVENT_PICK_RANDOM_MISSING_NAME.getTranslation(locale)).queue();
             return;
         }
         final String eventName = opts[1];
         final Guild guild = matcher.getGuild();
         final EventManager events = guildData.getEventManager();
 
-        //Get the event
-        final Optional<Event> optEvent;
         try {
-            optEvent = events.getEvent(eventName);
-        } catch (SQLException e) {
-            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
-            return;
-        }
-        if (optEvent.isEmpty()) {
-            textChannel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
-            return;
-        }
-
-        final Event event = optEvent.get();
-        final Collection<Long> eventMemberIDs;
-        try {
-            eventMemberIDs = events.getMembers(event);
-        } catch (SQLException e) {
-            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_LOADING_MEMBERS.getTranslation(locale)).queue();
-            return;
-        }
-        if (eventMemberIDs.isEmpty()) {
-            textChannel.sendMessage(TranslationKey.EVENT_NO_MEMBERS.getTranslation(locale)).queue();
-            return;
-        }
-
-        final List<Long> memberIDsMutable = new ArrayList<>(eventMemberIDs);
-        Collections.shuffle(memberIDsMutable);
-        for (final Long id : memberIDsMutable) {
-            try {
-                final Member m = guild.retrieveMemberById(id).complete();
+            final Optional<Member> optMember = events.getRandomMember(eventName, guild);
+            optMember.ifPresentOrElse((Member member) -> {
                 final String template = TranslationKey.EVENT_SELECTED_MEMBER.getTranslation(locale);
-                textChannel.sendMessageFormat(template, m.getEffectiveName()).queue();
-                return;
-            } catch (ErrorResponseException e) {
-                LOGGER.info("Found user {} in event {} members who could not be found, removing from event", id, eventName);
-                LOGGER.debug("Error: ", e.getMessage());
-                try {
-                    events.leaveEvent(event, id);
-                    LOGGER.info("Succesfully removed missing member from event");
-                } catch (SQLException ex) {
-                    LOGGER.error("Failure to remove member from event: {}", ex.getMessage());
-                    LOGGER.trace("Stack trace", ex);
-                }
-            }
+                channel.sendMessageFormat(template, member.getEffectiveName()).queue();
+            }, () -> {
+                channel.sendMessage(TranslationKey.EVENT_NO_MEMBERS.getTranslation(locale)).queue();
+            });
+        } catch (NoSuchElementException e) {
+            //Could not find event with provided name
+            final String template = TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale);
+            channel.sendMessageFormat(template, eventName).queue();
+        } catch (SQLException e) {
+            //Database failed to retrieve event or members for event
+            channel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
         }
-        textChannel.sendMessage(TranslationKey.EVENT_NO_MEMBERS.getTranslation(locale)).queue();
     }
 
     /**
