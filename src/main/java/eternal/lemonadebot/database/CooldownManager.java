@@ -24,7 +24,6 @@
 package eternal.lemonadebot.database;
 
 import eternal.lemonadebot.dataobjects.ActionCooldown;
-import eternal.lemonadebot.messageparsing.MessageMatcher;
 import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.Connection;

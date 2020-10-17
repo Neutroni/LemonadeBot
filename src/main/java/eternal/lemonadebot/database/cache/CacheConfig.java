@@ -37,7 +37,6 @@ public class CacheConfig {
     private final boolean cacheAllowedRoles;
     private final boolean cacheCooldowns;
     private final boolean cachePermissions;
-    private final boolean cacheMessages;
 
     public CacheConfig(Properties config) {
         this.cacheInventory = Boolean.parseBoolean(config.getProperty("cache-inventory"));
@@ -46,7 +45,6 @@ public class CacheConfig {
         this.cacheAllowedRoles = Boolean.parseBoolean(config.getProperty("cache-allowed-roles"));
         this.cacheCooldowns = Boolean.parseBoolean(config.getProperty("cache-cooldowns"));
         this.cachePermissions = Boolean.parseBoolean(config.getProperty("cache-permissions"));
-        this.cacheMessages = Boolean.parseBoolean(config.getProperty("cache-messages"));
     }
 
     /**
@@ -103,12 +101,4 @@ public class CacheConfig {
         return this.cacheTemplates;
     }
 
-    /**
-     * Check if caching messages is enabled
-     *
-     * @return true if message cache is enabled
-     */
-    public boolean messageCacheEnabled() {
-        return this.cacheMessages;
-    }
 }

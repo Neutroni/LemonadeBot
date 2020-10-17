@@ -446,7 +446,20 @@ class RoleCommand implements ChatCommand {
         }
         final Role role = roles.get(0);
         final RoleManager roleManager = guildData.getRoleManager();
-        if (roleManager.isAllowed(role)) {
+
+        //Check if we can remove the role from requester
+        final boolean roleAllowed;
+        try {
+            roleAllowed = roleManager.isAllowed(role);
+        } catch (SQLException ex) {
+            channel.sendMessage(TranslationKey.ROLE_SQL_ERROR_ON_CHECK.getTranslation(locale)).queue();
+            LOGGER.error("Failure to check if we can remove role from user: {}", ex.getMessage());
+            LOGGER.trace("Stack trace", ex);
+            return;
+        }
+
+        //Can assign the role
+        if (roleAllowed) {
             final Member requester = matcher.getMember();
             guild.addRoleToMember(requester, role).queue((Void t) -> {
                 //Assigned role succesfully
@@ -456,9 +469,12 @@ class RoleCommand implements ChatCommand {
                 //Failed to assign role
                 channel.sendMessage(TranslationKey.ROLE_BOT_NO_PERMISSION.getTranslation(locale)).queue();
             });
-        } else {
-            channel.sendMessage(TranslationKey.ROLE_ROLE_NOT_ALLOWED.getTranslation(locale)).queue();
+            return;
         }
+
+        //Role not allowed
+        final String template = TranslationKey.ROLE_ROLE_NOT_ALLOWED.getTranslation(locale);
+        channel.sendMessageFormat(template, roleName).queue();
     }
 
     private static void removeRole(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
@@ -483,7 +499,20 @@ class RoleCommand implements ChatCommand {
         }
         final Role role = roles.get(0);
         final RoleManager roleManager = guildData.getRoleManager();
-        if (roleManager.isAllowed(role)) {
+
+        //Check if we can remove the role from requester
+        final boolean roleAllowed;
+        try {
+            roleAllowed = roleManager.isAllowed(role);
+        } catch (SQLException ex) {
+            channel.sendMessage(TranslationKey.ROLE_SQL_ERROR_ON_CHECK.getTranslation(locale)).queue();
+            LOGGER.error("Failure to check if we can remove role from user: {}", ex.getMessage());
+            LOGGER.trace("Stack trace", ex);
+            return;
+        }
+
+        //Can remove role
+        if (roleAllowed) {
             final Member requester = matcher.getMember();
             guild.removeRoleFromMember(requester, role).queue((Void t) -> {
                 //Assigned role succesfully
@@ -492,17 +521,33 @@ class RoleCommand implements ChatCommand {
                 //Failed to assign role
                 channel.sendMessage(TranslationKey.ROLE_BOT_NO_PERMISSION.getTranslation(locale)).queue();
             });
-        } else {
-            final String template = TranslationKey.ROLE_ROLE_NOT_ALLOWED.getTranslation(locale);
-            channel.sendMessageFormat(template, roleName).queue();
+            return;
         }
+
+        //Role not allowed
+        final String template = TranslationKey.ROLE_ROLE_NOT_ALLOWED.getTranslation(locale);
+        channel.sendMessageFormat(template, roleName).queue();
+
     }
 
     private static void listAllowedRoles(CommandMatcher matcher, GuildDataStore guildData) {
         final RoleManager roleManager = guildData.getRoleManager();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final TextChannel channel = matcher.getTextChannel();
+        final Locale locale = matcher.getLocale();
         final Guild guild = matcher.getGuild();
-        final Collection<AllowedRole> roles = roleManager.getRoles();
+
+        //Get the list of roles we are allowed to assign
+        final Collection<AllowedRole> roles;
+        try {
+            roles = roleManager.getRoles();
+        } catch (SQLException ex) {
+            LOGGER.error("Failure to get list of roles from database: {}", ex.getMessage());
+            LOGGER.trace("Stack trace", ex);
+            channel.sendMessage(TranslationKey.ROLE_SQL_ERROR_ON_LIST.getTranslation(locale)).queue();
+            return;
+        }
+
+        //Construct embed for the list of roles
         final StringBuilder sb = new StringBuilder();
         roles.forEach(role -> {
             sb.append(role.toListElement(locale, guild));
@@ -510,7 +555,7 @@ class RoleCommand implements ChatCommand {
         final EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle(TranslationKey.HEADER_ALLOWED_ROLES.getTranslation(locale));
         eb.setDescription(sb);
-        final TextChannel channel = matcher.getTextChannel();
+
         channel.sendMessage(eb.build()).queue();
     }
 

@@ -35,7 +35,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Locale;
-import java.util.Optional;
 import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
@@ -92,6 +91,11 @@ public class PermissionManager implements LocaleUpdateListener {
         return this.permissions.get(action).orElse(this.adminPermission);
     }
 
+    /**
+     * Get list of permissions set for commands
+     *
+     * @return Collection of permissions
+     */
     public Collection<CommandPermission> getPermissions() {
         return this.permissions.getValues();
     }

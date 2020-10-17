@@ -27,6 +27,7 @@ import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.database.cache.CacheConfig;
 import eternal.lemonadebot.database.cache.EventCache;
 import eternal.lemonadebot.database.cache.InventoryCache;
+import eternal.lemonadebot.database.cache.RoleManagerCache;
 import eternal.lemonadebot.database.cache.TemplateCache;
 import eternal.lemonadebot.translation.TranslationCache;
 import java.util.Locale;
@@ -71,7 +72,11 @@ public class GuildDataStore implements AutoCloseable {
         } else {
             this.events = new EventManager(dataSource, guildID);
         }
-        this.roleManager = new RoleManager(dataSource, guildID);
+        if (cacheConf.allowedRolesCacheEnabled()) {
+            this.roleManager = new RoleManagerCache(dataSource, guildID);
+        } else {
+            this.roleManager = new RoleManager(dataSource, guildID);
+        }
         this.cooldowns = new CooldownManager(dataSource, guildID);
         if (cacheConf.templateCacheEnabled()) {
             this.commands = new TemplateCache(dataSource, guildID);

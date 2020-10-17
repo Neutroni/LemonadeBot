@@ -28,14 +28,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
+import java.util.Optional;
 import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.Role;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  *
@@ -43,22 +42,18 @@ import org.apache.logging.log4j.Logger;
  */
 public class RoleManager {
 
-    private static final Logger LOGGER = LogManager.getLogger();
-
     private final DataSource dataSource;
     private final long guildID;
-    private final Map<Long, AllowedRole> roles = new ConcurrentHashMap<>();
 
     /**
      * Constructor
      *
      * @param ds database connection
-     * @param guildID
+     * @param guildID ID of the guild to store allowed roles for
      */
-    RoleManager(DataSource ds, long guildID) {
+    public RoleManager(DataSource ds, long guildID) {
         this.dataSource = ds;
         this.guildID = guildID;
-        loadRoles();
     }
 
     /**
@@ -69,9 +64,6 @@ public class RoleManager {
      * @throws SQLException If database connection failed
      */
     public boolean allowRole(AllowedRole role) throws SQLException {
-        this.roles.putIfAbsent(role.getRoleID(), role);
-
-        //Add to database
         final String query = "INSERT OR IGNORE INTO Roles(guild,role,description) VALUES(?,?,?);";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -90,9 +82,6 @@ public class RoleManager {
      * @throws SQLException if database connection failed
      */
     public boolean disallowRole(Role role) throws SQLException {
-        this.roles.remove(role.getIdLong());
-
-        //Remove from database
         final String query = "DELETE FROM Roles Where guild = ? AND role = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -106,28 +95,10 @@ public class RoleManager {
      * Get list of roles
      *
      * @return list of roles
-     */
-    public Collection<AllowedRole> getRoles() {
-        return Collections.unmodifiableCollection(this.roles.values());
-    }
-
-    /**
-     * Check if role is allowed to assing
-     *
-     * @param role Role to check
-     * @return true if role can be assigned.
-     */
-    public boolean isAllowed(Role role) {
-        return this.roles.containsKey(role.getIdLong());
-    }
-
-    /**
-     * Load event from database
-     *
-     * @return
      * @throws SQLException if database connection failed
      */
-    private void loadRoles() {
+    public Collection<AllowedRole> getRoles() throws SQLException {
+        final List<AllowedRole> roles = new ArrayList<>();
         final String query = "SELECT role,description FROM Roles WHERE guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -137,13 +108,56 @@ public class RoleManager {
                     final long roleID = rs.getLong("role");
                     final String description = rs.getString("description");
                     final AllowedRole role = new AllowedRole(roleID, description);
-                    roles.put(roleID, role);
+                    roles.add(role);
                 }
             }
-        } catch (SQLException e) {
-            LOGGER.error("Loading roles from database failed");
-            LOGGER.warn(e.getMessage());
-            LOGGER.trace(e);
         }
+        return Collections.unmodifiableCollection(roles);
+    }
+
+    /**
+     * Check if role is allowed to assing
+     *
+     * @param role Role to check
+     * @return true if role can be assigned.
+     * @throws SQLException if database connection failed
+     */
+    public boolean isAllowed(Role role) throws SQLException {
+        final String query = "SELECT role FROM Roles WHERE guild = ? AND role = ?;";
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
+            ps.setLong(1, this.guildID);
+            ps.setLong(2, role.getIdLong());
+            try ( ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Get allowedrole for role if role set as allowed, used in RoleManagerCache
+     *
+     * @param role Role to get allowed role for if exists
+     * @return Optional containing AllowedRole if found
+     * @throws SQLException If database connection failed
+     */
+    protected Optional<AllowedRole> getAllowedRole(Role role) throws SQLException {
+        final String query = "SELECT role,description FROM Roles WHERE guild = ?;";
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
+            ps.setLong(1, this.guildID);
+            try ( ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    final long roleID = rs.getLong("role");
+                    final String description = rs.getString("description");
+                    return Optional.of(new AllowedRole(roleID, description));
+
+                }
+            }
+        }
+        return Optional.empty();
     }
 }
