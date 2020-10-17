@@ -24,11 +24,20 @@
 package eternal.lemonadebot.database;
 
 import eternal.lemonadebot.commands.CommandProvider;
-import eternal.lemonadebot.database.cache.CacheConfig;
-import eternal.lemonadebot.database.cache.EventCache;
-import eternal.lemonadebot.database.cache.InventoryCache;
-import eternal.lemonadebot.database.cache.RoleManagerCache;
-import eternal.lemonadebot.database.cache.TemplateCache;
+import eternal.lemonadebot.config.ConfigManager;
+import eternal.lemonadebot.cooldowns.CooldownManager;
+import eternal.lemonadebot.customcommands.TemplateCache;
+import eternal.lemonadebot.customcommands.TemplateManager;
+import eternal.lemonadebot.events.EventCache;
+import eternal.lemonadebot.events.EventManager;
+import eternal.lemonadebot.inventory.InventoryCache;
+import eternal.lemonadebot.inventory.InventoryManager;
+import eternal.lemonadebot.keywords.KeywordManager;
+import eternal.lemonadebot.messagelogs.MessageManager;
+import eternal.lemonadebot.permissions.PermissionManager;
+import eternal.lemonadebot.reminders.ReminderManager;
+import eternal.lemonadebot.rolemanagement.RoleManager;
+import eternal.lemonadebot.rolemanagement.RoleManagerCache;
 import eternal.lemonadebot.translation.TranslationCache;
 import java.util.Locale;
 import javax.sql.DataSource;
@@ -67,6 +76,17 @@ public class GuildDataStore implements AutoCloseable {
         this.config = new ConfigManager(dataSource, guildID);
         final Locale locale = this.config.getLocale();
         this.permissions = new PermissionManager(dataSource, guildID, locale);
+        this.reminders = new ReminderManager(dataSource, jda, this, guildID);
+        this.messages = new MessageManager(dataSource);
+        this.translationCache = new TranslationCache(locale);
+        this.keywordManager = new KeywordManager(dataSource, guildID);
+        this.cooldowns = new CooldownManager(dataSource, guildID);
+        if (cacheConf.templateCacheEnabled()) {
+            this.commands = new TemplateCache(dataSource, guildID);
+        } else {
+            this.commands = new TemplateManager(dataSource, guildID);
+        }
+        this.commandProvider = new CommandProvider(locale, this.commands);
         if (cacheConf.eventCacheEnabled()) {
             this.events = new EventCache(dataSource, guildID);
         } else {
@@ -77,17 +97,6 @@ public class GuildDataStore implements AutoCloseable {
         } else {
             this.roleManager = new RoleManager(dataSource, guildID);
         }
-        this.cooldowns = new CooldownManager(dataSource, guildID);
-        if (cacheConf.templateCacheEnabled()) {
-            this.commands = new TemplateCache(dataSource, guildID);
-        } else {
-            this.commands = new TemplateManager(dataSource, guildID);
-        }
-        this.reminders = new ReminderManager(dataSource, jda, this, guildID);
-        this.messages = new MessageManager(dataSource);
-        this.commandProvider = new CommandProvider(locale, this.commands);
-        this.translationCache = new TranslationCache(locale);
-        this.keywordManager = new KeywordManager(dataSource, guildID, this.cooldowns);
         if (cacheConf.inventoryCacheEnabled()) {
             this.inventoryManager = new InventoryCache(dataSource, guildID);
         } else {

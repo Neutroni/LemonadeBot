@@ -23,9 +23,9 @@
  */
 package eternal.lemonadebot.customcommands;
 
-import eternal.lemonadebot.database.EventManager;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.dataobjects.Event;
+import eternal.lemonadebot.events.Event;
+import eternal.lemonadebot.events.EventManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;

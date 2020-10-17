@@ -25,7 +25,6 @@ package eternal.lemonadebot.database;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import eternal.lemonadebot.database.cache.CacheConfig;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;

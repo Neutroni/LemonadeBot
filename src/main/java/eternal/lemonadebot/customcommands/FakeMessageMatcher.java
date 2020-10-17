@@ -21,9 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.messageparsing;
+package eternal.lemonadebot.customcommands;
 
-import eternal.lemonadebot.config.ConfigManager;
+import eternal.lemonadebot.messageparsing.CommandMatcher;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -31,21 +31,19 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
- * Matches given message for command pattern
+ * CommandMatcher for custom commands that call other commands
  *
  * @author Neutroni
  */
-public class MessageMatcher implements CommandMatcher {
+class FakeMessageMatcher implements CommandMatcher {
 
     private static final Pattern SPLIT_PATTERN = Pattern.compile(" ");
 
-    private final Message message;
-    private final Locale locale;
+    private final CommandMatcher commandMatcher;
     private final Optional<String> command;
     private final String arguments;
     private final String action;
@@ -53,18 +51,20 @@ public class MessageMatcher implements CommandMatcher {
     /**
      * Constructor
      *
-     * @param configManager ConfigManager to get command prefix from
-     * @param msg command message
+     * @param originalMatcher commandmatcher of the original custom command call
+     * @param fakeContent content of the custom command call
      */
-    public MessageMatcher(final ConfigManager configManager, final Message msg) {
-        if (!msg.isFromGuild()) {
-            throw new IllegalArgumentException("Only messages from guilds supported");
+    FakeMessageMatcher(CommandMatcher originalMatcher, String fakeContent) {
+        this.commandMatcher = originalMatcher;
+        final String[] args = originalMatcher.getArguments(0);
+        final String messageText;
+        if (args.length == 0) {
+            messageText = fakeContent;
+        } else {
+            messageText = fakeContent + ' ' + args[0];
         }
 
-        this.message = msg;
-        this.locale = configManager.getLocale();
-        final String messageText = msg.getContentRaw();
-        final String commandPrefix = configManager.getCommandPrefix();
+        final String commandPrefix = "!";
         if (messageText.startsWith(commandPrefix)) {
             //Command name starts at the character after prefix
             final int actionStart = commandPrefix.length();
@@ -86,11 +86,6 @@ public class MessageMatcher implements CommandMatcher {
             this.action = "";
             this.arguments = "";
         }
-    }
-
-    @Override
-    public String getAction() {
-        return this.action;
     }
 
     @Override
@@ -177,38 +172,43 @@ public class MessageMatcher implements CommandMatcher {
     }
 
     @Override
-    public Member getMember() {
-        return this.message.getMember();
-    }
-
-    @Override
-    public TextChannel getTextChannel() {
-        return this.message.getTextChannel();
+    public String getAction() {
+        return this.action;
     }
 
     @Override
     public Locale getLocale() {
-        return this.locale;
+        return this.commandMatcher.getLocale();
     }
 
     @Override
     public Guild getGuild() {
-        return this.message.getGuild();
+        return this.commandMatcher.getGuild();
+    }
+
+    @Override
+    public Member getMember() {
+        return this.commandMatcher.getMember();
+    }
+
+    @Override
+    public TextChannel getTextChannel() {
+        return this.commandMatcher.getTextChannel();
     }
 
     @Override
     public List<Member> getMentionedMembers() {
-        return this.message.getMentionedMembers();
+        return this.commandMatcher.getMentionedMembers();
     }
 
     @Override
     public List<Role> getMentionedRoles() {
-        return this.message.getMentionedRoles();
+        return this.commandMatcher.getMentionedRoles();
     }
 
     @Override
     public List<TextChannel> getMentionedChannels() {
-        return this.message.getMentionedChannels();
+        return this.commandMatcher.getMentionedChannels();
     }
 
 }

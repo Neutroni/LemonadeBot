@@ -24,13 +24,12 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.LemonadeBot;
-import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.database.ConfigManager;
+import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.database.PermissionManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
+import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.util.Collection;
 import java.util.List;
@@ -104,7 +103,7 @@ class HelpCommand implements ChatCommand {
      * @param guildData Guildata of the guild request originated from
      * @param name Name of the command to get help for
      */
-    private void listHelp(CommandMatcher matcher, GuildDataStore guildData, String name) {
+    private static void listHelp(CommandMatcher matcher, GuildDataStore guildData, String name) {
         final TextChannel textChannel = matcher.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
         final Locale locale = guildConf.getLocale();
@@ -140,7 +139,7 @@ class HelpCommand implements ChatCommand {
      * @param permissions Used to check if user has permission to the commands
      * @param locale TranslationManager to get command names from
      */
-    private void listCommands(CommandMatcher matcher, PermissionManager permissions, Locale locale) {
+    private static void listCommands(CommandMatcher matcher, PermissionManager permissions, Locale locale) {
         //Construct the list of commands
         final StringBuilder sb = new StringBuilder();
         final Member member = matcher.getMember();

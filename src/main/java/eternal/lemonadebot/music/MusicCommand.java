@@ -30,8 +30,8 @@ import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.database.ConfigManager;
+import eternal.lemonadebot.commands.ChatCommand;
+import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
@@ -219,8 +219,8 @@ public class MusicCommand implements ChatCommand {
 
         //No url, skip current track
         if (trackUrl == null) {
-            if(musicManager.scheduler.nextTrack()){
-            channel.sendMessage(TranslationKey.MUSIC_TRACK_SKIPPED.getTranslation(locale)).queue();
+            if (musicManager.scheduler.nextTrack()) {
+                channel.sendMessage(TranslationKey.MUSIC_TRACK_SKIPPED.getTranslation(locale)).queue();
             } else {
                 channel.sendMessage(TranslationKey.MUSIC_SKIP_PLAYLIST_END.getTranslation(locale)).queue();
             }

@@ -60,7 +60,7 @@ public class CommandPermission {
      * @param member Member to check
      * @return true if member has the permissions requiredF
      */
-    public boolean hashPermission(final Member member) {
+    boolean hashPermission(final Member member) {
         //Check that user has required rank
         if (MemberRank.getRank(member).ordinal() < this.rank.ordinal()) {
             return false;
@@ -88,7 +88,7 @@ public class CommandPermission {
      *
      * @return Action string
      */
-    public String getAction() {
+    String getAction() {
         return this.action;
     }
 
@@ -97,7 +97,7 @@ public class CommandPermission {
      *
      * @return MemberRank
      */
-    public MemberRank getRequiredRank() {
+    MemberRank getRequiredRank() {
         return this.rank;
     }
 
@@ -106,7 +106,7 @@ public class CommandPermission {
      *
      * @return ID of the rolef
      */
-    public long getRequiredRoleID() {
+    long getRequiredRoleID() {
         return this.roleID;
     }
 

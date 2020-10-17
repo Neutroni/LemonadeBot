@@ -24,10 +24,8 @@
 package eternal.lemonadebot;
 
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.eventlisteners.CommandListener;
-import eternal.lemonadebot.eventlisteners.JoinListener;
-import eternal.lemonadebot.eventlisteners.KeywordListener;
-import eternal.lemonadebot.eventlisteners.LoggerListener;
+import eternal.lemonadebot.keywords.KeywordListener;
+import eternal.lemonadebot.messagelogs.LoggerListener;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;

@@ -23,10 +23,18 @@
  */
 package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.commandtypes.ChatCommand;
-import eternal.lemonadebot.database.TemplateManager;
+import eternal.lemonadebot.config.ConfigCommand;
+import eternal.lemonadebot.cooldowns.CooldownCommand;
+import eternal.lemonadebot.customcommands.TemplateCommand;
+import eternal.lemonadebot.customcommands.TemplateManager;
+import eternal.lemonadebot.events.EventCommand;
+import eternal.lemonadebot.inventory.InventoryCommand;
+import eternal.lemonadebot.keywords.KeywordCommand;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.music.MusicCommand;
+import eternal.lemonadebot.permissions.PermissionCommand;
+import eternal.lemonadebot.reminders.ReminderCommand;
+import eternal.lemonadebot.rolemanagement.RoleCommand;
 import eternal.lemonadebot.translation.LocaleUpdateListener;
 import java.sql.SQLException;
 import java.util.List;
