@@ -185,6 +185,7 @@ public class DatabaseManager implements AutoCloseable {
         final String KEYWORDS = "Create TABLE IF NOT EXISTS Keywords("
                 + "guild INTEGER NOT NULL,"
                 + "name TEXT NOT NULL,"
+                + "pattern TEXT NOT NULL,"
                 + "template TEXT NOT NULL,"
                 + "owner INTEGER NOT NULL,"
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"

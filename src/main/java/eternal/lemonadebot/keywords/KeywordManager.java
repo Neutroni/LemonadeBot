@@ -71,13 +71,14 @@ public class KeywordManager {
         this.commands.putIfAbsent(command.getName(), command);
 
         //Add to database
-        final String query = "INSERT OR IGNORE INTO Keywords(guild,name,template,owner) VALUES(?,?,?,?);";
+        final String query = "INSERT OR IGNORE INTO Keywords(guild,name,pattern,template,owner) VALUES(?,?,?,?);";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, command.getName());
-            ps.setString(3, command.getTemplate());
-            ps.setLong(4, command.getAuthor());
+            ps.setString(3, command.getPatternString());
+            ps.setString(4, command.getTemplate());
+            ps.setLong(5, command.getAuthor());
             return ps.executeUpdate() > 0;
         }
     }
@@ -127,16 +128,17 @@ public class KeywordManager {
      * @throws SQLException if Database connection failed
      */
     private void loadCommands() {
-        final String query = "SELECT name,template,owner FROM Keywords WHERE guild = ?;";
+        final String query = "SELECT name,pattern,template,owner FROM Keywords WHERE guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final String commandName = rs.getString("name");
+                    final String commandPattern = rs.getString("pattern");
                     final String commandTemplate = rs.getString("template");
                     final long commandOwnerID = rs.getLong("owner");
-                    final KeywordAction newCommand = new KeywordAction(commandName, commandTemplate, commandOwnerID);
+                    final KeywordAction newCommand = new KeywordAction(commandName, commandPattern, commandTemplate, commandOwnerID);
                     this.commands.put(newCommand.getName(), newCommand);
                 }
             }

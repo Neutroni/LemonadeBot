@@ -41,8 +41,10 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.PatternSyntaxException;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.User;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -106,26 +108,31 @@ public class KeywordCommand extends AdminCommand {
     }
 
     private static void createKeywords(CommandMatcher matcher, GuildDataStore guildData) {
-        //create regex template
-        final List<String> arguments = matcher.parseArguments(3);
         final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
-
+        final Locale locale = matcher.getLocale();
+        
+        //create name pattern action
+        final List<String> arguments = matcher.parseArguments(4);
         if (arguments.size() < 2) {
-            textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_MISSING_KEYWORD.getTranslation(locale)).queue();
+            textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_MISSING_NAME.getTranslation(locale)).queue();
             return;
         }
         if (arguments.size() < 3) {
+            textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_MISSING_KEYWORD.getTranslation(locale)).queue();
+            return;
+        }
+        if(arguments.size() < 4){
             textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_MISSING_TEMPLATE.getTranslation(locale)).queue();
             return;
         }
 
         final String commandName = arguments.get(1);
-        final String commandTemplate = arguments.get(2);
+        final String commandPattern = arguments.get(2);
+        final String commandTemplate = arguments.get(3);
         final Member sender = matcher.getMember();
         final KeywordManager commands = guildData.getKeywordManager();
         try {
-            final KeywordAction newAction = new KeywordAction(commandName, commandTemplate, sender.getIdLong());
+            final KeywordAction newAction = new KeywordAction(commandName, commandPattern, commandTemplate, sender.getIdLong());
             if (commands.addKeyword(newAction)) {
                 textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_SUCCESS.getTranslation(locale)).queue();
                 return;
@@ -174,7 +181,7 @@ public class KeywordCommand extends AdminCommand {
                 textChannel.sendMessage(TranslationKey.KEYWORD_DELETE_SUCCESS.getTranslation(locale)).queue();
             } catch (SQLException ex) {
                 textChannel.sendMessage(TranslationKey.KEYWORD_SQL_ERROR_ON_DELETE.getTranslation(locale)).queue();
-                LOGGER.error("Failure to delete custom command: {}", ex.getMessage());
+                LOGGER.error("Failure to delete keyword command: {}", ex.getMessage());
                 LOGGER.trace("Stack trace", ex);
             }
         });

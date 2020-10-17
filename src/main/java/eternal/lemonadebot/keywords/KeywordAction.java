@@ -24,8 +24,13 @@
 package eternal.lemonadebot.keywords;
 
 import eternal.lemonadebot.customcommands.CustomCommand;
+import eternal.lemonadebot.translation.TranslationKey;
+import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.User;
 
 /**
  *
@@ -38,13 +43,23 @@ public class KeywordAction extends CustomCommand {
     /**
      * Constructor
      *
+     * @param name Name of keyword
      * @param patternString pattern for keyword
      * @param actionTemplate template for action
      * @param owner owner of the command
      */
-    public KeywordAction(String patternString, String actionTemplate, long owner) throws PatternSyntaxException {
-        super(patternString, actionTemplate, owner);
+    public KeywordAction(String name, String patternString, String actionTemplate, long owner) throws PatternSyntaxException {
+        super(name, actionTemplate, owner);
         this.keywordPattern = Pattern.compile(patternString);
+    }
+
+    /**
+     * Get the pattern for keyword
+     *
+     * @return String of regex
+     */
+    public String getPatternString() {
+        return this.keywordPattern.pattern();
     }
 
     /**
@@ -55,6 +70,22 @@ public class KeywordAction extends CustomCommand {
      */
     public boolean matches(String input) {
         return this.keywordPattern.matcher(input).find();
+    }
+    
+    @Override
+    public CompletableFuture<String> toListElement(Locale locale, JDA jda) {
+        final CompletableFuture<String> result = new CompletableFuture<>();
+        final String template = TranslationKey.KEYWORD_COMMAND_LIST_ELEMENT.getTranslation(locale);
+        jda.retrieveUserById(getAuthor()).queue((User commandOwner) -> {
+            //Found user
+            final String creatorName = commandOwner.getAsMention();
+            result.complete(String.format(template, getName(), getPatternString(), creatorName));
+        }, (Throwable t) -> {
+            //User missing
+            final String creatorName = TranslationKey.UNKNOWN_USER.getTranslation(locale);
+            result.complete(String.format(template, getName(), getPatternString(), creatorName));
+        });
+        return result;
     }
 
 }

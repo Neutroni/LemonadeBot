@@ -202,12 +202,13 @@ public enum TranslationKey {
             + " stop - clears the playlist and stops music playback\n"
             + " list - prints upcoming songs in playlist\n"
             + "[url] is the url of the music to play"),
-    SYNTAX_KEYWORD("Syntax: keyword <option> [pattern] [template]\n"
+    SYNTAX_KEYWORD("Syntax: keyword <option> [name] [pattern] [template]\n"
             + "<option> can be one of the following:\n"
             + " create - create new keyword action\n"
             + " delete - delete keyword action\n"
             + " list - show list of defined keywords\n"
-            + "[pattern] pattern that activates the keyword, a java regular expression\n"
+            + "[name] name for keyword, used to edit keywords.\n"
+            + "[pattern] pattern that activates the keyword, a java regular expression.\n"
             + "[template] template for the reponse to keyword"),
     SYNTAX_INVENTORY("Syntax: inventory <action> [item] [amount] [user] [type]\n"
             + "<action> can be one of the following:\n"
@@ -497,6 +498,7 @@ public enum TranslationKey {
     MUSIC_SKIP_PLAYLIST_END("Track skipped and end of playlist reached."),
     KEYWORD_CREATE_MISSING_KEYWORD("Creating a keyword requires a pattern the keywords activates on."),
     KEYWORD_CREATE_MISSING_TEMPLATE("Creating a keywords required a template for the response to keyword."),
+    KEYWORD_CREATE_MISSING_NAME("Creating a keyword requires a name for the keyword."),
     KEYWORD_CREATE_SUCCESS("Keyword created succesfully."),
     KEYWORD_PATTERN_SYNTAX_ERROR("Not a valid keyword pattern,"
             + " Some characters are reserved in pattern creation and must be escaped with '\\'"
@@ -509,6 +511,7 @@ public enum TranslationKey {
     KEYWORD_SQL_ERROR_ON_DELETE("Deleting keyword from database failed, keyword might reappear after reboot."),
     KEYWORD_NO_KEYWORDS("No keywords defined."),
     KEYWORD_SQL_ERROR_ON_CREATE("Adding keyword to database failed, keyword might disappear after reboot."),
+    KEYWORD_COMMAND_LIST_ELEMENT("%s - Pattern: %s by: %s"),
     INVENTORY_NO_USER_WITH_NAME("Could not find user with name: %s"),
     INVENTORY_MULTIPLE_USERS_WITH_NAME("Found multiple users with name: %s You can use users full discord name including the tag to specify users accurately."),
     INVENTORY_BOT_NO_PERMISSION("It appears I do not have permission to view members of the guild, can not find member with the provided name."),
