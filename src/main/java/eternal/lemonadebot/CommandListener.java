@@ -38,6 +38,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -48,7 +49,6 @@ import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * JDA MessageListener, responsible for reacting to messages discord sends
@@ -76,7 +76,7 @@ public class CommandListener extends ListenerAdapter {
      * @param event message info
      */
     @Override
-    public void onGuildMessageReceived(final GuildMessageReceivedEvent event) {
+    public void onGuildMessageReceived(final @Nonnull GuildMessageReceivedEvent event) {
         //Don't reply to bots
         if (event.getAuthor().isBot()) {
             return;
@@ -166,7 +166,7 @@ public class CommandListener extends ListenerAdapter {
      * @param event event from JDA
      */
     @Override
-    public void onShutdown(final @NotNull ShutdownEvent event) {
+    public void onShutdown(final @Nonnull ShutdownEvent event) {
         this.db.close();
         LOGGER.info("Shutting down");
     }
