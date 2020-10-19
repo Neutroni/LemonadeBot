@@ -45,12 +45,12 @@ public class InventoryCache extends InventoryManager {
      * @param ds DataSource to pass to InventoryManager
      * @param guildID guild to store items for
      */
-    public InventoryCache(DataSource ds, long guildID) {
+    public InventoryCache(final DataSource ds, final long guildID) {
         super(ds, guildID);
     }
 
     @Override
-    boolean updateCount(Member member, String itemName, long change) throws SQLException {
+    boolean updateCount(final Member member, final String itemName, final long change) throws SQLException {
         //Update database
         if (!super.updateCount(member, itemName, change)) {
             //User does not have enough items
@@ -60,7 +60,7 @@ public class InventoryCache extends InventoryManager {
         //Synchronize on users items so no concurrent modification
         final Map<String, Long> userItems = getInventory(member);
         synchronized (userItems) {
-            final long itemCount = userItems.getOrDefault(itemName, 0l);
+            final long itemCount = userItems.getOrDefault(itemName, 0L);
             final long newCount = itemCount + change;
             if (newCount < 0) {
                 //User does not have enough items
@@ -78,7 +78,7 @@ public class InventoryCache extends InventoryManager {
     }
 
     @Override
-    boolean payItem(Member sender, Member receiver, String itemName, long count) throws SQLException {
+    boolean payItem(final Member sender, final Member receiver, final String itemName, final long count) throws SQLException {
         //Update database
         if (!super.payItem(sender, receiver, itemName, count)) {
             //User does not have enough items
@@ -91,7 +91,7 @@ public class InventoryCache extends InventoryManager {
 
         //Update sender items
         synchronized (userItems) {
-            final long itemCount = userItems.getOrDefault(itemName, 0l);
+            final long itemCount = userItems.getOrDefault(itemName, 0L);
             final long newCount = itemCount - count;
             if (newCount < 0) {
                 //User does not have enough items
@@ -108,7 +108,7 @@ public class InventoryCache extends InventoryManager {
 
         //Update receiver items
         synchronized (receiverItems) {
-            final long itemCount = receiverItems.getOrDefault(itemName, 0l);
+            final long itemCount = receiverItems.getOrDefault(itemName, 0L);
             final long newCount = itemCount + count;
             receiverItems.put(itemName, newCount);
         }
@@ -116,7 +116,7 @@ public class InventoryCache extends InventoryManager {
     }
 
     @Override
-    Map<String, Long> getUserInventory(Member member) throws SQLException {
+    Map<String, Long> getUserInventory(final Member member) throws SQLException {
         return Collections.unmodifiableMap(getInventory(member));
     }
 
@@ -127,7 +127,7 @@ public class InventoryCache extends InventoryManager {
      * @return Map containing users inventory
      * @throws SQLException if loading items for user from database failed
      */
-    private Map<String, Long> getInventory(Member member) throws SQLException {
+    private Map<String, Long> getInventory(final Member member) throws SQLException {
         final long memberId = member.getIdLong();
         final Map<String, Long> inv = this.inventory.get(memberId);
         if (inv == null) {

@@ -70,7 +70,7 @@ public class ConfigManager {
      * @param ds database connection to use
      * @param guild Guild this config is for
      */
-    public ConfigManager(DataSource ds, long guild) {
+    public ConfigManager(final DataSource ds, final long guild) {
         this.dataSource = ds;
         this.guildID = guild;
         loadValues();
@@ -126,7 +126,7 @@ public class ConfigManager {
      *
      * @param listener LocaleUpdateListener
      */
-    public void registerLocaleUpdateListener(LocaleUpdateListener listener) {
+    public void registerLocaleUpdateListener(final LocaleUpdateListener listener) {
         this.localeListeners.add(listener);
     }
 
@@ -134,7 +134,7 @@ public class ConfigManager {
      * Set command prefix
      *
      * @param prefix new command prefix
-     * @return Was comamnd prefix set succesfully
+     * @return Was command prefix set successfully
      * @throws SQLException if updating prefix failed
      */
     boolean setCommandPrefix(final String prefix) throws SQLException {

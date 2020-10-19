@@ -33,7 +33,7 @@ class StoredMessage {
     private final long author;
     private final String content;
 
-    StoredMessage(long author, String content) {
+    StoredMessage(final long author, final String content) {
         this.author = author;
         this.content = content;
     }

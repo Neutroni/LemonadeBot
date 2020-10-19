@@ -61,7 +61,7 @@ public class PermissionManager implements LocaleUpdateListener {
      * @param guildID ID of the guild to store permissions for
      * @param locale Locale to use for loading default permissions
      */
-    public PermissionManager(DataSource ds, long guildID, Locale locale) {
+    public PermissionManager(final DataSource ds, final long guildID, final Locale locale) {
         this.dataSource = ds;
         this.guildID = guildID;
         this.adminPermission = new CommandPermission("", MemberRank.ADMIN, guildID);
@@ -76,7 +76,7 @@ public class PermissionManager implements LocaleUpdateListener {
      * @param action Action user is trying to perform
      * @return True if user can perform the action
      */
-    public boolean hasPermission(Member member, ChatCommand command, String action) {
+    public boolean hasPermission(final Member member, final ChatCommand command, final String action) {
         try {
             final CommandPermission perm = getPermission(command, action);
             return perm.hashPermission(member);
@@ -91,7 +91,7 @@ public class PermissionManager implements LocaleUpdateListener {
      * @param locale Translation to use
      */
     @Override
-    public void updateLocale(Locale locale) {
+    public void updateLocale(final Locale locale) {
         this.locale = locale;
     }
 
@@ -102,7 +102,7 @@ public class PermissionManager implements LocaleUpdateListener {
      * @return true if update succeeded
      * @throws SQLException if database connetion failed
      */
-    public boolean setPermission(CommandPermission perm) throws SQLException {
+    public boolean setPermission(final CommandPermission perm) throws SQLException {
         final String query = "INSERT OR REPLACE INTO Permissions(guild,action,requiredRank,requiredRole) VALUES(?,?,?,?);";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -142,7 +142,7 @@ public class PermissionManager implements LocaleUpdateListener {
      * @return CommandPermission for action, if no permission has been set the
      * returned permission will have rank of ADMIN and any role
      */
-    CommandPermission getPermission(ChatCommand command, String action) throws SQLException {
+    CommandPermission getPermission(final ChatCommand command, final String action) throws SQLException {
         final Optional<CommandPermission> optPerm = getPermission(action);
         CommandPermission builtInPerm = null;
         int keyLength = 0;
@@ -191,7 +191,7 @@ public class PermissionManager implements LocaleUpdateListener {
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (final ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final String action = rs.getString("action");
                     final String rankName = rs.getString("requiredRank");
@@ -217,7 +217,7 @@ public class PermissionManager implements LocaleUpdateListener {
      * @return Optional containing permission if found
      * @throws SQLException if database connection failed
      */
-    protected Optional<CommandPermission> getPermission(String command) throws SQLException {
+    protected Optional<CommandPermission> getPermission(final String command) throws SQLException {
         final String query = "SELECT action,requiredRank,requiredRole FROM Permissions "
                 + "WHERE guild = ? AND (action = ? OR ? LIKE action || ' %');";
         try (final Connection connection = this.dataSource.getConnection();
@@ -225,7 +225,7 @@ public class PermissionManager implements LocaleUpdateListener {
             ps.setLong(1, this.guildID);
             ps.setString(2, command);
             ps.setString(3, command);
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (final ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final String action = rs.getString("action");
                     final String rankName = rs.getString("requiredRank");

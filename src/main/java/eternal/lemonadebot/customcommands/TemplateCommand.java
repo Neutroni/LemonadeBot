@@ -58,29 +58,29 @@ public class TemplateCommand implements ChatCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand(Locale locale) {
+    public String getCommand(final Locale locale) {
         return TranslationKey.COMMAND_TEMPLATE.getTranslation(locale);
     }
 
     @Override
-    public String getDescription(Locale locale) {
+    public String getDescription(final Locale locale) {
         return TranslationKey.DESCRIPTION_TEMPLATE.getTranslation(locale);
     }
 
     @Override
-    public String getHelpText(Locale locale) {
+    public String getHelpText(final Locale locale) {
         final String template = TranslationKey.SYNTAX_TEMPLATE.getTranslation(locale);
         final String keys = TemplateProvider.getHelp(locale);
         return String.format(template, keys);
     }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID, PermissionManager permissions) {
+    public Collection<CommandPermission> getDefaultRanks(final Locale locale, final long guildID, final PermissionManager permissions) {
         return List.of(new CommandPermission(getCommand(locale), MemberRank.MEMBER, guildID));
     }
 
     @Override
-    public void respond(CommandMatcher matcher, GuildDataStore guildData) {
+    public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
@@ -112,7 +112,7 @@ public class TemplateCommand implements ChatCommand {
         }
     }
 
-    private void createCustomCommand(String[] arguments, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void createCustomCommand(final String[] arguments, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = matcher.getLocale();
 
@@ -152,7 +152,7 @@ public class TemplateCommand implements ChatCommand {
 
     }
 
-    private void deleteCustomCommand(String[] arguments, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void deleteCustomCommand(final String[] arguments, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
 
@@ -197,7 +197,7 @@ public class TemplateCommand implements ChatCommand {
         });
     }
 
-    private void listCustomCommands(CommandMatcher matcher, GuildDataStore guildData) {
+    private static void listCustomCommands(final CommandMatcher matcher, final GuildDataStore guildData) {
         final Locale locale = guildData.getConfigManager().getLocale();
         final TextChannel textChannel = matcher.getTextChannel();
 

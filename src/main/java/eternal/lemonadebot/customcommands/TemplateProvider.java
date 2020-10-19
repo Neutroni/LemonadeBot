@@ -45,8 +45,6 @@ import java.util.stream.Collectors;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Class that holds templates for custom commands and how to substitute given
@@ -56,20 +54,18 @@ import org.apache.logging.log4j.Logger;
  */
 public class TemplateProvider {
 
-    private static final Logger LOGGER = LogManager.getLogger();
     private static final Random RNG = new Random();
     private static final List<ActionTemplate> actions = List.of(
             new ActionTemplate("choice (.*(\\|.*)+)", TranslationKey.HELP_TEMPLATE_CHOICE,
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
                         final String[] parts = input.group(1).split("\\|");
-                        final String response = parts[RNG.nextInt(parts.length)];
-                        return response;
+                        return parts[RNG.nextInt(parts.length)];
                     }),
             new ActionTemplate("rng (\\d+),(\\d+)", TranslationKey.HELP_TEMPLATE_RNG,
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
                         final int start = Integer.parseInt(input.group(1));
                         final int end = Integer.parseInt(input.group(2));
-                        return "" + (RNG.nextInt(end + 1) + start);
+                        return String.valueOf(RNG.nextInt(end + 1) + start);
                     }),
             new ActionTemplate("message", TranslationKey.HELP_TEMPLATE_MESSAGE,
                     (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
@@ -113,9 +109,7 @@ public class TemplateProvider {
                     (CommandMatcher matcher, GuildDataStore guildData, Matcher input) -> {
 
                         final List<Member> mentionedMembers = matcher.getMentionedMembers();
-                        return mentionedMembers.stream().map((Member member) -> {
-                            return member.getEffectiveName();
-                        }).collect(Collectors.joining(","));
+                        return mentionedMembers.stream().map(Member::getEffectiveName).collect(Collectors.joining(","));
                     }),
             new ActionTemplate("sender", TranslationKey.HELP_TEMPLATE_SENDER,
                     (CommandMatcher matcher, GuildDataStore guildData, Matcher input) -> {
@@ -171,7 +165,7 @@ public class TemplateProvider {
      */
     public static CharSequence parseAction(final CommandMatcher message, final GuildDataStore guildData, final String action) {
         //Check that action is not empty string
-        if (action.length() == 0) {
+        if (action.isEmpty()) {
             return "";
         }
 
@@ -223,7 +217,7 @@ public class TemplateProvider {
      * @param locale Locale to get the help text in
      * @return help text
      */
-    public static String getHelp(Locale locale) {
+    public static String getHelp(final Locale locale) {
         final StringBuilder sb = new StringBuilder();
         for (final ActionTemplate action : actions) {
             sb.append(action.getHelp(locale)).append('\n');

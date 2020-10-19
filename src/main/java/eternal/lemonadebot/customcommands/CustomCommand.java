@@ -62,7 +62,7 @@ public class CustomCommand implements ChatCommand {
      * @param actionTemplate action template
      * @param owner who created this command
      */
-    public CustomCommand(String commandName, String actionTemplate, long owner) {
+    public CustomCommand(final String commandName, final String actionTemplate, final long owner) {
         this.commandName = commandName;
         this.actionTemplate = actionTemplate;
         this.author = owner;
@@ -75,7 +75,7 @@ public class CustomCommand implements ChatCommand {
      * @return Command name
      */
     @Override
-    public String getCommand(Locale locale) {
+    public String getCommand(final Locale locale) {
         return this.commandName;
     }
 
@@ -89,18 +89,18 @@ public class CustomCommand implements ChatCommand {
     }
 
     @Override
-    public String getDescription(Locale locale) {
+    public String getDescription(final Locale locale) {
         return TranslationKey.DESCRIPTION_CUSTOMCOMMAND.getTranslation(locale);
     }
 
     @Override
-    public String getHelpText(Locale locale) {
+    public String getHelpText(final Locale locale) {
         final String template = TranslationKey.SYNTAX_CUSTOMCOMMAND.getTranslation(locale);
         return String.format(template, this.actionTemplate);
     }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID, PermissionManager permissions) {
+    public Collection<CommandPermission> getDefaultRanks(final Locale locale, final long guildID, final PermissionManager permissions) {
         final CommandPermission rankRole = permissions.getTemplateRunPermission();
         return List.of(new CommandPermission(getName(), rankRole.getRequiredRank(), rankRole.getRequiredRoleID()));
     }
@@ -124,9 +124,9 @@ public class CustomCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(CommandMatcher message, GuildDataStore guildData) {
+    public void respond(final CommandMatcher message, final GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
-        final CharSequence response = TemplateProvider.parseAction(message, guildData, actionTemplate);
+        final CharSequence response = TemplateProvider.parseAction(message, guildData, this.actionTemplate);
         final Locale locale = guildData.getConfigManager().getLocale();
 
         //Check if message is empty
@@ -183,7 +183,7 @@ public class CustomCommand implements ChatCommand {
     }
 
     @Override
-    public boolean equals(Object other) {
+    public boolean equals(final Object other) {
         if (other instanceof CustomCommand) {
             final CustomCommand otherCommand = (CustomCommand) other;
             return this.commandName.equals(otherCommand.getName());
@@ -198,7 +198,7 @@ public class CustomCommand implements ChatCommand {
      * @param jda JDA to use to get command owner
      * @return String
      */
-    public CompletableFuture<String> toListElement(Locale locale, JDA jda) {
+    public CompletableFuture<String> toListElement(final Locale locale, final JDA jda) {
         final CompletableFuture<String> result = new CompletableFuture<>();
         final String template = TranslationKey.TEMPLATE_COMMAND_LIST_ELEMENT.getTranslation(locale);
         jda.retrieveUserById(this.author).queue((User commandOwner) -> {

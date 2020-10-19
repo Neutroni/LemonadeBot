@@ -31,7 +31,6 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
@@ -54,7 +53,7 @@ class FakeMessageMatcher implements CommandMatcher {
      * @param originalMatcher commandmatcher of the original custom command call
      * @param fakeContent content of the custom command call
      */
-    FakeMessageMatcher(CommandMatcher originalMatcher, String fakeContent) {
+    FakeMessageMatcher(final CommandMatcher originalMatcher, final String fakeContent) {
         this.commandMatcher = originalMatcher;
         final String[] args = originalMatcher.getArguments(0);
         final String messageText;
@@ -94,7 +93,7 @@ class FakeMessageMatcher implements CommandMatcher {
     }
 
     @Override
-    public String[] getArguments(int count) {
+    public String[] getArguments(final int count) {
         //If there is not arguments return empty array
         if (this.arguments.isEmpty()) {
             return new String[0];
@@ -104,7 +103,7 @@ class FakeMessageMatcher implements CommandMatcher {
     }
 
     @Override
-    public List<String> parseArguments(int maxArguments) {
+    public List<String> parseArguments(final int maxArguments) {
         //Check to make sure maxArguments is positive
         if (maxArguments < 0) {
             throw new IllegalArgumentException("Error parsing arguments, maxArguments can not be negative.");
@@ -146,7 +145,7 @@ class FakeMessageMatcher implements CommandMatcher {
                         current.setLength(0);
                         //Check if we have enough arguments
                         if (args.size() == limit) {
-                            args.add(this.arguments.substring(i + 1, this.arguments.length()));
+                            args.add(this.arguments.substring(i + 1));
                             return args;
                         }
                     }
@@ -199,11 +198,6 @@ class FakeMessageMatcher implements CommandMatcher {
     @Override
     public List<Member> getMentionedMembers() {
         return this.commandMatcher.getMentionedMembers();
-    }
-
-    @Override
-    public List<Role> getMentionedRoles() {
-        return this.commandMatcher.getMentionedRoles();
     }
 
     @Override

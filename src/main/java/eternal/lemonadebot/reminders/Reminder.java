@@ -71,8 +71,8 @@ class Reminder extends CustomCommand implements Runnable {
      * @param input Input string to either send or execute if it is a command
      * @param activationTime Weekday the reminder happens
      */
-    Reminder(JDA jda, GuildDataStore guildData, String name, String input,
-            long channelID, long author, ReminderActivationTime activationTime) {
+    Reminder(final JDA jda, final GuildDataStore guildData, final String name, final String input,
+             final long channelID, final long author, final ReminderActivationTime activationTime) {
         super(name, input, author);
         this.jda = jda;
         this.guildData = guildData;
@@ -104,7 +104,7 @@ class Reminder extends CustomCommand implements Runnable {
         }
 
         //Check reminder channel can be found
-        final TextChannel channel = this.jda.getTextChannelById(channelID);
+        final TextChannel channel = this.jda.getTextChannelById(this.channelID);
         if (channel == null) {
             deleteDueToMissingChannel();
             return;
@@ -113,9 +113,9 @@ class Reminder extends CustomCommand implements Runnable {
         //Check reminder author can be found
         channel.getGuild().retrieveMemberById(getAuthor()).queue((Member member) -> {
             //Success
-            final Locale locale = guildData.getConfigManager().getLocale();
+            final Locale locale = this.guildData.getConfigManager().getLocale();
             final CommandMatcher matcher = new SimpleMessageMatcher(member, channel, locale);
-            respond(matcher, guildData);
+            respond(matcher, this.guildData);
             LOGGER.debug("Reminder: {} succesfully activated on channel: {}", getName(), channel.getName());
         }, (Throwable t) -> {
             //Failure
@@ -163,7 +163,7 @@ class Reminder extends CustomCommand implements Runnable {
         return this.activationTime;
     }
 
-    CompletableFuture<String> toListElement(Locale locale) {
+    CompletableFuture<String> toListElement(final Locale locale) {
         final CompletableFuture<String> result = new CompletableFuture<>();
 
         //Get the channel for reminder
@@ -200,7 +200,7 @@ class Reminder extends CustomCommand implements Runnable {
     }
 
     @Override
-    public boolean equals(Object other) {
+    public boolean equals(final Object other) {
         if (other instanceof Reminder) {
             final Reminder otherReminder = (Reminder) other;
             return getName().equals(otherReminder.getName());
@@ -213,7 +213,7 @@ class Reminder extends CustomCommand implements Runnable {
      *
      * @param reminderTimer ScheduledExecutorService
      */
-    void scheduleWith(ScheduledExecutorService reminderTimer) {
+    void scheduleWith(final ScheduledExecutorService reminderTimer) {
         final ZoneId timeZone = this.guildData.getConfigManager().getZoneId();
         final Duration duration = this.activationTime.getTimeToActivation(timeZone);
         final long millisecondsToActivation = duration.toMillis();

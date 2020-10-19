@@ -58,7 +58,7 @@ public enum MemberRank {
      * @param locale Locale to get description in
      * @return Description in locale
      */
-    public static String getLevelDescriptions(Locale locale) {
+    public static String getLevelDescriptions(final Locale locale) {
         final StringBuilder sb = new StringBuilder();
         for (final MemberRank p : values()) {
             sb.append(p.name.getTranslation(locale));
@@ -78,7 +78,7 @@ public enum MemberRank {
      * @return MemberRank if foud
      * @throws IllegalArgumentException if no matching rank could be found
      */
-    public static MemberRank getByLocalizedName(String rankName, Locale locale, Collator collator) throws IllegalArgumentException {
+    public static MemberRank getByLocalizedName(final String rankName, final Locale locale, final Collator collator) throws IllegalArgumentException {
         for (final MemberRank rank : MemberRank.values()) {
             final String localRankName = rank.getNameKey().getTranslation(locale);
             if (collator.equals(rankName, localRankName)) {
@@ -91,7 +91,7 @@ public enum MemberRank {
     private final TranslationKey name;
     private final TranslationKey desc;
 
-    private MemberRank(TranslationKey name, TranslationKey description) {
+    MemberRank(final TranslationKey name, final TranslationKey description) {
         this.name = name;
         this.desc = description;
     }
@@ -111,7 +111,7 @@ public enum MemberRank {
      * @param member user to check
      * @return Rank of the member
      */
-    public static MemberRank getRank(Member member) {
+    public static MemberRank getRank(final Member member) {
         if (member.isOwner()) {
             return MemberRank.SERVER_OWNER;
         }

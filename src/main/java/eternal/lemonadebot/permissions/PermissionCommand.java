@@ -55,23 +55,23 @@ public class PermissionCommand extends AdminCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand(Locale locale) {
+    public String getCommand(final Locale locale) {
         return TranslationKey.COMMAND_PERMISSION.getTranslation(locale);
     }
 
     @Override
-    public String getDescription(Locale locale) {
+    public String getDescription(final Locale locale) {
         return TranslationKey.DESCRIPTION_PERMISSION.getTranslation(locale);
     }
 
     @Override
-    public String getHelpText(Locale locale) {
+    public String getHelpText(final Locale locale) {
         final String template = TranslationKey.SYNTAX_PERMISSION.getTranslation(locale);
         return String.format(template, MemberRank.getLevelDescriptions(locale));
     }
 
     @Override
-    public void respond(CommandMatcher matcher, GuildDataStore guildData) {
+    public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel channel = matcher.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
@@ -103,7 +103,7 @@ public class PermissionCommand extends AdminCommand {
         }
     }
 
-    private static void getPermission(String[] arguments, TextChannel channel, GuildDataStore guildData) {
+    private static void getPermission(final String[] arguments, final TextChannel channel, final GuildDataStore guildData) {
         final PermissionManager permissions = guildData.getPermissionManager();
         final Locale locale = guildData.getConfigManager().getLocale();
 
@@ -173,7 +173,7 @@ public class PermissionCommand extends AdminCommand {
         channel.sendMessage(eb.build()).queue();
     }
 
-    private static void setPermission(CommandMatcher message, GuildDataStore guildData) {
+    private static void setPermission(final CommandMatcher message, final GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
         final PermissionManager permissions = guildData.getPermissionManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
@@ -228,7 +228,7 @@ public class PermissionCommand extends AdminCommand {
         }
     }
 
-    private static void listPermissions(CommandMatcher matcher, GuildDataStore guildData) {
+    private static void listPermissions(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel channel = matcher.getTextChannel();
         final Guild guild = matcher.getGuild();
         final PermissionManager permissionManager = guildData.getPermissionManager();

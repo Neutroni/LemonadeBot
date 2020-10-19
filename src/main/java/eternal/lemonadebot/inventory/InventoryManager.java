@@ -43,7 +43,7 @@ public class InventoryManager {
     private final DataSource dataSource;
     private final long guildID;
 
-    public InventoryManager(DataSource ds, long guildID) {
+    public InventoryManager(final DataSource ds, final long guildID) {
         this.dataSource = ds;
         this.guildID = guildID;
     }
@@ -57,7 +57,7 @@ public class InventoryManager {
      * @return true if inventory modified
      * @throws SQLException If database connection failed
      */
-    boolean updateCount(Member member, String itemName, long change) throws SQLException {
+    boolean updateCount(final Member member, final String itemName, final long change) throws SQLException {
         final long memberID = member.getIdLong();
         if (change > 0) {
             return addItemsToUser(memberID, itemName, change);
@@ -78,7 +78,7 @@ public class InventoryManager {
      * @return true if paid succesfully, false if not enough items on sender
      * @throws SQLException If database connection failed, payment will rollback
      */
-    boolean payItem(Member sender, Member receiver, String itemName, long count) throws SQLException {
+    boolean payItem(final Member sender, final Member receiver, final String itemName, final long count) throws SQLException {
         try (final Connection connection = this.dataSource.getConnection()) {
             final String transactionBegin = "BEGIN TRANSACTION;";
             try (final Statement st = connection.createStatement()) {
@@ -118,14 +118,14 @@ public class InventoryManager {
      * @return Map of users items, with key as item name and value as item count
      * @throws SQLException if database connection failed
      */
-    Map<String, Long> getUserInventory(Member member) throws SQLException {
+    Map<String, Long> getUserInventory(final Member member) throws SQLException {
         final String query = "SELECT item,count FROM Inventory WHERE guild = ? AND owner = ?;";
         final Map<String, Long> items = new HashMap<>();
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setLong(2, member.getColorRaw());
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (final ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final String itemName = rs.getString("item");
                     final long itemCount = rs.getLong("count");
@@ -136,7 +136,7 @@ public class InventoryManager {
         return Collections.unmodifiableMap(items);
     }
 
-    private boolean addItemsToUser(long userID, String item, long count) throws SQLException {
+    private boolean addItemsToUser(final long userID, final String item, final long count) throws SQLException {
         final String query = "INSERT INTO Items (guild,owner,item,count) VALUES(?,?,?,?) ON CONFLICT(item) DO UPDATE SET count = count + ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -149,7 +149,7 @@ public class InventoryManager {
         }
     }
 
-    private boolean removeItemsFromUser(long userID, String item, long count) throws SQLException {
+    private boolean removeItemsFromUser(final long userID, final String item, final long count) throws SQLException {
         final String query = "UPDATE Inventory SET count = count - ? WHERE guild = ? AND owner = ? and item = ? AND count - ? >= 0;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {

@@ -63,22 +63,22 @@ public class ReminderCommand extends AdminCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand(Locale locale) {
+    public String getCommand(final Locale locale) {
         return TranslationKey.COMMAND_REMINDER.getTranslation(locale);
     }
 
     @Override
-    public String getDescription(Locale locale) {
+    public String getDescription(final Locale locale) {
         return TranslationKey.DESCRIPTION_REMINDER.getTranslation(locale);
     }
 
     @Override
-    public String getHelpText(Locale locale) {
+    public String getHelpText(final Locale locale) {
         return TranslationKey.SYNTAX_REMINDER.getTranslation(locale);
     }
 
     @Override
-    public void respond(CommandMatcher matcher, GuildDataStore guildData) {
+    public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
@@ -111,7 +111,7 @@ public class ReminderCommand extends AdminCommand {
         }
     }
 
-    private static void createReminder(CommandMatcher matcher, GuildDataStore guildData) {
+    private static void createReminder(final CommandMatcher matcher, final GuildDataStore guildData) {
         //reminder create test 17.00 * * * remindertext
         //reminder create test 17.00 * * sunday remindertext
         //reminder create test 17.00 17 9 * remindertext
@@ -150,7 +150,7 @@ public class ReminderCommand extends AdminCommand {
         }
         final String reminderDate = arguments[3];
         int dayOfMonth = 0;
-        if (!reminderDate.equals("*")) {
+        if (!"*".equals(reminderDate)) {
             try {
                 dayOfMonth = Integer.parseUnsignedInt(reminderDate);
                 if (dayOfMonth < 1 || dayOfMonth > 31) {
@@ -170,7 +170,7 @@ public class ReminderCommand extends AdminCommand {
         }
         final String reminderMonth = arguments[4];
         Month monthOfYear = null;
-        if (!reminderMonth.equals("*")) {
+        if (!"*".equals(reminderMonth)) {
             try {
                 final int monthNumber = Integer.parseUnsignedInt(reminderMonth);
                 monthOfYear = Month.of(monthNumber);
@@ -201,9 +201,9 @@ public class ReminderCommand extends AdminCommand {
         }
         final String reminderDay = arguments[5];
         DayOfWeek dayOfWeek = null;
-        if (!reminderDay.equals("*")) {
+        if (!"*".equals(reminderDay)) {
             final Collator collator = guildData.getTranslationCache().getCollator();
-            for (DayOfWeek day : DayOfWeek.values()) {
+            for (final DayOfWeek day : DayOfWeek.values()) {
                 final String localDayName = day.getDisplayName(TextStyle.FULL_STANDALONE, locale);
                 if (collator.equals(localDayName, reminderDay)) {
                     dayOfWeek = day;
@@ -248,7 +248,7 @@ public class ReminderCommand extends AdminCommand {
         }
     }
 
-    private static void deleteReminder(String[] arguments, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void deleteReminder(final String[] arguments, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
 
@@ -286,7 +286,7 @@ public class ReminderCommand extends AdminCommand {
         });
     }
 
-    private static void listReminders(CommandMatcher matcher, GuildDataStore guildData) {
+    private static void listReminders(final CommandMatcher matcher, final GuildDataStore guildData) {
         final Locale locale = guildData.getConfigManager().getLocale();
 
         //Construct the embed

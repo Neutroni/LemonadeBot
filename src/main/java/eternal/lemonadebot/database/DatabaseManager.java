@@ -25,6 +25,8 @@ package eternal.lemonadebot.database;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+
+import java.io.Closeable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -41,7 +43,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class DatabaseManager implements AutoCloseable {
+public class DatabaseManager implements Closeable {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -62,10 +64,10 @@ public class DatabaseManager implements AutoCloseable {
         final String numberString = config.getProperty("max-messages");
         if (numberString == null) {
             this.maxMessages = 4096;
-            LOGGER.info("Max messages to store not set, defaulting to: {}", maxMessages);
+            LOGGER.info("Max messages to store not set, defaulting to: {}", this.maxMessages);
         } else {
             this.maxMessages = Integer.parseInt(numberString);
-            LOGGER.info("Set max messages to: {}", maxMessages);
+            LOGGER.info("Set max messages to: {}", this.maxMessages);
         }
         this.jda = jda;
         this.cacheConfig = new CacheConfig(config);
@@ -84,7 +86,7 @@ public class DatabaseManager implements AutoCloseable {
     }
 
     @Override
-    public void close() throws SQLException {
+    public void close() {
         this.dataSource.close();
         this.guildDataStores.forEach((Long t, GuildDataStore u) -> {
             u.close();
@@ -106,7 +108,6 @@ public class DatabaseManager implements AutoCloseable {
     /**
      * Creates the database for the bot
      *
-     * @param dbLocation location for database
      * @throws SQLException if database connection fails
      */
     private void initialize() throws SQLException {

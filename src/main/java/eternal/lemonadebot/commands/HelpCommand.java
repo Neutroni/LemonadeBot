@@ -47,27 +47,27 @@ import net.dv8tion.jda.api.entities.TextChannel;
 class HelpCommand implements ChatCommand {
 
     @Override
-    public String getCommand(Locale locale) {
+    public String getCommand(final Locale locale) {
         return TranslationKey.COMMAND_HELP.getTranslation(locale);
     }
 
     @Override
-    public String getDescription(Locale locale) {
+    public String getDescription(final Locale locale) {
         return TranslationKey.DESCRIPTION_HELP.getTranslation(locale);
     }
 
     @Override
-    public String getHelpText(Locale locale) {
+    public String getHelpText(final Locale locale) {
         return TranslationKey.SYNTAX_HELP.getTranslation(locale);
     }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID, PermissionManager permissions) {
+    public Collection<CommandPermission> getDefaultRanks(final Locale locale, final long guildID, final PermissionManager permissions) {
         return List.of(new CommandPermission(getCommand(locale), MemberRank.USER, guildID));
     }
 
     @Override
-    public void respond(CommandMatcher matcher, GuildDataStore guildData) {
+    public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
 
@@ -103,7 +103,7 @@ class HelpCommand implements ChatCommand {
      * @param guildData Guildata of the guild request originated from
      * @param name Name of the command to get help for
      */
-    private static void listHelp(CommandMatcher matcher, GuildDataStore guildData, String name) {
+    private static void listHelp(final CommandMatcher matcher, final GuildDataStore guildData, final String name) {
         final TextChannel textChannel = matcher.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
         final Locale locale = guildConf.getLocale();
@@ -139,12 +139,12 @@ class HelpCommand implements ChatCommand {
      * @param permissions Used to check if user has permission to the commands
      * @param locale TranslationManager to get command names from
      */
-    private static void listCommands(CommandMatcher matcher, PermissionManager permissions, Locale locale) {
+    private static void listCommands(final CommandMatcher matcher, final PermissionManager permissions, final Locale locale) {
         //Construct the list of commands
         final StringBuilder sb = new StringBuilder();
         final Member member = matcher.getMember();
 
-        for (ChatCommand c : CommandProvider.COMMANDS) {
+        for (final ChatCommand c : CommandProvider.COMMANDS) {
             if (permissions.hasPermission(member, c, c.getCommand(locale))) {
                 sb.append(c.getCommand(locale)).append(" - ");
                 final String description = c.getDescription(locale);

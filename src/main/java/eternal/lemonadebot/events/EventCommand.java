@@ -47,6 +47,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.IMentionable;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
@@ -62,27 +63,27 @@ public class EventCommand implements ChatCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand(Locale locale) {
+    public String getCommand(final Locale locale) {
         return TranslationKey.COMMAND_EVENT.getTranslation(locale);
     }
 
     @Override
-    public String getDescription(Locale locale) {
+    public String getDescription(final Locale locale) {
         return TranslationKey.DESCRIPTION_EVENT.getTranslation(locale);
     }
 
     @Override
-    public String getHelpText(Locale locale) {
+    public String getHelpText(final Locale locale) {
         return TranslationKey.SYNTAX_EVENT.getTranslation(locale);
     }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID, PermissionManager permissions) {
+    public Collection<CommandPermission> getDefaultRanks(final Locale locale, final long guildID, final PermissionManager permissions) {
         return List.of(new CommandPermission(getCommand(locale), MemberRank.MEMBER, guildID));
     }
 
     @Override
-    public void respond(CommandMatcher matcher, GuildDataStore guildData) {
+    public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
@@ -144,7 +145,7 @@ public class EventCommand implements ChatCommand {
         }
     }
 
-    private static void createEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void createEvent(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
         final Member sender = matcher.getMember();
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
@@ -179,7 +180,7 @@ public class EventCommand implements ChatCommand {
         }
     }
 
-    private static void deleteEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void deleteEvent(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
         final Member sender = matcher.getMember();
         final TextChannel textChannel = matcher.getTextChannel();
         final EventManager events = guildData.getEventManager();
@@ -222,7 +223,7 @@ public class EventCommand implements ChatCommand {
 
     }
 
-    private static void joinEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void joinEvent(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
         final Member sender = matcher.getMember();
@@ -267,7 +268,7 @@ public class EventCommand implements ChatCommand {
         }
     }
 
-    private static void leaveEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void leaveEvent(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
         final Member sender = matcher.getMember();
@@ -313,7 +314,7 @@ public class EventCommand implements ChatCommand {
         }
     }
 
-    private static void showEventMembers(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void showEventMembers(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
 
@@ -352,9 +353,7 @@ public class EventCommand implements ChatCommand {
                 eb.setTitle(header);
 
                 //Add names of all event members who could be found
-                final String mentions = foundMembersList.stream().map((Member t) -> {
-                    return t.getAsMention();
-                }).collect(Collectors.joining(","));
+                final String mentions = foundMembersList.stream().map(IMentionable::getAsMention).collect(Collectors.joining(","));
 
                 //Did not find any event members
                 if (foundMembersList.isEmpty()) {
@@ -374,7 +373,7 @@ public class EventCommand implements ChatCommand {
 
     }
 
-    private static void clearEventMembers(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void clearEventMembers(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
         final Member sender = matcher.getMember();
@@ -413,7 +412,7 @@ public class EventCommand implements ChatCommand {
         }
     }
 
-    private static void listEvents(CommandMatcher matcher, GuildDataStore guildData) {
+    private static void listEvents(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
         final EventManager eventManager = guildData.getEventManager();
@@ -445,7 +444,7 @@ public class EventCommand implements ChatCommand {
         textChannel.sendMessage(eb.build()).queue();
     }
 
-    private static void pickRandomEventMember(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void pickRandomEventMember(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel channel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
 
@@ -482,7 +481,7 @@ public class EventCommand implements ChatCommand {
      * @param matcher Matcher for request
      * @param guildData guildData for guild
      */
-    private static void lockEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void lockEvent(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel channel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
         if (opts.length < 2) {
@@ -535,7 +534,7 @@ public class EventCommand implements ChatCommand {
      * @param matcher commandMatcher to get requester from
      * @param guildData guildData for guild to find event in
      */
-    private static void unlockEvent(String[] opts, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void unlockEvent(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
         final Member sender = matcher.getMember();
         final TextChannel textChannel = matcher.getTextChannel();
         final EventManager events = guildData.getEventManager();
@@ -575,7 +574,7 @@ public class EventCommand implements ChatCommand {
                 return;
             }
             try {
-                events.lockEvent(event);
+                events.unlockEvent(event);
                 textChannel.sendMessage(TranslationKey.EVENT_UNLOCKED_SUCCESFULLY.getTranslation(locale)).queue();
             } catch (SQLException ex) {
                 textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_UNLOCK.getTranslation(locale)).queue();
@@ -611,7 +610,7 @@ public class EventCommand implements ChatCommand {
      * @param foundMembersList Members who could still be found
      * @param eventManager EventManager the event is from
      */
-    private static void cleanEvent(Event event, List<Long> memberIDList, List<Member> foundMembersList, EventManager eventManager) {
+    private static void cleanEvent(final Event event, final List<Long> memberIDList, final List<Member> foundMembersList, final EventManager eventManager) {
         //Clear all the members from the event who could not be found
         memberIDList.stream().filter((Long eventMemberID) -> {
             //Get the IDs of event members who do not appear in the found members list

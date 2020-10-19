@@ -47,22 +47,22 @@ public class ConfigCommand extends AdminCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand(Locale locale) {
+    public String getCommand(final Locale locale) {
         return TranslationKey.COMMAND_CONFIG.getTranslation(locale);
     }
 
     @Override
-    public String getDescription(Locale locale) {
+    public String getDescription(final Locale locale) {
         return TranslationKey.DESCRIPTION_CONFIG.getTranslation(locale);
     }
 
     @Override
-    public String getHelpText(Locale locale) {
+    public String getHelpText(final Locale locale) {
         return TranslationKey.SYNTAX_CONFIG.getTranslation(locale);
     }
 
     @Override
-    public void respond(CommandMatcher message, GuildDataStore guildData) {
+    public void respond(final CommandMatcher message, final GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
         final ConfigManager config = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
@@ -84,7 +84,7 @@ public class ConfigCommand extends AdminCommand {
                 if (options.length < 3) {
                     channel.sendMessage(TranslationKey.CONFIG_MISSING_VALUE.getTranslation(locale)).queue();
                 }
-                setValue(options[1], options[2], channel, guildData, message);
+                setValue(options[1], options[2], guildData, message);
                 break;
             }
             case GET: {
@@ -113,11 +113,13 @@ public class ConfigCommand extends AdminCommand {
     /**
      * Set the config value according to the input
      *
-     * @param options String of options, action(set),config,value
-     * @param channel TextChannel to reply on
-     * @param guildConf ConfigManager to update
+     * @param config Name of config to update
+     * @param value Value to set the config to
+     * @param guildData GuilData to get config from
+     * @param matcher message that made the request
      */
-    private static void setValue(String config, String value, TextChannel channel, GuildDataStore guildData, CommandMatcher matcher) {
+    private static void setValue(final String config, final String value, final GuildDataStore guildData, final CommandMatcher matcher) {
+        final TextChannel channel = matcher.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
         final Locale locale = guildConf.getLocale();
@@ -171,7 +173,7 @@ public class ConfigCommand extends AdminCommand {
                         final String supportedLanguages = ConfigManager.SUPPORTED_LOCALES.stream().map((t) -> {
                             return t.getLanguage() + " - " + t.getDisplayLanguage(locale);
                         }).collect(Collectors.joining(","));
-                        final String template = TranslationKey.CONFIG_UNSUPPPRTED_LOCALE.getTranslation(locale);
+                        final String template = TranslationKey.CONFIG_UNSUPPORTED_LOCALE.getTranslation(locale);
                         channel.sendMessageFormat(template, supportedLanguages).queue();
                     }
                 } catch (SQLException ex) {
@@ -192,11 +194,11 @@ public class ConfigCommand extends AdminCommand {
     /**
      * Reply with the current value for confuguration option
      *
-     * @param options String of option
+     * @param option String of option
      * @param channel TextChannel to reply on
-     * @param guildConf ConfigManager to get value from
+     * @param guildData ConfigManager to get value from
      */
-    private static void getValue(String option, TextChannel channel, GuildDataStore guildData) {
+    private static void getValue(final String option, final TextChannel channel, final GuildDataStore guildData) {
         final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
         final Locale locale = guildConf.getLocale();
@@ -240,11 +242,11 @@ public class ConfigCommand extends AdminCommand {
 
     /**
      *
-     * @param options String of option to disable
+     * @param option String of option to disable
      * @param channel TextChannel to reply on
-     * @param guildConf ConfigManager in which to disable to value
+     * @param guildData ConfigManager in which to disable to value
      */
-    private static void disableValue(String option, TextChannel channel, GuildDataStore guildData) {
+    private static void disableValue(final String option, final TextChannel channel, final GuildDataStore guildData) {
         final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
         final Locale locale = guildConf.getLocale();

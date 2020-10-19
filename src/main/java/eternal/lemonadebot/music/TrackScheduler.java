@@ -28,7 +28,7 @@ class TrackScheduler extends AudioEventAdapter {
      * @param player The audio player this scheduler uses
      * @param manager Manager to stop at the end of playlist
      */
-    TrackScheduler(AudioPlayer player, AudioManager manager) {
+    TrackScheduler(final AudioPlayer player, final AudioManager manager) {
         this.player = player;
         this.manager = manager;
         this.queue = new LinkedBlockingQueue<>();
@@ -40,12 +40,12 @@ class TrackScheduler extends AudioEventAdapter {
      *
      * @param track The track to play or add to queue.
      */
-    public void queue(AudioTrack track) {
+    public void queue(final AudioTrack track) {
         // Calling startTrack with the noInterrupt set to true will start the track only if nothing is currently playing. If
         // something is playing, it returns false and does nothing. In that case the player was already playing so this
         // track goes to the queue instead.
-        if (!player.startTrack(track, true)) {
-            queue.offer(track);
+        if (!this.player.startTrack(track, true)) {
+            this.queue.offer(track);
         }
     }
 
@@ -58,8 +58,8 @@ class TrackScheduler extends AudioEventAdapter {
     public boolean nextTrack() {
         // Start the next track, regardless of if something is already playing or not. In case queue was empty, we are
         // giving null to startTrack, which is a valid argument and will simply stop the player.
-        final AudioTrack track = queue.poll();
-        player.startTrack(track, false);
+        final AudioTrack track = this.queue.poll();
+        this.player.startTrack(track, false);
         if (track == null) {
             this.manager.getJDA().getPresence().setActivity(null);
             this.manager.closeAudioConnection();
@@ -68,13 +68,13 @@ class TrackScheduler extends AudioEventAdapter {
     }
 
     /**
-     * Called when a track plauback starts
+     * Called when a track playback starts
      *
      * @param player player that started
      * @param track track that was started
      */
     @Override
-    public void onTrackStart(AudioPlayer player, AudioTrack track) {
+    public void onTrackStart(final AudioPlayer player, final AudioTrack track) {
         final Activity status = Activity.listening(track.getInfo().title);
         this.manager.getJDA().getPresence().setActivity(status);
         super.onTrackStart(player, track);
@@ -89,7 +89,7 @@ class TrackScheduler extends AudioEventAdapter {
      * @param endReason why end
      */
     @Override
-    public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason) {
+    public void onTrackEnd(final AudioPlayer player, final AudioTrack track, final AudioTrackEndReason endReason) {
         // Only start the next track if the end reason is suitable for it (FINISHED or LOAD_FAILED)
         if (endReason.mayStartNext) {
             nextTrack();
@@ -111,7 +111,7 @@ class TrackScheduler extends AudioEventAdapter {
      * @param track Track to remove
      * @return true if removed
      */
-    boolean skipTrack(AudioTrack track) {
+    boolean skipTrack(final AudioTrack track) {
         return this.queue.removeIf(t -> t.getIdentifier().equals(track.getIdentifier()));
     }
 
@@ -121,6 +121,6 @@ class TrackScheduler extends AudioEventAdapter {
      * @return Collection of AudioTracks
      */
     List<AudioTrack> getPlaylist() {
-        return new ArrayList<>(queue);
+        return new ArrayList<>(this.queue);
     }
 }

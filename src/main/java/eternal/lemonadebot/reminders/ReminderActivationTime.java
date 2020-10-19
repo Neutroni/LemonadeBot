@@ -55,7 +55,7 @@ class ReminderActivationTime {
      * @param dayOfMonth Day of Month reminder should activate on, 0 to ignore
      * @param monthOfYear Moth reminder should activate on, null to ignore
      */
-    ReminderActivationTime(LocalTime activationTime, DayOfWeek dayOfWeek, int dayOfMonth, Month monthOfYear) {
+    ReminderActivationTime(final LocalTime activationTime, final DayOfWeek dayOfWeek, final int dayOfMonth, final Month monthOfYear) {
         this.time = activationTime;
         this.dayOfWeek = dayOfWeek;
         this.dayOfMonth = dayOfMonth;
@@ -68,11 +68,11 @@ class ReminderActivationTime {
      * @param timeZone TimeZone the activation check happens in
      * @return Duration to next check
      */
-    Duration getTimeToActivation(ZoneId timeZone) {
+    Duration getTimeToActivation(final ZoneId timeZone) {
         final ZonedDateTime now = ZonedDateTime.now(timeZone);
         ZonedDateTime activationTime = now.with(this.time);
         if (activationTime.isBefore(now)) {
-            activationTime.plus(1, ChronoUnit.DAYS);
+            activationTime = activationTime.plus(1, ChronoUnit.DAYS);
         }
         return Duration.between(now, activationTime);
     }
@@ -83,7 +83,7 @@ class ReminderActivationTime {
      * @param timeZone ZoneId the activation happens at
      * @return true if reminder should activate today
      */
-    boolean shouldActivate(ZoneId timeZone) {
+    boolean shouldActivate(final ZoneId timeZone) {
         final ZonedDateTime now = ZonedDateTime.now(timeZone);
         if (this.dayOfWeek != null) {
             if (now.getDayOfWeek() != this.dayOfWeek) {
@@ -96,9 +96,7 @@ class ReminderActivationTime {
             }
         }
         if (this.monthOfYear != null) {
-            if (now.getMonth() != this.monthOfYear) {
-                return false;
-            }
+            return now.getMonth() == this.monthOfYear;
         }
         return true;
     }
@@ -128,7 +126,7 @@ class ReminderActivationTime {
      * @param formatter Formattern to use for formatting activation time
      * @return String representation of activation time
      */
-    String getCronString(Locale locale, DateTimeFormatter formatter) {
+    String getCronString(final Locale locale, final DateTimeFormatter formatter) {
         final StringBuilder sb = new StringBuilder();
         sb.append(this.time.format(formatter));
         sb.append(' ');

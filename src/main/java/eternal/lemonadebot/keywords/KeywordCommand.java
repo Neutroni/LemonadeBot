@@ -41,10 +41,8 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.PatternSyntaxException;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.entities.User;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -58,24 +56,24 @@ public class KeywordCommand extends AdminCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand(Locale locale) {
+    public String getCommand(final Locale locale) {
         return TranslationKey.COMMAND_KEYWORD.getTranslation(locale);
     }
 
     @Override
-    public String getDescription(Locale locale) {
+    public String getDescription(final Locale locale) {
         return TranslationKey.DESCRIPTION_KEYWORD.getTranslation(locale);
     }
 
     @Override
-    public String getHelpText(Locale locale) {
+    public String getHelpText(final Locale locale) {
         final String template = TranslationKey.SYNTAX_KEYWORD.getTranslation(locale);
         final String keys = TemplateProvider.getHelp(locale);
         return String.format(template, keys);
     }
 
     @Override
-    public void respond(CommandMatcher matcher, GuildDataStore guildData) {
+    public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
@@ -107,7 +105,7 @@ public class KeywordCommand extends AdminCommand {
         }
     }
 
-    private static void createKeywords(CommandMatcher matcher, GuildDataStore guildData) {
+    private static void createKeywords(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = matcher.getLocale();
         
@@ -148,7 +146,7 @@ public class KeywordCommand extends AdminCommand {
 
     }
 
-    private static void deleteKeyword(String[] arguments, CommandMatcher matcher, GuildDataStore guildData) {
+    private static void deleteKeyword(final String[] arguments, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
 
@@ -187,7 +185,7 @@ public class KeywordCommand extends AdminCommand {
         });
     }
 
-    private static void listKeywords(CommandMatcher matcher, GuildDataStore guildData) {
+    private static void listKeywords(final CommandMatcher matcher, final GuildDataStore guildData) {
         final Locale locale = guildData.getConfigManager().getLocale();
         final TextChannel textChannel = matcher.getTextChannel();
 

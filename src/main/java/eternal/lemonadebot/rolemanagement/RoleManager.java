@@ -50,7 +50,7 @@ public class RoleManager {
      * @param ds database connection
      * @param guildID ID of the guild to store allowed roles for
      */
-    public RoleManager(DataSource ds, long guildID) {
+    public RoleManager(final DataSource ds, final long guildID) {
         this.dataSource = ds;
         this.guildID = guildID;
     }
@@ -62,7 +62,7 @@ public class RoleManager {
      * @return true if event was added
      * @throws SQLException If database connection failed
      */
-    boolean allowRole(AllowedRole role) throws SQLException {
+    boolean allowRole(final AllowedRole role) throws SQLException {
         final String query = "INSERT OR IGNORE INTO Roles(guild,role,description) VALUES(?,?,?);";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -80,7 +80,7 @@ public class RoleManager {
      * @return true if event was removed succesfully
      * @throws SQLException if database connection failed
      */
-    boolean disallowRole(Role role) throws SQLException {
+    boolean disallowRole(final Role role) throws SQLException {
         final String query = "DELETE FROM Roles Where guild = ? AND role = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -102,7 +102,7 @@ public class RoleManager {
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (final ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final long roleID = rs.getLong("role");
                     final String description = rs.getString("description");
@@ -121,19 +121,16 @@ public class RoleManager {
      * @return true if role can be assigned.
      * @throws SQLException if database connection failed
      */
-    boolean isAllowed(Role role) throws SQLException {
+    boolean isAllowed(final Role role) throws SQLException {
         final String query = "SELECT role FROM Roles WHERE guild = ? AND role = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setLong(2, role.getIdLong());
-            try ( ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    return true;
-                }
+            try (final ResultSet rs = ps.executeQuery()) {
+                return rs.next();
             }
         }
-        return false;
     }
 
     /**
@@ -143,17 +140,17 @@ public class RoleManager {
      * @return Optional containing AllowedRole if found
      * @throws SQLException If database connection failed
      */
-    protected Optional<AllowedRole> getAllowedRole(Role role) throws SQLException {
-        final String query = "SELECT role,description FROM Roles WHERE guild = ?;";
+    protected Optional<AllowedRole> getAllowedRole(final Role role) throws SQLException {
+        final String query = "SELECT role,description FROM Roles WHERE guild = ? AND role = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            try ( ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
+            ps.setLong(2,role.getIdLong());
+            try (final ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
                     final long roleID = rs.getLong("role");
                     final String description = rs.getString("description");
                     return Optional.of(new AllowedRole(roleID, description));
-
                 }
             }
         }

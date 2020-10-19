@@ -50,14 +50,14 @@ public class EventCache extends EventManager {
      * @param ds database connection
      * @param guildID ID of the guild to store events for
      */
-    public EventCache(DataSource ds, long guildID) {
+    public EventCache(final DataSource ds, final long guildID) {
         super(ds, guildID);
     }
 
     @Override
-    public Optional<Event> getEvent(String name) throws SQLException {
+    public Optional<Event> getEvent(final String name) throws SQLException {
         final Event event = this.events.get(name);
-        if (eventsLoaded) {
+        if (this.eventsLoaded) {
             return Optional.ofNullable(event);
         }
         if (event == null) {
@@ -71,7 +71,7 @@ public class EventCache extends EventManager {
     }
 
     @Override
-    public boolean leaveEvent(Event event, long memberID) throws SQLException {
+    public boolean leaveEvent(final Event event, final long memberID) throws SQLException {
         final Set<Long> eventMembers = this.members.get(event.getName());
         if (eventMembers != null) {
             eventMembers.remove(memberID);
@@ -80,7 +80,7 @@ public class EventCache extends EventManager {
     }
 
     @Override
-    public List<Long> getMembers(Event event) throws SQLException {
+    public List<Long> getMembers(final Event event) throws SQLException {
         final String eventName = event.getName();
         final Set<Long> eventMembers = this.members.get(eventName);
         if (eventMembers == null) {
@@ -94,13 +94,13 @@ public class EventCache extends EventManager {
     }
 
     @Override
-    boolean addEvent(Event event) throws SQLException {
+    boolean addEvent(final Event event) throws SQLException {
         this.events.putIfAbsent(event.getName(), event);
         return super.addEvent(event);
     }
 
     @Override
-    boolean removeEvent(Event event) throws SQLException {
+    boolean removeEvent(final Event event) throws SQLException {
         final String eventName = event.getName();
         this.events.remove(eventName);
         this.members.remove(eventName);
@@ -108,7 +108,7 @@ public class EventCache extends EventManager {
     }
 
     @Override
-    boolean joinEvent(Event event, Member member) throws SQLException {
+    boolean joinEvent(final Event event, final Member member) throws SQLException {
         this.members.computeIfAbsent(event.getName(), (String eventName) -> {
             return ConcurrentHashMap.newKeySet();
         }).add(member.getIdLong());
@@ -116,33 +116,33 @@ public class EventCache extends EventManager {
     }
 
     @Override
-    boolean clearEvent(Event event) throws SQLException {
+    boolean clearEvent(final Event event) throws SQLException {
         this.members.remove(event.getName());
         return super.clearEvent(event);
     }
 
     @Override
-    boolean lockEvent(Event event) throws SQLException {
+    boolean lockEvent(final Event event) throws SQLException {
         event.lock();
         return super.lockEvent(event);
     }
 
     @Override
-    boolean unlockEvent(Event event) throws SQLException {
+    boolean unlockEvent(final Event event) throws SQLException {
         event.unlock();
         return super.unlockEvent(event);
     }
 
     @Override
     Collection<Event> getEvents() throws SQLException {
-        if (eventsLoaded) {
+        if (this.eventsLoaded) {
             return Collections.unmodifiableCollection(this.events.values());
         }
         final Collection<Event> eventCollection = super.getEvents();
         eventCollection.forEach((Event ev) -> {
             this.events.putIfAbsent(ev.getName(), ev);
         });
-        eventsLoaded = true;
+        this.eventsLoaded = true;
         return eventCollection;
     }
 

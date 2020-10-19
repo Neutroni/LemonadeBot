@@ -43,7 +43,7 @@ public interface ChatCommand {
      * @param locale Locale to get the command name inF
      * @return the command to activate this action
      */
-    public String getCommand(Locale locale);
+    String getCommand(Locale locale);
 
     /**
      * Short description for command, used for command listings
@@ -51,7 +51,7 @@ public interface ChatCommand {
      * @param locale Locale to return the description in
      * @return Description for what this command does
      */
-    public String getDescription(Locale locale);
+    String getDescription(Locale locale);
 
     /**
      * Help text for command, usage info for the command
@@ -59,7 +59,7 @@ public interface ChatCommand {
      * @param locale Locale to return the help in
      * @return help text for the command
      */
-    public String getHelpText(Locale locale);
+    String getHelpText(Locale locale);
 
     /**
      * What rank is needed to run this command by default
@@ -69,7 +69,7 @@ public interface ChatCommand {
      * @param permissions PermissionManager to use
      * @return The default rank needed to run this command
      */
-    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID, PermissionManager permissions);
+    Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID, PermissionManager permissions);
 
     /**
      * Responds to a message

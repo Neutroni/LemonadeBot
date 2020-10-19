@@ -25,6 +25,7 @@ package eternal.lemonadebot.database;
 
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.config.ConfigManager;
+import eternal.lemonadebot.cooldowns.CooldownCache;
 import eternal.lemonadebot.cooldowns.CooldownManager;
 import eternal.lemonadebot.customcommands.TemplateCache;
 import eternal.lemonadebot.customcommands.TemplateManager;
@@ -40,6 +41,8 @@ import eternal.lemonadebot.reminders.ReminderManager;
 import eternal.lemonadebot.rolemanagement.RoleManager;
 import eternal.lemonadebot.rolemanagement.RoleManagerCache;
 import eternal.lemonadebot.translation.TranslationCache;
+
+import java.io.Closeable;
 import java.util.Locale;
 import javax.sql.DataSource;
 import net.dv8tion.jda.api.JDA;
@@ -49,7 +52,7 @@ import net.dv8tion.jda.api.JDA;
  *
  * @author Neutroni
  */
-public class GuildDataStore implements AutoCloseable {
+public class GuildDataStore implements Closeable {
 
     private final long guildID;
     private final ConfigManager config;
@@ -72,7 +75,7 @@ public class GuildDataStore implements AutoCloseable {
      * @param guildID Guild this config is for
      * @param jda JDA to use for reminders
      */
-    GuildDataStore(final DataSource dataSource, final long guildID, JDA jda, CacheConfig cacheConf) {
+    GuildDataStore(final DataSource dataSource, final long guildID, final JDA jda, final CacheConfig cacheConf) {
         this.guildID = guildID;
         this.config = new ConfigManager(dataSource, guildID);
         final Locale locale = this.config.getLocale();
@@ -81,11 +84,15 @@ public class GuildDataStore implements AutoCloseable {
         } else {
             this.permissions = new PermissionManager(dataSource, guildID, locale);
         }
-        this.reminders = new ReminderManager(dataSource, jda, this, guildID);
+        this.reminders = new ReminderManager(dataSource, jda, this);
         this.messages = new MessageManager(dataSource);
         this.translationCache = new TranslationCache(locale);
         this.keywordManager = new KeywordManager(dataSource, guildID);
-        this.cooldowns = new CooldownManager(dataSource, guildID);
+        if(cacheConf.cooldownCacheEnabled()){
+            this.cooldowns = new CooldownCache(dataSource, guildID);
+        } else {
+            this.cooldowns = new CooldownManager(dataSource, guildID);
+        }
         if (cacheConf.templateCacheEnabled()) {
             this.commands = new TemplateCache(dataSource, guildID);
         } else {

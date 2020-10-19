@@ -31,6 +31,6 @@ import java.util.Locale;
  */
 public interface LocaleUpdateListener {
 
-    public void updateLocale(Locale newLocale);
+    void updateLocale(Locale newLocale);
 
 }

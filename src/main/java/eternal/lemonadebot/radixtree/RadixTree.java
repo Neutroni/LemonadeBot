@@ -46,7 +46,7 @@ public class RadixTree<T> {
      *
      * @param value value to store in the tree
      */
-    public RadixTree(T value) {
+    public RadixTree(final T value) {
         this.value = Optional.ofNullable(value);
     }
 
@@ -66,9 +66,9 @@ public class RadixTree<T> {
      * @param node value to associate with name
      * @return true if opearation overwrote a value
      */
-    public boolean put(String name, T node) {
+    public boolean put(final String name, final T node) {
         final RadixTree<T> newNode = new RadixTree<>(node);
-        int i = name.indexOf(' ');
+        final int i = name.indexOf(' ');
         //name is single part, just check if we have a node with given name
         if (i == -1) {
             final RadixTree<T> oldNode = this.children.put(name, newNode);
@@ -94,8 +94,8 @@ public class RadixTree<T> {
      * @param name Name of node to remove
      * @return true if node was removed
      */
-    public boolean remove(String name) {
-        int i = name.indexOf(' ');
+    public boolean remove(final String name) {
+        final int i = name.indexOf(' ');
         //name is single part, just check if we have a node with given name
         if (i == -1) {
             final RadixTree<T> oldNode = this.children.get(name);
@@ -143,17 +143,15 @@ public class RadixTree<T> {
      * @param name key to get value for
      * @return stored value or this nodes value if no match for key
      */
-    public Optional<T> get(String name) {
-        int i = name.indexOf(' ');
+    public Optional<T> get(final String name) {
+        final int i = name.indexOf(' ');
         //name is single part, just check if we have a node with given name
         if (i == -1) {
             final RadixTree<T> oldNode = this.children.get(name);
             if (oldNode == null) {
                 return getValue();
             }
-            return oldNode.getValue().or(() -> {
-                return getValue();
-            });
+            return oldNode.getValue().or(this::getValue);
         }
         //Multiple part name
         final String key = name.substring(0, i);
@@ -164,9 +162,7 @@ public class RadixTree<T> {
             return this.value;
         }
         final Optional<T> val = oldNode.get(remaining);
-        return val.or(() -> {
-            return getValue();
-        });
+        return val.or(this::getValue);
     }
 
     /**
@@ -177,27 +173,18 @@ public class RadixTree<T> {
     public Collection<T> getValues() {
         final List<T> values = new ArrayList<>();
         //Get every child of this node and add to map
-        for (RadixTree<T> child : this.children.values()) {
-            child.getValue().ifPresent((T t) -> {
-                values.add(t);
-            });
+        for (final RadixTree<T> child : this.children.values()) {
+            child.getValue().ifPresent(values::add);
             values.addAll(child.getValues());
         }
         return Collections.unmodifiableCollection(values);
-    }
-
-    /**
-     * Clear the list of children this node has
-     */
-    public void clear() {
-        this.children.clear();
     }
 
     protected Map<String, RadixTree<T>> getChildren() {
         return Collections.unmodifiableMap(this.children);
     }
 
-    protected void addChildren(Map<String, RadixTree<T>> nodes) {
+    protected void addChildren(final Map<String, RadixTree<T>> nodes) {
         this.children.putAll(nodes);
     }
 }

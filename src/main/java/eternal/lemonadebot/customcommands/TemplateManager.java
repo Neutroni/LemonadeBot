@@ -50,7 +50,7 @@ public class TemplateManager {
      * @param ds Database connection to use
      * @param guildID guild to store templates for
      */
-    public TemplateManager(DataSource ds, long guildID) {
+    public TemplateManager(final DataSource ds, final long guildID) {
         this.dataSource = ds;
         this.guildID = guildID;
     }
@@ -62,18 +62,17 @@ public class TemplateManager {
      * @return optional containing the command
      * @throws SQLException if database connection failed
      */
-    public Optional<CustomCommand> getCommand(String name) throws SQLException {
+    public Optional<CustomCommand> getCommand(final String name) throws SQLException {
         final String query = "SELECT template,owner FROM Commands WHERE guild = ? AND name = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, name);
-            try ( ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
+            try (final ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
                     final String commandTemplate = rs.getString("template");
                     final long commandOwnerID = rs.getLong("owner");
-                    final CustomCommand newCommand = new CustomCommand(name, commandTemplate, commandOwnerID);
-                    return Optional.of(newCommand);
+                    return Optional.of(new CustomCommand(name, commandTemplate, commandOwnerID));
                 }
             }
         }
@@ -87,7 +86,7 @@ public class TemplateManager {
      * @return true if added succesfully
      * @throws SQLException if database connection fails
      */
-    boolean addCommand(CustomCommand command) throws SQLException {
+    boolean addCommand(final CustomCommand command) throws SQLException {
         final String query = "INSERT OR IGNORE INTO Commands(guild,name,template,owner) VALUES(?,?,?,?);";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -106,7 +105,7 @@ public class TemplateManager {
      * @return true if command was removed
      * @throws SQLException if database connection fails
      */
-    boolean removeCommand(CustomCommand command) throws SQLException {
+    boolean removeCommand(final CustomCommand command) throws SQLException {
         final String query = "DELETE FROM Commands WHERE name = ? AND guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -128,7 +127,7 @@ public class TemplateManager {
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (final ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final String commandName = rs.getString("name");
                     final String commandTemplate = rs.getString("template");

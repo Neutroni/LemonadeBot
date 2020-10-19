@@ -51,7 +51,7 @@ public class JoinListener extends ListenerAdapter {
      *
      * @param database Database to use for operations
      */
-    public JoinListener(DatabaseManager database) {
+    public JoinListener(final DatabaseManager database) {
         this.db = database;
     }
 
@@ -61,7 +61,7 @@ public class JoinListener extends ListenerAdapter {
      * @param event info about the join
      */
     @Override
-    public void onGuildMemberJoin(GuildMemberJoinEvent event) {
+    public void onGuildMemberJoin(final GuildMemberJoinEvent event) {
         final Guild guild = event.getGuild();
         final Member member = event.getMember();
         LOGGER.debug(() -> {
@@ -100,7 +100,7 @@ public class JoinListener extends ListenerAdapter {
      * @param event info about the join
      */
     @Override
-    public void onGuildJoin(GuildJoinEvent event) {
+    public void onGuildJoin(final GuildJoinEvent event) {
         final Guild eventGuild = event.getGuild();
         LOGGER.info("Joined guild: {}", eventGuild.getName());
         LOGGER.info("Guild id: {}", eventGuild.getId());

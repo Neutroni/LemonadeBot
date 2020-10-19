@@ -28,7 +28,6 @@ import java.util.Locale;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
@@ -110,13 +109,6 @@ public interface CommandMatcher {
      * @return same as message.getMentinedMembers()
      */
     List<Member> getMentionedMembers();
-
-    /**
-     * Return list of roles mentioned in the message
-     *
-     * @return Same as message.getMentionedRoles()
-     */
-    List<Role> getMentionedRoles();
 
     /**
      * Return list of channels mentions in the message

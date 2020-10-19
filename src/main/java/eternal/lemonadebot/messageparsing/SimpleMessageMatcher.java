@@ -28,7 +28,6 @@ import java.util.Locale;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
@@ -49,7 +48,7 @@ public class SimpleMessageMatcher implements CommandMatcher {
      * @param channel Channel reminder should be sent in
      * @param locale Locale for guild the matcher was created for
      */
-    public SimpleMessageMatcher(Member author, TextChannel channel, Locale locale) {
+    public SimpleMessageMatcher(final Member author, final TextChannel channel, final Locale locale) {
         this.author = author;
         this.channel = channel;
         this.locale = locale;
@@ -66,12 +65,12 @@ public class SimpleMessageMatcher implements CommandMatcher {
     }
 
     @Override
-    public String[] getArguments(int count) {
+    public String[] getArguments(final int count) {
         return new String[0];
     }
 
     @Override
-    public List<String> parseArguments(int count) {
+    public List<String> parseArguments(final int count) {
         return List.of();
     }
 
@@ -97,11 +96,6 @@ public class SimpleMessageMatcher implements CommandMatcher {
 
     @Override
     public List<Member> getMentionedMembers() {
-        return List.of();
-    }
-
-    @Override
-    public List<Role> getMentionedRoles() {
         return List.of();
     }
 

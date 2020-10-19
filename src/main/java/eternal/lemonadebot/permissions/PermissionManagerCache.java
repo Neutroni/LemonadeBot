@@ -47,13 +47,13 @@ public class PermissionManagerCache extends PermissionManager {
      * @param guildID ID of the guild to store permissions for
      * @param locale Locale to use for loading default permissions
      */
-    public PermissionManagerCache(DataSource ds, long guildID, Locale locale) {
+    public PermissionManagerCache(final DataSource ds, final long guildID, final Locale locale) {
         super(ds, guildID, locale);
         this.permissions = new RadixTree<>(null);
     }
 
     @Override
-    public boolean setPermission(CommandPermission perm) throws SQLException {
+    public boolean setPermission(final CommandPermission perm) throws SQLException {
         final String action = perm.getAction();
         this.permissions.put(action, perm);
         return super.setPermission(perm);
@@ -61,7 +61,7 @@ public class PermissionManagerCache extends PermissionManager {
 
     @Override
     Collection<CommandPermission> getPermissions() throws SQLException {
-        if (permissionsLoaded) {
+        if (this.permissionsLoaded) {
             return Collections.unmodifiableCollection(this.permissions.getValues());
         }
         final Collection<CommandPermission> perms = super.getPermissions();
@@ -73,8 +73,8 @@ public class PermissionManagerCache extends PermissionManager {
     }
 
     @Override
-    protected Optional<CommandPermission> getPermission(String action) throws SQLException {
-        if (!permissionsLoaded) {
+    protected Optional<CommandPermission> getPermission(final String action) throws SQLException {
+        if (!this.permissionsLoaded) {
             //Attempt to load permissions
             getPermissions();
         }

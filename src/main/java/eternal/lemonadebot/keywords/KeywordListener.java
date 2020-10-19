@@ -54,7 +54,7 @@ public class KeywordListener extends ListenerAdapter {
      *
      * @param database Database to use for operations
      */
-    public KeywordListener(DatabaseManager database) {
+    public KeywordListener(final DatabaseManager database) {
         this.db = database;
     }
 
@@ -64,7 +64,7 @@ public class KeywordListener extends ListenerAdapter {
      * @param event Message info
      */
     @Override
-    public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
+    public void onGuildMessageReceived(final GuildMessageReceivedEvent event) {
         //Don't reply to bots
         if (event.getAuthor().isBot()) {
             return;
@@ -105,7 +105,7 @@ public class KeywordListener extends ListenerAdapter {
 
         //Find if message contains any keyword
         final String input = message.getContentDisplay();
-        for (KeywordAction com : keywordManager.getCommands()) {
+        for (final KeywordAction com : keywordManager.getCommands()) {
             if (!com.matches(input)) {
                 continue;
             }
@@ -118,7 +118,7 @@ public class KeywordListener extends ListenerAdapter {
             //Check cooldown
             final String commandName = com.getName();
             final Member member = matcher.getMember();
-            Optional<Duration> cooldownTime = cooldownManager.checkCooldown(member, commandName);
+            final Optional<Duration> cooldownTime = cooldownManager.checkCooldown(member, commandName);
             if (cooldownTime.isEmpty()) {
                 //Run the command
                 final CommandMatcher fakeMatcher = new SimpleMessageMatcher(event.getMember(), event.getChannel(), guildConf.getLocale());

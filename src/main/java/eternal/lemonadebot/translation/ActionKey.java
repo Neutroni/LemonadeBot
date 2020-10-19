@@ -63,7 +63,7 @@ public enum ActionKey {
 
     private final TranslationKey translationKey;
 
-    private ActionKey(TranslationKey translationKey) {
+    ActionKey(final TranslationKey translationKey) {
         this.translationKey = translationKey;
     }
 

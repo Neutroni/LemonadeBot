@@ -41,7 +41,7 @@ public class PermissionUtilities {
      * @param owner owner of the content, can be null
      * @return true if user has permission
      */
-    public static boolean hasPermission(@Nonnull Member member, @Nullable Member owner) {
+    public static boolean hasPermission(@Nonnull final Member member, @Nullable final Member owner) {
         //Same person
         if (member.equals(owner)) {
             return true;

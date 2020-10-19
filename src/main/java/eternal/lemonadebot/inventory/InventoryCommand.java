@@ -55,22 +55,22 @@ public class InventoryCommand implements ChatCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand(Locale locale) {
+    public String getCommand(final Locale locale) {
         return TranslationKey.COMMAND_INVENTORY.getTranslation(locale);
     }
 
     @Override
-    public String getDescription(Locale locale) {
+    public String getDescription(final Locale locale) {
         return TranslationKey.DESCRIPTION_INVENTORY.getTranslation(locale);
     }
 
     @Override
-    public String getHelpText(Locale locale) {
+    public String getHelpText(final Locale locale) {
         return TranslationKey.SYNTAX_INVENTORY.getTranslation(locale);
     }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID, PermissionManager permissions) {
+    public Collection<CommandPermission> getDefaultRanks(final Locale locale, final long guildID, final PermissionManager permissions) {
         final String commandName = getCommand(locale);
         final String actionCreate = TranslationKey.ACTION_ADD.getTranslation(locale);
         return List.of(new CommandPermission(commandName, MemberRank.USER, guildID),
@@ -78,7 +78,7 @@ public class InventoryCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(CommandMatcher message, GuildDataStore guildData) {
+    public void respond(final CommandMatcher message, final GuildDataStore guildData) {
         final Locale locale = message.getLocale();
         final TextChannel channel = message.getTextChannel();
         final TranslationCache translationCache = guildData.getTranslationCache();
@@ -110,7 +110,7 @@ public class InventoryCommand implements ChatCommand {
         }
     }
 
-    private static void showInventory(String[] opts, CommandMatcher message, GuildDataStore guildData) {
+    private static void showInventory(final String[] opts, final CommandMatcher message, final GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
         final InventoryManager inventoryManager = guildData.getInventoryManager();
         final Guild guild = message.getGuild();
@@ -150,7 +150,7 @@ public class InventoryCommand implements ChatCommand {
      * @param locale Locale to send the message in.
      * @param channel Channel to send the message on.
      */
-    private static void showInventoryForUser(Member member, InventoryManager inventoryManager, Locale locale, TextChannel channel) {
+    private static void showInventoryForUser(final Member member, final InventoryManager inventoryManager, final Locale locale, final TextChannel channel) {
         final EmbedBuilder eb = new EmbedBuilder();
         final String titleTemplate = TranslationKey.INVENTORY_FOR_USER.getTranslation(locale);
         final String userName = member.getEffectiveName();
@@ -176,7 +176,7 @@ public class InventoryCommand implements ChatCommand {
         channel.sendMessage(eb.build()).queue();
     }
 
-    private static void addItemToInventory(CommandMatcher message, GuildDataStore guildData) {
+    private static void addItemToInventory(final CommandMatcher message, final GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
         final Guild guild = message.getGuild();
         final Locale locale = message.getLocale();
@@ -256,7 +256,12 @@ public class InventoryCommand implements ChatCommand {
                 final Member target = members.get(0);
                 try {
                     if (inventoryManager.updateCount(target, itemName, itemCount)) {
-                        final String template = TranslationKey.INVENTORY_ITEM_ADDED_SUCCESS.getTranslation(locale);
+                        if(itemCount > 0){
+                            final String template = TranslationKey.INVENTORY_ITEM_ADDED_SUCCESS.getTranslation(locale);
+                            channel.sendMessageFormat(template, itemCount, itemName, target.getEffectiveName()).queue();
+                            return;
+                        }
+                        final String template = TranslationKey.INVENTORY_ITEM_REMOVED_SUCCESS.getTranslation(locale);
                         channel.sendMessageFormat(template, itemCount, itemName, target.getEffectiveName()).queue();
                         return;
                     }
@@ -319,7 +324,7 @@ public class InventoryCommand implements ChatCommand {
         channel.sendMessageFormat(template, modeName).queue();
     }
 
-    private static void payItemToUser(CommandMatcher message, GuildDataStore guildData) {
+    private static void payItemToUser(final CommandMatcher message, final GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
         final Guild guild = message.getGuild();
         final Locale locale = message.getLocale();
@@ -427,7 +432,7 @@ public class InventoryCommand implements ChatCommand {
                 int paidPeople = 0;
                 try {
                     final Map<String, Long> userInv = inventoryManager.getUserInventory(requester);
-                    if (userInv.getOrDefault(itemName, 0l) < requiredCount) {
+                    if (userInv.getOrDefault(itemName, 0L) < requiredCount) {
                         channel.sendMessage(TranslationKey.INVENTORY_PAY_USER_NOT_ENOUGH_ITEMS_FOR_EVERYONE.getTranslation(locale)).queue();
                         return;
                     }
@@ -442,9 +447,7 @@ public class InventoryCommand implements ChatCommand {
                     if (paidPeople < members.size()) {
                         final String template = TranslationKey.INVENTORY_PAY_INTERRUPTED_NOT_ENOUGH_FOR_EVERYONE.getTranslation(locale);
                         final List<Member> unpaid = members.subList(paidPeople, members.size());
-                        final String names = unpaid.stream().map((Member t) -> {
-                            return t.getEffectiveName();
-                        }).collect(Collectors.joining(","));
+                        final String names = unpaid.stream().map(Member::getEffectiveName).collect(Collectors.joining(","));
                         channel.sendMessageFormat(template, names).queue();
                         return;
                     }
@@ -452,9 +455,7 @@ public class InventoryCommand implements ChatCommand {
                     channel.sendMessageFormat(template, itemCount, itemName, members.size()).queue();
                 } catch (SQLException ex) {
                     final List<Member> unpaid = members.subList(paidPeople, members.size());
-                    final String names = unpaid.stream().map((Member t) -> {
-                        return t.getEffectiveName();
-                    }).collect(Collectors.joining(","));
+                    final String names = unpaid.stream().map(Member::getEffectiveName).collect(Collectors.joining(","));
                     final String template = TranslationKey.INVENTORY_ROLE_SQL_ERROR_ON_PAY.getTranslation(locale);
                     channel.sendMessageFormat(template, names).queue();
                     LOGGER.error("Failure for user to pay items to another: {}", ex.getMessage());

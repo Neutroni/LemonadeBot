@@ -54,7 +54,7 @@ public class LoggerListener extends ListenerAdapter {
      *
      * @param database Database to use for operations
      */
-    public LoggerListener(DatabaseManager database) {
+    public LoggerListener(final DatabaseManager database) {
         this.db = database;
     }
 
@@ -65,7 +65,7 @@ public class LoggerListener extends ListenerAdapter {
      * @param event Message info
      */
     @Override
-    public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
+    public void onGuildMessageReceived(final GuildMessageReceivedEvent event) {
         final Guild eventGuild = event.getGuild();
         final Message message = event.getMessage();
         final GuildDataStore guildData = this.db.getGuildData(eventGuild);
@@ -85,7 +85,7 @@ public class LoggerListener extends ListenerAdapter {
      * @param event info about the message that was updated
      */
     @Override
-    public void onGuildMessageUpdate(GuildMessageUpdateEvent event) {
+    public void onGuildMessageUpdate(final GuildMessageUpdateEvent event) {
         final Guild guild = event.getGuild();
         final GuildDataStore guildData = this.db.getGuildData(guild);
 
@@ -127,7 +127,7 @@ public class LoggerListener extends ListenerAdapter {
      * @param event info about the message that was removed
      */
     @Override
-    public void onGuildMessageDelete(GuildMessageDeleteEvent event) {
+    public void onGuildMessageDelete(final GuildMessageDeleteEvent event) {
         final Guild guild = event.getGuild();
         final GuildDataStore guildData = this.db.getGuildData(guild);
 

@@ -54,7 +54,7 @@ public class CooldownManager {
     private final DataSource dataSource;
     private final long guildID;
 
-    public CooldownManager(DataSource ds, long guildID) {
+    public CooldownManager(final DataSource ds, final long guildID) {
         this.dataSource = ds;
         this.guildID = guildID;
     }
@@ -66,7 +66,7 @@ public class CooldownManager {
      * @param action Action user is trying to perform
      * @return optional containing the cooldown remaining for the action
      */
-    public Optional<Duration> checkCooldown(Member member, String action) {
+    public Optional<Duration> checkCooldown(final Member member, final String action) {
         if (MemberRank.getRank(member).ordinal() > MemberRank.ADMIN.ordinal()) {
             //Command is never on cooldown for admins
             return Optional.empty();
@@ -102,7 +102,7 @@ public class CooldownManager {
      * @return true if cooldown was removed, false otherwise
      * @throws SQLException if database connection failed
      */
-    boolean removeCooldown(String action) throws SQLException {
+    boolean removeCooldown(final String action) throws SQLException {
         final String query = "DELETE FROM Cooldowns Where guild = ? AND command = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -120,7 +120,7 @@ public class CooldownManager {
      * @return true if cooldown was created or updated
      * @throws SQLException If database connection failed
      */
-    boolean setCooldown(String action, Duration duration) throws SQLException {
+    boolean setCooldown(final String action, final Duration duration) throws SQLException {
         final String query = "INSERT INTO Cooldowns(guild,command,duration,activationTime) VALUES(?,?,?,?) ON CONFLICT DO UPDATE SET duration = ?";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -141,15 +141,15 @@ public class CooldownManager {
      * @return ActionCooldown if found
      * @throws SQLException if database connection failed
      */
-    Optional<ActionCooldown> getActionCooldown(String action) throws SQLException {
+    Optional<ActionCooldown> getActionCooldown(final String action) throws SQLException {
         final String query = "SELECT command,duration,activationTime FROM Cooldowns "
                 + "WHERE guild = ? AND (command = ? OR ? LIKE command || ' %') "
                 + "ORDER BY length(command) DESC LIMIT 1;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            try ( ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
+            try (final ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
                     final String command = rs.getString("command");
                     final long cooldownDurationSeconds = rs.getLong("duration");
                     final long lastActivationTime = rs.getLong("activationTime");
@@ -172,7 +172,7 @@ public class CooldownManager {
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (final ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final String action = rs.getString("command");
                     final long cooldownDurationSeconds = rs.getLong("duration");
@@ -189,10 +189,10 @@ public class CooldownManager {
      * Set action last seen time to current time.
      *
      * @param action Action string to set last seen time
-     * @return true if activate time updated succesfully
-     * @throws SQLException
+     * @return true if activate time updated successfully
+     * @throws SQLException If database connection failed
      */
-    protected boolean updateActivationTime(String action) throws SQLException {
+    protected boolean updateActivationTime(final String action) throws SQLException {
         final String query = "UPDATE Cooldowns SET activationTime = ? WHERE guild = ? AND command = ? VALUES(?,?,?)";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -204,13 +204,13 @@ public class CooldownManager {
     }
 
     /**
-     * Format duratio to a string in locale
+     * Format duration to a string in locale
      *
      * @param duration Duration to format
      * @param locale Locale to return the duration string in
      * @return Duration as string
      */
-    public static String formatDuration(Duration duration, Locale locale) {
+    public static String formatDuration(final Duration duration, final Locale locale) {
         if (duration.isNegative() || duration.isZero()) {
             return "00:00:00";
         }

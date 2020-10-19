@@ -51,22 +51,22 @@ public class CooldownCommand extends AdminCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand(Locale locale) {
+    public String getCommand(final Locale locale) {
         return TranslationKey.COMMAND_COOLDOWN.getTranslation(locale);
     }
 
     @Override
-    public String getDescription(Locale locale) {
+    public String getDescription(final Locale locale) {
         return TranslationKey.DESCRIPTION_COOLDOWN.getTranslation(locale);
     }
 
     @Override
-    public String getHelpText(Locale locale) {
+    public String getHelpText(final Locale locale) {
         return TranslationKey.SYNTAX_COOLDOWN.getTranslation(locale);
     }
 
     @Override
-    public void respond(CommandMatcher matcher, GuildDataStore guildData) {
+    public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final String[] arguments = matcher.getArguments(1);
         final TextChannel channel = matcher.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
@@ -111,10 +111,10 @@ public class CooldownCommand extends AdminCommand {
      * Send message reply of the cooldown set for action
      *
      * @param channel Channel to send message on
-     * @param cooldownManager cooldown manager to get cooldown from
+     * @param guildData GuildData to get  cooldown manager from
      * @param requestedAction action to get cooldown for
      */
-    private static void getCooldown(TextChannel channel, GuildDataStore guildData, String requestedAction) {
+    private static void getCooldown(final TextChannel channel, final GuildDataStore guildData, final String requestedAction) {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
         final Locale locale = guildData.getConfigManager().getLocale();
         final Optional<ActionCooldown> cd;
@@ -142,10 +142,10 @@ public class CooldownCommand extends AdminCommand {
      * Set cooldown for action
      *
      * @param channel Channel to send responses on
-     * @param cooldownManager cooldown manager to use for setting cooldown
+     * @param guildData cooldown manager to use for setting cooldown
      * @param arguments arguments time,amount,action to use for setting cooldown
      */
-    private static void setCooldown(TextChannel channel, GuildDataStore guildData, String[] arguments) {
+    private static void setCooldown(final TextChannel channel, final GuildDataStore guildData, final String[] arguments) {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
         final ConfigManager guildConf = guildData.getConfigManager();
         final Locale locale = guildConf.getLocale();
@@ -157,7 +157,7 @@ public class CooldownCommand extends AdminCommand {
         }
 
         final String timeAmountstring = arguments[1];
-        int timeAmount;
+        final int timeAmount;
         try {
             timeAmount = Integer.parseInt(timeAmountstring);
         } catch (NumberFormatException e) {
@@ -206,7 +206,7 @@ public class CooldownCommand extends AdminCommand {
      * @param guildData CooldownManager to remove cooldown in
      * @param requestedAction Action which to remove cooldown from
      */
-    private static void disableCooldown(TextChannel channel, GuildDataStore guildData, String requestedAction) {
+    private static void disableCooldown(final TextChannel channel, final GuildDataStore guildData, final String requestedAction) {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
         final Locale locale = guildData.getConfigManager().getLocale();
         try {
@@ -224,7 +224,7 @@ public class CooldownCommand extends AdminCommand {
         }
     }
 
-    private static void listCooldowns(CommandMatcher matcher, GuildDataStore guildData) {
+    private static void listCooldowns(final CommandMatcher matcher, final GuildDataStore guildData) {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
         final TextChannel channel = matcher.getTextChannel();
         final Locale locale = matcher.getLocale();

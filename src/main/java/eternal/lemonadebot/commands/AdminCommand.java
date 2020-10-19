@@ -38,7 +38,7 @@ import java.util.Locale;
 public abstract class AdminCommand implements ChatCommand {
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID, PermissionManager permissions) {
+    public Collection<CommandPermission> getDefaultRanks(final Locale locale, final long guildID, final PermissionManager permissions) {
         return List.of(new CommandPermission(getCommand(locale), MemberRank.ADMIN, guildID));
     }
 }

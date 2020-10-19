@@ -50,7 +50,7 @@ public class MessageManager {
      *
      * @param ds DataSource to get connection from
      */
-    public MessageManager(DataSource ds) {
+    public MessageManager(final DataSource ds) {
         this.dataSource = ds;
     }
 
@@ -60,13 +60,13 @@ public class MessageManager {
      *
      * @param message Message to log
      */
-    void logMessage(Message message) {
-        final long currentguildID = message.getGuild().getIdLong();
+    void logMessage(final Message message) {
+        final long currentGuildID = message.getGuild().getIdLong();
         final String query = "INSERT INTO Messages(id,guild,author,content) VALUES(?,?,?)";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, message.getIdLong());
-            ps.setLong(2, currentguildID);
+            ps.setLong(2, currentGuildID);
             ps.setLong(3, message.getAuthor().getIdLong());
             ps.setString(4, message.getContentRaw());
             ps.executeUpdate();
@@ -82,13 +82,13 @@ public class MessageManager {
      * @param messageID ID of the message which to retrieve
      * @return Optional containing the message content if stored
      */
-    Optional<StoredMessage> getMessageContent(long messageID) {
+    Optional<StoredMessage> getMessageContent(final long messageID) {
         final String query = "SELECT author,content from Messages WHERE id = ?";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, messageID);
-            try ( ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
+            try (final ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
                     final long authorID = rs.getLong("author");
                     final String content = rs.getString("content");
                     final StoredMessage message = new StoredMessage(authorID, content);

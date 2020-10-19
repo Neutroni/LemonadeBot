@@ -35,7 +35,7 @@ import net.dv8tion.jda.api.entities.Role;
 public class AllowedRole {
 
     private final long roleID;
-    private volatile String description;
+    private final String description;
 
     /**
      * Constructor
@@ -43,7 +43,7 @@ public class AllowedRole {
      * @param role Role to allow
      * @param description Description for role
      */
-    AllowedRole(Role role, String description) {
+    AllowedRole(final Role role, final String description) {
         this.roleID = role.getIdLong();
         this.description = description;
     }
@@ -54,7 +54,7 @@ public class AllowedRole {
      * @param role role id
      * @param description Description for this role
      */
-    AllowedRole(long role, String description) {
+    AllowedRole(final long role, final String description) {
         this.roleID = role;
         this.description = description;
     }
@@ -65,7 +65,7 @@ public class AllowedRole {
     }
 
     @Override
-    public boolean equals(Object other) {
+    public boolean equals(final Object other) {
         if (other instanceof AllowedRole) {
             final AllowedRole otherEvent = (AllowedRole) other;
             return (this.roleID == otherEvent.getRoleID());
@@ -92,22 +92,13 @@ public class AllowedRole {
     }
 
     /**
-     * Set the description for role
-     *
-     * @param description String
-     */
-    void setDescription(String description) {
-        this.description = description;
-    }
-
-    /**
      * Get string representation of the event for listing events
      *
      * @param locale Locale to return the list element in
      * @param guild guild to get the role name from
      * @return String
      */
-    String toListElement(Locale locale, Guild guild) {
+    String toListElement(final Locale locale, final Guild guild) {
         final Role role = guild.getRoleById(this.roleID);
         final String template = TranslationKey.ROLE_COMMAND_LIST_ELEMENT.getTranslation(locale);
 

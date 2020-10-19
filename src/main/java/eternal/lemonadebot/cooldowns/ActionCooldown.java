@@ -44,12 +44,11 @@ public class ActionCooldown {
      *
      * @param action Action this cooldown is for
      * @param cooldownDuration Duration the cooldown is
-     * @param activationTime Last time of activation for action
      */
-    ActionCooldown(String action, Duration cooldownDuration, Instant activationTime) {
+    ActionCooldown(final String action, final Duration cooldownDuration) {
         this.command = action;
         this.cooldownDuration = cooldownDuration;
-        this.activationTime = activationTime;
+        this.activationTime = Instant.EPOCH;
     }
 
     /**
@@ -59,7 +58,7 @@ public class ActionCooldown {
      * @param cooldownDurationSeconds Duration the cooldown is
      * @param activationTimeSeconds Last time of activation for action
      */
-    ActionCooldown(String action, long cooldownDurationSeconds, long activationTimeSeconds) {
+    ActionCooldown(final String action, final long cooldownDurationSeconds, final long activationTimeSeconds) {
         this.command = action;
         this.cooldownDuration = Duration.ofSeconds(cooldownDurationSeconds);
         this.activationTime = Instant.ofEpochSecond(activationTimeSeconds);
@@ -70,7 +69,7 @@ public class ActionCooldown {
      *
      * @param duration duration to set
      */
-    void updateCooldownDuration(Duration duration) {
+    void updateCooldownDuration(final Duration duration) {
         this.cooldownDuration = duration;
     }
 
@@ -79,17 +78,8 @@ public class ActionCooldown {
      *
      * @param activation time to set
      */
-    void updateActivationTime(Instant activation) {
+    void updateActivationTime(final Instant activation) {
         this.activationTime = activation;
-    }
-
-    /**
-     * Get the time action was last performed
-     *
-     * @return Instant of last activation
-     */
-    Instant getLastActivationTime() {
-        return this.activationTime;
     }
 
     /**
@@ -126,7 +116,7 @@ public class ActionCooldown {
      * @param locale Locale to format to
      * @return String description for cooldown.
      */
-    String toListElement(Locale locale) {
+    String toListElement(final Locale locale) {
         final String template = TranslationKey.COOLDOWN_LIST_ELEMENT.getTranslation(locale);
         return String.format(template, this.command, CooldownManager.formatDuration(this.cooldownDuration, locale));
     }

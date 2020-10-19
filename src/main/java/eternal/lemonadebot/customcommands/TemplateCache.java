@@ -47,26 +47,26 @@ public class TemplateCache extends TemplateManager {
      * @param ds Database connection to use
      * @param guildID guild to store templates for
      */
-    public TemplateCache(DataSource ds, long guildID) {
+    public TemplateCache(final DataSource ds, final long guildID) {
         super(ds, guildID);
     }
 
     @Override
-    boolean addCommand(CustomCommand command) throws SQLException {
+    boolean addCommand(final CustomCommand command) throws SQLException {
         this.commands.putIfAbsent(command.getName(), command);
         return super.addCommand(command);
     }
 
     @Override
-    boolean removeCommand(CustomCommand command) throws SQLException {
+    boolean removeCommand(final CustomCommand command) throws SQLException {
         this.commands.remove(command.getName());
         return super.removeCommand(command);
     }
 
     @Override
-    public Optional<CustomCommand> getCommand(String name) throws SQLException {
+    public Optional<CustomCommand> getCommand(final String name) throws SQLException {
         final CustomCommand command = this.commands.get(name);
-        if (templatesLoaded) {
+        if (this.templatesLoaded) {
             return Optional.ofNullable(command);
         }
         if (command == null) {
@@ -81,14 +81,14 @@ public class TemplateCache extends TemplateManager {
 
     @Override
     Collection<CustomCommand> getCommands() throws SQLException {
-        if (templatesLoaded) {
+        if (this.templatesLoaded) {
             return Collections.unmodifiableCollection(this.commands.values());
         }
         final Collection<CustomCommand> templates = super.getCommands();
         templates.forEach((CustomCommand t) -> {
             this.commands.putIfAbsent(t.getTemplate(), t);
         });
-        templatesLoaded = true;
+        this.templatesLoaded = true;
         return templates;
     }
 

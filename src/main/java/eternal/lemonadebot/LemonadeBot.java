@@ -62,7 +62,7 @@ public class LemonadeBot {
      *
      * @param args command line arguments
      */
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         LOGGER.info("LemonadeBot starting up, version: {}", BOT_VERSION);
 
         //Get property file location
@@ -156,7 +156,7 @@ public class LemonadeBot {
      *
      * @param configLocation location of configuration file
      */
-    private static void generateDefaultPropertiesFile(String configLocation) {
+    private static void generateDefaultPropertiesFile(final String configLocation) {
         LOGGER.debug("Attempting to write .properties file to: {}", configLocation);
         final Properties properties = new Properties();
         properties.setProperty("discord-api-key", "<discord api key here>");

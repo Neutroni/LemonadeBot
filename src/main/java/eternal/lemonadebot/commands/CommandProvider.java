@@ -80,12 +80,10 @@ public class CommandProvider implements LocaleUpdateListener {
      * @param locale Locale in which to load command names in
      * @param templates TemplateManager to get templates from
      */
-    public CommandProvider(Locale locale, TemplateManager templates) {
+    public CommandProvider(final Locale locale, final TemplateManager templates) {
         this.templateManager = templates;
         //Load translated built in commands
-        COMMANDS.forEach(command -> {
-            this.commandMap.put(command.getCommand(locale), command);
-        });
+        COMMANDS.forEach(command -> this.commandMap.put(command.getCommand(locale), command));
     }
 
     /**
@@ -94,7 +92,7 @@ public class CommandProvider implements LocaleUpdateListener {
      * @param commandName name of the command to find
      * @return Optional containing the command if found
      */
-    public Optional<ChatCommand> getBuiltInCommand(String commandName) {
+    public Optional<ChatCommand> getBuiltInCommand(final String commandName) {
         return Optional.ofNullable(this.commandMap.get(commandName));
     }
 
@@ -104,10 +102,8 @@ public class CommandProvider implements LocaleUpdateListener {
      * @param cmdMatcher Matcher to find command for
      * @return CommandAction or Option.empty if command was not found
      */
-    public Optional<ChatCommand> getAction(CommandMatcher cmdMatcher) {
-        return cmdMatcher.getCommand().flatMap((String commandName) -> {
-            return getCommand(commandName);
-        });
+    public Optional<ChatCommand> getAction(final CommandMatcher cmdMatcher) {
+        return cmdMatcher.getCommand().flatMap(this::getCommand);
     }
 
     /**
@@ -116,7 +112,7 @@ public class CommandProvider implements LocaleUpdateListener {
      * @param name command name to search action for
      * @return Optional containing the action if found, empty if not found
      */
-    public Optional<ChatCommand> getCommand(String name) {
+    public Optional<ChatCommand> getCommand(final String name) {
         //Checks if we find built in command by that name
         return getBuiltInCommand(name).or(() -> {
             //Did not find built in command, return optional from templateManager
@@ -136,7 +132,7 @@ public class CommandProvider implements LocaleUpdateListener {
      * @param newLocale Locale to switch to
      */
     @Override
-    public void updateLocale(Locale newLocale) {
+    public void updateLocale(final Locale newLocale) {
         this.commandMap.clear();
         COMMANDS.forEach(command -> {
             this.commandMap.put(command.getCommand(newLocale), command);

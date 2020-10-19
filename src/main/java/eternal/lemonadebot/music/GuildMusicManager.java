@@ -28,16 +28,16 @@ class GuildMusicManager {
      * @param manager Audio player manager to use for creating the player.
      * @param audioManager Audiomanager to close at the end of play
      */
-    GuildMusicManager(AudioPlayerManager manager, AudioManager audioManager) {
-        player = manager.createPlayer();
-        scheduler = new TrackScheduler(player, audioManager);
-        player.addListener(scheduler);
+    GuildMusicManager(final AudioPlayerManager manager, final AudioManager audioManager) {
+        this.player = manager.createPlayer();
+        this.scheduler = new TrackScheduler(this.player, audioManager);
+        this.player.addListener(this.scheduler);
     }
 
     /**
      * @return Wrapper around AudioPlayer to use it as an AudioSendHandler.
      */
     public AudioPlayerSendHandler getSendHandler() {
-        return new AudioPlayerSendHandler(player);
+        return new AudioPlayerSendHandler(this.player);
     }
 }

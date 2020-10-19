@@ -29,10 +29,10 @@ import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.cooldowns.CooldownManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.MessageMatcher;
 import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.translation.TranslationKey;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -48,6 +48,7 @@ import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * JDA MessageListener, responsible for reacting to messages discord sends
@@ -65,7 +66,7 @@ public class CommandListener extends ListenerAdapter {
      *
      * @param database Database to use for operations
      */
-    public CommandListener(DatabaseManager database) {
+    public CommandListener(final DatabaseManager database) {
         this.db = database;
     }
 
@@ -75,7 +76,7 @@ public class CommandListener extends ListenerAdapter {
      * @param event message info
      */
     @Override
-    public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
+    public void onGuildMessageReceived(final GuildMessageReceivedEvent event) {
         //Don't reply to bots
         if (event.getAuthor().isBot()) {
             return;
@@ -121,7 +122,7 @@ public class CommandListener extends ListenerAdapter {
         }
 
         //Check if message is a command
-        final MessageMatcher cmdMatch = new MessageMatcher(configManager, message);
+        final CommandMatcher cmdMatch = new MessageMatcher(configManager, message);
         final CommandProvider commandProvider = guildData.getCommandProvider();
         final Optional<ChatCommand> action = commandProvider.getAction(cmdMatch);
         if (action.isEmpty()) {
@@ -165,13 +166,8 @@ public class CommandListener extends ListenerAdapter {
      * @param event event from JDA
      */
     @Override
-    public void onShutdown(ShutdownEvent event) {
-        try {
-            db.close();
-        } catch (SQLException ex) {
-            LOGGER.error("Shutting down database connection failed: {}", ex);
-            LOGGER.trace("Stack trace", ex);
-        }
+    public void onShutdown(final @NotNull ShutdownEvent event) {
+        this.db.close();
         LOGGER.info("Shutting down");
     }
 

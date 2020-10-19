@@ -23,11 +23,11 @@ class AudioPlayerSendHandler implements AudioSendHandler {
      *
      * @param audioPlayer Audio player to wrap.
      */
-    AudioPlayerSendHandler(AudioPlayer audioPlayer) {
+    AudioPlayerSendHandler(final AudioPlayer audioPlayer) {
         this.audioPlayer = audioPlayer;
         this.buffer = ByteBuffer.allocate(1024);
         this.frame = new MutableAudioFrame();
-        this.frame.setBuffer(buffer);
+        this.frame.setBuffer(this.buffer);
     }
 
     /**
@@ -37,7 +37,7 @@ class AudioPlayerSendHandler implements AudioSendHandler {
      */
     @Override
     public boolean canProvide() {
-        return audioPlayer.provide(frame);
+        return this.audioPlayer.provide(this.frame);
     }
 
     /**
@@ -48,8 +48,8 @@ class AudioPlayerSendHandler implements AudioSendHandler {
     @Override
     public ByteBuffer provide20MsAudio() {
         // flip to make it a read buffer
-        buffer.flip();
-        return buffer;
+        this.buffer.flip();
+        return this.buffer;
     }
 
     /**

@@ -57,7 +57,7 @@ public class EventManager {
      * @param ds DataSource to get connections from
      * @param guildID ID of the guild to store events for
      */
-    public EventManager(DataSource ds, long guildID) {
+    public EventManager(final DataSource ds, final long guildID) {
         this.dataSource = ds;
         this.guildID = guildID;
     }
@@ -71,7 +71,7 @@ public class EventManager {
      * @throws SQLException If database connection failed
      * @throws NoSuchElementException If there is no event with provided name
      */
-    public Optional<Member> getRandomMember(String eventName, Guild guild) throws SQLException, NoSuchElementException {
+    public Optional<Member> getRandomMember(final String eventName, final Guild guild) throws SQLException, NoSuchElementException {
         final Event ev = getEvent(eventName).orElseThrow();
         final List<Long> eventMemberIDs = getMembersMutable(ev);
         Collections.shuffle(eventMemberIDs);
@@ -81,7 +81,7 @@ public class EventManager {
                 return Optional.of(m);
             } catch (ErrorResponseException ex) {
                 LOGGER.info("Found user {} in event {} members who could not be found, removing from event", l, eventName);
-                LOGGER.debug("Error: ", ex.getMessage());
+                LOGGER.debug("Error: {}", ex.getMessage());
                 try {
                     leaveEvent(ev, l);
                     LOGGER.info("Succesfully removed missing member from event");
@@ -102,7 +102,7 @@ public class EventManager {
      * @return true if user was removed from event
      * @throws SQLException if database connection failed
      */
-    boolean leaveEvent(Event event, long memberID) throws SQLException {
+    boolean leaveEvent(final Event event, final long memberID) throws SQLException {
         final String query = "DELETE FROM EventMembers WHERE guild = ? AND name = ? AND member = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -120,14 +120,14 @@ public class EventManager {
      * @return optional containing the event
      * @throws SQLException if database connection failed
      */
-    Optional<Event> getEvent(String name) throws SQLException {
+    Optional<Event> getEvent(final String name) throws SQLException {
         final String query = "SELECT description,owner,locked FROM Events WHERE guild = ? AND name = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, name);
-            try ( ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
+            try (final ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
                     final String eventName = rs.getString("name");
                     final String eventDescription = rs.getString("description");
                     final long eventOwnerID = rs.getLong("owner");
@@ -148,7 +148,7 @@ public class EventManager {
      * @return Collection containing id:s of the members for the event
      * @throws SQLException if database connection failed
      */
-    List<Long> getMembers(Event event) throws SQLException {
+    List<Long> getMembers(final Event event) throws SQLException {
         return Collections.unmodifiableList(getMembersMutable(event));
     }
 
@@ -159,7 +159,7 @@ public class EventManager {
      * @return true if event was added
      * @throws SQLException If database connection failed
      */
-    boolean addEvent(Event event) throws SQLException {
+    boolean addEvent(final Event event) throws SQLException {
         final String query = "INSERT OR IGNORE INTO Events(guild,name,description,owner,locked) VALUES(?,?,?,?,?);";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -179,7 +179,7 @@ public class EventManager {
      * @return true if event was removed succesfully
      * @throws SQLException if database connection failed
      */
-    boolean removeEvent(Event event) throws SQLException {
+    boolean removeEvent(final Event event) throws SQLException {
         final String query = "DELETE FROM Events Where guild = ? AND name = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -198,7 +198,7 @@ public class EventManager {
      * @throws SQLException if database connection failed or tried to join event
      * that doesn't exist
      */
-    boolean joinEvent(Event event, Member member) throws SQLException {
+    boolean joinEvent(final Event event, final Member member) throws SQLException {
         final String query = "INSERT OR IGNORE INTO EventMembers(guild,name,member) VALUES(?,?,?);";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -216,7 +216,7 @@ public class EventManager {
      * @return true if any member was removed from event
      * @throws SQLException if database connction failed
      */
-    boolean clearEvent(Event event) throws SQLException {
+    boolean clearEvent(final Event event) throws SQLException {
         final String query = "DELETE FROM EventMembers WHERE guild = ? AND name = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -233,7 +233,7 @@ public class EventManager {
      * @return true if event was locked
      * @throws SQLException if database connection failed
      */
-    boolean lockEvent(Event event) throws SQLException {
+    boolean lockEvent(final Event event) throws SQLException {
         final String query = "UPDATE Events SET locked = 1 WHERE guild = ? AND name = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -250,7 +250,7 @@ public class EventManager {
      * @return true if event was unlocked
      * @throws SQLException if database connection failed
      */
-    boolean unlockEvent(Event event) throws SQLException {
+    boolean unlockEvent(final Event event) throws SQLException {
         final String query = "UPDATE Events SET locked = 0 WHERE guild = ? AND name = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -272,7 +272,7 @@ public class EventManager {
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (final ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final String eventName = rs.getString("name");
                     final String eventDescription = rs.getString("description");
@@ -285,14 +285,14 @@ public class EventManager {
         return Collections.unmodifiableCollection(events);
     }
 
-    protected List<Long> getMembersMutable(Event event) throws SQLException {
+    protected List<Long> getMembersMutable(final Event event) throws SQLException {
         final List<Long> members = new ArrayList<>();
         final String query = "SELECT member FROM EventMembers WHERE guild = ? AND name = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, event.getName());
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (final ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     members.add(rs.getLong("member"));
                 }

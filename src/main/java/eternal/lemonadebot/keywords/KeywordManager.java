@@ -54,7 +54,7 @@ public class KeywordManager {
      * @param ds Database connection to use
      * @param guildID ID of the guild to store keywords for
      */
-    public KeywordManager(DataSource ds, long guildID) {
+    public KeywordManager(final DataSource ds, final long guildID) {
         this.dataSource = ds;
         this.guildID = guildID;
         loadCommands();
@@ -67,7 +67,7 @@ public class KeywordManager {
      * @return true if added succesfully
      * @throws SQLException if database connection fails
      */
-    boolean addKeyword(KeywordAction command) throws SQLException {
+    boolean addKeyword(final KeywordAction command) throws SQLException {
         this.commands.putIfAbsent(command.getName(), command);
 
         //Add to database
@@ -90,7 +90,7 @@ public class KeywordManager {
      * @return true if command was removed
      * @throws SQLException if database connection fails
      */
-    boolean removeKeyword(KeywordAction command) throws SQLException {
+    boolean removeKeyword(final KeywordAction command) throws SQLException {
         this.commands.remove(command.getName());
 
         //Remove from database
@@ -109,7 +109,7 @@ public class KeywordManager {
      * @param name name of the command
      * @return optional containing the command
      */
-    Optional<KeywordAction> getCommand(String name) {
+    Optional<KeywordAction> getCommand(final String name) {
         return Optional.ofNullable(this.commands.get(name));
     }
 
@@ -124,15 +124,13 @@ public class KeywordManager {
 
     /**
      * Loads custom commands from database
-     *
-     * @throws SQLException if Database connection failed
      */
     private void loadCommands() {
         final String query = "SELECT name,pattern,template,owner FROM Keywords WHERE guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (final ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final String commandName = rs.getString("name");
                     final String commandPattern = rs.getString("pattern");

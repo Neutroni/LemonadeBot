@@ -48,7 +48,7 @@ public class KeywordAction extends CustomCommand {
      * @param actionTemplate template for action
      * @param owner owner of the command
      */
-    public KeywordAction(String name, String patternString, String actionTemplate, long owner) throws PatternSyntaxException {
+    public KeywordAction(final String name, final String patternString, final String actionTemplate, final long owner) throws PatternSyntaxException {
         super(name, actionTemplate, owner);
         this.keywordPattern = Pattern.compile(patternString);
     }
@@ -68,12 +68,12 @@ public class KeywordAction extends CustomCommand {
      * @param input input to check
      * @return true if input contains keyword
      */
-    public boolean matches(String input) {
+    public boolean matches(final String input) {
         return this.keywordPattern.matcher(input).find();
     }
     
     @Override
-    public CompletableFuture<String> toListElement(Locale locale, JDA jda) {
+    public CompletableFuture<String> toListElement(final Locale locale, final JDA jda) {
         final CompletableFuture<String> result = new CompletableFuture<>();
         final String template = TranslationKey.KEYWORD_COMMAND_LIST_ELEMENT.getTranslation(locale);
         jda.retrieveUserById(getAuthor()).queue((User commandOwner) -> {

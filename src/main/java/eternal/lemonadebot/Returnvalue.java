@@ -47,10 +47,6 @@ public enum Returnvalue {
      */
     LOGIN_FAILED,
     /**
-     * If loading was interrupted
-     */
-    INTERRUPTED,
-    /**
      * If configuration file could not be found
      */
     MISSING_CONFIG,
@@ -61,6 +57,6 @@ public enum Returnvalue {
     /**
      * If JDA loading was interrupted
      */
-    LOADING_INTERRUPTED;
+    LOADING_INTERRUPTED
 
 }

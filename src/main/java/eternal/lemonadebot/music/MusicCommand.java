@@ -68,28 +68,28 @@ public class MusicCommand implements ChatCommand {
      */
     public MusicCommand() {
         this.playerManager = new DefaultAudioPlayerManager();
-        AudioSourceManagers.registerRemoteSources(playerManager);
-        AudioSourceManagers.registerLocalSource(playerManager);
+        AudioSourceManagers.registerRemoteSources(this.playerManager);
+        AudioSourceManagers.registerLocalSource(this.playerManager);
         this.musicManagers = new ConcurrentHashMap<>();
     }
 
     @Override
-    public String getCommand(Locale locale) {
+    public String getCommand(final Locale locale) {
         return TranslationKey.COMMAND_MUSIC.getTranslation(locale);
     }
 
     @Override
-    public String getDescription(Locale locale) {
+    public String getDescription(final Locale locale) {
         return TranslationKey.DESCRIPTION_MUSIC.getTranslation(locale);
     }
 
     @Override
-    public String getHelpText(Locale locale) {
+    public String getHelpText(final Locale locale) {
         return TranslationKey.SYNTAX_MUSIC.getTranslation(locale);
     }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID, PermissionManager permissions) {
+    public Collection<CommandPermission> getDefaultRanks(final Locale locale, final long guildID, final PermissionManager permissions) {
         return List.of(
                 new CommandPermission(getCommand(locale), MemberRank.MEMBER, guildID),
                 new CommandPermission(getCommand(locale) + ' ' + TranslationKey.ACTION_LIST.getTranslation(locale), MemberRank.USER, guildID)
@@ -97,7 +97,7 @@ public class MusicCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(CommandMatcher message, GuildDataStore guildData) {
+    public void respond(final CommandMatcher message, final GuildDataStore guildData) {
         final TextChannel textChannel = message.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
@@ -150,18 +150,18 @@ public class MusicCommand implements ChatCommand {
     }
 
     private void loadAndPlay(final TextChannel channel, final String trackUrl, final Locale locale) {
-        GuildMusicManager musicManager = getGuildAudioPlayer(channel.getGuild());
+        final GuildMusicManager musicManager = getGuildAudioPlayer(channel.getGuild());
 
-        playerManager.loadItemOrdered(musicManager, trackUrl, new AudioLoadResultHandler() {
+        this.playerManager.loadItemOrdered(musicManager, trackUrl, new AudioLoadResultHandler() {
             @Override
-            public void trackLoaded(AudioTrack track) {
+            public void trackLoaded(final AudioTrack track) {
                 play(channel.getGuild(), musicManager, track);
                 final String template = TranslationKey.MUSIC_ADDED_SONG.getTranslation(locale);
                 channel.sendMessageFormat(template, track.getInfo().title).queue();
             }
 
             @Override
-            public void playlistLoaded(AudioPlaylist playlist) {
+            public void playlistLoaded(final AudioPlaylist playlist) {
                 //Playlist without track selected
                 if (playlist.getSelectedTrack() == null) {
                     for (final AudioTrack tr : playlist.getTracks()) {
@@ -182,7 +182,7 @@ public class MusicCommand implements ChatCommand {
             }
 
             @Override
-            public void loadFailed(FriendlyException exception) {
+            public void loadFailed(final FriendlyException exception) {
                 final String template = TranslationKey.MUSIC_LOAD_FAILED.getTranslation(locale);
                 channel.sendMessageFormat(template, exception.getMessage()).queue();
             }
@@ -192,8 +192,8 @@ public class MusicCommand implements ChatCommand {
     private synchronized GuildMusicManager getGuildAudioPlayer(final Guild guild) {
         final long guildId = guild.getIdLong();
 
-        final GuildMusicManager musicManager = musicManagers.computeIfAbsent(guildId, (Long id) -> {
-            return new GuildMusicManager(playerManager, guild.getAudioManager());
+        final GuildMusicManager musicManager = this.musicManagers.computeIfAbsent(guildId, (Long id) -> {
+            return new GuildMusicManager(this.playerManager, guild.getAudioManager());
         });
 
         guild.getAudioManager().setSendingHandler(musicManager.getSendHandler());
@@ -229,20 +229,19 @@ public class MusicCommand implements ChatCommand {
         }
 
         //Skip tracks from url
-        playerManager.loadItemOrdered(musicManager, trackUrl, new AudioLoadResultHandler() {
+        this.playerManager.loadItemOrdered(musicManager, trackUrl, new AudioLoadResultHandler() {
             @Override
-            public void trackLoaded(AudioTrack track) {
+            public void trackLoaded(final AudioTrack track) {
                 if (musicManager.scheduler.skipTrack(track)) {
                     final String template = TranslationKey.MUSIC_TRACK_IN_QUEUE_SKIPPED.getTranslation(locale);
                     channel.sendMessageFormat(template, track.getInfo().title).queue();
                 } else {
                     channel.sendMessage(TranslationKey.MUSIC_SKIP_TRACK_NOT_IN_PLAYLIST.getTranslation(locale)).queue();
                 }
-
             }
 
             @Override
-            public void playlistLoaded(AudioPlaylist playlist) {
+            public void playlistLoaded(final AudioPlaylist playlist) {
                 //Playlist without track selected
                 if (playlist.getSelectedTrack() == null) {
                     boolean skipped = false;
@@ -278,7 +277,7 @@ public class MusicCommand implements ChatCommand {
             }
 
             @Override
-            public void loadFailed(FriendlyException exception) {
+            public void loadFailed(final FriendlyException exception) {
                 final String template = TranslationKey.MUSIC_SKIP_FAILED.getTranslation(locale);
                 channel.sendMessageFormat(template, exception.getMessage()).queue();
             }
@@ -288,7 +287,7 @@ public class MusicCommand implements ChatCommand {
     /**
      * Pause music plaback
      *
-     * @param textChannel textchannel for reques
+     * @param textChannel textchannel for request
      */
     private void pauseTrack(final TextChannel textChannel, final Locale locale) {
         final GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
@@ -303,7 +302,7 @@ public class MusicCommand implements ChatCommand {
      * @param musicManager musicManager to use
      * @param track AudioTrack to play
      */
-    private void play(Guild guild, GuildMusicManager musicManager, AudioTrack track) {
+    private static void play(final Guild guild, final GuildMusicManager musicManager, final AudioTrack track) {
         //Make sure we are connected
         final AudioManager audioManager = guild.getAudioManager();
         if (!audioManager.isConnected()) {
@@ -334,7 +333,7 @@ public class MusicCommand implements ChatCommand {
      * @param textChannel channel for request
      */
     private void stopTrack(final TextChannel textChannel, final Locale locale) {
-        GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
+        final GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
         musicManager.player.stopTrack();
         musicManager.scheduler.clearPlaylist();
         textChannel.sendMessage(TranslationKey.MUSIC_PLAYBACK_STOPPED.getTranslation(locale)).queue();
@@ -363,7 +362,7 @@ public class MusicCommand implements ChatCommand {
 
         //Get upcoming songs
         final StringBuilder sb = new StringBuilder();
-        final int songsToPrint = (playlist.size() < 10 ? playlist.size() : 10);
+        final int songsToPrint = (Math.min(playlist.size(), 10));
         for (int i = 0; i < songsToPrint; i++) {
             sb.append(playlist.get(i).getInfo().title);
             sb.append('\n');
@@ -382,14 +381,14 @@ public class MusicCommand implements ChatCommand {
         for (final AudioTrack t : playlist) {
             playlistLengthMS += t.getDuration();
         }
-        Duration playlistDuration = Duration.ofMillis(playlistLengthMS);
+        final Duration playlistDuration = Duration.ofMillis(playlistLengthMS);
         final long hoursRemaining = playlistDuration.toHours();
         final int minutesPart = playlistDuration.toMinutesPart();
         final int secondsPart = playlistDuration.toSecondsPart();
         final String durationTemplate = TranslationKey.MUSIC_DURATION_TEMPLATE.getTranslation(locale);
         final String durationString = String.format(durationTemplate, hoursRemaining, minutesPart, secondsPart);
         final String playlistLenth = TranslationKey.MUSIC_PLAYLIST_LENGTH.getTranslation(locale);
-        MessageEmbed.Field playlistLenghtField = new MessageEmbed.Field(playlistLenth, durationString, false);
+        final MessageEmbed.Field playlistLenghtField = new MessageEmbed.Field(playlistLenth, durationString, false);
         eb.addField(playlistLenghtField);
 
         //Send the message

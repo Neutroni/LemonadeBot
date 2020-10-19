@@ -104,7 +104,7 @@ public class CommandPermission {
     /**
      * Get the ID of the role that is required for this permission
      *
-     * @return ID of the rolef
+     * @return ID of the role
      */
     public long getRequiredRoleID() {
         return this.roleID;

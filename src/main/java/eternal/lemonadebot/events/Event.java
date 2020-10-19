@@ -48,7 +48,7 @@ public class Event {
      * @param description description for the event, null if no description
      * @param owner owner of the event
      */
-    Event(String name, String description, Member owner) {
+    Event(final String name, final String description, final Member owner) {
         this.name = name;
         this.description = description;
         this.ownerID = owner.getIdLong();
@@ -63,7 +63,7 @@ public class Event {
      * @param owner Owner id for this event
      * @param locked wheter event is locked
      */
-    Event(String name, String description, long owner, boolean locked) {
+    Event(final String name, final String description, final long owner, final boolean locked) {
         this.name = name;
         this.description = description;
         this.ownerID = owner;
@@ -76,7 +76,7 @@ public class Event {
     }
 
     @Override
-    public boolean equals(Object other) {
+    public boolean equals(final Object other) {
         if (other instanceof Event) {
             final Event otherEvent = (Event) other;
             return this.name.equals(otherEvent.getName());
@@ -141,7 +141,7 @@ public class Event {
      * @param jda JDA to use to get the event owner
      * @return String
      */
-    CompletableFuture<String> toListElement(Locale locale, JDA jda) {
+    CompletableFuture<String> toListElement(final Locale locale, final JDA jda) {
         final CompletableFuture<String> result = new CompletableFuture<>();
         final String template = TranslationKey.EVENT_COMMAND_LIST_ELEMENT.getTranslation(locale);
         jda.retrieveUserById(this.ownerID).queue((User eventCreator) -> {

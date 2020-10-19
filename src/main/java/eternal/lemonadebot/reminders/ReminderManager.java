@@ -24,6 +24,8 @@
 package eternal.lemonadebot.reminders;
 
 import eternal.lemonadebot.database.GuildDataStore;
+
+import java.io.Closeable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -49,7 +51,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class ReminderManager implements AutoCloseable {
+public class ReminderManager implements Closeable {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -67,13 +69,12 @@ public class ReminderManager implements AutoCloseable {
      * @param ds DataSource to get connection from
      * @param guildData GuildData to pass to reminders
      * @param jda JDA to pass to reminders
-     * @param guild ID of the guild to manager reminders for
      */
-    public ReminderManager(DataSource ds, JDA jda, GuildDataStore guildData, long guild) {
+    public ReminderManager(final DataSource ds, final JDA jda, final GuildDataStore guildData) {
         this.dataSource = ds;
         this.jda = jda;
         this.guildData = guildData;
-        this.guildID = guild;
+        this.guildID = guildData.getGuildID();
         loadReminders();
     }
 
@@ -165,7 +166,7 @@ public class ReminderManager implements AutoCloseable {
      * @param name name of the reminder
      * @return Optional containing the reminder if found
      */
-    Optional<Reminder> getReminder(String name) {
+    Optional<Reminder> getReminder(final String name) {
         return Optional.ofNullable(this.reminders.get(name));
     }
 
@@ -180,9 +181,6 @@ public class ReminderManager implements AutoCloseable {
 
     /**
      * Load reminders from database
-     *
-     * @param jda JDA instance to use for initializing reminder timers
-     * @throws SQLException If database connection failed
      */
     private void loadReminders() {
         LOGGER.debug("Started loading reminders for guild: {} from database", this.guildID);
@@ -190,7 +188,7 @@ public class ReminderManager implements AutoCloseable {
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (final ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final String reminderName = rs.getString("name");
                     final String reminderMessage = rs.getString("message");
@@ -247,7 +245,7 @@ public class ReminderManager implements AutoCloseable {
                     //Construct and add to list of reminders
                     final Reminder reminder = new Reminder(this.jda, this.guildData,
                             reminderName, reminderMessage, reminderChannel, reminderAuthor, reminderActivationTime);
-                    reminders.put(reminder.getName(), reminder);
+                    this.reminders.put(reminder.getName(), reminder);
                     LOGGER.debug("Reminder succesfully loaded: {}", reminder.getName());
 
                     reminder.scheduleWith(this.reminderTimer);

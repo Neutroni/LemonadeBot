@@ -48,7 +48,7 @@ public class ActionTemplate {
      * @param help help text for this action
      * @param func function this action executes
      */
-    ActionTemplate(String pattern, TranslationKey help, ActionTemplateFunction func) {
+    ActionTemplate(final String pattern, final TranslationKey help, final ActionTemplateFunction func) {
         this.pattern = Pattern.compile(pattern);
         this.helpText = help;
         this.function = func;
@@ -60,7 +60,7 @@ public class ActionTemplate {
      * @param locale Locale to return the help text in
      * @return help string
      */
-    public String getHelp(Locale locale) {
+    public String getHelp(final Locale locale) {
         return this.helpText.getTranslation(locale);
     }
 
@@ -70,7 +70,7 @@ public class ActionTemplate {
      * @param input input to match agains
      * @return matcher for input
      */
-    public Matcher getMatcher(CharSequence input) {
+    public Matcher getMatcher(final CharSequence input) {
         return this.pattern.matcher(input);
     }
 
@@ -82,7 +82,7 @@ public class ActionTemplate {
      * @param templateMatcher match to replace
      * @return replacement string
      */
-    public String getValue(CommandMatcher commandMatcher, GuildDataStore guildData, Matcher templateMatcher) {
+    public String getValue(final CommandMatcher commandMatcher, final GuildDataStore guildData, final Matcher templateMatcher) {
         return this.function.apply(commandMatcher, guildData, templateMatcher);
     }
 }

@@ -38,7 +38,7 @@ class CacheConfig {
     private final boolean cacheCooldowns;
     private final boolean cachePermissions;
 
-    CacheConfig(Properties config) {
+    CacheConfig(final Properties config) {
         this.cacheInventory = Boolean.parseBoolean(config.getProperty("cache-inventory"));
         this.cacheEvents = Boolean.parseBoolean(config.getProperty("cache-events"));
         this.cacheTemplates = Boolean.parseBoolean(config.getProperty("cache-templates"));

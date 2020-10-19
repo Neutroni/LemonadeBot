@@ -47,25 +47,25 @@ public class RoleManagerCache extends RoleManager {
      * @param ds database connection
      * @param guildID if of the guild to store list of allowed roles for
      */
-    public RoleManagerCache(DataSource ds, long guildID) {
+    public RoleManagerCache(final DataSource ds, final long guildID) {
         super(ds, guildID);
     }
 
     @Override
-    boolean allowRole(AllowedRole role) throws SQLException {
+    boolean allowRole(final AllowedRole role) throws SQLException {
         this.roles.putIfAbsent(role.getRoleID(), role);
         return super.allowRole(role);
     }
 
     @Override
-    boolean disallowRole(Role role) throws SQLException {
+    boolean disallowRole(final Role role) throws SQLException {
         this.roles.remove(role.getIdLong());
         return super.disallowRole(role);
     }
 
     @Override
     Collection<AllowedRole> getRoles() throws SQLException {
-        if (rolesLoaded) {
+        if (this.rolesLoaded) {
             return Collections.unmodifiableCollection(this.roles.values());
         }
         final Collection<AllowedRole> roleCollection = super.getRoles();
@@ -77,8 +77,8 @@ public class RoleManagerCache extends RoleManager {
     }
 
     @Override
-    boolean isAllowed(Role role) throws SQLException {
-        if (rolesLoaded) {
+    boolean isAllowed(final Role role) throws SQLException {
+        if (this.rolesLoaded) {
             return this.roles.containsKey(role.getIdLong());
         }
         final AllowedRole r = this.roles.get(role.getIdLong());

@@ -47,14 +47,14 @@ public class CooldownCache extends CooldownManager {
      * @param ds DataSource to get connection from
      * @param guildID id of the guild to store cooldowns for
      */
-    CooldownCache(DataSource ds, long guildID) {
+    public CooldownCache(final DataSource ds, final long guildID) {
         super(ds, guildID);
         this.cooldowns = new RadixTree<>(null);
     }
 
     @Override
     Collection<ActionCooldown> getCooldowns() throws SQLException {
-        if (cooldownsLoaded) {
+        if (this.cooldownsLoaded) {
             return this.cooldowns.getValues();
         }
         final Collection<ActionCooldown> cooldownList = super.getCooldowns();
@@ -66,13 +66,13 @@ public class CooldownCache extends CooldownManager {
     }
 
     @Override
-    public boolean removeCooldown(String action) throws SQLException {
+    boolean removeCooldown(final String action) throws SQLException {
         this.cooldowns.remove(action);
         return super.removeCooldown(action);
     }
 
     @Override
-    public boolean setCooldown(String action, Duration duration) throws SQLException {
+    boolean setCooldown(final String action, final Duration duration) throws SQLException {
         final Optional<ActionCooldown> cd = this.cooldowns.get(action);
         cd.ifPresentOrElse((ActionCooldown t) -> {
             if (t.getAction().equals(action)) {
@@ -80,11 +80,11 @@ public class CooldownCache extends CooldownManager {
                 t.updateCooldownDuration(duration);
             } else {
                 //Found wrong cooldown, add correct one
-                this.cooldowns.put(action, new ActionCooldown(action, duration, Instant.EPOCH));
+                this.cooldowns.put(action, new ActionCooldown(action, duration));
             }
         }, () -> {
             //No cooldown set for action, add a new one
-            this.cooldowns.put(action, new ActionCooldown(action, duration, Instant.EPOCH));
+            this.cooldowns.put(action, new ActionCooldown(action, duration));
         });
 
         //Update database
@@ -92,23 +92,16 @@ public class CooldownCache extends CooldownManager {
     }
 
     @Override
-    public Optional<ActionCooldown> getActionCooldown(String action) throws SQLException {
-        final Optional<ActionCooldown> cd = this.cooldowns.get(action);
-        if (cooldownsLoaded) {
-            return cd;
+    Optional<ActionCooldown> getActionCooldown(final String action) throws SQLException {
+        if (!this.cooldownsLoaded) {
+            //Attempt to load cooldowns
+            getCooldowns();
         }
-        if (cd.isEmpty()) {
-            final Optional<ActionCooldown> optCooldown = super.getActionCooldown(action);
-            optCooldown.ifPresent((ActionCooldown t) -> {
-                this.cooldowns.put(t.getAction(), t);
-            });
-            return optCooldown;
-        }
-        return cd;
+        return this.cooldowns.get(action);
     }
 
     @Override
-    protected boolean updateActivationTime(String action) throws SQLException {
+    protected boolean updateActivationTime(final String action) throws SQLException {
         final Optional<ActionCooldown> cd = getActionCooldown(action);
         //Action does not have a cooldown
         if (cd.isEmpty()) {

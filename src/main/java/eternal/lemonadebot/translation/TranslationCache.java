@@ -51,7 +51,7 @@ public class TranslationCache implements LocaleUpdateListener {
     private volatile Collator collator;
     private volatile DateTimeFormatter timeFormat;
 
-    public TranslationCache(Locale locale) {
+    public TranslationCache(final Locale locale) {
         this.rwLock = new ReentrantReadWriteLock();
         this.actionMap = new HashMap<>();
         localeUpdate(locale);
@@ -76,11 +76,11 @@ public class TranslationCache implements LocaleUpdateListener {
     }
 
     @Override
-    public void updateLocale(Locale newLocale) {
+    public void updateLocale(final Locale newLocale) {
         localeUpdate(newLocale);
     }
 
-    private void localeUpdate(Locale newLocale) {
+    private void localeUpdate(final Locale newLocale) {
         this.rwLock.writeLock().lock();
         try {
             //Update collator
@@ -130,7 +130,7 @@ public class TranslationCache implements LocaleUpdateListener {
      * @param name name of the ChronoUnit in current locale
      * @return Optional containging ChronoUnit if found
      */
-    public Optional<ChronoUnit> getChronoUnit(String name) {
+    public Optional<ChronoUnit> getChronoUnit(final String name) {
         this.rwLock.readLock().lock();
         try {
             final ChronoUnit unit = this.chronoMap.get(name);
@@ -146,7 +146,7 @@ public class TranslationCache implements LocaleUpdateListener {
      * @param name Translated action name to get a key for
      * @return Key for given action if found ActionKey.UNKNOWN if not found
      */
-    public ActionKey getActionKey(String name) {
+    public ActionKey getActionKey(final String name) {
         this.rwLock.readLock().lock();
         try {
             final ActionKey key = this.actionMap.get(name);
