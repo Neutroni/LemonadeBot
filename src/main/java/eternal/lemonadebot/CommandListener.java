@@ -139,7 +139,7 @@ public class CommandListener extends ListenerAdapter {
         final PermissionManager permissions = guildData.getPermissionManager();
         final String inputString = cmdMatch.getAction();
 
-        if (!permissions.hasPermission(member, inputString)) {
+        if (!permissions.hasPermission(member, command, inputString)) {
             final String response = TranslationKey.ERROR_INSUFFICIENT_PERMISSION.getTranslation(locale);
             textChannel.sendMessage(response).queue();
             return;

@@ -36,6 +36,7 @@ import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
+import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;
 import eternal.lemonadebot.translation.TranslationKey;
@@ -88,7 +89,7 @@ public class MusicCommand implements ChatCommand {
     }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID) {
+    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID, PermissionManager permissions) {
         return List.of(
                 new CommandPermission(getCommand(locale), MemberRank.MEMBER, guildID),
                 new CommandPermission(getCommand(locale) + ' ' + TranslationKey.ACTION_LIST.getTranslation(locale), MemberRank.USER, guildID)

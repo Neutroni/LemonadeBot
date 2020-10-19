@@ -29,7 +29,6 @@ import eternal.lemonadebot.cooldowns.CooldownManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
-import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.time.Duration;
@@ -101,8 +100,9 @@ public class CustomCommand implements ChatCommand {
     }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID) {
-        return List.of(new CommandPermission(getName(), MemberRank.USER, guildID));
+    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID, PermissionManager permissions) {
+        final CommandPermission rankRole = permissions.getTemplateRunPermission();
+        return List.of(new CommandPermission(getName(), rankRole.getRequiredRank(), rankRole.getRequiredRoleID()));
     }
 
     /**
@@ -161,7 +161,7 @@ public class CustomCommand implements ChatCommand {
         //Check if user has permission to run the command
         final Member member = message.getMember();
         final PermissionManager permissions = guildData.getPermissionManager();
-        if (!permissions.hasPermission(member, commandString)) {
+        if (!permissions.hasPermission(member, command, commandString)) {
             channel.sendMessage(TranslationKey.ERROR_INSUFFICIENT_PERMISSION.getTranslation(locale)).queue();
             return;
         }

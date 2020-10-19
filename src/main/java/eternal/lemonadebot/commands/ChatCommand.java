@@ -26,6 +26,7 @@ package eternal.lemonadebot.commands;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
+import eternal.lemonadebot.permissions.PermissionManager;
 import java.util.Collection;
 import java.util.Locale;
 
@@ -65,9 +66,10 @@ public interface ChatCommand {
      *
      * @param locale Locale to get the ranks for
      * @param guildID ID of the guild used to create commandpermission
+     * @param permissions PermissionManager to use
      * @return The default rank needed to run this command
      */
-    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID);
+    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID, PermissionManager permissions);
 
     /**
      * Responds to a message

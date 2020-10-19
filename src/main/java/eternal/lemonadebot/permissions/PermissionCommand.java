@@ -36,7 +36,9 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -114,6 +116,7 @@ public class PermissionCommand extends AdminCommand {
         final String permissionName = arguments[1];
 
         //Check if there is a command for the given action
+        final ChatCommand command;
         final CommandProvider commands = guildData.getCommandProvider();
         final int i = permissionName.indexOf(' ');
         if (i == -1) {
@@ -123,6 +126,7 @@ public class PermissionCommand extends AdminCommand {
                 channel.sendMessage(TranslationKey.PERMISSION_NO_COMMAND.getTranslation(locale)).queue();
                 return;
             }
+            command = optCommand.get();
         } else {
             final String commandName = permissionName.substring(0, i);
             final Optional<ChatCommand> optCommand = commands.getCommand(commandName);
@@ -131,10 +135,11 @@ public class PermissionCommand extends AdminCommand {
                 channel.sendMessage(TranslationKey.PERMISSION_NO_COMMAND.getTranslation(locale)).queue();
                 return;
             }
+            command = optCommand.get();
         }
 
         //Get the permission for the action
-        final CommandPermission perm = permissions.getPermission(permissionName);
+        final CommandPermission perm = permissions.getPermission(command, permissionName);
         final long roleID = perm.getRequiredRoleID();
         final Role r = channel.getGuild().getRoleById(roleID);
         if (r == null) {
@@ -229,20 +234,20 @@ public class PermissionCommand extends AdminCommand {
         final StringBuilder description = new StringBuilder();
         final String template = TranslationKey.PERMISSION_LIST_ELEMENT.getTranslation(locale);
         for (final CommandPermission perm : permissions) {
-            final String rankName = perm.getRequiredRank().getNameKey().getTranslation(locale);
-            //Get the name of role
-            final String roleName;
-            final long roleID = perm.getRequiredRoleID();
-            final Role r = guild.getRoleById(roleID);
-            if (r == null) {
-                roleName = TranslationKey.ROLE_MISSING.getTranslation(locale);
-            } else {
-                roleName = r.getName();
-            }
-            //Format response
+                final String rankName = perm.getRequiredRank().getNameKey().getTranslation(locale);
+                //Get the name of role
+                final String roleName;
+                final long roleID = perm.getRequiredRoleID();
+                final Role r = guild.getRoleById(roleID);
+                if (r == null) {
+                    roleName = TranslationKey.ROLE_MISSING.getTranslation(locale);
+                } else {
+                    roleName = r.getName();
+                }
+                //Format response
             final String line = String.format(template, perm.getAction(), rankName, roleName);
-            description.append(line);
-        }
+                description.append(line);
+            }
         if (permissions.isEmpty()) {
             description.append(TranslationKey.PERMISSION_NO_PERMISSIONS.getTranslation(locale));
         }

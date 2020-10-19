@@ -75,7 +75,7 @@ public class TemplateCommand implements ChatCommand {
     }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID) {
+    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID, PermissionManager permissions) {
         return List.of(new CommandPermission(getCommand(locale), MemberRank.MEMBER, guildID));
     }
 
@@ -114,7 +114,7 @@ public class TemplateCommand implements ChatCommand {
 
     private void createCustomCommand(String[] arguments, CommandMatcher matcher, GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final Locale locale = matcher.getLocale();
 
         if (arguments.length < 2) {
             textChannel.sendMessage(TranslationKey.TEMPLATE_CREATE_MISSING_NAME.getTranslation(locale)).queue();
@@ -137,13 +137,9 @@ public class TemplateCommand implements ChatCommand {
         final String commandTemplate = arguments[2];
         final Member sender = matcher.getMember();
         final TemplateManager commands = guildData.getCustomCommands();
-        final PermissionManager permissions = guildData.getPermissionManager();
         final CustomCommand newAction = new CustomCommand(commandName, commandTemplate, sender.getIdLong());
         try {
             if (commands.addCommand(newAction)) {
-                //Add permission for running the command as user
-                permissions.setPermission(new CommandPermission(commandName, MemberRank.USER, guildData.getGuildID()));
-                //Send message about succesfull add
                 textChannel.sendMessage(TranslationKey.TEMPLATE_CREATE_SUCCESS.getTranslation(locale)).queue();
                 return;
             }

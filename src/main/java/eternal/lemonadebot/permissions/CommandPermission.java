@@ -97,7 +97,7 @@ public class CommandPermission {
      *
      * @return MemberRank
      */
-    MemberRank getRequiredRank() {
+    public MemberRank getRequiredRank() {
         return this.rank;
     }
 
@@ -106,7 +106,7 @@ public class CommandPermission {
      *
      * @return ID of the rolef
      */
-    long getRequiredRoleID() {
+    public long getRequiredRoleID() {
         return this.roleID;
     }
 

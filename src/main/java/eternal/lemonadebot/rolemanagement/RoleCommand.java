@@ -29,6 +29,7 @@ import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
+import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;
 import eternal.lemonadebot.translation.TranslationKey;
@@ -76,7 +77,7 @@ public class RoleCommand implements ChatCommand {
     }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID) {
+    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID, PermissionManager permissions) {
         final String commandName = getCommand(locale);
         final String actionGet = TranslationKey.ACTION_GET.getTranslation(locale);
         final String actionRemove = TranslationKey.ACTION_REMOVE.getTranslation(locale);

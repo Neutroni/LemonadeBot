@@ -62,7 +62,7 @@ class HelpCommand implements ChatCommand {
     }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID) {
+    public Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID, PermissionManager permissions) {
         return List.of(new CommandPermission(getCommand(locale), MemberRank.USER, guildID));
     }
 
@@ -116,7 +116,7 @@ class HelpCommand implements ChatCommand {
             final ChatCommand com = opt.get();
             final Member member = matcher.getMember();
 
-            if (permissions.hasPermission(member, name)) {
+            if (permissions.hasPermission(member, com, name)) {
                 final EmbedBuilder eb = new EmbedBuilder();
                 final String description = com.getDescription(locale);
                 eb.setTitle(name + " - " + description);
@@ -145,8 +145,7 @@ class HelpCommand implements ChatCommand {
         final Member member = matcher.getMember();
 
         for (ChatCommand c : CommandProvider.COMMANDS) {
-            final String commandName = c.getCommand(locale);
-            if (permissions.hasPermission(member, commandName)) {
+            if (permissions.hasPermission(member, c, c.getCommand(locale))) {
                 sb.append(c.getCommand(locale)).append(" - ");
                 final String description = c.getDescription(locale);
                 sb.append(description).append('\n');

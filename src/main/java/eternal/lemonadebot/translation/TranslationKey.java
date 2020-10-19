@@ -100,14 +100,6 @@ public enum TranslationKey {
     TIME_WEEKS("weeks"),
     TIME_MONTHS("months"),
     TIME_YEARS("years"),
-    DAY_MONDAY("Monday"),
-    DAY_TUESDAY("Tuesday"),
-    DAY_WEDNESDAY("Wednesday"),
-    DAY_THURSDAY("Thursday"),
-    DAY_FRIDAY("Friday"),
-    DAY_SATURDAY("Saturday"),
-    DAY_SUNDAY("Sunday"),
-    DAY_DAILY("Daily"),
     SYNTAX_CONFIG("Syntax: config <action> <config> [value]\n"
             + "<action> can be one of the following:\n"
             + " get - get the current value for config\n"
@@ -473,6 +465,7 @@ public enum TranslationKey {
     TEMPLATE_SQL_ERROR_ON_DELETE("Deleting custom command from database failed, command might reappear after reboot."),
     TEMPLATE_SQL_ERROR_ON_FINDING_COMMAND("Database error retrieving command, can not find template."),
     TEMPLATE_SQL_ERROR_ON_LOADING_COMMANDS("Database error retrieving commands from database, can not list available commands."),
+    TEMPLATE_RUN_ACTION("template run"),
     MUSIC_ADDED_SONG("Adding to queue: %s"),
     MUSIC_ADDED_PLAYLIST("Added playlist: %s"),
     MUSIC_NOT_FOUND("Nothing found by: %s"),

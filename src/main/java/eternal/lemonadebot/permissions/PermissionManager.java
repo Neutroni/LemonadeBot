@@ -24,15 +24,17 @@
 package eternal.lemonadebot.permissions;
 
 import eternal.lemonadebot.commands.ChatCommand;
-import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.radixtree.RadixTree;
 import eternal.lemonadebot.translation.LocaleUpdateListener;
+import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Locale;
+import java.util.Optional;
 import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
@@ -50,6 +52,7 @@ public class PermissionManager implements LocaleUpdateListener {
     private final long guildID;
     private final RadixTree<CommandPermission> permissions;
     private final CommandPermission adminPermission;
+    private volatile Locale locale;
 
     /**
      * Constructor
@@ -63,18 +66,20 @@ public class PermissionManager implements LocaleUpdateListener {
         this.guildID = guildID;
         this.permissions = new RadixTree<>(null);
         this.adminPermission = new CommandPermission("", MemberRank.ADMIN, guildID);
-        loadPermissions(locale);
+        this.locale = locale;
+        loadPermissions();
     }
 
     /**
      * Check if user has required permission to perform action
      *
      * @param member User to check
+     * @param command Command user is trying to run
      * @param action Action user is trying to perform
      * @return True if user can perform the action
      */
-    public boolean hasPermission(Member member, String action) {
-        final CommandPermission perm = getPermission(action);
+    public boolean hasPermission(Member member, ChatCommand command, String action) {
+        final CommandPermission perm = getPermission(command, action);
         return perm.hashPermission(member);
     }
 
@@ -85,8 +90,7 @@ public class PermissionManager implements LocaleUpdateListener {
      */
     @Override
     public void updateLocale(Locale locale) {
-        this.permissions.clear();
-        loadPermissions(locale);
+        this.locale = locale;
     }
 
     /**
@@ -103,22 +107,56 @@ public class PermissionManager implements LocaleUpdateListener {
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            ps.setString(2, action);
-            ps.setString(3, perm.getRequiredRank().name());
-            ps.setLong(4, perm.getRequiredRoleID());
+            ps.setString(3, action);
+            ps.setString(4, perm.getRequiredRank().name());
+            ps.setLong(5, perm.getRequiredRoleID());
             return (ps.executeUpdate() > 0);
         }
     }
 
     /**
+     * Get permission required to run custom commands that do not have
+     * any other permission set
+     *
+     * @return CommandPermission
+     */
+    public CommandPermission getTemplateRunPermission() {
+        final String key = TranslationKey.TEMPLATE_RUN_ACTION.getTranslation(this.locale);
+        return this.permissions.get(key).orElse(this.adminPermission);
+    }
+
+    /**
      * Get permission by fuzzy action string
      *
+     * @param command Command to get permission from if no other permission set
      * @param action action to get permission for
      * @return CommandPermission for action, if no permission has been set the
      * returned permission will have rank of ADMIN and any role
      */
-    CommandPermission getPermission(String action) {
-        return this.permissions.get(action).orElse(this.adminPermission);
+    CommandPermission getPermission(ChatCommand command, String action) {
+        final Optional<CommandPermission> optPerm = this.permissions.get(action);
+        CommandPermission builtInPerm = null;
+        int keyLength = 0;
+        for (final CommandPermission p : command.getDefaultRanks(this.locale, this.guildID, this)) {
+            final String key = p.getAction();
+            if (!action.startsWith(key)) {
+                continue;
+            }
+            final int newKeyLength = key.length();
+            if (newKeyLength > keyLength) {
+                builtInPerm = p;
+                keyLength = newKeyLength;
+            }
+        }
+        if (builtInPerm == null) {
+            builtInPerm = this.adminPermission;
+        }
+        //Get logner of the actions
+        final CommandPermission perm = optPerm.orElse(this.adminPermission);
+        if (perm.getAction().length() > builtInPerm.getAction().length()) {
+            return perm;
+        }
+        return builtInPerm;
     }
 
     /**
@@ -127,7 +165,7 @@ public class PermissionManager implements LocaleUpdateListener {
      * @return Collection of permissions
      */
     Collection<CommandPermission> getPermissions() {
-        return this.permissions.getValues();
+        return Collections.unmodifiableCollection(this.permissions.getValues());
     }
 
     /**
@@ -135,15 +173,7 @@ public class PermissionManager implements LocaleUpdateListener {
      *
      * @param locale ResourceBundle to get translated commands from
      */
-    private void loadPermissions(Locale locale) {
-        //Load default permissions
-        for (final ChatCommand c : CommandProvider.COMMANDS) {
-            for (final CommandPermission p : c.getDefaultRanks(locale, this.guildID)) {
-                this.permissions.put(p.getAction(), p);
-            }
-        }
-
-        //Load permissions from database
+    private void loadPermissions() {
         final String query = "SELECT action,requiredRank,requiredRole FROM Permissions WHERE guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
@@ -156,12 +186,11 @@ public class PermissionManager implements LocaleUpdateListener {
                     try {
                         rank = MemberRank.valueOf(rankName);
                     } catch (IllegalArgumentException ex) {
-                        LOGGER.warn("Ignored permission with malformed rank: " + rankName);
+                        LOGGER.warn("Permission with malformed rank in database: {}", ex.getMessage());
                         continue;
                     }
                     final long requiredRole = rs.getLong("requiredRole");
-                    final CommandPermission perm = new CommandPermission(action, rank, requiredRole);
-                    permissions.put(action, perm);
+                    this.permissions.put(action, new CommandPermission(action, rank, requiredRole));
                 }
             }
         } catch (SQLException ex) {
