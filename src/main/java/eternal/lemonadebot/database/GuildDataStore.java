@@ -35,6 +35,7 @@ import eternal.lemonadebot.inventory.InventoryManager;
 import eternal.lemonadebot.keywords.KeywordManager;
 import eternal.lemonadebot.messagelogs.MessageManager;
 import eternal.lemonadebot.permissions.PermissionManager;
+import eternal.lemonadebot.permissions.PermissionManagerCache;
 import eternal.lemonadebot.reminders.ReminderManager;
 import eternal.lemonadebot.rolemanagement.RoleManager;
 import eternal.lemonadebot.rolemanagement.RoleManagerCache;
@@ -75,7 +76,11 @@ public class GuildDataStore implements AutoCloseable {
         this.guildID = guildID;
         this.config = new ConfigManager(dataSource, guildID);
         final Locale locale = this.config.getLocale();
-        this.permissions = new PermissionManager(dataSource, guildID, locale);
+        if (cacheConf.permissionsCacheEnabled()) {
+            this.permissions = new PermissionManagerCache(dataSource, guildID, locale);
+        } else {
+            this.permissions = new PermissionManager(dataSource, guildID, locale);
+        }
         this.reminders = new ReminderManager(dataSource, jda, this, guildID);
         this.messages = new MessageManager(dataSource);
         this.translationCache = new TranslationCache(locale);

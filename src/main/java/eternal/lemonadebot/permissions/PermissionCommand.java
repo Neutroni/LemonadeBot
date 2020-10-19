@@ -36,9 +36,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -139,7 +137,15 @@ public class PermissionCommand extends AdminCommand {
         }
 
         //Get the permission for the action
-        final CommandPermission perm = permissions.getPermission(command, permissionName);
+        final CommandPermission perm;
+        try {
+            perm = permissions.getPermission(command, permissionName);
+        } catch (SQLException ex){
+            channel.sendMessage(TranslationKey.PERMISSION_SQL_ERROR_ON_FIND.getTranslation(locale)).queue();
+            LOGGER.error("Failure to get permission from database: {}", ex.getMessage());
+            LOGGER.trace("Stack trace:", ex);
+            return;
+        }
         final long roleID = perm.getRequiredRoleID();
         final Role r = channel.getGuild().getRoleById(roleID);
         if (r == null) {
@@ -228,26 +234,34 @@ public class PermissionCommand extends AdminCommand {
         final PermissionManager permissionManager = guildData.getPermissionManager();
         final Locale locale = matcher.getLocale();
 
-        final Collection<CommandPermission> permissions = permissionManager.getPermissions();
+        final Collection<CommandPermission> permissions;
+        try {
+            permissions = permissionManager.getPermissions();
+        } catch (SQLException ex){
+            channel.sendMessage(TranslationKey.PERMISSION_SQL_ERROR_ON_LOAD.getTranslation(locale)).queue();
+            LOGGER.error("Failure to load permissions from database: {}", ex.getMessage());
+            LOGGER.trace("Stack trace:", ex);
+            return;
+        }
         final EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle(TranslationKey.HEADER_PERMISSIONS.getTranslation(locale));
         final StringBuilder description = new StringBuilder();
         final String template = TranslationKey.PERMISSION_LIST_ELEMENT.getTranslation(locale);
         for (final CommandPermission perm : permissions) {
-                final String rankName = perm.getRequiredRank().getNameKey().getTranslation(locale);
-                //Get the name of role
-                final String roleName;
-                final long roleID = perm.getRequiredRoleID();
-                final Role r = guild.getRoleById(roleID);
-                if (r == null) {
-                    roleName = TranslationKey.ROLE_MISSING.getTranslation(locale);
-                } else {
-                    roleName = r.getName();
-                }
-                //Format response
-            final String line = String.format(template, perm.getAction(), rankName, roleName);
-                description.append(line);
+            final String rankName = perm.getRequiredRank().getNameKey().getTranslation(locale);
+            //Get the name of role
+            final String roleName;
+            final long roleID = perm.getRequiredRoleID();
+            final Role r = guild.getRoleById(roleID);
+            if (r == null) {
+                roleName = TranslationKey.ROLE_MISSING.getTranslation(locale);
+            } else {
+                roleName = r.getName();
             }
+            //Format response
+            final String line = String.format(template, perm.getAction(), rankName, roleName);
+            description.append(line);
+        }
         if (permissions.isEmpty()) {
             description.append(TranslationKey.PERMISSION_NO_PERMISSIONS.getTranslation(locale));
         }
