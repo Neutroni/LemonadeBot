@@ -34,17 +34,16 @@ import eternal.lemonadebot.events.EventManager;
 import eternal.lemonadebot.inventory.InventoryCache;
 import eternal.lemonadebot.inventory.InventoryManager;
 import eternal.lemonadebot.keywords.KeywordManager;
+import eternal.lemonadebot.messagelogs.MessageManager;
 import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.permissions.PermissionManagerCache;
 import eternal.lemonadebot.reminders.ReminderManager;
 import eternal.lemonadebot.rolemanagement.RoleManager;
 import eternal.lemonadebot.rolemanagement.RoleManagerCache;
 import eternal.lemonadebot.translation.TranslationCache;
-
 import java.io.Closeable;
 import java.util.Locale;
 import javax.sql.DataSource;
-
 import net.dv8tion.jda.api.JDA;
 
 /**
@@ -72,8 +71,9 @@ public class GuildDataStore implements Closeable {
      * Constructor
      *
      * @param dataSource database connection to use
-     * @param guildID    Guild this config is for
-     * @param jda        JDA to use for reminders
+     * @param guildID Guild this config is for
+     * @param jda JDA to use for reminders
+     * @param cacheConf Configuration for what data to cache
      */
     GuildDataStore(final DataSource dataSource, final long guildID, final JDA jda, final CacheConfig cacheConf) {
         this.guildID = guildID;
