@@ -31,8 +31,6 @@ import eternal.lemonadebot.customcommands.TemplateCache;
 import eternal.lemonadebot.customcommands.TemplateManager;
 import eternal.lemonadebot.events.EventCache;
 import eternal.lemonadebot.events.EventManager;
-import eternal.lemonadebot.inventory.InventoryCache;
-import eternal.lemonadebot.inventory.InventoryManager;
 import eternal.lemonadebot.keywords.KeywordManager;
 import eternal.lemonadebot.messagelogs.MessageManager;
 import eternal.lemonadebot.permissions.PermissionManager;
@@ -45,6 +43,7 @@ import eternal.lemonadebot.translation.TranslationCache;
 import java.io.Closeable;
 import java.util.Locale;
 import javax.sql.DataSource;
+
 import net.dv8tion.jda.api.JDA;
 
 /**
@@ -55,6 +54,8 @@ import net.dv8tion.jda.api.JDA;
 public class GuildDataStore implements Closeable {
 
     private final long guildID;
+    private final DataSource dataSource;
+    private final CacheConfig cacheConfig;
     private final ConfigManager config;
     private final PermissionManager permissions;
     private final TemplateManager commands;
@@ -66,17 +67,18 @@ public class GuildDataStore implements Closeable {
     private final CommandProvider commandProvider;
     private final TranslationCache translationCache;
     private final KeywordManager keywordManager;
-    private final InventoryManager inventoryManager;
 
     /**
      * Constructor
      *
      * @param dataSource database connection to use
-     * @param guildID Guild this config is for
-     * @param jda JDA to use for reminders
+     * @param guildID    Guild this config is for
+     * @param jda        JDA to use for reminders
      */
     GuildDataStore(final DataSource dataSource, final long guildID, final JDA jda, final CacheConfig cacheConf) {
         this.guildID = guildID;
+        this.dataSource = dataSource;
+        this.cacheConfig = cacheConf;
         this.config = new ConfigManager(dataSource, guildID);
         final Locale locale = this.config.getLocale();
         if (cacheConf.permissionsCacheEnabled()) {
@@ -88,7 +90,7 @@ public class GuildDataStore implements Closeable {
         this.messages = new MessageManager(dataSource);
         this.translationCache = new TranslationCache(locale);
         this.keywordManager = new KeywordManager(dataSource, guildID);
-        if(cacheConf.cooldownCacheEnabled()){
+        if (cacheConf.cooldownCacheEnabled()) {
             this.cooldowns = new CooldownCache(dataSource, guildID);
         } else {
             this.cooldowns = new CooldownManager(dataSource, guildID);
@@ -109,11 +111,6 @@ public class GuildDataStore implements Closeable {
         } else {
             this.roleManager = new RoleManager(dataSource, guildID);
         }
-        if (cacheConf.inventoryCacheEnabled()) {
-            this.inventoryManager = new InventoryCache(dataSource, guildID);
-        } else {
-            this.inventoryManager = new InventoryManager(dataSource, guildID);
-        }
 
         //Add locale update listeners
         this.config.registerLocaleUpdateListener(this.permissions);
@@ -128,6 +125,24 @@ public class GuildDataStore implements Closeable {
      */
     public long getGuildID() {
         return this.guildID;
+    }
+
+    /**
+     * Get the dataSource for managers
+     *
+     * @return DataSource
+     */
+    public DataSource getDataSource() {
+        return this.dataSource;
+    }
+
+    /**
+     * Get cacheConfig used to decide if data should be cached
+     *
+     * @return CacheConfig
+     */
+    public CacheConfig getCacheConfig() {
+        return this.cacheConfig;
     }
 
     /**
@@ -227,15 +242,6 @@ public class GuildDataStore implements Closeable {
      */
     public KeywordManager getKeywordManager() {
         return this.keywordManager;
-    }
-
-    /**
-     * Get the inventoryManager for guild
-     *
-     * @return inventoryManager
-     */
-    public InventoryManager getInventoryManager() {
-        return this.inventoryManager;
     }
 
     @Override
