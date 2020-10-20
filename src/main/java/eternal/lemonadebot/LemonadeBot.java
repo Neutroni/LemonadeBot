@@ -119,7 +119,7 @@ public class LemonadeBot {
 
             //Connect to the database
             final DatabaseManager DB = new DatabaseManager(properties, jda);
-            LOGGER.debug("Connected to database succefully");
+            LOGGER.debug("Connected to database successfully");
 
             //Start listening for messages
             jda.addEventListener(new JoinListener(DB));
@@ -131,7 +131,7 @@ public class LemonadeBot {
             jda.awaitReady();
             jda.getGuilds().forEach(DB::getGuildData);
 
-            LOGGER.debug("Startup succesfull");
+            LOGGER.debug("Startup successful");
         } catch (SQLException ex) {
             LOGGER.fatal("Failed to connect to database during startup: {}", ex.getMessage());
             LOGGER.trace("Stack trace:", ex);
