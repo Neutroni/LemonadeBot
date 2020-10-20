@@ -31,6 +31,8 @@ import eternal.lemonadebot.customcommands.TemplateCache;
 import eternal.lemonadebot.customcommands.TemplateManager;
 import eternal.lemonadebot.events.EventCache;
 import eternal.lemonadebot.events.EventManager;
+import eternal.lemonadebot.inventory.InventoryCache;
+import eternal.lemonadebot.inventory.InventoryManager;
 import eternal.lemonadebot.keywords.KeywordManager;
 import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.permissions.PermissionManagerCache;
@@ -51,8 +53,6 @@ import net.dv8tion.jda.api.JDA;
 public class GuildDataStore implements Closeable {
 
     private final long guildID;
-    private final DataSource dataSource;
-    private final CacheConfig cacheConfig;
     private final ConfigManager config;
     private final PermissionManager permissions;
     private final TemplateManager commands;
@@ -63,6 +63,7 @@ public class GuildDataStore implements Closeable {
     private final CommandProvider commandProvider;
     private final TranslationCache translationCache;
     private final KeywordManager keywordManager;
+    private final InventoryManager inventoryManager;
 
     /**
      * Constructor
@@ -74,8 +75,6 @@ public class GuildDataStore implements Closeable {
      */
     GuildDataStore(final DataSource dataSource, final long guildID, final JDA jda, final CacheConfig cacheConf) {
         this.guildID = guildID;
-        this.dataSource = dataSource;
-        this.cacheConfig = cacheConf;
         this.config = new ConfigManager(dataSource, guildID);
         final Locale locale = this.config.getLocale();
         if (cacheConf.permissionsCacheEnabled()) {
@@ -107,6 +106,11 @@ public class GuildDataStore implements Closeable {
         } else {
             this.roleManager = new RoleManager(dataSource, guildID);
         }
+        if (cacheConf.inventoryCacheEnabled()) {
+            this.inventoryManager = new InventoryCache(dataSource, guildID);
+        } else {
+            this.inventoryManager = new InventoryManager(dataSource, guildID);
+        }
 
         //Add locale update listeners
         this.config.registerLocaleUpdateListener(this.permissions);
@@ -121,24 +125,6 @@ public class GuildDataStore implements Closeable {
      */
     public long getGuildID() {
         return this.guildID;
-    }
-
-    /**
-     * Get the dataSource for managers
-     *
-     * @return DataSource
-     */
-    public DataSource getDataSource() {
-        return this.dataSource;
-    }
-
-    /**
-     * Get cacheConfig used to decide if data should be cached
-     *
-     * @return CacheConfig
-     */
-    public CacheConfig getCacheConfig() {
-        return this.cacheConfig;
     }
 
     /**
@@ -229,6 +215,15 @@ public class GuildDataStore implements Closeable {
      */
     public KeywordManager getKeywordManager() {
         return this.keywordManager;
+    }
+
+    /**
+     * Get the inventoryManager for guild
+     *
+     * @return inventoryManager
+     */
+    public InventoryManager getInventoryManager() {
+        return this.inventoryManager;
     }
 
     @Override

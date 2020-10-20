@@ -24,7 +24,6 @@
 package eternal.lemonadebot.inventory;
 
 import eternal.lemonadebot.commands.ChatCommand;
-import eternal.lemonadebot.database.CacheConfig;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
@@ -38,9 +37,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import javax.sql.DataSource;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -50,12 +47,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
+ *
  * @author Neutroni
  */
 public class InventoryCommand implements ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final Map<Long, InventoryManager> MANAGERS = new ConcurrentHashMap<>();
 
     @Override
     public String getCommand(final Locale locale) {
@@ -115,8 +112,8 @@ public class InventoryCommand implements ChatCommand {
 
     private static void showInventory(final String[] opts, final CommandMatcher message, final GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
+        final InventoryManager inventoryManager = guildData.getInventoryManager();
         final Guild guild = message.getGuild();
-        final InventoryManager inventoryManager = getInventoryManager(guildData);
         final Locale locale = message.getLocale();
         final Member requester = message.getMember();
         if (opts.length < 2) {
@@ -148,10 +145,10 @@ public class InventoryCommand implements ChatCommand {
     /**
      * Construct and send a message containing users inventory items.
      *
-     * @param member           Member to get inventory for
+     * @param member Member to get inventory for
      * @param inventoryManager InventoryManager to get users inventory from
-     * @param locale           Locale to send the message in.
-     * @param channel          Channel to send the message on.
+     * @param locale Locale to send the message in.
+     * @param channel Channel to send the message on.
      */
     private static void showInventoryForUser(final Member member, final InventoryManager inventoryManager, final Locale locale, final TextChannel channel) {
         final EmbedBuilder eb = new EmbedBuilder();
@@ -208,7 +205,7 @@ public class InventoryCommand implements ChatCommand {
             return;
         }
 
-        final InventoryManager inventoryManager = getInventoryManager(guildData);
+        final InventoryManager inventoryManager = guildData.getInventoryManager();
         final String targetName;
         if (args.size() < 4) {
             //Add item to users own inventory
@@ -259,7 +256,7 @@ public class InventoryCommand implements ChatCommand {
                 final Member target = members.get(0);
                 try {
                     if (inventoryManager.updateCount(target, itemName, itemCount)) {
-                        if (itemCount > 0) {
+                        if(itemCount > 0){
                             final String template = TranslationKey.INVENTORY_ITEM_ADDED_SUCCESS.getTranslation(locale);
                             channel.sendMessageFormat(template, itemCount, itemName, target.getEffectiveName()).queue();
                             return;
@@ -360,7 +357,7 @@ public class InventoryCommand implements ChatCommand {
             return;
         }
 
-        final InventoryManager inventoryManager = getInventoryManager(guildData);
+        final InventoryManager inventoryManager = guildData.getInventoryManager();
         final String targetName;
         if (args.size() < 4) {
             channel.sendMessage(TranslationKey.INVENTORY_PAY_USER_MISSING.getTranslation(locale)).queue();
@@ -472,23 +469,6 @@ public class InventoryCommand implements ChatCommand {
         //Unknown mode
         final String template = TranslationKey.INVENTORY_UNKNOWN_MODE.getTranslation(locale);
         channel.sendMessageFormat(template, modeName).queue();
-    }
-
-    /**
-     * Get the inventoryManager for guild
-     *
-     * @param guild Guild to get InventoryManager for
-     * @return inventoryManager
-     */
-    private static InventoryManager getInventoryManager(final GuildDataStore guild) {
-        final DataSource dataSource = guild.getDataSource();
-        final CacheConfig cacheConfig = guild.getCacheConfig();
-        return MANAGERS.computeIfAbsent(guild.getGuildID(), guildID -> {
-            if (cacheConfig.inventoryCacheEnabled()) {
-                return new InventoryCache(dataSource, guildID);
-            }
-            return new InventoryManager(dataSource, guildID);
-        });
     }
 
 }
