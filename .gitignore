@@ -6,6 +6,10 @@ nbactions.xml
 nb-configuration.xml
 nbactions-release-profile.xml
 
+#IntelliJ
+.idea
+*.iml
+
 #Logfile
 logfile.log
 
