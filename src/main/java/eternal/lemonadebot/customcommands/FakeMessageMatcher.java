@@ -50,7 +50,7 @@ class FakeMessageMatcher implements CommandMatcher {
     /**
      * Constructor
      *
-     * @param originalMatcher commandmatcher of the original custom command call
+     * @param originalMatcher commandMatcher of the original custom command call
      * @param fakeContent content of the custom command call
      */
     FakeMessageMatcher(final CommandMatcher originalMatcher, final String fakeContent) {
