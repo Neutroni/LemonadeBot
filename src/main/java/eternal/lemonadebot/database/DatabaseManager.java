@@ -33,7 +33,6 @@ import java.sql.Statement;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.sql.DataSource;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import org.apache.logging.log4j.LogManager;
@@ -103,15 +102,6 @@ public class DatabaseManager implements Closeable {
         return this.guildDataStores.computeIfAbsent(guild.getIdLong(), (Long newGuildID) -> {
             return new GuildDataStore(this.dataSource, newGuildID, this.jda, this.cacheConfig);
         });
-    }
-
-    /**
-     * Get DataSource
-     *
-     * @return DataSource
-     */
-    public DataSource getDataSource() {
-        return this.dataSource;
     }
 
     /**

@@ -26,6 +26,14 @@ package eternal.lemonadebot;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.keywords.KeywordListener;
 import eternal.lemonadebot.messagelogs.LoggerListener;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.MemberCachePolicy;
+import net.dv8tion.jda.api.utils.cache.CacheFlag;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import javax.security.auth.login.LoginException;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -36,14 +44,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executors;
-import javax.security.auth.login.LoginException;
-import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.requests.GatewayIntent;
-import net.dv8tion.jda.api.utils.MemberCachePolicy;
-import net.dv8tion.jda.api.utils.cache.CacheFlag;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Main class of the bot, initializes database and connects to discord

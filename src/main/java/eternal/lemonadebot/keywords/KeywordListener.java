@@ -46,9 +46,9 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
  * @author Neutroni
  */
 public class KeywordListener extends ListenerAdapter {
-    
+
     private final DatabaseManager db;
-    
+
     /**
      * Constructor
      *

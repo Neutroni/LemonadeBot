@@ -48,7 +48,6 @@ import net.dv8tion.jda.api.utils.TimeUtil;
 public class LoggerListener extends ListenerAdapter {
 
     private final DatabaseManager db;
-    private final MessageManager messageManager;
 
     /**
      * Constructor
@@ -57,7 +56,6 @@ public class LoggerListener extends ListenerAdapter {
      */
     public LoggerListener(final DatabaseManager database) {
         this.db = database;
-        this.messageManager = new MessageManager(db.getDataSource());
     }
 
     /**
@@ -78,7 +76,7 @@ public class LoggerListener extends ListenerAdapter {
         if (logID.isEmpty()) {
             return;
         }
-        this.messageManager.logMessage(message);
+        guildData.getMessageManager().logMessage(message);
     }
 
     /**
@@ -104,8 +102,9 @@ public class LoggerListener extends ListenerAdapter {
         }
         //Get the old content if stored
         final Message message = event.getMessage();
+        final MessageManager messageManager = guildData.getMessageManager();
         final Locale locale = guildConf.getLocale();
-        final Optional<StoredMessage> oldContent = this.messageManager.getMessageContent(message.getIdLong());
+        final Optional<StoredMessage> oldContent = messageManager.getMessageContent(message.getIdLong());
         oldContent.ifPresent((StoredMessage t) -> {
             final User author = event.getAuthor();
             final EmbedBuilder eb = new EmbedBuilder();
@@ -145,8 +144,9 @@ public class LoggerListener extends ListenerAdapter {
         }
         //Get the old content if stored
         final long messageID = event.getMessageIdLong();
+        final MessageManager messageManager = guildData.getMessageManager();
         final Locale locale = guildConf.getLocale();
-        final Optional<StoredMessage> oldContent = this.messageManager.getMessageContent(messageID);
+        final Optional<StoredMessage> oldContent = messageManager.getMessageContent(messageID);
         oldContent.ifPresent((StoredMessage t) -> {
             final EmbedBuilder eb = new EmbedBuilder();
             eb.setAuthor(TranslationKey.MESSAGE_DELETE_HEADER.getTranslation(locale));
