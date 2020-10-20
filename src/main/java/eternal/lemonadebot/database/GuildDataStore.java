@@ -37,11 +37,9 @@ import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.permissions.PermissionManagerCache;
 import eternal.lemonadebot.reminders.ReminderManager;
 import eternal.lemonadebot.translation.TranslationCache;
-
 import java.io.Closeable;
 import java.util.Locale;
 import javax.sql.DataSource;
-
 import net.dv8tion.jda.api.JDA;
 
 /**
@@ -60,7 +58,6 @@ public class GuildDataStore implements Closeable {
     private final EventManager events;
     private final ReminderManager reminders;
     private final CooldownManager cooldowns;
-    private final MessageManager messages;
     private final CommandProvider commandProvider;
     private final TranslationCache translationCache;
     private final KeywordManager keywordManager;
@@ -69,8 +66,9 @@ public class GuildDataStore implements Closeable {
      * Constructor
      *
      * @param dataSource database connection to use
-     * @param guildID    Guild this config is for
-     * @param jda        JDA to use for reminders
+     * @param guildID Guild this config is for
+     * @param jda JDA to use for reminders
+     * @param cacheConf Configuration for which objects should be cached
      */
     GuildDataStore(final DataSource dataSource, final long guildID, final JDA jda, final CacheConfig cacheConf) {
         this.guildID = guildID;
@@ -84,7 +82,6 @@ public class GuildDataStore implements Closeable {
             this.permissions = new PermissionManager(dataSource, guildID, locale);
         }
         this.reminders = new ReminderManager(dataSource, jda, this);
-        this.messages = new MessageManager(dataSource);
         this.translationCache = new TranslationCache(locale);
         this.keywordManager = new KeywordManager(dataSource, guildID);
         if (cacheConf.cooldownCacheEnabled()) {
@@ -189,15 +186,6 @@ public class GuildDataStore implements Closeable {
      */
     public CooldownManager getCooldownManager() {
         return this.cooldowns;
-    }
-
-    /**
-     * Get the messageManager for this guild
-     *
-     * @return MessageManager
-     */
-    public MessageManager getMessageManager() {
-        return this.messages;
     }
 
     /**
