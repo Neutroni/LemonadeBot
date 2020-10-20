@@ -64,7 +64,7 @@ public class KeywordManager {
      * Adds a command to database
      *
      * @param command Command to add
-     * @return true if added succesfully
+     * @return true if added successfully
      * @throws SQLException if database connection fails
      */
     boolean addKeyword(final KeywordAction command) throws SQLException {

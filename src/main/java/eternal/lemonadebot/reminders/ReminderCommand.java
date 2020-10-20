@@ -112,10 +112,10 @@ public class ReminderCommand extends AdminCommand {
     }
 
     private static void createReminder(final CommandMatcher matcher, final GuildDataStore guildData) {
-        //reminder create test 17.00 * * * remindertext
-        //reminder create test 17.00 * * sunday remindertext
-        //reminder create test 17.00 17 9 * remindertext
-        //reminder create test 17.00 30 * * remindertext
+        //reminder create test 17.00 * * * reminder text
+        //reminder create test 17.00 * * sunday reminder text
+        //reminder create test 17.00 17 9 * reminder text
+        //reminder create test 17.00 30 * * reminder text
         final TextChannel channel = matcher.getTextChannel();
         final ReminderManager reminders = guildData.getReminderManager();
         final ConfigManager guildConf = guildData.getConfigManager();

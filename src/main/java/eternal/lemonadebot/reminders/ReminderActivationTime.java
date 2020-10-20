@@ -123,7 +123,7 @@ class ReminderActivationTime {
      * Get cron like representation of the activation time
      *
      * @param locale Locale use for day of week and time format
-     * @param formatter Formattern to use for formatting activation time
+     * @param formatter Formatter to use for formatting activation time
      * @return String representation of activation time
      */
     String getCronString(final Locale locale, final DateTimeFormatter formatter) {

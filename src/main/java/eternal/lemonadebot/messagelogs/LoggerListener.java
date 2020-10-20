@@ -59,7 +59,7 @@ public class LoggerListener extends ListenerAdapter {
     }
 
     /**
-     * Received when someone sends a message. Logs the message if loggin is
+     * Received when someone sends a message. Logs the message if logging is
      * enabled
      *
      * @param event Message info

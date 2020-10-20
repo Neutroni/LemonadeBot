@@ -122,7 +122,7 @@ public class ConfigManager {
     }
 
     /**
-     * Register a listener that will get notfied when locale changes
+     * Register a listener that will get notified when locale changes
      *
      * @param listener LocaleUpdateListener
      */
@@ -178,7 +178,7 @@ public class ConfigManager {
      *
      * @param newLocale locale to set
      * @return false if update failed due to unsupported locale
-     * @throws SQLException if database error occured
+     * @throws SQLException if database error occurred
      */
     boolean setLocale(final Locale newLocale) throws SQLException {
         if (!SUPPORTED_LOCALES.contains(newLocale)) {
@@ -240,7 +240,7 @@ public class ConfigManager {
     }
 
     /**
-     * Load the values this guildconfig stores
+     * Load the values this guildConfig stores
      */
     private void loadValues() {
         final String query = "SELECT commandPrefix,greetingTemplate,logChannel,locale,timeZone FROM Guilds WHERE id = ?;";
@@ -264,7 +264,7 @@ public class ConfigManager {
                         LOGGER.error("SQL error on fetching greeting template: {}", ex.getMessage());
                         LOGGER.warn("Stack trace:", ex);
                     }
-                    //Load logchannel
+                    //Load logChannel
                     try {
                         final long channelID = rs.getLong("logChannel");
                         if (channelID == 0) {
@@ -313,7 +313,7 @@ public class ConfigManager {
     /**
      * Add this guild to database
      *
-     * @return true if add was succesfull
+     * @return true if add was successful
      * @throws SQLException if database connection failed
      */
     private boolean addGuild() throws SQLException {

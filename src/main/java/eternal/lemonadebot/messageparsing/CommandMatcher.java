@@ -106,7 +106,7 @@ public interface CommandMatcher {
     /**
      * Return the list of members mentioned in the message
      *
-     * @return same as message.getMentinedMembers()
+     * @return same as message.getMentionedMembers()
      */
     List<Member> getMentionedMembers();
 

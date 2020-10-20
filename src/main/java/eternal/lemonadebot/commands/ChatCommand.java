@@ -65,7 +65,7 @@ public interface ChatCommand {
      * What rank is needed to run this command by default
      *
      * @param locale Locale to get the ranks for
-     * @param guildID ID of the guild used to create commandpermission
+     * @param guildID ID of the guild used to create commandPermission
      * @param permissions PermissionManager to use
      * @return The default rank needed to run this command
      */

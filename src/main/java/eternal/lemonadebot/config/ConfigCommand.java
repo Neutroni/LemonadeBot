@@ -115,7 +115,7 @@ public class ConfigCommand extends AdminCommand {
      *
      * @param config Name of config to update
      * @param value Value to set the config to
-     * @param guildData GuilData to get config from
+     * @param guildData GuildData to get config from
      * @param matcher message that made the request
      */
     private static void setValue(final String config, final String value, final GuildDataStore guildData, final CommandMatcher matcher) {
@@ -192,7 +192,7 @@ public class ConfigCommand extends AdminCommand {
     }
 
     /**
-     * Reply with the current value for confuguration option
+     * Reply with the current value for configuration option
      *
      * @param option String of option
      * @param channel TextChannel to reply on

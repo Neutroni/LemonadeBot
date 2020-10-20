@@ -67,7 +67,7 @@ class Reminder extends CustomCommand implements Runnable {
      * @param guildData Datastore for the guild
      * @param name Name of the reminder
      * @param channelID ID of the channel the message should be sent in
-     * @param author Autoher of the reminder
+     * @param author Author of the reminder
      * @param input Input string to either send or execute if it is a command
      * @param activationTime Weekday the reminder happens
      */
@@ -89,7 +89,7 @@ class Reminder extends CustomCommand implements Runnable {
         LOGGER.debug("Reminder started: {}", getName());
         //Make sure JDA is loaded
         try {
-            //This might delay activation if connecting takes extremly long
+            //This might delay activation if connecting takes extremely long
             this.jda.awaitReady();
         } catch (InterruptedException e) {
             LOGGER.error("JDA loading interrupted while trying to run a reminder: {}", e.getMessage());
@@ -116,7 +116,7 @@ class Reminder extends CustomCommand implements Runnable {
             final Locale locale = this.guildData.getConfigManager().getLocale();
             final CommandMatcher matcher = new SimpleMessageMatcher(member, channel, locale);
             respond(matcher, this.guildData);
-            LOGGER.debug("Reminder: {} succesfully activated on channel: {}", getName(), channel.getName());
+            LOGGER.debug("Reminder: {} successfully activated on channel: {}", getName(), channel.getName());
         }, (Throwable t) -> {
             //Failure
             deleteDueToMissingOwner();
@@ -135,7 +135,7 @@ class Reminder extends CustomCommand implements Runnable {
     }
 
     private void deleteDueToMissingChannel() {
-        LOGGER.info("Deleting reminder: {} for textchannel that does not exist, channel id: {}", getName(), this.channelID);
+        LOGGER.info("Deleting reminder: {} for textChannel that does not exist, channel id: {}", getName(), this.channelID);
         try {
             this.guildData.getReminderManager().deleteReminder(this);
             LOGGER.info("Deleted reminder with missing channel: {}", this.channelID);

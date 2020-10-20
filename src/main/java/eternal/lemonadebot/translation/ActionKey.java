@@ -68,7 +68,7 @@ public enum ActionKey {
     }
 
     /**
-     * Get the translationkey for this action
+     * Get the TranslationKey for this action
      *
      * @return TranslationKey if action has one, null otherwise
      */

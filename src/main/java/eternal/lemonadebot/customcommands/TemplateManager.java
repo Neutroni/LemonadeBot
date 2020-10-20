@@ -83,7 +83,7 @@ public class TemplateManager {
      * Adds a command to database
      *
      * @param command Command to add
-     * @return true if added succesfully
+     * @return true if added successfully
      * @throws SQLException if database connection fails
      */
     boolean addCommand(final CustomCommand command) throws SQLException {

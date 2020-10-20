@@ -116,7 +116,7 @@ public class CooldownManager {
      * Set cooldown for command
      *
      * @param action Action to set cooldown for
-     * @param duration Lenght of the cooldown
+     * @param duration Length of the cooldown
      * @return true if cooldown was created or updated
      * @throws SQLException If database connection failed
      */

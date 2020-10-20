@@ -181,7 +181,7 @@ public class RoleCommand implements ChatCommand {
      * @param channel Channel to use to respond
      * @param sender Command user
      * @param requestedRoleName Name of the role user wants
-     * @param guildData GuilData to get locale from
+     * @param guildData GuildData to get locale from
      */
     private static void assignRole(final TextChannel channel, final Member sender, final String requestedRoleName, final GuildDataStore guildData) {
         final Guild currentGuild = channel.getGuild();
@@ -276,12 +276,12 @@ public class RoleCommand implements ChatCommand {
                 return false;
             }
             //Get the person on the other server
-            final Member otherGuildmember = otherGuild.getMember(member.getUser());
-            if (otherGuildmember == null) {
+            final Member otherGuildMember = otherGuild.getMember(member.getUser());
+            if (otherGuildMember == null) {
                 return false;
             }
             //Check if the person has any roles on the server.
-            final List<Role> otherGuildRoles = otherGuildmember.getRoles();
+            final List<Role> otherGuildRoles = otherGuildMember.getRoles();
             return !otherGuildRoles.isEmpty();
         }).collect(Collectors.toList());
 
@@ -461,7 +461,7 @@ public class RoleCommand implements ChatCommand {
         if (roleAllowed) {
             final Member requester = matcher.getMember();
             guild.addRoleToMember(requester, role).queue((Void t) -> {
-                //Assigned role succesfully
+                //Assigned role successfully
                 final String template = TranslationKey.ROLE_ASSIGNED_SUCCESFULLY.getTranslation(locale);
                 channel.sendMessageFormat(template, roleName).queue();
             }, (Throwable e) -> {
@@ -514,7 +514,7 @@ public class RoleCommand implements ChatCommand {
         if (roleAllowed) {
             final Member requester = matcher.getMember();
             guild.removeRoleFromMember(requester, role).queue((Void t) -> {
-                //Assigned role succesfully
+                //Assigned role successfully
                 channel.sendMessage(TranslationKey.ROLE_REMOVED_SUCCESFULLY.getTranslation(locale)).queue();
             }, (Throwable e) -> {
                 //Failed to assign role

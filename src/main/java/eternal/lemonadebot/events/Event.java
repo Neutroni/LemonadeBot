@@ -61,7 +61,7 @@ public class Event {
      * @param name Name for this event
      * @param description Description for this event
      * @param owner Owner id for this event
-     * @param locked wheter event is locked
+     * @param locked whether event is locked
      */
     Event(final String name, final String description, final long owner, final boolean locked) {
         this.name = name;

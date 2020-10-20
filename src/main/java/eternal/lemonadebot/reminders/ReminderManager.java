@@ -99,7 +99,7 @@ public class ReminderManager implements Closeable {
         //If timer was just added schedule the activation
         if (oldReminder == null) {
             reminder.scheduleWith(this.reminderTimer);
-            LOGGER.debug("Reminder: {} scheluded with ScheduledExecutorService", reminder.getName());
+            LOGGER.debug("Reminder: {} scheduled with ScheduledExecutorService", reminder.getName());
         }
 
         //Add to database
@@ -143,7 +143,7 @@ public class ReminderManager implements Closeable {
     /**
      *
      * @param reminder reminder to remove
-     * @return true if reminder was removed succesfully
+     * @return true if reminder was removed successfully
      * @throws SQLException if database connection failed
      */
     boolean deleteReminder(final Reminder reminder) throws SQLException {
@@ -235,7 +235,7 @@ public class ReminderManager implements Closeable {
                         try {
                             reminderMonth = Month.of(monthOfYear);
                         } catch (DateTimeParseException e) {
-                            LOGGER.error("Malformed monthday in database: {}", monthOfYear);
+                            LOGGER.error("Malformed monthDay in database: {}", monthOfYear);
                             continue;
                         }
                     }
@@ -246,13 +246,13 @@ public class ReminderManager implements Closeable {
                     final Reminder reminder = new Reminder(this.jda, this.guildData,
                             reminderName, reminderMessage, reminderChannel, reminderAuthor, reminderActivationTime);
                     this.reminders.put(reminder.getName(), reminder);
-                    LOGGER.debug("Reminder succesfully loaded: {}", reminder.getName());
+                    LOGGER.debug("Reminder successfully loaded: {}", reminder.getName());
 
                     reminder.scheduleWith(this.reminderTimer);
-                    LOGGER.debug("Reminder: {} scheluded with ScheduledExecutorService", reminder.getName());
+                    LOGGER.debug("Reminder: {} scheduled with ScheduledExecutorService", reminder.getName());
                 }
             }
-            LOGGER.debug("Reminders for guild: {} loaded succesfully.", this.guildID);
+            LOGGER.debug("Reminders for guild: {} loaded successfully.", this.guildID);
         } catch (SQLException e) {
             LOGGER.error("Loading reminders from database failed");
             LOGGER.warn(e.getMessage());

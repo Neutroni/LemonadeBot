@@ -26,7 +26,7 @@ class GuildMusicManager {
      * Creates a player and a track scheduler.
      *
      * @param manager Audio player manager to use for creating the player.
-     * @param audioManager Audiomanager to close at the end of play
+     * @param audioManager AudioManager to close at the end of play
      */
     GuildMusicManager(final AudioPlayerManager manager, final AudioManager audioManager) {
         this.player = manager.createPlayer();

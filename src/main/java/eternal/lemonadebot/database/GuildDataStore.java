@@ -131,7 +131,7 @@ public class GuildDataStore implements Closeable {
     }
 
     /**
-     * Get the configmanager for this datastore
+     * Get the configManager for this datastore
      *
      * @return ConfigManager
      */
@@ -140,7 +140,7 @@ public class GuildDataStore implements Closeable {
     }
 
     /**
-     * Get the permissionsmanager for this datastore
+     * Get the permissionsManager for this datastore
      *
      * @return PermissionsManager
      */
@@ -149,7 +149,7 @@ public class GuildDataStore implements Closeable {
     }
 
     /**
-     * Get tge customcommandmanager for this datastore
+     * Get tge customCommandManager for this datastore
      *
      * @return CustomCommandManager
      */
@@ -158,7 +158,7 @@ public class GuildDataStore implements Closeable {
     }
 
     /**
-     * Get the eventmanager for this datastore
+     * Get the eventManager for this datastore
      *
      * @return EventManager
      */
@@ -167,7 +167,7 @@ public class GuildDataStore implements Closeable {
     }
 
     /**
-     * Get the rolemanager for this guild
+     * Get the roleManager for this guild
      *
      * @return RoleManager
      */
@@ -176,7 +176,7 @@ public class GuildDataStore implements Closeable {
     }
 
     /**
-     * Get the remindermanager for this datastore
+     * Get the reminderManager for this datastore
      *
      * @return ReminderManager
      */
@@ -185,7 +185,7 @@ public class GuildDataStore implements Closeable {
     }
 
     /**
-     * Get the cooldownmanager for this datastore
+     * Get the cooldownManager for this datastore
      *
      * @return CooldownManager
      */
@@ -194,7 +194,7 @@ public class GuildDataStore implements Closeable {
     }
 
     /**
-     * Get the messagemanager for this guild
+     * Get the messageManager for this guild
      *
      * @return MessageManager
      */
@@ -212,7 +212,7 @@ public class GuildDataStore implements Closeable {
     }
 
     /**
-     * Get the translationcache
+     * Get the translationCache
      *
      * @return TranslationCache
      */
@@ -221,7 +221,7 @@ public class GuildDataStore implements Closeable {
     }
 
     /**
-     * Get the keywordmanager for guild
+     * Get the keywordManager for guild
      *
      * @return KeywordManager
      */
@@ -230,9 +230,9 @@ public class GuildDataStore implements Closeable {
     }
 
     /**
-     * Get hte inventorymanager for guild
+     * Get the inventoryManager for guild
      *
-     * @return inventorymanager
+     * @return inventoryManager
      */
     public InventoryManager getInventoryManager() {
         return this.inventoryManager;

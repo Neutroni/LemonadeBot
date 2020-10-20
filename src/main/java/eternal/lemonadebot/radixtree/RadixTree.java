@@ -64,7 +64,7 @@ public class RadixTree<T> {
      *
      * @param name name of the node to add
      * @param node value to associate with name
-     * @return true if opearation overwrote a value
+     * @return true if operation overwrote a value
      */
     public boolean put(final String name, final T node) {
         final RadixTree<T> newNode = new RadixTree<>(node);

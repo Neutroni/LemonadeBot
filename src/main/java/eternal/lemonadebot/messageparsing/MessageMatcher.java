@@ -113,7 +113,7 @@ public class MessageMatcher implements CommandMatcher {
         if (maxArguments < 0) {
             throw new IllegalArgumentException("Error parsing arguments, maxArguments can not be negative.");
         }
-        //For empty imput return empty collection
+        //For empty input return empty collection
         final List<String> args = new ArrayList<>();
         if (this.arguments.isEmpty()) {
             return args;
@@ -146,7 +146,7 @@ public class MessageMatcher implements CommandMatcher {
                         current.append(c);
                     } else {
                         args.add(current.toString());
-                        //Reset stringbuilder
+                        //Reset StringBuilder
                         current.setLength(0);
                         //Check if we have enough arguments
                         if (args.size() == limit) {

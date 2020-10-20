@@ -39,7 +39,7 @@ class StoredMessage {
     }
 
     /**
-     * Get the auhor of the message
+     * Get the author of the message
      *
      * @return ID for the message author
      */

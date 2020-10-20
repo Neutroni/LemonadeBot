@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Abstact class with admin defaultRank implementation
+ * Abstract class with admin defaultRank implementation
  *
  * @author Neutroni
  */

@@ -285,9 +285,9 @@ public class MusicCommand implements ChatCommand {
     }
 
     /**
-     * Pause music plaback
+     * Pause music playback
      *
-     * @param textChannel textchannel for request
+     * @param textChannel textChannel for request
      */
     private void pauseTrack(final TextChannel textChannel, final Locale locale) {
         final GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
@@ -296,7 +296,7 @@ public class MusicCommand implements ChatCommand {
     }
 
     /**
-     * Play audiotrack
+     * Play AudioTrack
      *
      * @param guild guild to play on
      * @param musicManager musicManager to use
@@ -387,9 +387,9 @@ public class MusicCommand implements ChatCommand {
         final int secondsPart = playlistDuration.toSecondsPart();
         final String durationTemplate = TranslationKey.MUSIC_DURATION_TEMPLATE.getTranslation(locale);
         final String durationString = String.format(durationTemplate, hoursRemaining, minutesPart, secondsPart);
-        final String playlistLenth = TranslationKey.MUSIC_PLAYLIST_LENGTH.getTranslation(locale);
-        final MessageEmbed.Field playlistLenghtField = new MessageEmbed.Field(playlistLenth, durationString, false);
-        eb.addField(playlistLenghtField);
+        final String playlistLength = TranslationKey.MUSIC_PLAYLIST_LENGTH.getTranslation(locale);
+        final MessageEmbed.Field playlistLengthField = new MessageEmbed.Field(playlistLength, durationString, false);
+        eb.addField(playlistLengthField);
 
         //Send the message
         textChannel.sendMessage(eb.build()).queue();

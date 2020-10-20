@@ -26,6 +26,14 @@ package eternal.lemonadebot;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.keywords.KeywordListener;
 import eternal.lemonadebot.messagelogs.LoggerListener;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.MemberCachePolicy;
+import net.dv8tion.jda.api.utils.cache.CacheFlag;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import javax.security.auth.login.LoginException;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -35,17 +43,7 @@ import java.io.Writer;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import javax.security.auth.login.LoginException;
-import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.requests.GatewayIntent;
-import net.dv8tion.jda.api.utils.MemberCachePolicy;
-import net.dv8tion.jda.api.utils.cache.CacheFlag;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.concurrent.Executors;
 
 /**
  * Main class of the bot, initializes database and connects to discord
@@ -81,18 +79,18 @@ public class LemonadeBot {
             LOGGER.fatal("Could not find configuration file, {}", ex.getMessage());
             LOGGER.trace("Stack trace: ", ex);
             generateDefaultPropertiesFile(configLocation);
-            System.exit(Returnvalue.MISSING_CONFIG.ordinal());
+            System.exit(ReturnValue.MISSING_CONFIG.ordinal());
         } catch (IOException ex) {
             LOGGER.fatal("Loading configuration file failed, {}", ex.getMessage());
             LOGGER.trace("Stack trace: ", ex);
-            System.exit(Returnvalue.CONFIG_READ_ERROR.ordinal());
+            System.exit(ReturnValue.CONFIG_READ_ERROR.ordinal());
         }
 
         //Check that user provided api key
         final String discordKey = properties.getProperty("discord-api-key");
         if (discordKey == null) {
             LOGGER.fatal("No api key provided, quitting");
-            System.exit(Returnvalue.MISSING_API_KEY.ordinal());
+            System.exit(ReturnValue.MISSING_API_KEY.ordinal());
         }
 
         //Start loading JDA
@@ -109,10 +107,7 @@ public class LemonadeBot {
         );
         jdabuilder.disableCache(cacheFlagsToDisable);
         jdabuilder.setMemberCachePolicy(MemberCachePolicy.ALL);
-        jdabuilder.setEventPool(new ThreadPoolExecutor(
-                1, Runtime.getRuntime().availableProcessors(),
-                60, TimeUnit.SECONDS, new SynchronousQueue<>(),
-                new ThreadPoolExecutor.CallerRunsPolicy()), true);
+        jdabuilder.setEventPool(Executors.newCachedThreadPool(), true);
         try {
             //Start loading JDA
             final JDA jda = jdabuilder.build();
@@ -135,19 +130,19 @@ public class LemonadeBot {
         } catch (SQLException ex) {
             LOGGER.fatal("Failed to connect to database during startup: {}", ex.getMessage());
             LOGGER.trace("Stack trace:", ex);
-            System.exit(Returnvalue.DATABASE_FAILED.ordinal());
+            System.exit(ReturnValue.DATABASE_FAILED.ordinal());
         } catch (LoginException ex) {
             LOGGER.fatal("Login failed: {}", ex.getMessage());
             LOGGER.trace("Stack trace:", ex);
-            System.exit(Returnvalue.LOGIN_FAILED.ordinal());
+            System.exit(ReturnValue.LOGIN_FAILED.ordinal());
         } catch (NumberFormatException ex) {
             LOGGER.fatal("Loading max messages value from configuration file failed: {}", ex.getMessage());
             LOGGER.trace("Stack trace: ", ex);
-            System.exit(Returnvalue.CONFIG_READ_ERROR.ordinal());
+            System.exit(ReturnValue.CONFIG_READ_ERROR.ordinal());
         } catch (InterruptedException ex) {
             LOGGER.fatal("Waiting for JDA to load was interrupted: {}", ex.getMessage());
             LOGGER.trace("Stack trace: ", ex);
-            System.exit(Returnvalue.LOADING_INTERRUPTED.ordinal());
+            System.exit(ReturnValue.LOADING_INTERRUPTED.ordinal());
         }
     }
 
@@ -164,7 +159,7 @@ public class LemonadeBot {
         properties.setProperty("max-messages", "1000");
         try (final Writer f = new FileWriter(configLocation)) {
             properties.store(f, "Configuration file for LemonadeBot");
-            LOGGER.debug("Configuration file succesfully created.");
+            LOGGER.debug("Configuration file successfully created.");
         } catch (IOException e) {
             LOGGER.error("Properties file location is not writable and does not contain properties file. {}", e.getMessage());
             LOGGER.trace("Stack trace:", e);

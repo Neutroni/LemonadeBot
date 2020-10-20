@@ -66,7 +66,7 @@ class CacheConfig {
     }
 
     /**
-     * Check if caching the list of roles bot can assing is enabled
+     * Check if caching the list of roles bot can assign is enabled
      *
      * @return true if allowed roles cache is enabled
      */

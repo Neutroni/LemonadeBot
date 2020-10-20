@@ -168,8 +168,8 @@ public class PermissionCommand extends AdminCommand {
         final String fieldName = TranslationKey.HEADER_REQUIRED_PERMISSION.getTranslation(locale);
         final String template = TranslationKey.PERMISSION_REQUIRED_RANK_ROLE.getTranslation(locale);
         final String rankName = perm.getRequiredRank().getNameKey().getTranslation(locale);
-        final String fiedlValue = String.format(template, rankName, r.getAsMention());
-        eb.addField(fieldName, fiedlValue, false);
+        final String fieldValue = String.format(template, rankName, r.getAsMention());
+        eb.addField(fieldName, fieldValue, false);
         channel.sendMessage(eb.build()).queue();
     }
 

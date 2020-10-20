@@ -67,7 +67,7 @@ public class ActionTemplate {
     /**
      * Get a matcher for input string
      *
-     * @param input input to match agains
+     * @param input input to match against
      * @return matcher for input
      */
     public Matcher getMatcher(final CharSequence input) {

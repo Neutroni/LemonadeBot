@@ -131,9 +131,7 @@ public class CommandListener extends ListenerAdapter {
         final ChatCommand command = action.get();
 
         //Log the message if debug is enabled
-        LOGGER.debug(() -> {
-            return "Found command: " + cmdMatch.getAction() + " in:\n" + message.getContentRaw();
-        });
+        LOGGER.debug(() -> "Found command: " + cmdMatch.getAction() + " in:\n" + message.getContentRaw());
 
         //Check if user has permission
         final Member member = cmdMatch.getMember();

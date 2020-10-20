@@ -75,7 +75,7 @@ public class InventoryManager {
      * @param receiver item receiver
      * @param itemName name of item
      * @param count amount of items
-     * @return true if paid succesfully, false if not enough items on sender
+     * @return true if paid successfully, false if not enough items on sender
      * @throws SQLException If database connection failed, payment will rollback
      */
     boolean payItem(final Member sender, final Member receiver, final String itemName, final long count) throws SQLException {
@@ -99,7 +99,7 @@ public class InventoryManager {
                     st.execute(transactionCommit);
                 }
             } catch (SQLException e) {
-                //Datbase update failed, rollback the changes.
+                //Database update failed, rollback the changes.
                 final String transactionRollback = "ROLLBACK TRANSACTION;";
                 try (final Statement st = connection.createStatement()) {
                     st.execute(transactionRollback);

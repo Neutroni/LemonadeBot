@@ -621,7 +621,7 @@ public class EventCommand implements ChatCommand {
             LOGGER.info("Found user: {} in event: {} members who could not be found, removing from event", missingMemberID, event.getName());
             try {
                 eventManager.leaveEvent(event, missingMemberID);
-                LOGGER.info("Succesfully removed missing member from event\n");
+                LOGGER.info("Successfully removed missing member from event\n");
             } catch (SQLException ex) {
                 LOGGER.error("Failure to remove member: {} from event: {}, Error: {}", missingMemberID, event.getName(), ex.getMessage());
                 LOGGER.trace("Stack trace", ex);

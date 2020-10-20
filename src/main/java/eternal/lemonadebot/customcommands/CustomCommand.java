@@ -44,7 +44,7 @@ import net.dv8tion.jda.api.entities.User;
 
 /**
  * User defined commands that take template as input and when run return the
- * template with parts substituted according to ActionTemplateFuctions defined
+ * template with parts substituted according to ActionTemplateFunctions defined
  * in TemplateProvider
  *
  * @author Neutroni
@@ -58,7 +58,7 @@ public class CustomCommand implements ChatCommand {
     /**
      * Constructor
      *
-     * @param commandName command this is activeted by
+     * @param commandName command this is activated by
      * @param actionTemplate action template
      * @param owner who created this command
      */

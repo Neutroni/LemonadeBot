@@ -77,7 +77,7 @@ public class RoleManager {
      * Remove role from list of allowed roles
      *
      * @param role Role to remove from the list of allowed roles
-     * @return true if event was removed succesfully
+     * @return true if event was removed successfully
      * @throws SQLException if database connection failed
      */
     boolean disallowRole(final Role role) throws SQLException {
@@ -115,7 +115,7 @@ public class RoleManager {
     }
 
     /**
-     * Check if role is allowed to assing
+     * Check if role is allowed to assign
      *
      * @param role Role to check
      * @return true if role can be assigned.
@@ -134,7 +134,7 @@ public class RoleManager {
     }
 
     /**
-     * Get allowedrole for role if role set as allowed, used in RoleManagerCache
+     * Get allowedRole for role if role set as allowed, used in RoleManagerCache
      *
      * @param role Role to get allowed role for if exists
      * @return Optional containing AllowedRole if found

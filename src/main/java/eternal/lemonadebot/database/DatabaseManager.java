@@ -233,6 +233,6 @@ public class DatabaseManager implements Closeable {
                 this.guildDataStores.put(guildID, new GuildDataStore(this.dataSource, guildID, this.jda, this.cacheConfig));
             }
         }
-        LOGGER.debug("Loaded guilds succesfully");
+        LOGGER.debug("Loaded guilds successfully");
     }
 }

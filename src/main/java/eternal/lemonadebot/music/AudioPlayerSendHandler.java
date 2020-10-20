@@ -41,7 +41,7 @@ class AudioPlayerSendHandler implements AudioSendHandler {
     }
 
     /**
-     * Buffer managment
+     * Buffer management
      *
      * @return Audio Buffer
      */

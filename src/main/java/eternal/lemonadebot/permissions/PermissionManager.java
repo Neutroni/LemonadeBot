@@ -100,7 +100,7 @@ public class PermissionManager implements LocaleUpdateListener {
      *
      * @param perm Permission required for the action
      * @return true if update succeeded
-     * @throws SQLException if database connetion failed
+     * @throws SQLException if database connection failed
      */
     public boolean setPermission(final CommandPermission perm) throws SQLException {
         final String query = "INSERT OR REPLACE INTO Permissions(guild,action,requiredRank,requiredRole) VALUES(?,?,?,?);";

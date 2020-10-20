@@ -212,7 +212,7 @@ public class TemplateProvider {
     }
 
     /**
-     * Gets the help text for simpleactions
+     * Gets the help text for simpleActions
      *
      * @param locale Locale to get the help text in
      * @return help text

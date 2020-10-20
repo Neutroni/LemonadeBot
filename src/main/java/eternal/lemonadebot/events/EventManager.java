@@ -84,7 +84,7 @@ public class EventManager {
                 LOGGER.debug("Error: {}", ex.getMessage());
                 try {
                     leaveEvent(ev, l);
-                    LOGGER.info("Succesfully removed missing member from event");
+                    LOGGER.info("Successfully removed missing member from event");
                 } catch (SQLException e) {
                     LOGGER.error("Failure to remove member from event: {}", e.getMessage());
                     LOGGER.trace("Stack trace", e);
@@ -176,7 +176,7 @@ public class EventManager {
      * Remove event from database
      *
      * @param event event to remove
-     * @return true if event was removed succesfully
+     * @return true if event was removed successfully
      * @throws SQLException if database connection failed
      */
     boolean removeEvent(final Event event) throws SQLException {
@@ -214,7 +214,7 @@ public class EventManager {
      *
      * @param event event to clear
      * @return true if any member was removed from event
-     * @throws SQLException if database connction failed
+     * @throws SQLException if database connection failed
      */
     boolean clearEvent(final Event event) throws SQLException {
         final String query = "DELETE FROM EventMembers WHERE guild = ? AND name = ?;";

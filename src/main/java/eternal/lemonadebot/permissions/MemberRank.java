@@ -44,7 +44,7 @@ public enum MemberRank {
      */
     MEMBER(TranslationKey.RANK_MEMBER, TranslationKey.RANK_DESCRIPTION_MEMBER),
     /**
-     * Admins are the users that have permission manageserver
+     * Admins are the users that have permission manageServer
      */
     ADMIN(TranslationKey.RANK_ADMIN, TranslationKey.RANK_DESCRIPTION_ADMIN),
     /**
@@ -74,8 +74,8 @@ public enum MemberRank {
      *
      * @param rankName name of the rank to find
      * @param locale locale the name is in
-     * @param collator Collator to use to compate rank names
-     * @return MemberRank if foud
+     * @param collator Collator to use to compare rank names
+     * @return MemberRank if found
      * @throws IllegalArgumentException if no matching rank could be found
      */
     public static MemberRank getByLocalizedName(final String rankName, final Locale locale, final Collator collator) throws IllegalArgumentException {

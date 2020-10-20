@@ -100,7 +100,7 @@ class HelpCommand implements ChatCommand {
      * Respond with help of command if available to the user
      *
      * @param matcher Request matcher
-     * @param guildData Guildata of the guild request originated from
+     * @param guildData GuildData of the guild request originated from
      * @param name Name of the command to get help for
      */
     private static void listHelp(final CommandMatcher matcher, final GuildDataStore guildData, final String name) {

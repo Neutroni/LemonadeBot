@@ -156,12 +156,12 @@ public class CooldownCommand extends AdminCommand {
             return;
         }
 
-        final String timeAmountstring = arguments[1];
+        final String timeAmountString = arguments[1];
         final int timeAmount;
         try {
-            timeAmount = Integer.parseInt(timeAmountstring);
+            timeAmount = Integer.parseInt(timeAmountString);
         } catch (NumberFormatException e) {
-            channel.sendMessage(TranslationKey.COOLDOWN_UNKNOWN_TIME.getTranslation(locale) + timeAmountstring).queue();
+            channel.sendMessage(TranslationKey.COOLDOWN_UNKNOWN_TIME.getTranslation(locale) + timeAmountString).queue();
             return;
         }
 

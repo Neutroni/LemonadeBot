@@ -28,7 +28,7 @@ package eternal.lemonadebot;
  *
  * @author Neutroni
  */
-public enum Returnvalue {
+public enum ReturnValue {
 
     /**
      * If program exited normally
@@ -43,7 +43,7 @@ public enum Returnvalue {
      */
     DATABASE_FAILED,
     /**
-     * If login to discord faild
+     * If login to discord failed
      */
     LOGIN_FAILED,
     /**
