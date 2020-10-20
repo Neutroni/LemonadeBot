@@ -80,6 +80,41 @@ public class TranslationCache implements LocaleUpdateListener {
         localeUpdate(newLocale);
     }
 
+    /**
+     * Get ChronoUnit by translated name
+     *
+     * @param name name of the ChronoUnit in current locale
+     * @return Optional containging ChronoUnit if found
+     */
+    public Optional<ChronoUnit> getChronoUnit(final String name) {
+        this.rwLock.readLock().lock();
+        try {
+            final ChronoUnit unit = this.chronoMap.get(name);
+            return Optional.ofNullable(unit);
+        } finally {
+            this.rwLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Get ActionKey by translated name
+     *
+     * @param name Translated action name to get a key for
+     * @return Key for given action if found ActionKey.UNKNOWN if not found
+     */
+    public ActionKey getActionKey(final String name) {
+        this.rwLock.readLock().lock();
+        try {
+            final ActionKey key = this.actionMap.get(name);
+            if (key == null) {
+                return ActionKey.UNKNOWN;
+            }
+            return key;
+        } finally {
+            this.rwLock.readLock().unlock();
+        }
+    }
+
     private void localeUpdate(final Locale newLocale) {
         this.rwLock.writeLock().lock();
         try {
@@ -121,41 +156,6 @@ public class TranslationCache implements LocaleUpdateListener {
             }
         } finally {
             this.rwLock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * Get ChronoUnit by translated name
-     *
-     * @param name name of the ChronoUnit in current locale
-     * @return Optional containging ChronoUnit if found
-     */
-    public Optional<ChronoUnit> getChronoUnit(final String name) {
-        this.rwLock.readLock().lock();
-        try {
-            final ChronoUnit unit = this.chronoMap.get(name);
-            return Optional.ofNullable(unit);
-        } finally {
-            this.rwLock.readLock().unlock();
-        }
-    }
-
-    /**
-     * Get ActionKey by translated name
-     *
-     * @param name Translated action name to get a key for
-     * @return Key for given action if found ActionKey.UNKNOWN if not found
-     */
-    public ActionKey getActionKey(final String name) {
-        this.rwLock.readLock().lock();
-        try {
-            final ActionKey key = this.actionMap.get(name);
-            if (key == null) {
-                return ActionKey.UNKNOWN;
-            }
-            return key;
-        } finally {
-            this.rwLock.readLock().unlock();
         }
     }
 

@@ -32,7 +32,6 @@ import eternal.lemonadebot.customcommands.TemplateManager;
 import eternal.lemonadebot.events.EventCache;
 import eternal.lemonadebot.events.EventManager;
 import eternal.lemonadebot.keywords.KeywordManager;
-import eternal.lemonadebot.messagelogs.MessageManager;
 import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.permissions.PermissionManagerCache;
 import eternal.lemonadebot.reminders.ReminderManager;
@@ -153,7 +152,7 @@ public class GuildDataStore implements Closeable {
     }
 
     /**
-     * Get tge customCommandManager for this datastore
+     * Get te customCommandManager for this datatore
      *
      * @return CustomCommandManager
      */
