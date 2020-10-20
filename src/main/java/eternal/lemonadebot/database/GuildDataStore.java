@@ -35,6 +35,8 @@ import eternal.lemonadebot.keywords.KeywordManager;
 import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.permissions.PermissionManagerCache;
 import eternal.lemonadebot.reminders.ReminderManager;
+import eternal.lemonadebot.rolemanagement.RoleManager;
+import eternal.lemonadebot.rolemanagement.RoleManagerCache;
 import eternal.lemonadebot.translation.TranslationCache;
 import java.io.Closeable;
 import java.util.Locale;
@@ -55,6 +57,7 @@ public class GuildDataStore implements Closeable {
     private final PermissionManager permissions;
     private final TemplateManager commands;
     private final EventManager events;
+    private final RoleManager roleManager;
     private final ReminderManager reminders;
     private final CooldownManager cooldowns;
     private final CommandProvider commandProvider;
@@ -98,6 +101,11 @@ public class GuildDataStore implements Closeable {
             this.events = new EventCache(dataSource, guildID);
         } else {
             this.events = new EventManager(dataSource, guildID);
+        }
+        if (cacheConf.allowedRolesCacheEnabled()) {
+            this.roleManager = new RoleManagerCache(dataSource, guildID);
+        } else {
+            this.roleManager = new RoleManager(dataSource, guildID);
         }
 
         //Add locale update listeners
@@ -167,6 +175,15 @@ public class GuildDataStore implements Closeable {
      */
     public EventManager getEventManager() {
         return this.events;
+    }
+
+    /**
+     * Get the roleManager for this guild
+     *
+     * @return RoleManager
+     */
+    public RoleManager getRoleManager() {
+        return this.roleManager;
     }
 
     /**

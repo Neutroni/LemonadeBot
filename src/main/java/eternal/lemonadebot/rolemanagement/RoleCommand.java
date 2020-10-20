@@ -25,7 +25,6 @@ package eternal.lemonadebot.rolemanagement;
 
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.config.ConfigManager;
-import eternal.lemonadebot.database.CacheConfig;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
@@ -34,18 +33,14 @@ import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;
 import eternal.lemonadebot.translation.TranslationKey;
-
 import java.sql.SQLException;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.Permission;
@@ -56,8 +51,6 @@ import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.sql.DataSource;
-
 /**
  * Command used to assign roles to user based on other servers they are also on
  *
@@ -66,7 +59,6 @@ import javax.sql.DataSource;
 public class RoleCommand implements ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final Map<Long, RoleManager> MANAGERS = new ConcurrentHashMap<>();
     private static final Random RNG = new Random();
 
     @Override
@@ -186,10 +178,10 @@ public class RoleCommand implements ChatCommand {
     /**
      * Try to assign role to user
      *
-     * @param channel           Channel to use to respond
-     * @param sender            Command user
+     * @param channel Channel to use to respond
+     * @param sender Command user
      * @param requestedRoleName Name of the role user wants
-     * @param guildData         GuildData to get locale from
+     * @param guildData GuildData to get locale from
      */
     private static void assignRole(final TextChannel channel, final Member sender, final String requestedRoleName, final GuildDataStore guildData) {
         final Guild currentGuild = channel.getGuild();
@@ -271,8 +263,8 @@ public class RoleCommand implements ChatCommand {
      * Try to automatically assign role to sender
      *
      * @param channel Channel to use to respond
-     * @param member  Command user
-     * @param locale  Locale for current guild
+     * @param member Command user
+     * @param locale Locale for current guild
      */
     private static void autoAssignRole(final TextChannel channel, final Member member, final Locale locale) {
         final Guild currentGuild = channel.getGuild();
@@ -373,7 +365,7 @@ public class RoleCommand implements ChatCommand {
         }
 
         //Add role to roleManagers list
-        final RoleManager roleManager = getRoleManager(guildData);
+        final RoleManager roleManager = guildData.getRoleManager();
         final AllowedRole allowedRole = new AllowedRole(role, roleDescription);
         try {
             if (roleManager.allowRole(allowedRole)) {
@@ -415,7 +407,7 @@ public class RoleCommand implements ChatCommand {
             return;
         }
         final Role role = roles.get(0);
-        final RoleManager roleManager = getRoleManager(guildData);
+        final RoleManager roleManager = guildData.getRoleManager();
         try {
             if (roleManager.disallowRole(role)) {
                 channel.sendMessage(TranslationKey.ROLE_DISALLOW_SUCCESS.getTranslation(locale)).queue();
@@ -452,7 +444,7 @@ public class RoleCommand implements ChatCommand {
             return;
         }
         final Role role = roles.get(0);
-        final RoleManager roleManager = getRoleManager(guildData);
+        final RoleManager roleManager = guildData.getRoleManager();
 
         //Check if we can remove the role from requester
         final boolean roleAllowed;
@@ -505,7 +497,7 @@ public class RoleCommand implements ChatCommand {
             return;
         }
         final Role role = roles.get(0);
-        final RoleManager roleManager = getRoleManager(guildData);
+        final RoleManager roleManager = guildData.getRoleManager();
 
         //Check if we can remove the role from requester
         final boolean roleAllowed;
@@ -538,7 +530,7 @@ public class RoleCommand implements ChatCommand {
     }
 
     private static void listAllowedRoles(final CommandMatcher matcher, final GuildDataStore guildData) {
-        final RoleManager roleManager = getRoleManager(guildData);
+        final RoleManager roleManager = guildData.getRoleManager();
         final TextChannel channel = matcher.getTextChannel();
         final Locale locale = matcher.getLocale();
         final Guild guild = matcher.getGuild();
@@ -603,23 +595,6 @@ public class RoleCommand implements ChatCommand {
             channel.sendMessage(TranslationKey.ROLE_BOT_PRIVILIGE_MISSING.getTranslation(locale)).queue();
             LOGGER.warn("Failed to get members with role: {}, error: {}", role.getId(), t.getMessage());
             LOGGER.trace("Stack trace", t);
-        });
-    }
-
-    /**
-     * Get the roleManager for a guild
-     *
-     * @param guildData Guild to get RoleManager for
-     * @return RoleManager
-     */
-    private static RoleManager getRoleManager(final GuildDataStore guildData) {
-        final CacheConfig cacheConfig = guildData.getCacheConfig();
-        final DataSource dataSource = guildData.getDataSource();
-        return MANAGERS.computeIfAbsent(guildData.getGuildID(), guildID -> {
-            if (cacheConfig.allowedRolesCacheEnabled()) {
-                return new RoleManagerCache(dataSource, guildID);
-            }
-            return new RoleManager(dataSource, guildID);
         });
     }
 }
