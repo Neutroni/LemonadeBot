@@ -30,6 +30,9 @@ import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
+import java.time.DateTimeException;
+import java.time.ZoneId;
+import java.time.zone.ZoneRulesException;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -179,6 +182,24 @@ public class ConfigCommand extends AdminCommand {
                     channel.sendMessage(TranslationKey.CONFIG_LANGUAGE_SQL_ERROR.getTranslation(locale)).queue();
                     LOGGER.error("Failure to update language in database: {}", ex.getMessage());
                     LOGGER.trace("Stack trace", ex);
+                }
+                break;
+            }
+            case TIMEZONE: {
+                try {
+                    final ZoneId zone = ZoneId.of(value);
+                    guildConf.setZoneId(zone);
+                    channel.sendMessage(TranslationKey.CONFIG_TIMEZONE_UPDATE_SUCCESS.getTranslation(locale) + value).queue();
+                } catch (ZoneRulesException ex) {
+                    //Zone could not be found
+                    channel.sendMessage(TranslationKey.CONFIG_TIMEZONE_ZONE_NOT_FOUND.getTranslation(locale)).queue();
+                } catch (DateTimeException ex) {
+                    //Invalid format for timezone
+                    channel.sendMessage(TranslationKey.CONFIG_TIMEZONE_ZONE_MALFORMED.getTranslation(locale)).queue();
+                } catch (SQLException ex) {
+                    channel.sendMessage(TranslationKey.CONFIG_TIMEZONE_SQL_ERROR.getTranslation(locale)).queue();
+                    LOGGER.error("Failure to update command timezone in database: {}", ex.getMessage());
+                    LOGGER.trace("Stack Trace", ex);
                 }
                 break;
             }

@@ -54,6 +54,7 @@ public enum ActionKey {
     GREETING(TranslationKey.ACTION_GREETING),
     LOG_CHANNEL(TranslationKey.ACTION_LOG_CHANNEL),
     LANGUAGE(TranslationKey.ACTION_LANGUAGE),
+    TIMEZONE(TranslationKey.ACTION_TIMEZONE),
     COMMANDS(TranslationKey.ACTION_COMMANDS),
     ALLOW(TranslationKey.ACTION_ALLOW),
     DISALLOW(TranslationKey.ACTION_DISALLOW),
