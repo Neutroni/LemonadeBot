@@ -27,7 +27,6 @@ import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.events.EventManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.translation.TranslationKey;
-
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.Period;
@@ -43,7 +42,6 @@ import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -160,9 +158,9 @@ public class TemplateProvider {
     /**
      * Parse the template string
      *
-     * @param message   Message this action is a reply to
+     * @param message Message this action is a reply to
      * @param guildData GuildDataStore for current guild
-     * @param action    Template string for action
+     * @param action Template string for action
      * @return String response
      */
     public static CharSequence parseAction(final CommandMatcher message, final GuildDataStore guildData, final String action) {
@@ -222,7 +220,7 @@ public class TemplateProvider {
                                 foundMatch = true;
                                 final String response = s.getValue(message, guildData, m);
                                 final StringBuilder newBuilder = stack.peekFirst();
-                                if(newBuilder == null){
+                                if (newBuilder == null) {
                                     stack.addFirst(new StringBuilder(response));
                                 } else {
                                     newBuilder.append(response);
@@ -233,7 +231,7 @@ public class TemplateProvider {
                         //Did not find a match, add input to the stack
                         if (!foundMatch) {
                             final StringBuilder newBuilder = stack.peekFirst();
-                            if(newBuilder == null){
+                            if (newBuilder == null) {
                                 stack.addFirst(sb);
                             } else {
                                 newBuilder.append(sb);

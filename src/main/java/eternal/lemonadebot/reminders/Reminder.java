@@ -72,7 +72,7 @@ class Reminder extends CustomCommand implements Runnable {
      * @param activationTime Weekday the reminder happens
      */
     Reminder(final JDA jda, final GuildDataStore guildData, final String name, final String input,
-             final long channelID, final long author, final ReminderActivationTime activationTime) {
+            final long channelID, final long author, final ReminderActivationTime activationTime) {
         super(name, input, author);
         this.jda = jda;
         this.guildData = guildData;
@@ -123,26 +123,18 @@ class Reminder extends CustomCommand implements Runnable {
         });
     }
 
-    private void deleteDueToMissingOwner() {
-        LOGGER.info("Deleting reminder: {} with missing author, member id: {}", getName(), getAuthor());
-        try {
-            this.guildData.getReminderManager().deleteReminder(this);
-            LOGGER.info("Reminder with missing author deleted");
-        } catch (SQLException ex) {
-            LOGGER.error("Error removing reminder with missing author: {}", ex.getMessage());
-            LOGGER.trace("Stack trace: ", ex);
-        }
+    @Override
+    public int hashCode() {
+        return getName().hashCode();
     }
 
-    private void deleteDueToMissingChannel() {
-        LOGGER.info("Deleting reminder: {} for textChannel that does not exist, channel id: {}", getName(), this.channelID);
-        try {
-            this.guildData.getReminderManager().deleteReminder(this);
-            LOGGER.info("Deleted reminder with missing channel: {}", this.channelID);
-        } catch (SQLException ex) {
-            LOGGER.error("Error removing reminder with missing channel: {}", ex.getMessage());
-            LOGGER.trace("Stack trace: ", ex);
+    @Override
+    public boolean equals(final Object other) {
+        if (other instanceof Reminder) {
+            final Reminder otherReminder = (Reminder) other;
+            return getName().equals(otherReminder.getName());
         }
+        return false;
     }
 
     /**
@@ -194,20 +186,6 @@ class Reminder extends CustomCommand implements Runnable {
         return result;
     }
 
-    @Override
-    public int hashCode() {
-        return getName().hashCode();
-    }
-
-    @Override
-    public boolean equals(final Object other) {
-        if (other instanceof Reminder) {
-            final Reminder otherReminder = (Reminder) other;
-            return getName().equals(otherReminder.getName());
-        }
-        return false;
-    }
-
     /**
      * Schedule this reminder with the provided ExecutorService
      *
@@ -227,6 +205,28 @@ class Reminder extends CustomCommand implements Runnable {
     void cancel() {
         if (this.future != null) {
             this.future.cancel(false);
+        }
+    }
+
+    private void deleteDueToMissingOwner() {
+        LOGGER.info("Deleting reminder: {} with missing author, member id: {}", getName(), getAuthor());
+        try {
+            this.guildData.getReminderManager().deleteReminder(this);
+            LOGGER.info("Reminder with missing author deleted");
+        } catch (SQLException ex) {
+            LOGGER.error("Error removing reminder with missing author: {}", ex.getMessage());
+            LOGGER.trace("Stack trace: ", ex);
+        }
+    }
+
+    private void deleteDueToMissingChannel() {
+        LOGGER.info("Deleting reminder: {} for textChannel that does not exist, channel id: {}", getName(), this.channelID);
+        try {
+            this.guildData.getReminderManager().deleteReminder(this);
+            LOGGER.info("Deleted reminder with missing channel: {}", this.channelID);
+        } catch (SQLException ex) {
+            LOGGER.error("Error removing reminder with missing channel: {}", ex.getMessage());
+            LOGGER.trace("Stack trace: ", ex);
         }
     }
 
