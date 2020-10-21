@@ -24,7 +24,6 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.LemonadeBot;
-import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
@@ -105,8 +104,7 @@ class HelpCommand implements ChatCommand {
      */
     private static void listHelp(final CommandMatcher matcher, final GuildDataStore guildData, final String name) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final ConfigManager guildConf = guildData.getConfigManager();
-        final Locale locale = guildConf.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
         final PermissionManager permissions = guildData.getPermissionManager();
         final CommandProvider commands = guildData.getCommandProvider();
 

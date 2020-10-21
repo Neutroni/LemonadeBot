@@ -26,7 +26,6 @@ package eternal.lemonadebot.permissions;
 import eternal.lemonadebot.commands.AdminCommand;
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandProvider;
-import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.translation.ActionKey;
@@ -73,9 +72,8 @@ public class PermissionCommand extends AdminCommand {
     @Override
     public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel channel = matcher.getTextChannel();
-        final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildConf.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
         final String[] arguments = matcher.getArguments(1);
         if (arguments.length == 0) {
             channel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
@@ -177,7 +175,7 @@ public class PermissionCommand extends AdminCommand {
         final TextChannel channel = message.getTextChannel();
         final PermissionManager permissions = guildData.getPermissionManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = message.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
 
         final List<String> args = message.parseArguments(4);
         if (args.size() < 2) {
@@ -232,7 +230,7 @@ public class PermissionCommand extends AdminCommand {
         final TextChannel channel = matcher.getTextChannel();
         final Guild guild = matcher.getGuild();
         final PermissionManager permissionManager = guildData.getPermissionManager();
-        final Locale locale = matcher.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
 
         final Collection<CommandPermission> permissions;
         try {

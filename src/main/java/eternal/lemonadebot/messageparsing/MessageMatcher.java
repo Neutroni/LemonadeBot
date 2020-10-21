@@ -26,7 +26,6 @@ package eternal.lemonadebot.messageparsing;
 import eternal.lemonadebot.config.ConfigManager;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import net.dv8tion.jda.api.entities.Guild;
@@ -44,7 +43,6 @@ public class MessageMatcher implements CommandMatcher {
     private static final Pattern SPLIT_PATTERN = Pattern.compile(" ");
 
     private final Message message;
-    private final Locale locale;
     private final Optional<String> command;
     private final String arguments;
     private final String action;
@@ -61,7 +59,6 @@ public class MessageMatcher implements CommandMatcher {
         }
 
         this.message = msg;
-        this.locale = configManager.getLocale();
         final String messageText = msg.getContentRaw();
         final String commandPrefix = configManager.getCommandPrefix();
         if (messageText.startsWith(commandPrefix)) {
@@ -183,11 +180,6 @@ public class MessageMatcher implements CommandMatcher {
     @Override
     public TextChannel getTextChannel() {
         return this.message.getTextChannel();
-    }
-
-    @Override
-    public Locale getLocale() {
-        return this.locale;
     }
 
     @Override

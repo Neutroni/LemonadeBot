@@ -26,7 +26,6 @@ package eternal.lemonadebot.customcommands;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import net.dv8tion.jda.api.entities.Guild;
@@ -173,11 +172,6 @@ class FakeMessageMatcher implements CommandMatcher {
     @Override
     public String getAction() {
         return this.action;
-    }
-
-    @Override
-    public Locale getLocale() {
-        return this.commandMatcher.getLocale();
     }
 
     @Override

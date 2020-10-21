@@ -24,7 +24,6 @@
 package eternal.lemonadebot.keywords;
 
 import eternal.lemonadebot.commands.AdminCommand;
-import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.customcommands.TemplateProvider;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
@@ -75,9 +74,8 @@ public class KeywordCommand extends AdminCommand {
     @Override
     public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildConf.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
         final String[] arguments = matcher.getArguments(1);
         if (arguments.length == 0) {
             textChannel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
@@ -107,8 +105,8 @@ public class KeywordCommand extends AdminCommand {
 
     private static void createKeywords(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = matcher.getLocale();
-        
+        final Locale locale = guildData.getConfigManager().getLocale();
+
         //create name pattern action
         final List<String> arguments = matcher.parseArguments(4);
         if (arguments.size() < 2) {
@@ -119,7 +117,7 @@ public class KeywordCommand extends AdminCommand {
             textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_MISSING_KEYWORD.getTranslation(locale)).queue();
             return;
         }
-        if(arguments.size() < 4){
+        if (arguments.size() < 4) {
             textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_MISSING_TEMPLATE.getTranslation(locale)).queue();
             return;
         }

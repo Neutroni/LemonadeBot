@@ -24,7 +24,6 @@
 package eternal.lemonadebot.rolemanagement;
 
 import eternal.lemonadebot.commands.ChatCommand;
-import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
@@ -94,7 +93,7 @@ public class RoleCommand implements ChatCommand {
     public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel channel = matcher.getTextChannel();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = matcher.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
 
         //Check that we can assign roles here
         final Guild guild = matcher.getGuild();
@@ -185,8 +184,7 @@ public class RoleCommand implements ChatCommand {
      */
     private static void assignRole(final TextChannel channel, final Member sender, final String requestedRoleName, final GuildDataStore guildData) {
         final Guild currentGuild = channel.getGuild();
-        final ConfigManager guildConf = guildData.getConfigManager();
-        final Locale locale = guildConf.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
         final Collator collator = guildData.getTranslationCache().getCollator();
         //Guilds we share with the user
         final List<Guild> mutualGuilds = sender.getUser().getMutualGuilds();
@@ -532,7 +530,7 @@ public class RoleCommand implements ChatCommand {
     private static void listAllowedRoles(final CommandMatcher matcher, final GuildDataStore guildData) {
         final RoleManager roleManager = guildData.getRoleManager();
         final TextChannel channel = matcher.getTextChannel();
-        final Locale locale = matcher.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
         final Guild guild = matcher.getGuild();
 
         //Get the list of roles we are allowed to assign

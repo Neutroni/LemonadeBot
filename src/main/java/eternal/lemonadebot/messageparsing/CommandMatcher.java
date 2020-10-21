@@ -24,7 +24,6 @@
 package eternal.lemonadebot.messageparsing;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -74,13 +73,6 @@ public interface CommandMatcher {
      * @return String of command name and arguments
      */
     String getAction();
-
-    /**
-     * Get the locale at the time for the guild message was sent in.
-     *
-     * @return Locale
-     */
-    Locale getLocale();
 
     /**
      * Get the guild the message was sent in

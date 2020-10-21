@@ -24,7 +24,6 @@
 package eternal.lemonadebot.cooldowns;
 
 import eternal.lemonadebot.commands.AdminCommand;
-import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.translation.ActionKey;
@@ -69,9 +68,8 @@ public class CooldownCommand extends AdminCommand {
     public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final String[] arguments = matcher.getArguments(1);
         final TextChannel channel = matcher.getTextChannel();
-        final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildConf.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
         if (arguments.length == 0) {
             channel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
             return;
@@ -111,7 +109,7 @@ public class CooldownCommand extends AdminCommand {
      * Send message reply of the cooldown set for action
      *
      * @param channel Channel to send message on
-     * @param guildData GuildData to get  cooldown manager from
+     * @param guildData GuildData to get cooldown manager from
      * @param requestedAction action to get cooldown for
      */
     private static void getCooldown(final TextChannel channel, final GuildDataStore guildData, final String requestedAction) {
@@ -147,8 +145,7 @@ public class CooldownCommand extends AdminCommand {
      */
     private static void setCooldown(final TextChannel channel, final GuildDataStore guildData, final String[] arguments) {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
-        final ConfigManager guildConf = guildData.getConfigManager();
-        final Locale locale = guildConf.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
 
         //No time amount
         if (arguments.length < 2) {
@@ -227,7 +224,7 @@ public class CooldownCommand extends AdminCommand {
     private static void listCooldowns(final CommandMatcher matcher, final GuildDataStore guildData) {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
         final TextChannel channel = matcher.getTextChannel();
-        final Locale locale = matcher.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
 
         //Fetch the list of set cooldowns from database
         final Collection<ActionCooldown> cooldowns;

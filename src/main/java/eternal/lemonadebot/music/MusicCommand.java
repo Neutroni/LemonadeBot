@@ -31,7 +31,6 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import eternal.lemonadebot.commands.ChatCommand;
-import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
@@ -99,9 +98,8 @@ public class MusicCommand implements ChatCommand {
     @Override
     public void respond(final CommandMatcher message, final GuildDataStore guildData) {
         final TextChannel textChannel = message.getTextChannel();
-        final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildConf.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
 
         //Get arguments and parse accordingly
         final String[] arguments = message.getArguments(2);
@@ -288,6 +286,7 @@ public class MusicCommand implements ChatCommand {
      * Pause music playback
      *
      * @param textChannel textChannel for request
+     * @param locale Locale to respond in
      */
     private void pauseTrack(final TextChannel textChannel, final Locale locale) {
         final GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
@@ -296,30 +295,10 @@ public class MusicCommand implements ChatCommand {
     }
 
     /**
-     * Play AudioTrack
-     *
-     * @param guild guild to play on
-     * @param musicManager musicManager to use
-     * @param track AudioTrack to play
-     */
-    private static void play(final Guild guild, final GuildMusicManager musicManager, final AudioTrack track) {
-        //Make sure we are connected
-        final AudioManager audioManager = guild.getAudioManager();
-        if (!audioManager.isConnected()) {
-            for (final VoiceChannel voiceChannel : audioManager.getGuild().getVoiceChannels()) {
-                audioManager.openAudioConnection(voiceChannel);
-                break;
-            }
-        }
-
-        //Queue the track, starts playback if queue is empty
-        musicManager.scheduler.queue(track);
-    }
-
-    /**
      * Resume audio playback
      *
      * @param textChannel channel for the request
+     * @param locale Locale to respond in
      */
     private void resumeTrack(final TextChannel textChannel, final Locale locale) {
         final GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
@@ -331,6 +310,7 @@ public class MusicCommand implements ChatCommand {
      * Stop audio playback and clear queue
      *
      * @param textChannel channel for request
+     * @param locale Locale to respond in
      */
     private void stopTrack(final TextChannel textChannel, final Locale locale) {
         final GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
@@ -393,6 +373,27 @@ public class MusicCommand implements ChatCommand {
 
         //Send the message
         textChannel.sendMessage(eb.build()).queue();
+    }
+
+    /**
+     * Play AudioTrack
+     *
+     * @param guild guild to play on
+     * @param musicManager musicManager to use
+     * @param track AudioTrack to play
+     */
+    private static void play(final Guild guild, final GuildMusicManager musicManager, final AudioTrack track) {
+        //Make sure we are connected
+        final AudioManager audioManager = guild.getAudioManager();
+        if (!audioManager.isConnected()) {
+            for (final VoiceChannel voiceChannel : audioManager.getGuild().getVoiceChannels()) {
+                audioManager.openAudioConnection(voiceChannel);
+                break;
+            }
+        }
+
+        //Queue the track, starts playback if queue is empty
+        musicManager.scheduler.queue(track);
     }
 
 }

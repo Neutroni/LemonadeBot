@@ -79,7 +79,7 @@ public class InventoryCommand implements ChatCommand {
 
     @Override
     public void respond(final CommandMatcher message, final GuildDataStore guildData) {
-        final Locale locale = message.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
         final TextChannel channel = message.getTextChannel();
         final TranslationCache translationCache = guildData.getTranslationCache();
 
@@ -114,7 +114,7 @@ public class InventoryCommand implements ChatCommand {
         final TextChannel channel = message.getTextChannel();
         final InventoryManager inventoryManager = guildData.getInventoryManager();
         final Guild guild = message.getGuild();
-        final Locale locale = message.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
         final Member requester = message.getMember();
         if (opts.length < 2) {
             //No user specified, show inventory of requester
@@ -179,7 +179,7 @@ public class InventoryCommand implements ChatCommand {
     private static void addItemToInventory(final CommandMatcher message, final GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
         final Guild guild = message.getGuild();
-        final Locale locale = message.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
         final Member requester = message.getMember();
         //add item count user
         final List<String> args = message.parseArguments(5);
@@ -256,7 +256,7 @@ public class InventoryCommand implements ChatCommand {
                 final Member target = members.get(0);
                 try {
                     if (inventoryManager.updateCount(target, itemName, itemCount)) {
-                        if(itemCount > 0){
+                        if (itemCount > 0) {
                             final String template = TranslationKey.INVENTORY_ITEM_ADDED_SUCCESS.getTranslation(locale);
                             channel.sendMessageFormat(template, itemCount, itemName, target.getEffectiveName()).queue();
                             return;
@@ -327,7 +327,7 @@ public class InventoryCommand implements ChatCommand {
     private static void payItemToUser(final CommandMatcher message, final GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
         final Guild guild = message.getGuild();
-        final Locale locale = message.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
         final Member requester = message.getMember();
         //pay item count user
         final List<String> args = message.parseArguments(5);

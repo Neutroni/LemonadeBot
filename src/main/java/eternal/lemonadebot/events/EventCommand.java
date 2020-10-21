@@ -24,7 +24,6 @@
 package eternal.lemonadebot.events;
 
 import eternal.lemonadebot.commands.ChatCommand;
-import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
@@ -85,9 +84,8 @@ public class EventCommand implements ChatCommand {
     @Override
     public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildConf.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
 
         final String[] opts = matcher.getArguments(2);
         if (opts.length == 0) {

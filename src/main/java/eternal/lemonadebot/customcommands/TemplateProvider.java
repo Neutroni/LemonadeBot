@@ -120,7 +120,7 @@ public class TemplateProvider {
                         final String eventName = input.group(1);
                         final EventManager eventManager = guildData.getEventManager();
                         final Guild guild = matcher.getGuild();
-                        final Locale locale = matcher.getLocale();
+                        final Locale locale = guildData.getConfigManager().getLocale();
 
                         try {
                             final Optional<Member> optMember = eventManager.getRandomMember(eventName, guild);

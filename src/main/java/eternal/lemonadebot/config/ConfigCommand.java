@@ -64,9 +64,8 @@ public class ConfigCommand extends AdminCommand {
     @Override
     public void respond(final CommandMatcher message, final GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
-        final ConfigManager config = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = config.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
         final String[] options = message.getArguments(2);
         if (options.length == 0) {
             channel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();

@@ -121,7 +121,7 @@ public class KeywordListener extends ListenerAdapter {
             final Optional<Duration> cooldownTime = cooldownManager.checkCooldown(member, commandName);
             if (cooldownTime.isEmpty()) {
                 //Run the command
-                final CommandMatcher fakeMatcher = new SimpleMessageMatcher(event.getMember(), event.getChannel(), guildConf.getLocale());
+                final CommandMatcher fakeMatcher = new SimpleMessageMatcher(event.getMember(), event.getChannel());
                 com.respond(fakeMatcher, guildData);
             }
         }

@@ -24,7 +24,6 @@
 package eternal.lemonadebot.reminders;
 
 import eternal.lemonadebot.commands.AdminCommand;
-import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.PermissionUtilities;
@@ -80,9 +79,8 @@ public class ReminderCommand extends AdminCommand {
     @Override
     public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildConf.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
 
         final String[] arguments = matcher.getArguments(2);
         if (arguments.length == 0) {
@@ -113,14 +111,10 @@ public class ReminderCommand extends AdminCommand {
 
     private static void createReminder(final CommandMatcher matcher, final GuildDataStore guildData) {
         //reminder create test 17.00 * * * reminder text
-        //reminder create test 17.00 * * sunday reminder text
-        //reminder create test 17.00 17 9 * reminder text
-        //reminder create test 17.00 30 * * reminder text
         final TextChannel channel = matcher.getTextChannel();
         final ReminderManager reminders = guildData.getReminderManager();
-        final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildConf.getLocale();
+        final Locale locale = guildData.getConfigManager().getLocale();
 
         final String[] arguments = matcher.getArguments(6);
         if (arguments.length < 2) {
