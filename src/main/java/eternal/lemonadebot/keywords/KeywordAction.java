@@ -71,7 +71,7 @@ public class KeywordAction extends CustomCommand {
     public boolean matches(final String input) {
         return this.keywordPattern.matcher(input).find();
     }
-    
+
     @Override
     public CompletableFuture<String> toListElement(final Locale locale, final JDA jda) {
         final CompletableFuture<String> result = new CompletableFuture<>();

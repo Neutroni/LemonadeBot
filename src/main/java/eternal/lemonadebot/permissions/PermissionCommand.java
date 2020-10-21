@@ -138,7 +138,7 @@ public class PermissionCommand extends AdminCommand {
         final CommandPermission perm;
         try {
             perm = permissions.getPermission(command, permissionName);
-        } catch (SQLException ex){
+        } catch (SQLException ex) {
             channel.sendMessage(TranslationKey.PERMISSION_SQL_ERROR_ON_FIND.getTranslation(locale)).queue();
             LOGGER.error("Failure to get permission from database: {}", ex.getMessage());
             LOGGER.trace("Stack trace:", ex);
@@ -235,7 +235,7 @@ public class PermissionCommand extends AdminCommand {
         final Collection<CommandPermission> permissions;
         try {
             permissions = permissionManager.getPermissions();
-        } catch (SQLException ex){
+        } catch (SQLException ex) {
             channel.sendMessage(TranslationKey.PERMISSION_SQL_ERROR_ON_LOAD.getTranslation(locale)).queue();
             LOGGER.error("Failure to load permissions from database: {}", ex.getMessage());
             LOGGER.trace("Stack trace:", ex);

@@ -145,7 +145,7 @@ public class RoleManager {
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
-            ps.setLong(2,role.getIdLong());
+            ps.setLong(2, role.getIdLong());
             try (final ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     final long roleID = rs.getLong("role");
