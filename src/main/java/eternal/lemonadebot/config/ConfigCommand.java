@@ -32,6 +32,7 @@ import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.time.DateTimeException;
 import java.time.ZoneId;
+import java.time.format.TextStyle;
 import java.time.zone.ZoneRulesException;
 import java.util.List;
 import java.util.Locale;
@@ -250,7 +251,13 @@ public class ConfigCommand extends AdminCommand {
                 break;
             }
             case LANGUAGE: {
-                channel.sendMessageFormat(TranslationKey.CONFIG_CURRENT_LANGUAGE.getTranslation(locale), locale.getDisplayLanguage(locale)).queue();
+                final String template = TranslationKey.CONFIG_CURRENT_LANGUAGE.getTranslation(locale);
+                channel.sendMessageFormat(template, locale.getDisplayLanguage(locale)).queue();
+                break;
+            }
+            case TIMEZONE: {
+                final String template = TranslationKey.CONFIG_CURRENT_TIMEZONE.getTranslation(locale);
+                channel.sendMessageFormat(template, guildConf.getZoneId().getDisplayName(TextStyle.FULL, locale)).queue();
                 break;
             }
             default: {
@@ -300,6 +307,10 @@ public class ConfigCommand extends AdminCommand {
             }
             case LANGUAGE: {
                 channel.sendMessage(TranslationKey.CONFIG_LANGUAGE_DISABLE.getTranslation(locale)).queue();
+                break;
+            }
+            case TIMEZONE: {
+                channel.sendMessage(TranslationKey.CONFIG_TIMEZONE_DISABLE.getTranslation(locale)).queue();
                 break;
             }
             default: {

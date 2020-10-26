@@ -250,6 +250,8 @@ public enum TranslationKey {
     CONFIG_TIMEZONE_ZONE_MALFORMED("Not a valid format for timezone, valid timezones are either of format UTC+0, GMT+0 or Europe/London."),
     CONFIG_TIMEZONE_SQL_ERROR("Database error updating timezone, timezone might rever to old value after reboot."),
     CONFIG_TIMEZONE_UPDATE_SUCCESS("Timezone updated succesfully."),
+    CONFIG_CURRENT_TIMEZONE("Current timezone: %s"), 
+    CONFIG_TIMEZONE_DISABLE("Disabling time zone is not possible."),
     COOLDOWN_MISSING_ACTION("Provide name of the action to perform."),
     COOLDOWN_NO_COOLDOWN_SET("No cooldown set for action: "),
     COOLDOWN_CURRENT_COOLDOWN("Cooldown time: %s\nFor action %s"),
