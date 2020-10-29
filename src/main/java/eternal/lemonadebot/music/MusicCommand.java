@@ -68,7 +68,6 @@ public class MusicCommand implements ChatCommand {
     public MusicCommand() {
         this.playerManager = new DefaultAudioPlayerManager();
         AudioSourceManagers.registerRemoteSources(this.playerManager);
-        AudioSourceManagers.registerLocalSource(this.playerManager);
         this.musicManagers = new ConcurrentHashMap<>();
     }
 
@@ -102,7 +101,7 @@ public class MusicCommand implements ChatCommand {
         final Locale locale = guildData.getConfigManager().getLocale();
 
         //Get arguments and parse accordingly
-        final String[] arguments = message.getArguments(2);
+        final String[] arguments = message.getArguments(1);
         if (arguments.length == 0) {
             textChannel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
             return;
