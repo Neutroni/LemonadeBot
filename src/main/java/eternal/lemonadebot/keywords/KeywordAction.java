@@ -24,12 +24,15 @@
 package eternal.lemonadebot.keywords;
 
 import eternal.lemonadebot.customcommands.CustomCommand;
+import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.translation.TranslationKey;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
 
 /**
@@ -39,6 +42,7 @@ import net.dv8tion.jda.api.entities.User;
 public class KeywordAction extends CustomCommand {
 
     private final Pattern keywordPattern;
+    private final boolean runAsOwner;
 
     /**
      * Constructor
@@ -47,9 +51,12 @@ public class KeywordAction extends CustomCommand {
      * @param patternString pattern for keyword
      * @param actionTemplate template for action
      * @param owner owner of the command
+     * @param runAsOwner If true keyword runs as the creator of the keyword,
+     * otherwise as the person who triggered it.
      */
-    public KeywordAction(final String name, final String patternString, final String actionTemplate, final long owner) throws PatternSyntaxException {
+    public KeywordAction(final String name, final String patternString, final String actionTemplate, final long owner, boolean runAsOwner) throws PatternSyntaxException {
         super(name, actionTemplate, owner);
+        this.runAsOwner = runAsOwner;
         this.keywordPattern = Pattern.compile(patternString);
     }
 
@@ -73,6 +80,19 @@ public class KeywordAction extends CustomCommand {
     }
 
     @Override
+    public void respond(final CommandMatcher message, final GuildDataStore guildData) {
+        if (this.runAsOwner) {
+            //Command should be run as the creator of the keyword
+            message.getGuild().retrieveMemberById(getAuthor()).queue((Member t) -> {
+                final KeywordMatcher matcher = new KeywordMatcher(message, t);
+                super.respond(matcher, guildData);
+            });
+        } else {
+            super.respond(message, guildData);
+        }
+    }
+
+    @Override
     public CompletableFuture<String> toListElement(final Locale locale, final JDA jda) {
         final CompletableFuture<String> result = new CompletableFuture<>();
         final String template = TranslationKey.KEYWORD_COMMAND_LIST_ELEMENT.getTranslation(locale);
@@ -86,6 +106,10 @@ public class KeywordAction extends CustomCommand {
             result.complete(String.format(template, getName(), getPatternString(), creatorName));
         });
         return result;
+    }
+
+    boolean shouldRunAsOwner() {
+        return this.runAsOwner;
     }
 
 }

@@ -188,6 +188,7 @@ public class DatabaseManager implements Closeable {
                 + "pattern TEXT NOT NULL,"
                 + "template TEXT NOT NULL,"
                 + "owner INTEGER NOT NULL,"
+                + "runasowner INTEGER NOT NULL,"
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,name));";
         final String INVENTORY = "CREATE TABLE IF NOT EXISTS Inventory("

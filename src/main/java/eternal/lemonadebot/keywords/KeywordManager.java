@@ -71,7 +71,7 @@ public class KeywordManager {
         this.commands.putIfAbsent(command.getName(), command);
 
         //Add to database
-        final String query = "INSERT OR IGNORE INTO Keywords(guild,name,pattern,template,owner) VALUES(?,?,?,?);";
+        final String query = "INSERT OR IGNORE INTO Keywords(guild,name,pattern,template,owner,runasowner) VALUES(?,?,?,?,?);";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
@@ -79,6 +79,7 @@ public class KeywordManager {
             ps.setString(3, command.getPatternString());
             ps.setString(4, command.getTemplate());
             ps.setLong(5, command.getAuthor());
+            ps.setBoolean(6, command.shouldRunAsOwner());
             return ps.executeUpdate() > 0;
         }
     }
@@ -126,7 +127,7 @@ public class KeywordManager {
      * Loads custom commands from database
      */
     private void loadCommands() {
-        final String query = "SELECT name,pattern,template,owner FROM Keywords WHERE guild = ?;";
+        final String query = "SELECT name,pattern,template,owner,runasowner FROM Keywords WHERE guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
@@ -136,7 +137,8 @@ public class KeywordManager {
                     final String commandPattern = rs.getString("pattern");
                     final String commandTemplate = rs.getString("template");
                     final long commandOwnerID = rs.getLong("owner");
-                    final KeywordAction newCommand = new KeywordAction(commandName, commandPattern, commandTemplate, commandOwnerID);
+                    final boolean runAsOwner = rs.getBoolean("runasowner");
+                    final KeywordAction newCommand = new KeywordAction(commandName, commandPattern, commandTemplate, commandOwnerID, runAsOwner);
                     this.commands.put(newCommand.getName(), newCommand);
                 }
             }

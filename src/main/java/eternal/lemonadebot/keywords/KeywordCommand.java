@@ -107,28 +107,42 @@ public class KeywordCommand extends AdminCommand {
         final TextChannel textChannel = matcher.getTextChannel();
         final Locale locale = guildData.getConfigManager().getLocale();
 
-        //create name pattern action
-        final List<String> arguments = matcher.parseArguments(4);
+        //create name runas pattern action
+        final List<String> arguments = matcher.parseArguments(5);
         if (arguments.size() < 2) {
             textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_MISSING_NAME.getTranslation(locale)).queue();
             return;
         }
         if (arguments.size() < 3) {
-            textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_MISSING_KEYWORD.getTranslation(locale)).queue();
+            textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_MISSING_USER.getTranslation(locale)).queue();
             return;
         }
         if (arguments.size() < 4) {
+            textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_MISSING_KEYWORD.getTranslation(locale)).queue();
+            return;
+        }
+        if (arguments.size() < 5) {
             textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_MISSING_TEMPLATE.getTranslation(locale)).queue();
             return;
         }
 
         final String commandName = arguments.get(1);
-        final String commandPattern = arguments.get(2);
-        final String commandTemplate = arguments.get(3);
+        final String runAs = arguments.get(2);
+        final boolean runAsCreator;
+        if (runAs.equals(TranslationKey.KEYWORD_RUN_AS_USER.getTranslation(locale))) {
+            runAsCreator = false;
+        } else if (runAs.equals(TranslationKey.KEYWORD_RUN_AS_CREATOR.getTranslation(locale))) {
+            runAsCreator = true;
+        } else {
+            textChannel.sendMessage(TranslationKey.KEYWORD_RUN_AS_UNKNOWN.getTranslation(locale)).queue();
+            return;
+        }
+        final String commandPattern = arguments.get(3);
+        final String commandTemplate = arguments.get(4);
         final Member sender = matcher.getMember();
         final KeywordManager commands = guildData.getKeywordManager();
         try {
-            final KeywordAction newAction = new KeywordAction(commandName, commandPattern, commandTemplate, sender.getIdLong());
+            final KeywordAction newAction = new KeywordAction(commandName, commandPattern, commandTemplate, sender.getIdLong(), runAsCreator);
             if (commands.addKeyword(newAction)) {
                 textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_SUCCESS.getTranslation(locale)).queue();
                 return;
