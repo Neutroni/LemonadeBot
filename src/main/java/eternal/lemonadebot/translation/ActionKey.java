@@ -47,6 +47,7 @@ public enum ActionKey {
     CLEAR(TranslationKey.ACTION_CLEAR),
     RANDOM(TranslationKey.ACTION_RANDOM),
     PLAY(TranslationKey.ACTION_PLAY),
+    SEARCH(TranslationKey.ACTION_SEARCH),
     SKIP(TranslationKey.ACTION_SKIP),
     PAUSE(TranslationKey.ACTION_PAUSE),
     STOP(TranslationKey.ACTION_STOP),

@@ -119,6 +119,15 @@ public class MusicCommand implements ChatCommand {
                 loadAndPlay(textChannel, url, locale);
                 break;
             }
+            case SEARCH: {
+                if (arguments.length < 2) {
+                    textChannel.sendMessage(TranslationKey.MUSIC_SEARCH_QUERY_MISSING.getTranslation(locale)).queue();
+                    return;
+                }
+                final String query = arguments[1];
+                searchAndPlay(textChannel, query, locale);
+                break;
+            }
             case SKIP: {
                 if (arguments.length < 2) {
                     skipTrack(textChannel, null, locale);
@@ -176,6 +185,43 @@ public class MusicCommand implements ChatCommand {
             public void noMatches() {
                 final String template = TranslationKey.MUSIC_NOT_FOUND.getTranslation(locale);
                 channel.sendMessageFormat(template, trackUrl).queue();
+            }
+
+            @Override
+            public void loadFailed(final FriendlyException exception) {
+                final String template = TranslationKey.MUSIC_LOAD_FAILED.getTranslation(locale);
+                channel.sendMessageFormat(template, exception.getMessage()).queue();
+            }
+        });
+    }
+
+    private void searchAndPlay(final TextChannel channel, final String queryString, final Locale locale) {
+        final GuildMusicManager musicManager = getGuildAudioPlayer(channel.getGuild());
+        final String search = "ytsearch:" + queryString;
+
+        this.playerManager.loadItemOrdered(musicManager, search, new AudioLoadResultHandler() {
+            @Override
+            public void trackLoaded(final AudioTrack track) {
+                play(channel.getGuild(), musicManager, track);
+                final String template = TranslationKey.MUSIC_ADDED_SONG.getTranslation(locale);
+                channel.sendMessageFormat(template, track.getInfo().title).queue();
+            }
+
+            @Override
+            public void playlistLoaded(final AudioPlaylist playlist) {
+                final List<AudioTrack> tracks = playlist.getTracks();
+                if(tracks.isEmpty()){
+                    noMatches();
+                    return;
+                }
+                final AudioTrack track = tracks.get(0);
+                trackLoaded(track);
+            }
+
+            @Override
+            public void noMatches() {
+                final String template = TranslationKey.MUSIC_NOT_FOUND.getTranslation(locale);
+                channel.sendMessageFormat(template, queryString).queue();
             }
 
             @Override
@@ -322,6 +368,7 @@ public class MusicCommand implements ChatCommand {
      * Print the upcoming songs
      *
      * @param textChannel channel to respond on
+     * @param locale Locale to print playlist in
      */
     private void showPlaylist(final TextChannel textChannel, final Locale locale) {
         final GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
