@@ -251,7 +251,7 @@ public enum TranslationKey {
     CONFIG_TIMEZONE_ZONE_MALFORMED("Not a valid format for timezone, valid timezones are either of format UTC+0, GMT+0 or Europe/London."),
     CONFIG_TIMEZONE_SQL_ERROR("Database error updating timezone, timezone might rever to old value after reboot."),
     CONFIG_TIMEZONE_UPDATE_SUCCESS("Timezone updated succesfully."),
-    CONFIG_CURRENT_TIMEZONE("Current timezone: %s"), 
+    CONFIG_CURRENT_TIMEZONE("Current timezone: %s"),
     CONFIG_TIMEZONE_DISABLE("Disabling time zone is not possible."),
     COOLDOWN_MISSING_ACTION("Provide name of the action to perform."),
     COOLDOWN_NO_COOLDOWN_SET("No cooldown set for action: "),
@@ -511,9 +511,9 @@ public enum TranslationKey {
     KEYWORD_NO_KEYWORDS("No keywords defined."),
     KEYWORD_SQL_ERROR_ON_CREATE("Adding keyword to database failed, keyword might disappear after reboot."),
     KEYWORD_COMMAND_LIST_ELEMENT("%s - Pattern: %s by: %s"),
-    KEYWORD_CREATE_MISSING_USER("Creating a keyword requires the user as which to run."), 
-    KEYWORD_RUN_AS_USER("user"), 
-    KEYWORD_RUN_AS_CREATOR("me"), 
+    KEYWORD_CREATE_MISSING_USER("Creating a keyword requires the user as which to run."),
+    KEYWORD_RUN_AS_USER("user"),
+    KEYWORD_RUN_AS_CREATOR("me"),
     KEYWORD_RUN_AS_UNKNOWN("Unknown value for user which to run the keyword as, valid values are: 'user' and 'me'"),
     INVENTORY_NO_USER_WITH_NAME("Could not find user with name: %s"),
     INVENTORY_MULTIPLE_USERS_WITH_NAME("Found multiple users with name: %s You can use users full discord name including the tag to specify users accurately."),
@@ -554,6 +554,11 @@ public enum TranslationKey {
     private static final Logger LOGGER = LogManager.getLogger();
     private final String defaultText;
 
+    /**
+     * Constructor
+     *
+     * @param defaultText default text to provide if translation is missing
+     */
     TranslationKey(final String defaultText) {
         this.defaultText = defaultText;
     }

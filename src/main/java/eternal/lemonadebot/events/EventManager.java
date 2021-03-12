@@ -285,6 +285,13 @@ public class EventManager {
         return Collections.unmodifiableCollection(events);
     }
 
+    /**
+     * Get a mutable list of the member ids for the event
+     *
+     * @param event event to get members for
+     * @return list of members
+     * @throws SQLException if database connection failed
+     */
     protected List<Long> getMembersMutable(final Event event) throws SQLException {
         final List<Long> members = new ArrayList<>();
         final String query = "SELECT member FROM EventMembers WHERE guild = ? AND name = ?;";

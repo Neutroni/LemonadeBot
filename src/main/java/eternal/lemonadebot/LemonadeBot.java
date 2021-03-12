@@ -52,6 +52,9 @@ import org.apache.logging.log4j.Logger;
  */
 public class LemonadeBot {
 
+    /**
+     * Version for the bot
+     */
     public static final String BOT_VERSION = LemonadeBot.class.getPackage().getImplementationVersion();
     private static final Logger LOGGER = LogManager.getLogger();
 

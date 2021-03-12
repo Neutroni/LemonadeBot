@@ -31,6 +31,11 @@ import java.util.Locale;
  */
 public interface LocaleUpdateListener {
 
+    /**
+     * Called when locale changes
+     *
+     * @param newLocale localte to change to
+     */
     void updateLocale(Locale newLocale);
 
 }

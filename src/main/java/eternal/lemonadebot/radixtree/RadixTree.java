@@ -180,10 +180,20 @@ public class RadixTree<T> {
         return Collections.unmodifiableCollection(values);
     }
 
+    /**
+     * Get the children of the tree in unmodifiable map
+     *
+     * @return Map of the children
+     */
     protected Map<String, RadixTree<T>> getChildren() {
         return Collections.unmodifiableMap(this.children);
     }
 
+    /**
+     * Add all the nodes as children of this tree
+     *
+     * @param nodes nodes to add
+     */
     protected void addChildren(final Map<String, RadixTree<T>> nodes) {
         this.children.putAll(nodes);
     }

@@ -65,6 +65,11 @@ public enum ActionKey {
 
     private final TranslationKey translationKey;
 
+    /**
+     * Constructor
+     *
+     * @param translationKey key
+     */
     ActionKey(final TranslationKey translationKey) {
         this.translationKey = translationKey;
     }

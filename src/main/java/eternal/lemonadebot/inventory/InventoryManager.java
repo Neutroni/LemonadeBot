@@ -43,6 +43,12 @@ public class InventoryManager {
     private final DataSource dataSource;
     private final long guildID;
 
+    /**
+     * Constructor
+     *
+     * @param ds DataSource for guild
+     * @param guildID ID of the guild
+     */
     public InventoryManager(final DataSource ds, final long guildID) {
         this.dataSource = ds;
         this.guildID = guildID;

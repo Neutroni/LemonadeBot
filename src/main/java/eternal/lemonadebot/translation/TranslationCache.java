@@ -51,6 +51,11 @@ public class TranslationCache implements LocaleUpdateListener {
     private volatile Collator collator;
     private volatile DateTimeFormatter timeFormat;
 
+    /**
+     * Constructor
+     *
+     * @param locale Locale to cache
+     */
     public TranslationCache(final Locale locale) {
         this.rwLock = new ReentrantReadWriteLock();
         this.actionMap = new HashMap<>();

@@ -49,6 +49,10 @@ public class ConfigManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Locale DEFAULT_LOCALE = Locale.ENGLISH;
+
+    /**
+     * List of locales the bot supports
+     */
     public static final Set<Locale> SUPPORTED_LOCALES = Set.of(DEFAULT_LOCALE, new Locale("fi"));
 
     //Database connection

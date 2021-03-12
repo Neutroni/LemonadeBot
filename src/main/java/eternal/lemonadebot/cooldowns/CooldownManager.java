@@ -54,6 +54,12 @@ public class CooldownManager {
     private final DataSource dataSource;
     private final long guildID;
 
+    /**
+     * Constructor
+     *
+     * @param ds DataSource for the guild
+     * @param guildID ID of the guild
+     */
     public CooldownManager(final DataSource ds, final long guildID) {
         this.dataSource = ds;
         this.guildID = guildID;
