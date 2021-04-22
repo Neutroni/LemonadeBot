@@ -86,7 +86,7 @@ class Reminder extends CustomCommand implements Runnable {
      */
     @Override
     public void run() {
-        LOGGER.debug("Reminder started: {}", getName());
+        LOGGER.debug("Reminder check started: {}", getName());
         //Make sure JDA is loaded
         try {
             //This might delay activation if connecting takes extremely long
@@ -100,6 +100,7 @@ class Reminder extends CustomCommand implements Runnable {
         //Check that reminder should activate today
         final ZoneId timeZone = this.guildData.getConfigManager().getZoneId();
         if (!this.activationTime.shouldActivate(timeZone)) {
+            LOGGER.debug("Reminder {}, did not activate not the correct day", getName());
             return;
         }
 
@@ -107,19 +108,20 @@ class Reminder extends CustomCommand implements Runnable {
         final TextChannel channel = this.jda.getTextChannelById(this.channelID);
         if (channel == null) {
             deleteDueToMissingChannel();
+            LOGGER.debug("Reminder {}, did not activate channel could not be found", getName());
             return;
         }
 
         //Check reminder author can be found
         channel.getGuild().retrieveMemberById(getAuthor()).queue((Member member) -> {
             //Success
-            final Locale locale = this.guildData.getConfigManager().getLocale();
             final CommandMatcher matcher = new SimpleMessageMatcher(member, channel);
             respond(matcher, this.guildData);
             LOGGER.debug("Reminder: {} successfully activated on channel: {}", getName(), channel.getName());
         }, (Throwable t) -> {
             //Failure
             deleteDueToMissingOwner();
+            LOGGER.debug("Reminder {}, did not activate owner could not be found", getName());
         });
     }
 
