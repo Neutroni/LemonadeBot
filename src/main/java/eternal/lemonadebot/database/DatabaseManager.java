@@ -182,6 +182,15 @@ public class DatabaseManager implements Closeable {
                 + "monthOfYear INTEGER NOT NULL,"
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
                 + "PRIMARY KEY (guild,name));";
+        final String NOTIFCATIONS = "CREATE TABLE IF NOT EXISTS Notifications("
+                + "guild INTEGER NOT NULL,"
+                + "name TEXT NOT NULL,"
+                + "message TEXT NOT NULL,"
+                + "author INTEGER NOT NULL,"
+                + "channel INTEGER NOT NULL,"
+                + "time INTEGER NOT NULL,"
+                + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
+                + "PRIMARY KEY (guild,name));";
         final String KEYWORDS = "Create TABLE IF NOT EXISTS Keywords("
                 + "guild INTEGER NOT NULL,"
                 + "name TEXT NOT NULL,"
@@ -214,6 +223,7 @@ public class DatabaseManager implements Closeable {
             st.addBatch(ROLES);
             st.addBatch(EVENT_MEMBERS);
             st.addBatch(REMINDERS);
+            st.addBatch(NOTIFCATIONS);
             st.addBatch(KEYWORDS);
             st.addBatch(INVENTORY);
             st.addBatch(INVENTORY_CLEANUP);

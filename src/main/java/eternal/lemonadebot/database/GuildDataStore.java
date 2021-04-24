@@ -35,6 +35,7 @@ import eternal.lemonadebot.inventory.InventoryCache;
 import eternal.lemonadebot.inventory.InventoryManager;
 import eternal.lemonadebot.keywords.KeywordManager;
 import eternal.lemonadebot.messagelogs.MessageManager;
+import eternal.lemonadebot.notifications.NotificationManager;
 import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.permissions.PermissionManagerCache;
 import eternal.lemonadebot.reminders.ReminderManager;
@@ -60,6 +61,7 @@ public class GuildDataStore implements Closeable {
     private final EventManager events;
     private final RoleManager roleManager;
     private final ReminderManager reminders;
+    private final NotificationManager notifications;
     private final CooldownManager cooldowns;
     private final MessageManager messages;
     private final CommandProvider commandProvider;
@@ -85,6 +87,7 @@ public class GuildDataStore implements Closeable {
             this.permissions = new PermissionManager(dataSource, guildID, locale);
         }
         this.reminders = new ReminderManager(dataSource, jda, this);
+        this.notifications = new NotificationManager(dataSource, jda, this);
         this.messages = new MessageManager(dataSource);
         this.translationCache = new TranslationCache(locale);
         this.keywordManager = new KeywordManager(dataSource, guildID);
@@ -185,6 +188,15 @@ public class GuildDataStore implements Closeable {
     }
 
     /**
+     * Get the notificationManager for this datastore
+     *
+     * @return NotificationManager
+     */
+    public NotificationManager getNotificationManager() {
+        return this.notifications;
+    }
+
+    /**
      * Get the cooldownManager for this datastore
      *
      * @return CooldownManager
@@ -241,6 +253,7 @@ public class GuildDataStore implements Closeable {
     @Override
     public void close() {
         this.reminders.close();
+        this.notifications.close();
     }
 
 }

@@ -41,6 +41,7 @@ public enum TranslationKey {
     COMMAND_HELP("help"),
     COMMAND_PERMISSION("permission"),
     COMMAND_REMINDER("reminder"),
+    COMMAND_NOTIFY("notify"),
     COMMAND_ROLE("role"),
     COMMAND_TEMPLATE("template"),
     COMMAND_MUSIC("music"),
@@ -52,6 +53,7 @@ public enum TranslationKey {
     DESCRIPTION_HELP("Help for bot usage."),
     DESCRIPTION_PERMISSION("Manage permissions required to run commands."),
     DESCRIPTION_REMINDER("Manage reminders that can be sent out by the bot."),
+    DESCRIPTION_NOTIFY("Manage notifications that can be sent out by the bot."),
     DESCRIPTION_ROLE("Command for getting a role from allied guilds."),
     DESCRIPTION_TEMPLATE("Manage custom commands."),
     DESCRIPTION_MUSIC("Play music."),
@@ -160,12 +162,22 @@ public enum TranslationKey {
             + " create - create new reminder\n"
             + " delete - delete reminder\n"
             + "<name> name of reminder\n"
-            + "<time> time of the reminder hh:mm\n"
-            + "<day> day the reminder activates on, 1-31 or *\n"
-            + "<month> month the reminder activates on 1-12 or *\n"
+            + "[time] time of the reminder hh:mm\n"
+            + "[day] day the reminder activates on, 1-31 or *\n"
+            + "[month] month the reminder activates on 1-12 or *\n"
             + "<day of week] day of week reminder activates on, either name of day written in full or *\n"
             + "[message] message to be sent at the reminder activation\n"
             + "Reminder will be activated on the channel it was created in"),
+    SYNTAX_NOTIFY("Syntax: notify <action> [name] [amount] [unit] [message]\n"
+            + "<action> can be one of the following:\n"
+            + " create - create new notification\n"
+            + " delete - delete notification\n"
+            + " list - list notifications you have active\n"
+            + "[name] name of notification to delete\n"
+            + "[amount] time to notification activation\n"
+            + "[unit] unit of the time to activation\n"
+            + "[message] message to be sent at the notification activation\n"
+            + "Notification will be activated on the channel it was created in"),
     SYNTAX_ROLE("Syntax: role <action> [name for role] [description]\n"
             + "<action> can be one of the following:\n"
             + " guild - Get role for another guild you are also on that is allied with current guild.\n"
@@ -285,6 +297,7 @@ public enum TranslationKey {
     HEADER_COMMANDS("Commands:"),
     HEADER_EVENTS("Events:"),
     HEADER_REMINDERS("Reminders:"),
+    HEADER_NOTIFICATIONS("Notifications:"),
     HEADER_KEYWORDS("Keywords:"),
     HEADER_COOLDOWNS("Cooldowns:"),
     HEADER_EVENT_MEMBERS("Members for the event %s:"),
@@ -549,7 +562,25 @@ public enum TranslationKey {
     INVENTORY_PAY_ROLE_SUCCESS("Successfully paid %sx %s to %s users."),
     INVENTORY_PAY_INTERRUPTED_NOT_ENOUGH_FOR_EVERYONE("Could not pay everyone due to not having enough items, the following people were not paid:\n%s"),
     INVENTORY_ROLE_SQL_ERROR_ON_PAY("Database error processing payment, following people did not receive payment:\n%s"),
-    INVENTORY_SQL_ERROR_ON_FETCHING_INVENTORY("Database error retrieving list of items, can not show inventory contents.");
+    INVENTORY_SQL_ERROR_ON_FETCHING_INVENTORY("Database error retrieving list of items, can not show inventory contents."),
+    NOTIFICATION_CHANNEL_MISSING("Notification %s deleted due to missing channel"),
+    NOTIFICATION_USER_MISSING("Notification %s deleted due to missing user"),
+    NOTIFICATION_LIST_ELEMENT_TEMPLATE("%s - Template: %s\n Activates at: %s on channel %s by %s\n"),
+    NOTIFY_MISSING_TIME("Creating a notification requires a amount of time to the notification."),
+    NOTIFY_UNKNOWN_TIME("Unknown time, time amount must be a integer number."),
+    NOTIFY_MISSING_UNIT("Creating a notification requires a unit for the time."),
+    NOTIFICATION_IN_PAST("Unless you have time machine to borrow setting a notification in the past won't work."),
+    NOTIFY_MISSING_MESSAGE("Notification requires a message to sent at scheduled time."),
+    NOTIFY_UNKNOWN_UNIT("Unkown unit of time. supported units are seconds,minutes,hours,days,weeks,months,years"),
+    NOTIFICATION_CREATE_SUCCESS("Notification created succefully."),
+    NOTIFICATION_SQL_ERROR_ON_CREATE("Error adding notification to database, notification might be disappear after reboot."),
+    NOTIFICATION_DELETE_MISSING_NAME("Deleting a notigication requires the name of notification to delete."),
+    NOTIFICATION_NOT_FOUND_NAME("Notification not found with name: %s"),
+    NOTIFICATION_DELETE_MISSING_PERMISSION("You do not have permission to delete that notification,"
+            + " only notification owner and server admins can delete notifications."),
+    NOTIFICATION_DELETE_SUCCESS("Notification deleted succesfully."),
+    NOTIFICATION_SQL_ERROR_ON_DELETE("Error removing notification from database, notification might reappear after reboot."),
+    NOTIFICATION_NO_NOTIFICATIONS("No notifications found.");
 
     private static final Logger LOGGER = LogManager.getLogger();
     private final String defaultText;

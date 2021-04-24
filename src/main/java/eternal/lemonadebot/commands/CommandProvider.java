@@ -32,6 +32,7 @@ import eternal.lemonadebot.inventory.InventoryCommand;
 import eternal.lemonadebot.keywords.KeywordCommand;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.music.MusicCommand;
+import eternal.lemonadebot.notifications.NotificationCommand;
 import eternal.lemonadebot.permissions.PermissionCommand;
 import eternal.lemonadebot.reminders.ReminderCommand;
 import eternal.lemonadebot.rolemanagement.RoleCommand;
@@ -66,6 +67,7 @@ public class CommandProvider implements LocaleUpdateListener {
             new ConfigCommand(),
             new CooldownCommand(),
             new ReminderCommand(),
+            new NotificationCommand(),
             new PermissionCommand(),
             new KeywordCommand()
     );
