@@ -65,7 +65,7 @@ public class PermissionManager implements LocaleUpdateListener {
         this.dataSource = ds;
         this.guildID = guildID;
         this.adminPermission = new CommandPermission("", MemberRank.ADMIN, guildID);
-        this.locale = ResourceBundle.getBundle("Translation", locale);;
+        this.locale = ResourceBundle.getBundle("Translation", locale);
     }
 
     /**
@@ -115,8 +115,8 @@ public class PermissionManager implements LocaleUpdateListener {
     }
 
     /**
-     * Get permission required to run custom commands that do not have
-     * any other permission set
+     * Get permission required to run custom commands that do not have any other
+     * permission set
      *
      * @return CommandPermission
      */
