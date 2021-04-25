@@ -125,8 +125,8 @@ public class TemplateCommand implements ChatCommand {
         //Check that there is no such built in command
         final String commandName = arguments[1];
         final CommandProvider commandProvider = guildData.getCommandProvider();
-        final boolean optCommand = commandProvider.isReservedName(commandName);
-        if (optCommand) {
+        final Optional<ChatCommand> optCommand = commandProvider.getBuiltInCommand(commandName);
+        if (optCommand.isPresent()) {
             textChannel.sendMessage(locale.getString("TEMPLATE_NAME_RESERVED")).queue();
             return;
         }

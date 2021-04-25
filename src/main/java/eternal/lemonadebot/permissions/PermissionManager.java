@@ -53,7 +53,6 @@ public class PermissionManager implements LocaleUpdateListener {
     private final long guildID;
     private final CommandPermission adminPermission;
     private volatile ResourceBundle locale;
-    private final CommandProvider commandProvider;
 
     /**
      * Constructor
@@ -61,14 +60,12 @@ public class PermissionManager implements LocaleUpdateListener {
      * @param ds DataSource to get connection from
      * @param guildID ID of the guild to store permissions for
      * @param locale Locale to use for loading default permissions
-     * @param commands List of commands to store default permissions for
      */
-    public PermissionManager(final DataSource ds, final long guildID, final Locale locale, CommandProvider commands) {
+    public PermissionManager(final DataSource ds, final long guildID, final Locale locale) {
         this.dataSource = ds;
         this.guildID = guildID;
         this.adminPermission = new CommandPermission("", MemberRank.ADMIN, guildID);
-        this.locale = ResourceBundle.getBundle("Translation", locale);
-        this.commandProvider = commands;
+        this.locale = ResourceBundle.getBundle("Translation", locale);;
     }
 
     /**
@@ -185,7 +182,7 @@ public class PermissionManager implements LocaleUpdateListener {
     Collection<CommandPermission> getPermissions() throws SQLException {
         final List<CommandPermission> permissions = new ArrayList<>();
         //Get default permissions for commands
-        for (final ChatCommand c : this.commandProvider.getCommands()) {
+        for (final ChatCommand c : CommandProvider.COMMANDS) {
             permissions.addAll(c.getDefaultRanks(this.locale, this.guildID, this));
         }
 

@@ -81,6 +81,11 @@ public class GuildDataStore implements Closeable {
         this.guildID = guildID;
         this.config = new ConfigManager(dataSource, guildID);
         final Locale locale = this.config.getLocale();
+        if (cacheConf.permissionsCacheEnabled()) {
+            this.permissions = new PermissionManagerCache(dataSource, guildID, locale);
+        } else {
+            this.permissions = new PermissionManager(dataSource, guildID, locale);
+        }
         this.reminders = new ReminderManager(dataSource, jda, this);
         this.notifications = new NotificationManager(dataSource, jda, this);
         this.messages = new MessageManager(dataSource);
@@ -97,11 +102,6 @@ public class GuildDataStore implements Closeable {
             this.commands = new TemplateManager(dataSource, guildID);
         }
         this.commandProvider = new CommandProvider(this.translationCache.getResourceBundle(), this.commands);
-        if (cacheConf.permissionsCacheEnabled()) {
-            this.permissions = new PermissionManagerCache(dataSource, guildID, locale, this.commandProvider);
-        } else {
-            this.permissions = new PermissionManager(dataSource, guildID, locale, this.commandProvider);
-        }
         if (cacheConf.eventCacheEnabled()) {
             this.events = new EventCache(dataSource, guildID);
         } else {

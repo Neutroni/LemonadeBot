@@ -54,9 +54,26 @@ import org.apache.logging.log4j.Logger;
  */
 public class CommandProvider implements LocaleUpdateListener {
 
-    private static final Logger LOGGER = LogManager.getLogger();
+    /**
+     * List of all the built in commands
+     */
+    public static final List<ChatCommand> COMMANDS = List.of(
+            new HelpCommand(),
+            new MusicCommand(),
+            new EventCommand(),
+            new TemplateCommand(),
+            new RoleCommand(),
+            new InventoryCommand(),
+            //Admin commands
+            new ConfigCommand(),
+            new CooldownCommand(),
+            new ReminderCommand(),
+            new NotificationCommand(),
+            new PermissionCommand(),
+            new KeywordCommand()
+    );
 
-    private final List<ChatCommand> builtInCommands;
+    private static final Logger LOGGER = LogManager.getLogger();
     private final Map<String, ChatCommand> commandMap = new ConcurrentHashMap<>();
     private final TemplateManager templateManager;
 
@@ -67,43 +84,9 @@ public class CommandProvider implements LocaleUpdateListener {
      * @param templates TemplateManager to get templates from
      */
     public CommandProvider(final ResourceBundle locale, final TemplateManager templates) {
-        this.builtInCommands = List.of(
-                new HelpCommand(),
-                new MusicCommand(),
-                new EventCommand(),
-                new TemplateCommand(),
-                new RoleCommand(),
-                new InventoryCommand(),
-                //Admin commands
-                new ConfigCommand(),
-                new CooldownCommand(),
-                new ReminderCommand(),
-                new NotificationCommand(),
-                new PermissionCommand(),
-                new KeywordCommand()
-        );
         this.templateManager = templates;
         //Load translated built in commands
-        builtInCommands.forEach(command -> this.commandMap.put(command.getCommand(locale), command));
-    }
-
-    /**
-     * Check if name is reserved for a command
-     *
-     * @param name Name to check
-     * @return true if name is reserved
-     */
-    public boolean isReservedName(String name) {
-        return this.commandMap.containsKey(name);
-    }
-
-    /**
-     * Get the list of built in commands
-     *
-     * @return List of built in commands
-     */
-    public List<ChatCommand> getCommands() {
-        return this.builtInCommands;
+        COMMANDS.forEach(command -> this.commandMap.put(command.getCommand(locale), command));
     }
 
     /**
@@ -112,7 +95,7 @@ public class CommandProvider implements LocaleUpdateListener {
      * @param commandName name of the command to find
      * @return Optional containing the command if found
      */
-    private Optional<ChatCommand> getBuiltInCommand(final String commandName) {
+    public Optional<ChatCommand> getBuiltInCommand(final String commandName) {
         return Optional.ofNullable(this.commandMap.get(commandName));
     }
 
@@ -155,7 +138,7 @@ public class CommandProvider implements LocaleUpdateListener {
     public void updateLocale(final Locale newLocale) {
         final ResourceBundle rb = ResourceBundle.getBundle("Translation", newLocale);
         this.commandMap.clear();
-        builtInCommands.forEach(command -> {
+        COMMANDS.forEach(command -> {
             this.commandMap.put(command.getCommand(rb), command);
         });
     }

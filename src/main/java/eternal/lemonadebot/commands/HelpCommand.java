@@ -89,7 +89,7 @@ class HelpCommand implements ChatCommand {
         final String name = options[0];
         if (locale.getString("ACTION_COMMANDS").equals(name)) {
             //Respond with list of commands available to the user
-            listCommands(matcher, guildData);
+            listCommands(matcher, guildData.getPermissionManager(), locale);
             return;
         }
 
@@ -142,15 +142,12 @@ class HelpCommand implements ChatCommand {
      * @param permissions Used to check if user has permission to the commands
      * @param locale TranslationManager to get command names from
      */
-    private static void listCommands(final CommandMatcher matcher, GuildDataStore guildData) {
-        final PermissionManager permissions = guildData.getPermissionManager();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
-        final CommandProvider commands = guildData.getCommandProvider();
+    private static void listCommands(final CommandMatcher matcher, final PermissionManager permissions, final ResourceBundle locale) {
         //Construct the list of commands
         final StringBuilder sb = new StringBuilder();
         final Member member = matcher.getMember();
 
-        for (final ChatCommand c : commands.getCommands()) {
+        for (final ChatCommand c : CommandProvider.COMMANDS) {
             if (permissions.hasPermission(member, c, c.getCommand(locale))) {
                 sb.append(c.getCommand(locale)).append(" - ");
                 final String description = c.getDescription(locale);
