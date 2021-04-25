@@ -28,13 +28,12 @@ import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
-import java.util.Locale;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
@@ -50,18 +49,18 @@ public class CooldownCommand extends AdminCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand(final Locale locale) {
-        return TranslationKey.COMMAND_COOLDOWN.getTranslation(locale);
+    public String getCommand(final ResourceBundle locale) {
+        return locale.getString("COMMAND_COOLDOWN");
     }
 
     @Override
-    public String getDescription(final Locale locale) {
-        return TranslationKey.DESCRIPTION_COOLDOWN.getTranslation(locale);
+    public String getDescription(final ResourceBundle locale) {
+        return locale.getString("DESCRIPTION_COOLDOWN");
     }
 
     @Override
-    public String getHelpText(final Locale locale) {
-        return TranslationKey.SYNTAX_COOLDOWN.getTranslation(locale);
+    public String getHelpText(final ResourceBundle locale) {
+        return locale.getString("SYNTAX_COOLDOWN");
     }
 
     @Override
@@ -69,13 +68,13 @@ public class CooldownCommand extends AdminCommand {
         final String[] arguments = matcher.getArguments(1);
         final TextChannel channel = matcher.getTextChannel();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = translationCache.getResourceBundle();
         if (arguments.length == 0) {
-            channel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("ERROR_MISSING_OPERATION")).queue();
             return;
         }
         if (arguments.length == 1) {
-            channel.sendMessage(TranslationKey.COOLDOWN_MISSING_ACTION.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("COOLDOWN_MISSING_ACTION")).queue();
             return;
         }
 
@@ -100,7 +99,7 @@ public class CooldownCommand extends AdminCommand {
                 break;
             }
             default: {
-                channel.sendMessage(TranslationKey.ERROR_UNKNOWN_OPERATION.getTranslation(locale) + option).queue();
+                channel.sendMessage(locale.getString("ERROR_UNKNOWN_OPERATION") + option).queue();
             }
         }
     }
@@ -114,12 +113,12 @@ public class CooldownCommand extends AdminCommand {
      */
     private static void getCooldown(final TextChannel channel, final GuildDataStore guildData, final String requestedAction) {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         final Optional<ActionCooldown> cd;
         try {
             cd = cooldownManager.getActionCooldown(requestedAction);
         } catch (SQLException ex) {
-            channel.sendMessage(TranslationKey.COOLDOWN_SQL_ERROR_ON_RETRIEVE.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("COOLDOWN_SQL_ERROR_ON_RETRIEVE")).queue();
             LOGGER.error("Failure to get cooldown for action from database: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);
             return;
@@ -128,11 +127,11 @@ public class CooldownCommand extends AdminCommand {
             final String cooldownAction = cooldown.getAction();
             final Duration cooldownDuration = cooldown.getDuration();
             final String setCooldown = CooldownManager.formatDuration(cooldownDuration, locale);
-            final String template = TranslationKey.COOLDOWN_CURRENT_COOLDOWN.getTranslation(locale);
+            final String template = locale.getString("COOLDOWN_CURRENT_COOLDOWN");
             channel.sendMessageFormat(template, setCooldown, cooldownAction).queue();
         }, () -> {
             //No cooldown set for action
-            channel.sendMessage(TranslationKey.COOLDOWN_NO_COOLDOWN_SET.getTranslation(locale) + requestedAction).queue();
+            channel.sendMessage(locale.getString("COOLDOWN_NO_COOLDOWN_SET") + requestedAction).queue();
         });
     }
 
@@ -145,11 +144,11 @@ public class CooldownCommand extends AdminCommand {
      */
     private static void setCooldown(final TextChannel channel, final GuildDataStore guildData, final String[] arguments) {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
 
         //No time amount
         if (arguments.length < 2) {
-            channel.sendMessage(TranslationKey.COOLDOWN_MISSING_TIME.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("COOLDOWN_MISSING_TIME")).queue();
             return;
         }
 
@@ -158,13 +157,13 @@ public class CooldownCommand extends AdminCommand {
         try {
             timeAmount = Integer.parseInt(timeAmountString);
         } catch (NumberFormatException e) {
-            channel.sendMessage(TranslationKey.COOLDOWN_UNKNOWN_TIME.getTranslation(locale) + timeAmountString).queue();
+            channel.sendMessage(locale.getString("COOLDOWN_UNKNOWN_TIME") + timeAmountString).queue();
             return;
         }
 
         //No time unit
         if (arguments.length < 3) {
-            channel.sendMessage(TranslationKey.COOLDOWN_MISSIGN_UNIT.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("COOLDOWN_MISSIGN_UNIT")).queue();
             return;
         }
 
@@ -175,22 +174,22 @@ public class CooldownCommand extends AdminCommand {
         if (optUnit.isPresent()) {
             unit = optUnit.get();
         } else {
-            channel.sendMessage(TranslationKey.COOLDOWN_UNKNOWN_UNIT.getTranslation(locale) + arguments[2]).queue();
+            channel.sendMessage(locale.getString("COOLDOWN_UNKNOWN_UNIT") + arguments[2]).queue();
             return;
         }
 
         final Duration cooldownDuration = Duration.of(timeAmount, unit);
         if (arguments.length < 4) {
-            channel.sendMessage(TranslationKey.COOLDOWN_NO_ACTION.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("COOLDOWN_NO_ACTION")).queue();
             return;
         }
         final String actionString = arguments[3];
 
         try {
             cooldownManager.setCooldown(actionString, cooldownDuration);
-            channel.sendMessage(TranslationKey.COOLDOWN_UPDATED_SUCCESFULLY.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("COOLDOWN_UPDATED_SUCCESFULLY")).queue();
         } catch (SQLException ex) {
-            channel.sendMessage(TranslationKey.COOLDOWN_SQL_ERROR_ON_UPDATE.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("COOLDOWN_SQL_ERROR_ON_UPDATE")).queue();
             LOGGER.error("Failure to set cooldown in database: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);
         }
@@ -205,17 +204,17 @@ public class CooldownCommand extends AdminCommand {
      */
     private static void disableCooldown(final TextChannel channel, final GuildDataStore guildData, final String requestedAction) {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         try {
             if (cooldownManager.removeCooldown(requestedAction)) {
                 //Found cooldown for action
-                channel.sendMessage(TranslationKey.COOLDOWN_DISABLE_SUCCESS.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("COOLDOWN_DISABLE_SUCCESS")).queue();
             } else {
                 //No cooldown for action
-                channel.sendMessage(TranslationKey.COOLDOWN_NO_COOLDOWN_SET.getTranslation(locale) + requestedAction).queue();
+                channel.sendMessage(locale.getString("COOLDOWN_NO_COOLDOWN_SET") + requestedAction).queue();
             }
         } catch (SQLException ex) {
-            channel.sendMessage(TranslationKey.COOLDOWN_SQL_ERROR_ON_DISABLE.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("COOLDOWN_SQL_ERROR_ON_DISABLE")).queue();
             LOGGER.error("Failure to remove cooldown from database: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);
         }
@@ -224,14 +223,14 @@ public class CooldownCommand extends AdminCommand {
     private static void listCooldowns(final CommandMatcher matcher, final GuildDataStore guildData) {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
         final TextChannel channel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
 
         //Fetch the list of set cooldowns from database
         final Collection<ActionCooldown> cooldowns;
         try {
             cooldowns = cooldownManager.getCooldowns();
         } catch (SQLException ex) {
-            channel.sendMessage(TranslationKey.COOLDOWN_SQL_ERROR_ON_LOADING.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("COOLDOWN_SQL_ERROR_ON_LOADING")).queue();
             LOGGER.error("Failure to load cooldown from database: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);
             return;
@@ -239,13 +238,13 @@ public class CooldownCommand extends AdminCommand {
 
         //Construct embed for response
         final EmbedBuilder eb = new EmbedBuilder();
-        eb.setTitle(TranslationKey.HEADER_COOLDOWNS.getTranslation(locale));
+        eb.setTitle(locale.getString("HEADER_COOLDOWNS"));
         final StringBuilder description = new StringBuilder();
         for (final ActionCooldown cd : cooldowns) {
             description.append(cd.toListElement(locale));
         }
         if (cooldowns.isEmpty()) {
-            description.append(TranslationKey.COOLDOWN_NO_COOLDOWNS.getTranslation(locale));
+            description.append(locale.getString("COOLDOWN_NO_COOLDOWNS"));
         }
         eb.setDescription(description);
         channel.sendMessage(eb.build()).queue();

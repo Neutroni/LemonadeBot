@@ -29,6 +29,7 @@ import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.PermissionManager;
 import java.util.Collection;
 import java.util.Locale;
+import java.util.ResourceBundle;
 
 /**
  * Interface all commands must implement
@@ -43,7 +44,7 @@ public interface ChatCommand {
      * @param locale Locale to get the command name inF
      * @return the command to activate this action
      */
-    String getCommand(Locale locale);
+    String getCommand(ResourceBundle locale);
 
     /**
      * Short description for command, used for command listings
@@ -51,7 +52,7 @@ public interface ChatCommand {
      * @param locale Locale to return the description in
      * @return Description for what this command does
      */
-    String getDescription(Locale locale);
+    String getDescription(ResourceBundle locale);
 
     /**
      * Help text for command, usage info for the command
@@ -59,7 +60,7 @@ public interface ChatCommand {
      * @param locale Locale to return the help in
      * @return help text for the command
      */
-    String getHelpText(Locale locale);
+    String getHelpText(ResourceBundle locale);
 
     /**
      * What rank is needed to run this command by default
@@ -69,7 +70,7 @@ public interface ChatCommand {
      * @param permissions PermissionManager to use
      * @return The default rank needed to run this command
      */
-    Collection<CommandPermission> getDefaultRanks(Locale locale, long guildID, PermissionManager permissions);
+    Collection<CommandPermission> getDefaultRanks(ResourceBundle locale, long guildID, PermissionManager permissions);
 
     /**
      * Responds to a message

@@ -31,12 +31,11 @@ import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -55,37 +54,37 @@ public class InventoryCommand implements ChatCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand(final Locale locale) {
-        return TranslationKey.COMMAND_INVENTORY.getTranslation(locale);
+    public String getCommand(final ResourceBundle locale) {
+        return locale.getString("COMMAND_INVENTORY");
     }
 
     @Override
-    public String getDescription(final Locale locale) {
-        return TranslationKey.DESCRIPTION_INVENTORY.getTranslation(locale);
+    public String getDescription(final ResourceBundle locale) {
+        return locale.getString("DESCRIPTION_INVENTORY");
     }
 
     @Override
-    public String getHelpText(final Locale locale) {
-        return TranslationKey.SYNTAX_INVENTORY.getTranslation(locale);
+    public String getHelpText(final ResourceBundle locale) {
+        return locale.getString("SYNTAX_INVENTORY");
     }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(final Locale locale, final long guildID, final PermissionManager permissions) {
+    public Collection<CommandPermission> getDefaultRanks(final ResourceBundle locale, final long guildID, final PermissionManager permissions) {
         final String commandName = getCommand(locale);
-        final String actionCreate = TranslationKey.ACTION_ADD.getTranslation(locale);
+        final String actionCreate = locale.getString("ACTION_ADD");
         return List.of(new CommandPermission(commandName, MemberRank.USER, guildID),
                 new CommandPermission(commandName + ' ' + actionCreate, MemberRank.ADMIN, guildID));
     }
 
     @Override
     public void respond(final CommandMatcher message, final GuildDataStore guildData) {
-        final Locale locale = guildData.getConfigManager().getLocale();
         final TextChannel channel = message.getTextChannel();
         final TranslationCache translationCache = guildData.getTranslationCache();
+        final ResourceBundle locale = translationCache.getResourceBundle();
 
         final String[] opts = message.getArguments(1);
         if (opts.length == 0) {
-            channel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("ERROR_MISSING_OPERATION")).queue();
             return;
         }
 
@@ -105,7 +104,7 @@ public class InventoryCommand implements ChatCommand {
                 break;
             }
             default: {
-                channel.sendMessage(TranslationKey.ERROR_UNKNOWN_OPERATION.getTranslation(locale) + action).queue();
+                channel.sendMessage(locale.getString("ERROR_UNKNOWN_OPERATION") + action).queue();
             }
         }
     }
@@ -114,7 +113,7 @@ public class InventoryCommand implements ChatCommand {
         final TextChannel channel = message.getTextChannel();
         final InventoryManager inventoryManager = guildData.getInventoryManager();
         final Guild guild = message.getGuild();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         final Member requester = message.getMember();
         if (opts.length < 2) {
             //No user specified, show inventory of requester
@@ -126,19 +125,19 @@ public class InventoryCommand implements ChatCommand {
         final String targetName = opts[1];
         guild.retrieveMembersByPrefix(targetName, 2).onSuccess((List<Member> members) -> {
             if (members.isEmpty()) {
-                final String template = TranslationKey.INVENTORY_NO_USER_WITH_NAME.getTranslation(locale);
+                final String template = locale.getString("INVENTORY_NO_USER_WITH_NAME");
                 channel.sendMessageFormat(template, targetName).queue();
                 return;
             }
             if (members.size() > 1) {
-                final String template = TranslationKey.INVENTORY_MULTIPLE_USERS_WITH_NAME.getTranslation(locale);
+                final String template = locale.getString("INVENTORY_MULTIPLE_USERS_WITH_NAME");
                 channel.sendMessageFormat(template, targetName).queue();
                 return;
             }
             final Member target = members.get(0);
             showInventoryForUser(target, inventoryManager, locale, channel);
         }).onError((Throwable t) -> {
-            channel.sendMessage(TranslationKey.INVENTORY_BOT_NO_PERMISSION.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("INVENTORY_BOT_NO_PERMISSION")).queue();
         });
     }
 
@@ -150,9 +149,9 @@ public class InventoryCommand implements ChatCommand {
      * @param locale Locale to send the message in.
      * @param channel Channel to send the message on.
      */
-    private static void showInventoryForUser(final Member member, final InventoryManager inventoryManager, final Locale locale, final TextChannel channel) {
+    private static void showInventoryForUser(final Member member, final InventoryManager inventoryManager, final ResourceBundle locale, final TextChannel channel) {
         final EmbedBuilder eb = new EmbedBuilder();
-        final String titleTemplate = TranslationKey.INVENTORY_FOR_USER.getTranslation(locale);
+        final String titleTemplate = locale.getString("INVENTORY_FOR_USER");
         final String userName = member.getEffectiveName();
         final String title = String.format(titleTemplate, userName);
         eb.setTitle(title);
@@ -161,16 +160,16 @@ public class InventoryCommand implements ChatCommand {
         try {
             inv = inventoryManager.getUserInventory(member);
         } catch (SQLException e) {
-            channel.sendMessage(TranslationKey.INVENTORY_SQL_ERROR_ON_FETCHING_INVENTORY.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("INVENTORY_SQL_ERROR_ON_FETCHING_INVENTORY")).queue();
             return;
         }
-        final String listElementTemplate = TranslationKey.INVENTORY_ITEM_ELEMENT.getTranslation(locale);
+        final String listElementTemplate = locale.getString("INVENTORY_ITEM_ELEMENT");
         inv.forEach((String item, Long count) -> {
             sb.append(String.format(listElementTemplate, count, item));
         });
         //If user has no items in inventory add message about it to description.
         if (inv.isEmpty()) {
-            sb.append(TranslationKey.INVENTORY_NO_ITEMS_IN_INVENTORY.getTranslation(locale));
+            sb.append(locale.getString("INVENTORY_NO_ITEMS_IN_INVENTORY"));
         }
         eb.setDescription(sb);
         channel.sendMessage(eb.build()).queue();
@@ -179,17 +178,17 @@ public class InventoryCommand implements ChatCommand {
     private static void addItemToInventory(final CommandMatcher message, final GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
         final Guild guild = message.getGuild();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         final Member requester = message.getMember();
         //add item count user
         final List<String> args = message.parseArguments(5);
         if (args.size() < 2) {
-            channel.sendMessage(TranslationKey.INVENTORY_ADD_MISSING_ITEM_NAME.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("INVENTORY_ADD_MISSING_ITEM_NAME")).queue();
             return;
         }
         final String itemName = args.get(1);
         if (args.size() < 3) {
-            channel.sendMessage(TranslationKey.INVENTORY_ADD_MISSING_ITEM_COUNT.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("INVENTORY_ADD_MISSING_ITEM_COUNT")).queue();
             return;
         }
         final String countString = args.get(2);
@@ -197,11 +196,11 @@ public class InventoryCommand implements ChatCommand {
         try {
             itemCount = Long.parseLong(countString);
         } catch (NumberFormatException e) {
-            channel.sendMessage(TranslationKey.INVENTORY_COUNT_NOT_NUMBER.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("INVENTORY_COUNT_NOT_NUMBER")).queue();
             return;
         }
         if (itemCount == 0) {
-            channel.sendMessage(TranslationKey.INVENTORY_COUNT_ZERO.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("INVENTORY_COUNT_ZERO")).queue();
             return;
         }
 
@@ -213,17 +212,17 @@ public class InventoryCommand implements ChatCommand {
                 if (inventoryManager.updateCount(requester, itemName, itemCount)) {
                     final String template;
                     if (itemCount > 0) {
-                        template = TranslationKey.INVENTORY_USER_ITEM_ADDED_SUCCESS.getTranslation(locale);
+                        template = locale.getString("INVENTORY_USER_ITEM_ADDED_SUCCESS");
                     } else {
-                        template = TranslationKey.INVENTORY_USER_ITEM_REMOVED_SUCCESS.getTranslation(locale);
+                        template = locale.getString("INVENTORY_USER_ITEM_REMOVED_SUCCESS");
                     }
 
                     channel.sendMessageFormat(template, Math.abs(itemCount), itemName).queue();
                     return;
                 }
-                channel.sendMessage(TranslationKey.INVENTORY_USER_NOT_ENOUGH_ITEMS.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("INVENTORY_USER_NOT_ENOUGH_ITEMS")).queue();
             } catch (SQLException e) {
-                channel.sendMessage(TranslationKey.INVENTORY_SQL_ERROR_ON_ADD.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("INVENTORY_SQL_ERROR_ON_ADD")).queue();
             }
             return;
         }
@@ -236,18 +235,18 @@ public class InventoryCommand implements ChatCommand {
             modeName = args.get(4);
         }
 
-        final String modeUser = TranslationKey.INVENTORY_MODE_USER.getTranslation(locale);
-        final String modeRole = TranslationKey.INVENTORY_MODE_ROLE.getTranslation(locale);
+        final String modeUser = locale.getString("INVENTORY_MODE_USER");
+        final String modeRole = locale.getString("INVENTORY_MODE_ROLE");
         if (modeName == null || modeUser.equals(modeName)) {
             //Get user by name
             guild.retrieveMembersByPrefix(targetName, 2).onSuccess((List<Member> members) -> {
                 if (members.isEmpty()) {
-                    final String template = TranslationKey.INVENTORY_NO_USER_WITH_NAME.getTranslation(locale);
+                    final String template = locale.getString("INVENTORY_NO_USER_WITH_NAME");
                     channel.sendMessageFormat(template, targetName).queue();
                     return;
                 }
                 if (members.size() > 1) {
-                    final String template = TranslationKey.INVENTORY_MULTIPLE_USERS_WITH_NAME.getTranslation(locale);
+                    final String template = locale.getString("INVENTORY_MULTIPLE_USERS_WITH_NAME");
                     channel.sendMessage(template).queue();
                     return;
                 }
@@ -257,33 +256,33 @@ public class InventoryCommand implements ChatCommand {
                 try {
                     if (inventoryManager.updateCount(target, itemName, itemCount)) {
                         if (itemCount > 0) {
-                            final String template = TranslationKey.INVENTORY_ITEM_ADDED_SUCCESS.getTranslation(locale);
+                            final String template = locale.getString("INVENTORY_ITEM_ADDED_SUCCESS");
                             channel.sendMessageFormat(template, itemCount, itemName, target.getEffectiveName()).queue();
                             return;
                         }
-                        final String template = TranslationKey.INVENTORY_ITEM_REMOVED_SUCCESS.getTranslation(locale);
+                        final String template = locale.getString("INVENTORY_ITEM_REMOVED_SUCCESS");
                         channel.sendMessageFormat(template, itemCount, itemName, target.getEffectiveName()).queue();
                         return;
                     }
-                    channel.sendMessage(TranslationKey.INVENTORY_NOT_ENOUGH_ITEMS.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("INVENTORY_NOT_ENOUGH_ITEMS")).queue();
                 } catch (SQLException e) {
-                    channel.sendMessage(TranslationKey.INVENTORY_SQL_ERROR_ON_ADD.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("INVENTORY_SQL_ERROR_ON_ADD")).queue();
                 }
 
             }).onError((t) -> {
-                channel.sendMessage(TranslationKey.INVENTORY_BOT_NO_PERMISSION.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("INVENTORY_BOT_NO_PERMISSION")).queue();
             });
             return;
         }
         if (modeRole.equals(modeName)) {
             final List<Role> roles = guild.getRolesByName(targetName, false);
             if (roles.isEmpty()) {
-                final String template = TranslationKey.ROLE_NO_ROLE_WITH_NAME.getTranslation(locale);
+                final String template = locale.getString("ROLE_NO_ROLE_WITH_NAME");
                 channel.sendMessageFormat(template, targetName).queue();
                 return;
             }
             if (roles.size() > 1) {
-                final String template = TranslationKey.ROLE_MULTIPLE_ROLES_WITH_NAME.getTranslation(locale);
+                final String template = locale.getString("ROLE_MULTIPLE_ROLES_WITH_NAME");
                 channel.sendMessage(template).queue();
                 return;
             }
@@ -305,39 +304,39 @@ public class InventoryCommand implements ChatCommand {
                     }
                 }
                 if (anyFailed) {
-                    channel.sendMessage(TranslationKey.INVENTORY_SQL_ERROR_ON_ADD.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("INVENTORY_SQL_ERROR_ON_ADD")).queue();
                 } else {
                     if (anyPrevented) {
-                        channel.sendMessage(TranslationKey.INVENTORY_REMOVE_ROLE_SUCCESS_SOME_NOT_MODIFIED.getTranslation(locale)).queue();
+                        channel.sendMessage(locale.getString("INVENTORY_REMOVE_ROLE_SUCCESS_SOME_NOT_MODIFIED")).queue();
                     } else {
-                        final String template = TranslationKey.INVENTORY_ADD_ROLE_SUCCESS.getTranslation(locale);
+                        final String template = locale.getString("INVENTORY_ADD_ROLE_SUCCESS");
                         channel.sendMessageFormat(template, itemCount, itemName, members.size()).queue();
                     }
                 }
             }).onError((Throwable t) -> {
-                channel.sendMessage(TranslationKey.INVENTORY_BOT_NO_PERMISSION.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("INVENTORY_BOT_NO_PERMISSION")).queue();
             });
             return;
         }
         //Unknown mode
-        final String template = TranslationKey.INVENTORY_UNKNOWN_MODE.getTranslation(locale);
+        final String template = locale.getString("INVENTORY_UNKNOWN_MODE");
         channel.sendMessageFormat(template, modeName).queue();
     }
 
     private static void payItemToUser(final CommandMatcher message, final GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
         final Guild guild = message.getGuild();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         final Member requester = message.getMember();
         //pay item count user
         final List<String> args = message.parseArguments(5);
         if (args.size() < 2) {
-            channel.sendMessage(TranslationKey.INVENTORY_PAY_MISSING_ITEM_NAME.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("INVENTORY_PAY_MISSING_ITEM_NAME")).queue();
             return;
         }
         final String itemName = args.get(1);
         if (args.size() < 3) {
-            channel.sendMessage(TranslationKey.INVENTORY_PAY_MISSING_ITEM_COUNT.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("INVENTORY_PAY_MISSING_ITEM_COUNT")).queue();
             return;
         }
         final String countString = args.get(2);
@@ -345,22 +344,22 @@ public class InventoryCommand implements ChatCommand {
         try {
             itemCount = Long.parseLong(countString);
         } catch (NumberFormatException e) {
-            channel.sendMessage(TranslationKey.INVENTORY_COUNT_NOT_NUMBER.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("INVENTORY_COUNT_NOT_NUMBER")).queue();
             return;
         }
         if (itemCount == 0) {
-            channel.sendMessage(TranslationKey.INVENTORY_COUNT_ZERO.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("INVENTORY_COUNT_ZERO")).queue();
             return;
         }
         if (itemCount < 0) {
-            channel.sendMessage(TranslationKey.INVENTORY_COUNT_NEGATIVE.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("INVENTORY_COUNT_NEGATIVE")).queue();
             return;
         }
 
         final InventoryManager inventoryManager = guildData.getInventoryManager();
         final String targetName;
         if (args.size() < 4) {
-            channel.sendMessage(TranslationKey.INVENTORY_PAY_USER_MISSING.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("INVENTORY_PAY_USER_MISSING")).queue();
             return;
         }
         targetName = args.get(3);
@@ -372,18 +371,18 @@ public class InventoryCommand implements ChatCommand {
             modeName = args.get(4);
         }
 
-        final String modeUser = TranslationKey.INVENTORY_MODE_USER.getTranslation(locale);
-        final String modeRole = TranslationKey.INVENTORY_MODE_ROLE.getTranslation(locale);
+        final String modeUser = locale.getString("INVENTORY_MODE_USER");
+        final String modeRole = locale.getString("INVENTORY_MODE_ROLE");
         if (modeName == null || modeUser.equals(modeName)) {
             //Get user by name
             guild.retrieveMembersByPrefix(targetName, 2).onSuccess((List<Member> members) -> {
                 if (members.isEmpty()) {
-                    final String template = TranslationKey.INVENTORY_NO_USER_WITH_NAME.getTranslation(locale);
+                    final String template = locale.getString("INVENTORY_NO_USER_WITH_NAME");
                     channel.sendMessageFormat(template, targetName).queue();
                     return;
                 }
                 if (members.size() > 1) {
-                    final String template = TranslationKey.INVENTORY_MULTIPLE_USERS_WITH_NAME.getTranslation(locale);
+                    final String template = locale.getString("INVENTORY_MULTIPLE_USERS_WITH_NAME");
                     channel.sendMessage(template).queue();
                     return;
                 }
@@ -391,35 +390,35 @@ public class InventoryCommand implements ChatCommand {
                 //Check to make sure target is different from requester
                 final Member target = members.get(0);
                 if (requester.equals(target)) {
-                    channel.sendMessage(TranslationKey.INVENTORY_PAY_TARGET_SELF.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("INVENTORY_PAY_TARGET_SELF")).queue();
                     return;
                 }
 
                 //Add items to targets inventory
                 try {
                     if (!inventoryManager.payItem(requester, target, itemName, itemCount)) {
-                        channel.sendMessage(TranslationKey.INVENTORY_USER_NOT_ENOUGH_ITEMS.getTranslation(locale)).queue();
+                        channel.sendMessage(locale.getString("INVENTORY_USER_NOT_ENOUGH_ITEMS")).queue();
                         return;
                     }
-                    final String template = TranslationKey.INVENTORY_ITEM_PAID_SUCCESS.getTranslation(locale);
+                    final String template = locale.getString("INVENTORY_ITEM_PAID_SUCCESS");
                     channel.sendMessageFormat(template, itemCount, itemName, target.getEffectiveName()).queue();
                 } catch (SQLException e) {
-                    channel.sendMessage(TranslationKey.INVENTORY_SQL_ERROR_ON_PAY.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("INVENTORY_SQL_ERROR_ON_PAY")).queue();
                 }
             }).onError((Throwable t) -> {
-                channel.sendMessage(TranslationKey.INVENTORY_BOT_NO_PERMISSION.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("INVENTORY_BOT_NO_PERMISSION")).queue();
             });
             return;
         }
         if (modeRole.equals(modeName)) {
             final List<Role> roles = guild.getRolesByName(targetName, false);
             if (roles.isEmpty()) {
-                final String template = TranslationKey.ROLE_NO_ROLE_WITH_NAME.getTranslation(locale);
+                final String template = locale.getString("ROLE_NO_ROLE_WITH_NAME");
                 channel.sendMessageFormat(template, targetName).queue();
                 return;
             }
             if (roles.size() > 1) {
-                final String template = TranslationKey.ROLE_MULTIPLE_ROLES_WITH_NAME.getTranslation(locale);
+                final String template = locale.getString("ROLE_MULTIPLE_ROLES_WITH_NAME");
                 channel.sendMessage(template).queue();
                 return;
             }
@@ -433,7 +432,7 @@ public class InventoryCommand implements ChatCommand {
                 try {
                     final Map<String, Long> userInv = inventoryManager.getUserInventory(requester);
                     if (userInv.getOrDefault(itemName, 0L) < requiredCount) {
-                        channel.sendMessage(TranslationKey.INVENTORY_PAY_USER_NOT_ENOUGH_ITEMS_FOR_EVERYONE.getTranslation(locale)).queue();
+                        channel.sendMessage(locale.getString("INVENTORY_PAY_USER_NOT_ENOUGH_ITEMS_FOR_EVERYONE")).queue();
                         return;
                     }
                     for (int i = 0; i < members.size(); i++) {
@@ -445,29 +444,29 @@ public class InventoryCommand implements ChatCommand {
                         break;
                     }
                     if (paidPeople < members.size()) {
-                        final String template = TranslationKey.INVENTORY_PAY_INTERRUPTED_NOT_ENOUGH_FOR_EVERYONE.getTranslation(locale);
+                        final String template = locale.getString("INVENTORY_PAY_INTERRUPTED_NOT_ENOUGH_FOR_EVERYONE");
                         final List<Member> unpaid = members.subList(paidPeople, members.size());
                         final String names = unpaid.stream().map(Member::getEffectiveName).collect(Collectors.joining(","));
                         channel.sendMessageFormat(template, names).queue();
                         return;
                     }
-                    final String template = TranslationKey.INVENTORY_PAY_ROLE_SUCCESS.getTranslation(locale);
+                    final String template = locale.getString("INVENTORY_PAY_ROLE_SUCCESS");
                     channel.sendMessageFormat(template, itemCount, itemName, members.size()).queue();
                 } catch (SQLException ex) {
                     final List<Member> unpaid = members.subList(paidPeople, members.size());
                     final String names = unpaid.stream().map(Member::getEffectiveName).collect(Collectors.joining(","));
-                    final String template = TranslationKey.INVENTORY_ROLE_SQL_ERROR_ON_PAY.getTranslation(locale);
+                    final String template = locale.getString("INVENTORY_ROLE_SQL_ERROR_ON_PAY");
                     channel.sendMessageFormat(template, names).queue();
                     LOGGER.error("Failure for user to pay items to another: {}", ex.getMessage());
                     LOGGER.trace("Stack trace", ex);
                 }
             }).onError((Throwable t) -> {
-                channel.sendMessage(TranslationKey.INVENTORY_BOT_NO_PERMISSION.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("INVENTORY_BOT_NO_PERMISSION")).queue();
             });
             return;
         }
         //Unknown mode
-        final String template = TranslationKey.INVENTORY_UNKNOWN_MODE.getTranslation(locale);
+        final String template = locale.getString("INVENTORY_UNKNOWN_MODE");
         channel.sendMessageFormat(template, modeName).queue();
     }
 

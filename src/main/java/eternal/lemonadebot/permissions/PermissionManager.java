@@ -26,7 +26,6 @@ package eternal.lemonadebot.permissions;
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.translation.LocaleUpdateListener;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -36,6 +35,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
@@ -52,7 +52,7 @@ public class PermissionManager implements LocaleUpdateListener {
     private final DataSource dataSource;
     private final long guildID;
     private final CommandPermission adminPermission;
-    private volatile Locale locale;
+    private volatile ResourceBundle locale;
 
     /**
      * Constructor
@@ -65,7 +65,7 @@ public class PermissionManager implements LocaleUpdateListener {
         this.dataSource = ds;
         this.guildID = guildID;
         this.adminPermission = new CommandPermission("", MemberRank.ADMIN, guildID);
-        this.locale = locale;
+        this.locale = ResourceBundle.getBundle("Translation", locale);;
     }
 
     /**
@@ -92,7 +92,7 @@ public class PermissionManager implements LocaleUpdateListener {
      */
     @Override
     public void updateLocale(final Locale locale) {
-        this.locale = locale;
+        this.locale = ResourceBundle.getBundle("Translation", locale);
     }
 
     /**
@@ -121,7 +121,7 @@ public class PermissionManager implements LocaleUpdateListener {
      * @return CommandPermission
      */
     public CommandPermission getTemplateRunPermission() {
-        final String key = TranslationKey.TEMPLATE_RUN_ACTION.getTranslation(this.locale);
+        final String key = this.locale.getString("TEMPLATE_RUN_ACTION");
         try {
             final CommandPermission perm = getPermission(key).orElse(this.adminPermission);
             if (key.equals(perm.getAction())) {

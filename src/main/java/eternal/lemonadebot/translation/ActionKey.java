@@ -31,46 +31,46 @@ import javax.annotation.Nullable;
  * @author Neutroni
  */
 public enum ActionKey {
-    ADD(TranslationKey.ACTION_ADD),
-    REMOVE(TranslationKey.ACTION_REMOVE),
-    CREATE(TranslationKey.ACTION_CREATE),
-    DELETE(TranslationKey.ACTION_DELETE),
-    LIST(TranslationKey.ACTION_LIST),
-    SET(TranslationKey.ACTION_SET),
-    GET(TranslationKey.ACTION_GET),
-    JOIN(TranslationKey.ACTION_JOIN),
-    LEAVE(TranslationKey.ACTION_LEAVE),
-    DISABLE(TranslationKey.ACTION_DISABLE),
-    LOCK(TranslationKey.ACTION_LOCK),
-    UNLOCK(TranslationKey.ACTION_UNLOCK),
-    LIST_MEMBERS(TranslationKey.ACTION_MEMBERS),
-    CLEAR(TranslationKey.ACTION_CLEAR),
-    RANDOM(TranslationKey.ACTION_RANDOM),
-    PLAY(TranslationKey.ACTION_PLAY),
-    SEARCH(TranslationKey.ACTION_SEARCH),
-    SKIP(TranslationKey.ACTION_SKIP),
-    PAUSE(TranslationKey.ACTION_PAUSE),
-    STOP(TranslationKey.ACTION_STOP),
-    PREFIX(TranslationKey.ACTION_PREFIX),
-    GREETING(TranslationKey.ACTION_GREETING),
-    LOG_CHANNEL(TranslationKey.ACTION_LOG_CHANNEL),
-    LANGUAGE(TranslationKey.ACTION_LANGUAGE),
-    TIMEZONE(TranslationKey.ACTION_TIMEZONE),
-    COMMANDS(TranslationKey.ACTION_COMMANDS),
-    ALLOW(TranslationKey.ACTION_ALLOW),
-    DISALLOW(TranslationKey.ACTION_DISALLOW),
-    GUILD(TranslationKey.ACTION_GUILD),
-    PAY(TranslationKey.ACTION_PAY),
+    ADD("ACTION_ADD"),
+    REMOVE("ACTION_REMOVE"),
+    CREATE("ACTION_CREATE"),
+    DELETE("ACTION_DELETE"),
+    LIST("ACTION_LIST"),
+    SET("ACTION_SET"),
+    GET("ACTION_GET"),
+    JOIN("ACTION_JOIN"),
+    LEAVE("ACTION_LEAVE"),
+    DISABLE("ACTION_DISABLE"),
+    LOCK("ACTION_LOCK"),
+    UNLOCK("ACTION_UNLOCK"),
+    LIST_MEMBERS("ACTION_MEMBERS"),
+    CLEAR("ACTION_CLEAR"),
+    RANDOM("ACTION_RANDOM"),
+    PLAY("ACTION_PLAY"),
+    SEARCH("ACTION_SEARCH"),
+    SKIP("ACTION_SKIP"),
+    PAUSE("ACTION_PAUSE"),
+    STOP("ACTION_STOP"),
+    PREFIX("ACTION_PREFIX"),
+    GREETING("ACTION_GREETING"),
+    LOG_CHANNEL("ACTION_LOG_CHANNEL"),
+    LANGUAGE("ACTION_LANGUAGE"),
+    TIMEZONE("ACTION_TIMEZONE"),
+    COMMANDS("ACTION_COMMANDS"),
+    ALLOW("ACTION_ALLOW"),
+    DISALLOW("ACTION_DISALLOW"),
+    GUILD("ACTION_GUILD"),
+    PAY("ACTION_PAY"),
     UNKNOWN(null);
 
-    private final TranslationKey translationKey;
+    private final String translationKey;
 
     /**
      * Constructor
      *
      * @param translationKey key
      */
-    ActionKey(final TranslationKey translationKey) {
+    ActionKey(final String translationKey) {
         this.translationKey = translationKey;
     }
 
@@ -80,7 +80,7 @@ public enum ActionKey {
      * @return TranslationKey if action has one, null otherwise
      */
     @Nullable
-    TranslationKey getTranslationKey() {
+    String getTranslationKey() {
         return this.translationKey;
     }
 }

@@ -28,7 +28,6 @@ import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.time.DateTimeException;
 import java.time.ZoneId;
@@ -36,6 +35,7 @@ import java.time.format.TextStyle;
 import java.time.zone.ZoneRulesException;
 import java.util.List;
 import java.util.Locale;
+import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
@@ -51,28 +51,28 @@ public class ConfigCommand extends AdminCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand(final Locale locale) {
-        return TranslationKey.COMMAND_CONFIG.getTranslation(locale);
+    public String getCommand(final ResourceBundle locale) {
+        return locale.getString("COMMAND_CONFIG");
     }
 
     @Override
-    public String getDescription(final Locale locale) {
-        return TranslationKey.DESCRIPTION_CONFIG.getTranslation(locale);
+    public String getDescription(final ResourceBundle locale) {
+        return locale.getString("DESCRIPTION_CONFIG");
     }
 
     @Override
-    public String getHelpText(final Locale locale) {
-        return TranslationKey.SYNTAX_CONFIG.getTranslation(locale);
+    public String getHelpText(final ResourceBundle locale) {
+        return locale.getString("SYNTAX_CONFIG");
     }
 
     @Override
     public void respond(final CommandMatcher message, final GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         final String[] options = message.getArguments(2);
         if (options.length == 0) {
-            channel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("ERROR_MISSING_OPERATION")).queue();
             return;
         }
 
@@ -81,18 +81,18 @@ public class ConfigCommand extends AdminCommand {
         switch (key) {
             case SET: {
                 if (options.length < 2) {
-                    channel.sendMessage(TranslationKey.CONFIG_SET_MISSING_OPTION.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_SET_MISSING_OPTION")).queue();
                     return;
                 }
                 if (options.length < 3) {
-                    channel.sendMessage(TranslationKey.CONFIG_MISSING_VALUE.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_MISSING_VALUE")).queue();
                 }
                 setValue(options[1], options[2], guildData, message);
                 break;
             }
             case GET: {
                 if (options.length < 2) {
-                    channel.sendMessage(TranslationKey.CONFIG_GET_MISSING_OPTION.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_GET_MISSING_OPTION")).queue();
                     return;
                 }
                 getValue(options[1], channel, guildData);
@@ -100,14 +100,14 @@ public class ConfigCommand extends AdminCommand {
             }
             case DISABLE: {
                 if (options.length < 2) {
-                    channel.sendMessage(TranslationKey.CONFIG_DISABLE_MISSING_OPTION.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_DISABLE_MISSING_OPTION")).queue();
                     return;
                 }
                 disableValue(options[1], channel, guildData);
                 break;
             }
             default: {
-                channel.sendMessage(TranslationKey.ERROR_UNKNOWN_OPERATION.getTranslation(locale) + action).queue();
+                channel.sendMessage(locale.getString("ERROR_UNKNOWN_OPERATION") + action).queue();
                 break;
             }
         }
@@ -125,15 +125,15 @@ public class ConfigCommand extends AdminCommand {
         final TextChannel channel = matcher.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildConf.getLocale();
+        final ResourceBundle locale = translationCache.getResourceBundle();
         final ActionKey key = translationCache.getActionKey(config);
         switch (key) {
             case PREFIX: {
                 try {
                     guildConf.setCommandPrefix(value);
-                    channel.sendMessage(TranslationKey.CONFIG_PREFIX_UPDATE_SUCCESS.getTranslation(locale) + value).queue();
+                    channel.sendMessage(locale.getString("CONFIG_PREFIX_UPDATE_SUCCESS") + value).queue();
                 } catch (SQLException ex) {
-                    channel.sendMessage(TranslationKey.CONFIG_PREFIX_SQL_ERROR.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_PREFIX_SQL_ERROR")).queue();
                     LOGGER.error("Failure to update command prefix in database: {}", ex.getMessage());
                     LOGGER.trace("Stack Trace", ex);
                 }
@@ -142,9 +142,9 @@ public class ConfigCommand extends AdminCommand {
             case GREETING: {
                 try {
                     guildConf.setGreetingTemplate(value);
-                    channel.sendMessage(TranslationKey.CONFIG_GREETING_UPDATE_SUCCESS.getTranslation(locale) + value).queue();
+                    channel.sendMessage(locale.getString("CONFIG_GREETING_UPDATE_SUCCESS") + value).queue();
                 } catch (SQLException ex) {
-                    channel.sendMessage(TranslationKey.CONFIG_GREETING_SQL_ERROR.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_GREETING_SQL_ERROR")).queue();
                     LOGGER.error("Failure to update greeting template in database: {}", ex.getMessage());
                     LOGGER.trace("Stack trace", ex);
                 }
@@ -153,15 +153,15 @@ public class ConfigCommand extends AdminCommand {
             case LOG_CHANNEL: {
                 final List<TextChannel> channels = matcher.getMentionedChannels();
                 if (channels.isEmpty()) {
-                    channel.sendMessage(TranslationKey.CONFIG_LOG_CHANNEL_MISSING.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_LOG_CHANNEL_MISSING")).queue();
                     return;
                 }
                 final TextChannel logChannel = channels.get(0);
                 try {
                     guildConf.setLogChannel(logChannel);
-                    channel.sendMessage(TranslationKey.CONFIG_LOG_CHANNEL_UPDATE_SUCCESS.getTranslation(locale) + logChannel.getName()).queue();
+                    channel.sendMessage(locale.getString("CONFIG_LOG_CHANNEL_UPDATE_SUCCESS") + logChannel.getName()).queue();
                 } catch (SQLException ex) {
-                    channel.sendMessage(TranslationKey.CONFIG_LOG_CHANNEL_SQL_ERROR.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_LOG_CHANNEL_SQL_ERROR")).queue();
                     LOGGER.error("Failure to update log channel in database: {}", ex.getMessage());
                     LOGGER.trace("Stack trace", ex);
                 }
@@ -171,16 +171,17 @@ public class ConfigCommand extends AdminCommand {
                 try {
                     final Locale newLocale = new Locale(value);
                     if (guildConf.setLocale(newLocale)) {
-                        channel.sendMessage(TranslationKey.CONFIG_LANGUAGE_UPDATE_SUCCESS.getTranslation(newLocale) + newLocale.getDisplayLanguage(newLocale)).queue();
+                        final ResourceBundle newRB = translationCache.getResourceBundle();
+                        channel.sendMessage(newRB.getString("CONFIG_LANGUAGE_UPDATE_SUCCESS") + newLocale.getDisplayLanguage(newLocale)).queue();
                     } else {
                         final String supportedLanguages = ConfigManager.SUPPORTED_LOCALES.stream().map((t) -> {
-                            return t.getLanguage() + " - " + t.getDisplayLanguage(locale);
+                            return t.getLanguage() + " - " + t.getDisplayLanguage(locale.getLocale());
                         }).collect(Collectors.joining(","));
-                        final String template = TranslationKey.CONFIG_UNSUPPORTED_LOCALE.getTranslation(locale);
+                        final String template = locale.getString("CONFIG_UNSUPPORTED_LOCALE");
                         channel.sendMessageFormat(template, supportedLanguages).queue();
                     }
                 } catch (SQLException ex) {
-                    channel.sendMessage(TranslationKey.CONFIG_LANGUAGE_SQL_ERROR.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_LANGUAGE_SQL_ERROR")).queue();
                     LOGGER.error("Failure to update language in database: {}", ex.getMessage());
                     LOGGER.trace("Stack trace", ex);
                 }
@@ -190,22 +191,22 @@ public class ConfigCommand extends AdminCommand {
                 try {
                     final ZoneId zone = ZoneId.of(value);
                     guildConf.setZoneId(zone);
-                    channel.sendMessage(TranslationKey.CONFIG_TIMEZONE_UPDATE_SUCCESS.getTranslation(locale) + value).queue();
+                    channel.sendMessage(locale.getString("CONFIG_TIMEZONE_UPDATE_SUCCESS") + value).queue();
                 } catch (ZoneRulesException ex) {
                     //Zone could not be found
-                    channel.sendMessage(TranslationKey.CONFIG_TIMEZONE_ZONE_NOT_FOUND.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_TIMEZONE_ZONE_NOT_FOUND")).queue();
                 } catch (DateTimeException ex) {
                     //Invalid format for timezone
-                    channel.sendMessage(TranslationKey.CONFIG_TIMEZONE_ZONE_MALFORMED.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_TIMEZONE_ZONE_MALFORMED")).queue();
                 } catch (SQLException ex) {
-                    channel.sendMessage(TranslationKey.CONFIG_TIMEZONE_SQL_ERROR.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_TIMEZONE_SQL_ERROR")).queue();
                     LOGGER.error("Failure to update command timezone in database: {}", ex.getMessage());
                     LOGGER.trace("Stack Trace", ex);
                 }
                 break;
             }
             default: {
-                channel.sendMessageFormat(TranslationKey.CONFIG_ERROR_UNKNOWN_SETTING.getTranslation(locale), config).queue();
+                channel.sendMessageFormat(locale.getString("CONFIG_ERROR_UNKNOWN_SETTING"), config).queue();
                 break;
             }
         }
@@ -222,18 +223,18 @@ public class ConfigCommand extends AdminCommand {
     private static void getValue(final String option, final TextChannel channel, final GuildDataStore guildData) {
         final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildConf.getLocale();
+        final ResourceBundle locale = translationCache.getResourceBundle();
         final ActionKey key = translationCache.getActionKey(option);
         switch (key) {
             case PREFIX: {
-                channel.sendMessageFormat(TranslationKey.CONFIG_CURRENT_PREFIX.getTranslation(locale), guildConf.getCommandPrefix()).queue();
+                channel.sendMessageFormat(locale.getString("CONFIG_CURRENT_PREFIX"), guildConf.getCommandPrefix()).queue();
                 break;
             }
             case GREETING: {
                 guildConf.getGreetingTemplate().ifPresentOrElse((String greeting) -> {
-                    channel.sendMessageFormat(TranslationKey.CONFIG_CURRENT_GREETING.getTranslation(locale), greeting).queue();
+                    channel.sendMessageFormat(locale.getString("CONFIG_CURRENT_GREETING"), greeting).queue();
                 }, () -> {
-                    channel.sendMessage(TranslationKey.CONFIG_GREETING_DISABLED_CURRENTLY.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_GREETING_DISABLED_CURRENTLY")).queue();
                 });
                 break;
             }
@@ -241,27 +242,28 @@ public class ConfigCommand extends AdminCommand {
                 guildConf.getLogChannelID().ifPresentOrElse((Long channelID) -> {
                     final TextChannel logChannel = channel.getGuild().getTextChannelById(channelID);
                     if (logChannel == null) {
-                        channel.sendMessage(TranslationKey.CONFIG_LOG_CHANNEL_UNKNOWN.getTranslation(locale)).queue();
+                        channel.sendMessage(locale.getString("CONFIG_LOG_CHANNEL_UNKNOWN")).queue();
                     } else {
-                        channel.sendMessageFormat(TranslationKey.CONFIG_CURRENT_LOG_CHANNEL.getTranslation(locale), logChannel.getAsMention()).queue();
+                        channel.sendMessageFormat(locale.getString("CONFIG_CURRENT_LOG_CHANNEL"), logChannel.getAsMention()).queue();
                     }
                 }, () -> {
-                    channel.sendMessage(TranslationKey.CONFIG_LOG_CHANNEL_DISABLED_CURRENTLY.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_LOG_CHANNEL_DISABLED_CURRENTLY")).queue();
                 });
                 break;
             }
             case LANGUAGE: {
-                final String template = TranslationKey.CONFIG_CURRENT_LANGUAGE.getTranslation(locale);
-                channel.sendMessageFormat(template, locale.getDisplayLanguage(locale)).queue();
+                final String template = locale.getString("CONFIG_CURRENT_LANGUAGE");
+                final Locale currentLocale = locale.getLocale();
+                channel.sendMessageFormat(template, currentLocale.getDisplayLanguage(currentLocale)).queue();
                 break;
             }
             case TIMEZONE: {
-                final String template = TranslationKey.CONFIG_CURRENT_TIMEZONE.getTranslation(locale);
-                channel.sendMessageFormat(template, guildConf.getZoneId().getDisplayName(TextStyle.FULL, locale)).queue();
+                final String template = locale.getString("CONFIG_CURRENT_TIMEZONE");
+                channel.sendMessageFormat(template, guildConf.getZoneId().getDisplayName(TextStyle.FULL, locale.getLocale())).queue();
                 break;
             }
             default: {
-                channel.sendMessageFormat(TranslationKey.CONFIG_ERROR_UNKNOWN_SETTING.getTranslation(locale), option).queue();
+                channel.sendMessageFormat(locale.getString("CONFIG_ERROR_UNKNOWN_SETTING"), option).queue();
                 break;
             }
         }
@@ -276,19 +278,19 @@ public class ConfigCommand extends AdminCommand {
     private static void disableValue(final String option, final TextChannel channel, final GuildDataStore guildData) {
         final ConfigManager guildConf = guildData.getConfigManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildConf.getLocale();
+        final ResourceBundle locale = translationCache.getResourceBundle();
         final ActionKey key = translationCache.getActionKey(option);
         switch (key) {
             case PREFIX: {
-                channel.sendMessage(TranslationKey.CONFIG_DISABLE_PREFIX.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("CONFIG_DISABLE_PREFIX")).queue();
                 break;
             }
             case GREETING: {
                 try {
                     guildConf.setGreetingTemplate(null);
-                    channel.sendMessage(TranslationKey.CONFIG_GREETING_DISABLED.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_GREETING_DISABLED")).queue();
                 } catch (SQLException ex) {
-                    channel.sendMessage(TranslationKey.CONFIG_SQL_ERROR_ON_GREETING_DISABLE.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_SQL_ERROR_ON_GREETING_DISABLE")).queue();
                     LOGGER.error("Failure to update greeting template in database: {}", ex.getMessage());
                     LOGGER.trace("Stack trace", ex);
                 }
@@ -297,24 +299,24 @@ public class ConfigCommand extends AdminCommand {
             case LOG_CHANNEL: {
                 try {
                     guildConf.setLogChannel(null);
-                    channel.sendMessage(TranslationKey.CONFIG_LOG_CHANNEL_DISABLED.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_LOG_CHANNEL_DISABLED")).queue();
                 } catch (SQLException ex) {
-                    channel.sendMessage(TranslationKey.CONFIG_SQL_ERROR_ON_LOG_CHANNEL_DISABLE.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("CONFIG_SQL_ERROR_ON_LOG_CHANNEL_DISABLE")).queue();
                     LOGGER.error("Failure to update log channel in database: {}", ex.getMessage());
                     LOGGER.trace("Stack trace", ex);
                 }
                 break;
             }
             case LANGUAGE: {
-                channel.sendMessage(TranslationKey.CONFIG_LANGUAGE_DISABLE.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("CONFIG_LANGUAGE_DISABLE")).queue();
                 break;
             }
             case TIMEZONE: {
-                channel.sendMessage(TranslationKey.CONFIG_TIMEZONE_DISABLE.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("CONFIG_TIMEZONE_DISABLE")).queue();
                 break;
             }
             default: {
-                channel.sendMessage(TranslationKey.CONFIG_ERROR_UNKNOWN_SETTING.getTranslation(locale) + option).queue();
+                channel.sendMessage(locale.getString("CONFIG_ERROR_UNKNOWN_SETTING") + option).queue();
                 break;
             }
         }

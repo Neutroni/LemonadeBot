@@ -23,9 +23,9 @@
  */
 package eternal.lemonadebot.permissions;
 
-import eternal.lemonadebot.translation.TranslationKey;
+import eternal.lemonadebot.translation.TranslationCache;
 import java.text.Collator;
-import java.util.Locale;
+import java.util.ResourceBundle;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 
@@ -38,19 +38,19 @@ public enum MemberRank {
     /**
      * User is anyone on the discord guild that has joined
      */
-    USER(TranslationKey.RANK_USER, TranslationKey.RANK_DESCRIPTION_USER),
+    USER("RANK_USER", "RANK_DESCRIPTION_USER"),
     /**
      * Members on discord have at least one role
      */
-    MEMBER(TranslationKey.RANK_MEMBER, TranslationKey.RANK_DESCRIPTION_MEMBER),
+    MEMBER("RANK_MEMBER", "RANK_DESCRIPTION_MEMBER"),
     /**
      * Admins are the users that have permission manageServer
      */
-    ADMIN(TranslationKey.RANK_ADMIN, TranslationKey.RANK_DESCRIPTION_ADMIN),
+    ADMIN("RANK_ADMIN", "RANK_DESCRIPTION_ADMIN"),
     /**
      * Owner of the server
      */
-    SERVER_OWNER(TranslationKey.RANK_SERVER_OWNER, TranslationKey.RANK_DESCRIPTION_SERVER_OWNER);
+    SERVER_OWNER("RANK_SERVER_OWNER", "RANK_DESCRIPTION_SERVER_OWNER");
 
     /**
      * Get the names and descriptions of rank values in locale
@@ -58,12 +58,12 @@ public enum MemberRank {
      * @param locale Locale to get description in
      * @return Description in locale
      */
-    public static String getLevelDescriptions(final Locale locale) {
+    public static String getLevelDescriptions(final ResourceBundle locale) {
         final StringBuilder sb = new StringBuilder();
         for (final MemberRank p : values()) {
-            sb.append(p.name.getTranslation(locale));
+            sb.append(locale.getString(p.name));
             sb.append(" - ");
-            sb.append(p.desc.getTranslation(locale));
+            sb.append(locale.getString(p.desc));
             sb.append('\n');
         }
         return sb.toString();
@@ -73,14 +73,15 @@ public enum MemberRank {
      * Get rank by translated name
      *
      * @param rankName name of the rank to find
-     * @param locale locale the name is in
-     * @param collator Collator to use to compare rank names
+     * @param translationCache Cache to retrieve translated names from
      * @return MemberRank if found
      * @throws IllegalArgumentException if no matching rank could be found
      */
-    public static MemberRank getByLocalizedName(final String rankName, final Locale locale, final Collator collator) throws IllegalArgumentException {
+    public static MemberRank getByLocalizedName(final String rankName, TranslationCache translationCache) throws IllegalArgumentException {
+        final Collator collator = translationCache.getCollator();
+        final ResourceBundle locale = translationCache.getResourceBundle();
         for (final MemberRank rank : MemberRank.values()) {
-            final String localRankName = rank.getNameKey().getTranslation(locale);
+            final String localRankName = locale.getString(rank.getNameKey());
             if (collator.equals(rankName, localRankName)) {
                 return rank;
             }
@@ -88,10 +89,10 @@ public enum MemberRank {
         throw new IllegalArgumentException("Unknown rank name: " + rankName);
     }
 
-    private final TranslationKey name;
-    private final TranslationKey desc;
+    private final String name;
+    private final String desc;
 
-    MemberRank(final TranslationKey name, final TranslationKey description) {
+    MemberRank(final String name, final String description) {
         this.name = name;
         this.desc = description;
     }
@@ -101,7 +102,7 @@ public enum MemberRank {
      *
      * @return TranslationKey
      */
-    public TranslationKey getNameKey() {
+    public String getNameKey() {
         return this.name;
     }
 

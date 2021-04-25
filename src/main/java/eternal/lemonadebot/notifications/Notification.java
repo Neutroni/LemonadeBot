@@ -28,12 +28,11 @@ import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.SimpleMessageMatcher;
 import eternal.lemonadebot.translation.TranslationCache;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
+import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -150,14 +149,14 @@ class Notification extends CustomCommand implements Runnable {
         return this.activationTime;
     }
 
-    CompletableFuture<String> toListElement(final Locale locale) {
+    CompletableFuture<String> toListElement(final ResourceBundle locale) {
         final CompletableFuture<String> result = new CompletableFuture<>();
 
         //Get the channel for notifications
         final TextChannel channel = this.jda.getTextChannelById(this.channelID);
         if (channel == null) {
             deleteDueToMissingChannel();
-            final String response = TranslationKey.NOTIFICATION_CHANNEL_MISSING.getTranslation(locale);
+            final String response = locale.getString("NOTIFICATION_CHANNEL_MISSING");
             result.complete(String.format(response, getName()));
             return result;
         }
@@ -166,7 +165,7 @@ class Notification extends CustomCommand implements Runnable {
         final DateTimeFormatter timeFormatter = translationCache.getTimeFormatter();
         final String timeString = timeFormatter.format(this.activationTime);
         final String channelName = channel.getAsMention();
-        final String template = TranslationKey.NOTIFICATION_LIST_ELEMENT_TEMPLATE.getTranslation(locale);
+        final String template = locale.getString("NOTIFICATION_LIST_ELEMENT_TEMPLATE");
         this.jda.retrieveUserById(getAuthor()).queue((User notificationOwner) -> {
             //Found notifications owner
             final String ownerName = notificationOwner.getAsMention();
@@ -175,7 +174,7 @@ class Notification extends CustomCommand implements Runnable {
         }, (Throwable t) -> {
             //Notification owner missing
             deleteDueToMissingOwner();
-            final String response = TranslationKey.NOTIFICATION_USER_MISSING.getTranslation(locale);
+            final String response = locale.getString("NOTIFICATION_USER_MISSING");
             result.complete(String.format(response, getName()));
         });
         return result;

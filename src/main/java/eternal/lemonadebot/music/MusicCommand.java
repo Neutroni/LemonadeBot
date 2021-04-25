@@ -38,12 +38,11 @@ import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.concurrent.ConcurrentHashMap;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -72,25 +71,25 @@ public class MusicCommand implements ChatCommand {
     }
 
     @Override
-    public String getCommand(final Locale locale) {
-        return TranslationKey.COMMAND_MUSIC.getTranslation(locale);
+    public String getCommand(final ResourceBundle locale) {
+        return locale.getString("COMMAND_MUSIC");
     }
 
     @Override
-    public String getDescription(final Locale locale) {
-        return TranslationKey.DESCRIPTION_MUSIC.getTranslation(locale);
+    public String getDescription(final ResourceBundle locale) {
+        return locale.getString("DESCRIPTION_MUSIC");
     }
 
     @Override
-    public String getHelpText(final Locale locale) {
-        return TranslationKey.SYNTAX_MUSIC.getTranslation(locale);
+    public String getHelpText(final ResourceBundle locale) {
+        return locale.getString("SYNTAX_MUSIC");
     }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(final Locale locale, final long guildID, final PermissionManager permissions) {
+    public Collection<CommandPermission> getDefaultRanks(final ResourceBundle locale, final long guildID, final PermissionManager permissions) {
         return List.of(
                 new CommandPermission(getCommand(locale), MemberRank.MEMBER, guildID),
-                new CommandPermission(getCommand(locale) + ' ' + TranslationKey.ACTION_LIST.getTranslation(locale), MemberRank.USER, guildID)
+                new CommandPermission(getCommand(locale) + ' ' + locale.getString("ACTION_LIST"), MemberRank.USER, guildID)
         );
     }
 
@@ -98,12 +97,12 @@ public class MusicCommand implements ChatCommand {
     public void respond(final CommandMatcher message, final GuildDataStore guildData) {
         final TextChannel textChannel = message.getTextChannel();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = translationCache.getResourceBundle();
 
         //Get arguments and parse accordingly
         final String[] arguments = message.getArguments(1);
         if (arguments.length == 0) {
-            textChannel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("ERROR_MISSING_OPERATION")).queue();
             return;
         }
 
@@ -121,7 +120,7 @@ public class MusicCommand implements ChatCommand {
             }
             case SEARCH: {
                 if (arguments.length < 2) {
-                    textChannel.sendMessage(TranslationKey.MUSIC_SEARCH_QUERY_MISSING.getTranslation(locale)).queue();
+                    textChannel.sendMessage(locale.getString("MUSIC_SEARCH_QUERY_MISSING")).queue();
                     return;
                 }
                 final String query = arguments[1];
@@ -150,19 +149,19 @@ public class MusicCommand implements ChatCommand {
                 break;
             }
             default: {
-                textChannel.sendMessage(TranslationKey.ERROR_UNKNOWN_OPERATION.getTranslation(locale) + arguments[0]).queue();
+                textChannel.sendMessage(locale.getString("ERROR_UNKNOWN_OPERATION") + arguments[0]).queue();
             }
         }
     }
 
-    private void loadAndPlay(final TextChannel channel, final String trackUrl, final Locale locale) {
+    private void loadAndPlay(final TextChannel channel, final String trackUrl, final ResourceBundle locale) {
         final GuildMusicManager musicManager = getGuildAudioPlayer(channel.getGuild());
 
         this.playerManager.loadItemOrdered(musicManager, trackUrl, new AudioLoadResultHandler() {
             @Override
             public void trackLoaded(final AudioTrack track) {
                 play(channel.getGuild(), musicManager, track);
-                final String template = TranslationKey.MUSIC_ADDED_SONG.getTranslation(locale);
+                final String template = locale.getString("MUSIC_ADDED_SONG");
                 channel.sendMessageFormat(template, track.getInfo().title).queue();
             }
 
@@ -173,7 +172,7 @@ public class MusicCommand implements ChatCommand {
                     for (final AudioTrack tr : playlist.getTracks()) {
                         play(channel.getGuild(), musicManager, tr);
                     }
-                    final String template = TranslationKey.MUSIC_ADDED_PLAYLIST.getTranslation(locale);
+                    final String template = locale.getString("MUSIC_ADDED_PLAYLIST");
                     channel.sendMessageFormat(template, playlist.getName()).queue();
                     return;
                 }
@@ -183,19 +182,19 @@ public class MusicCommand implements ChatCommand {
 
             @Override
             public void noMatches() {
-                final String template = TranslationKey.MUSIC_NOT_FOUND.getTranslation(locale);
+                final String template = locale.getString("MUSIC_NOT_FOUND");
                 channel.sendMessageFormat(template, trackUrl).queue();
             }
 
             @Override
             public void loadFailed(final FriendlyException exception) {
-                final String template = TranslationKey.MUSIC_LOAD_FAILED.getTranslation(locale);
+                final String template = locale.getString("MUSIC_LOAD_FAILED");
                 channel.sendMessageFormat(template, exception.getMessage()).queue();
             }
         });
     }
 
-    private void searchAndPlay(final TextChannel channel, final String queryString, final Locale locale) {
+    private void searchAndPlay(final TextChannel channel, final String queryString, final ResourceBundle locale) {
         final GuildMusicManager musicManager = getGuildAudioPlayer(channel.getGuild());
         final String search = "ytsearch:" + queryString;
 
@@ -203,14 +202,14 @@ public class MusicCommand implements ChatCommand {
             @Override
             public void trackLoaded(final AudioTrack track) {
                 play(channel.getGuild(), musicManager, track);
-                final String template = TranslationKey.MUSIC_ADDED_SONG.getTranslation(locale);
+                final String template = locale.getString("MUSIC_ADDED_SONG");
                 channel.sendMessageFormat(template, track.getInfo().title).queue();
             }
 
             @Override
             public void playlistLoaded(final AudioPlaylist playlist) {
                 final List<AudioTrack> tracks = playlist.getTracks();
-                if(tracks.isEmpty()){
+                if (tracks.isEmpty()) {
                     noMatches();
                     return;
                 }
@@ -220,13 +219,13 @@ public class MusicCommand implements ChatCommand {
 
             @Override
             public void noMatches() {
-                final String template = TranslationKey.MUSIC_NOT_FOUND.getTranslation(locale);
+                final String template = locale.getString("MUSIC_NOT_FOUND");
                 channel.sendMessageFormat(template, queryString).queue();
             }
 
             @Override
             public void loadFailed(final FriendlyException exception) {
-                final String template = TranslationKey.MUSIC_LOAD_FAILED.getTranslation(locale);
+                final String template = locale.getString("MUSIC_LOAD_FAILED");
                 channel.sendMessageFormat(template, exception.getMessage()).queue();
             }
         });
@@ -252,21 +251,21 @@ public class MusicCommand implements ChatCommand {
      * current track
      * @param locale Locale to send replies in
      */
-    private void skipTrack(final TextChannel channel, final String trackUrl, final Locale locale) {
+    private void skipTrack(final TextChannel channel, final String trackUrl, final ResourceBundle locale) {
         final GuildMusicManager musicManager = getGuildAudioPlayer(channel.getGuild());
 
         //Check if the player is playing
         if (musicManager.player.getPlayingTrack() == null) {
-            channel.sendMessage(TranslationKey.MUSIC_SKIP_NO_TRACK_TO_SKIP.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("MUSIC_SKIP_NO_TRACK_TO_SKIP")).queue();
             return;
         }
 
         //No url, skip current track
         if (trackUrl == null) {
             if (musicManager.scheduler.nextTrack()) {
-                channel.sendMessage(TranslationKey.MUSIC_TRACK_SKIPPED.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("MUSIC_TRACK_SKIPPED")).queue();
             } else {
-                channel.sendMessage(TranslationKey.MUSIC_SKIP_PLAYLIST_END.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("MUSIC_SKIP_PLAYLIST_END")).queue();
             }
             return;
         }
@@ -276,10 +275,10 @@ public class MusicCommand implements ChatCommand {
             @Override
             public void trackLoaded(final AudioTrack track) {
                 if (musicManager.scheduler.skipTrack(track)) {
-                    final String template = TranslationKey.MUSIC_TRACK_IN_QUEUE_SKIPPED.getTranslation(locale);
+                    final String template = locale.getString("MUSIC_TRACK_IN_QUEUE_SKIPPED");
                     channel.sendMessageFormat(template, track.getInfo().title).queue();
                 } else {
-                    channel.sendMessage(TranslationKey.MUSIC_SKIP_TRACK_NOT_IN_PLAYLIST.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("MUSIC_SKIP_TRACK_NOT_IN_PLAYLIST")).queue();
                 }
             }
 
@@ -294,10 +293,10 @@ public class MusicCommand implements ChatCommand {
                         }
                     }
                     if (skipped) {
-                        final String template = TranslationKey.MUSIC_SKIPPED_PLAYLIST.getTranslation(locale);
+                        final String template = locale.getString("MUSIC_SKIPPED_PLAYLIST");
                         channel.sendMessageFormat(template, playlist.getName()).queue();
                     } else {
-                        channel.sendMessage(TranslationKey.MUSIC_SKIP_SONGS_NOT_FOUND.getTranslation(locale)).queue();
+                        channel.sendMessage(locale.getString("MUSIC_SKIP_SONGS_NOT_FOUND")).queue();
                     }
                     return;
                 }
@@ -306,22 +305,22 @@ public class MusicCommand implements ChatCommand {
                 final AudioTrack selectedTrack = playlist.getSelectedTrack();
                 final boolean skipped = musicManager.scheduler.skipTrack(selectedTrack);
                 if (skipped) {
-                    final String template = TranslationKey.MUSIC_SKIP_SONG.getTranslation(locale);
+                    final String template = locale.getString("MUSIC_SKIP_SONG");
                     channel.sendMessageFormat(template, playlist.getName()).queue();
                 } else {
-                    channel.sendMessage(TranslationKey.MUSIC_SKIP_TRACK_NOT_IN_PLAYLIST.getTranslation(locale)).queue();
+                    channel.sendMessage(locale.getString("MUSIC_SKIP_TRACK_NOT_IN_PLAYLIST")).queue();
                 }
             }
 
             @Override
             public void noMatches() {
-                final String template = TranslationKey.MUSIC_NOT_FOUND.getTranslation(locale);
+                final String template = locale.getString("MUSIC_NOT_FOUND");
                 channel.sendMessageFormat(template, trackUrl).queue();
             }
 
             @Override
             public void loadFailed(final FriendlyException exception) {
-                final String template = TranslationKey.MUSIC_SKIP_FAILED.getTranslation(locale);
+                final String template = locale.getString("MUSIC_SKIP_FAILED");
                 channel.sendMessageFormat(template, exception.getMessage()).queue();
             }
         });
@@ -333,10 +332,10 @@ public class MusicCommand implements ChatCommand {
      * @param textChannel textChannel for request
      * @param locale Locale to respond in
      */
-    private void pauseTrack(final TextChannel textChannel, final Locale locale) {
+    private void pauseTrack(final TextChannel textChannel, final ResourceBundle locale) {
         final GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
         musicManager.player.setPaused(true);
-        textChannel.sendMessage(TranslationKey.MUSIC_PLAYBACK_PAUSED.getTranslation(locale)).queue();
+        textChannel.sendMessage(locale.getString("MUSIC_PLAYBACK_PAUSED")).queue();
     }
 
     /**
@@ -345,10 +344,10 @@ public class MusicCommand implements ChatCommand {
      * @param textChannel channel for the request
      * @param locale Locale to respond in
      */
-    private void resumeTrack(final TextChannel textChannel, final Locale locale) {
+    private void resumeTrack(final TextChannel textChannel, final ResourceBundle locale) {
         final GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
         musicManager.player.setPaused(false);
-        textChannel.sendMessage(TranslationKey.MUSIC_PLAYBACK_RESUMED.getTranslation(locale)).queue();
+        textChannel.sendMessage(locale.getString("MUSIC_PLAYBACK_RESUMED")).queue();
     }
 
     /**
@@ -357,11 +356,11 @@ public class MusicCommand implements ChatCommand {
      * @param textChannel channel for request
      * @param locale Locale to respond in
      */
-    private void stopTrack(final TextChannel textChannel, final Locale locale) {
+    private void stopTrack(final TextChannel textChannel, final ResourceBundle locale) {
         final GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
         musicManager.player.stopTrack();
         musicManager.scheduler.clearPlaylist();
-        textChannel.sendMessage(TranslationKey.MUSIC_PLAYBACK_STOPPED.getTranslation(locale)).queue();
+        textChannel.sendMessage(locale.getString("MUSIC_PLAYBACK_STOPPED")).queue();
     }
 
     /**
@@ -370,20 +369,20 @@ public class MusicCommand implements ChatCommand {
      * @param textChannel channel to respond on
      * @param locale Locale to print playlist in
      */
-    private void showPlaylist(final TextChannel textChannel, final Locale locale) {
+    private void showPlaylist(final TextChannel textChannel, final ResourceBundle locale) {
         final GuildMusicManager musicManager = getGuildAudioPlayer(textChannel.getGuild());
         final List<AudioTrack> playlist = musicManager.scheduler.getPlaylist();
         final EmbedBuilder eb = new EmbedBuilder();
 
         final AudioTrack currentTrack = musicManager.player.getPlayingTrack();
         if (currentTrack == null) {
-            eb.setTitle(TranslationKey.MUSIC_PLAYLIST_EMPTY.getTranslation(locale));
-            eb.setDescription(TranslationKey.MUSIC_HELP_ADD_MUSIC.getTranslation(locale));
+            eb.setTitle(locale.getString("MUSIC_PLAYLIST_EMPTY"));
+            eb.setDescription(locale.getString("MUSIC_HELP_ADD_MUSIC"));
             textChannel.sendMessage(eb.build()).queue();
             return;
         }
 
-        eb.setTitle(TranslationKey.MUSIC_CURRENTLY_PLAYING.getTranslation(locale));
+        eb.setTitle(locale.getString("MUSIC_CURRENTLY_PLAYING"));
         eb.setDescription(" " + currentTrack.getInfo().title);
 
         //Get upcoming songs
@@ -396,10 +395,10 @@ public class MusicCommand implements ChatCommand {
 
         //Check if there is any songs in playlist
         if (playlist.isEmpty()) {
-            sb.append(TranslationKey.MUSIC_END_OF_PLAYLIST.getTranslation(locale));
+            sb.append(locale.getString("MUSIC_END_OF_PLAYLIST"));
         }
 
-        final String fieldName = TranslationKey.MUSIC_UPCOMING_SONGS.getTranslation(locale);
+        final String fieldName = locale.getString("MUSIC_UPCOMING_SONGS");
         final MessageEmbed.Field upcomingSongsField = new MessageEmbed.Field(fieldName, sb.toString(), false);
         eb.addField(upcomingSongsField);
 
@@ -411,9 +410,9 @@ public class MusicCommand implements ChatCommand {
         final long hoursRemaining = playlistDuration.toHours();
         final int minutesPart = playlistDuration.toMinutesPart();
         final int secondsPart = playlistDuration.toSecondsPart();
-        final String durationTemplate = TranslationKey.MUSIC_DURATION_TEMPLATE.getTranslation(locale);
+        final String durationTemplate = locale.getString("MUSIC_DURATION_TEMPLATE");
         final String durationString = String.format(durationTemplate, hoursRemaining, minutesPart, secondsPart);
-        final String playlistLength = TranslationKey.MUSIC_PLAYLIST_LENGTH.getTranslation(locale);
+        final String playlistLength = locale.getString("MUSIC_PLAYLIST_LENGTH");
         final MessageEmbed.Field playlistLengthField = new MessageEmbed.Field(playlistLength, durationString, false);
         eb.addField(playlistLengthField);
 

@@ -30,12 +30,11 @@ import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.PermissionManager;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Member;
@@ -75,7 +74,7 @@ public class CustomCommand implements ChatCommand {
      * @return Command name
      */
     @Override
-    public String getCommand(final Locale locale) {
+    public String getCommand(final ResourceBundle locale) {
         return this.commandName;
     }
 
@@ -89,18 +88,18 @@ public class CustomCommand implements ChatCommand {
     }
 
     @Override
-    public String getDescription(final Locale locale) {
-        return TranslationKey.DESCRIPTION_CUSTOMCOMMAND.getTranslation(locale);
+    public String getDescription(final ResourceBundle locale) {
+        return locale.getString("DESCRIPTION_CUSTOMCOMMAND");
     }
 
     @Override
-    public String getHelpText(final Locale locale) {
-        final String template = TranslationKey.SYNTAX_CUSTOMCOMMAND.getTranslation(locale);
+    public String getHelpText(final ResourceBundle locale) {
+        final String template = locale.getString("SYNTAX_CUSTOMCOMMAND");
         return String.format(template, this.actionTemplate);
     }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(final Locale locale, final long guildID, final PermissionManager permissions) {
+    public Collection<CommandPermission> getDefaultRanks(final ResourceBundle locale, final long guildID, final PermissionManager permissions) {
         final CommandPermission rankRole = permissions.getTemplateRunPermission();
         return List.of(new CommandPermission(getName(), rankRole.getRequiredRank(), rankRole.getRequiredRoleID()));
     }
@@ -127,12 +126,12 @@ public class CustomCommand implements ChatCommand {
     public void respond(final CommandMatcher message, final GuildDataStore guildData) {
         final TextChannel channel = message.getTextChannel();
         final CharSequence response = TemplateProvider.parseAction(message, guildData, this.actionTemplate);
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
 
         //Check if message is empty
         final String commandString = response.toString();
         if (commandString.isBlank()) {
-            channel.sendMessage(TranslationKey.ERROR_TEMPLATE_EMPTY.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("ERROR_TEMPLATE_EMPTY")).queue();
             return;
         }
 
@@ -147,14 +146,14 @@ public class CustomCommand implements ChatCommand {
         final CommandProvider commands = guildData.getCommandProvider();
         final Optional<ChatCommand> optCommand = commands.getAction(fakeMatcher);
         if (optCommand.isEmpty()) {
-            channel.sendMessage(TranslationKey.ERROR_COMMAND_NOT_FOUND.getTranslation(locale) + commandString).queue();
+            channel.sendMessage(locale.getString("ERROR_COMMAND_NOT_FOUND") + commandString).queue();
             return;
         }
 
         //Check if command is custom command, do not allow recursion
         final ChatCommand command = optCommand.get();
         if (command instanceof CustomCommand) {
-            channel.sendMessage(TranslationKey.ERROR_RECURSION_NOT_PERMITTED.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("ERROR_RECURSION_NOT_PERMITTED")).queue();
             return;
         }
 
@@ -162,7 +161,7 @@ public class CustomCommand implements ChatCommand {
         final Member member = message.getMember();
         final PermissionManager permissions = guildData.getPermissionManager();
         if (!permissions.hasPermission(member, command, commandString)) {
-            channel.sendMessage(TranslationKey.ERROR_INSUFFICIENT_PERMISSION.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("ERROR_INSUFFICIENT_PERMISSION")).queue();
             return;
         }
 
@@ -170,7 +169,7 @@ public class CustomCommand implements ChatCommand {
         final CooldownManager cdm = guildData.getCooldownManager();
         cdm.checkCooldown(member, commandString).ifPresentOrElse((Duration remainingCooldown) -> {
             final String currentCooldown = CooldownManager.formatDuration(remainingCooldown, locale);
-            final String template = TranslationKey.ERROR_COMMAND_COOLDOWN_TIME.getTranslation(locale);
+            final String template = locale.getString("ERROR_COMMAND_COOLDOWN_TIME");
             channel.sendMessage(template + currentCooldown).queue();
         }, () -> {
             command.respond(fakeMatcher, guildData);
@@ -198,16 +197,16 @@ public class CustomCommand implements ChatCommand {
      * @param jda JDA to use to get command owner
      * @return String
      */
-    public CompletableFuture<String> toListElement(final Locale locale, final JDA jda) {
+    public CompletableFuture<String> toListElement(final ResourceBundle locale, final JDA jda) {
         final CompletableFuture<String> result = new CompletableFuture<>();
-        final String template = TranslationKey.TEMPLATE_COMMAND_LIST_ELEMENT.getTranslation(locale);
+        final String template = locale.getString("TEMPLATE_COMMAND_LIST_ELEMENT");
         jda.retrieveUserById(this.author).queue((User commandOwner) -> {
             //Found user
             final String creatorName = commandOwner.getAsMention();
             result.complete(String.format(template, this.commandName, creatorName));
         }, (Throwable t) -> {
             //User missing
-            final String creatorName = TranslationKey.UNKNOWN_USER.getTranslation(locale);
+            final String creatorName = locale.getString("UNKNOWN_USER");
             result.complete(String.format(template, this.commandName, creatorName));
         });
         return result;

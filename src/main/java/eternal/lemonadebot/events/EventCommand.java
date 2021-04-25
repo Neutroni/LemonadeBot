@@ -32,14 +32,13 @@ import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -62,22 +61,22 @@ public class EventCommand implements ChatCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand(final Locale locale) {
-        return TranslationKey.COMMAND_EVENT.getTranslation(locale);
+    public String getCommand(final ResourceBundle locale) {
+        return locale.getString("COMMAND_EVENT");
     }
 
     @Override
-    public String getDescription(final Locale locale) {
-        return TranslationKey.DESCRIPTION_EVENT.getTranslation(locale);
+    public String getDescription(final ResourceBundle locale) {
+        return locale.getString("DESCRIPTION_EVENT");
     }
 
     @Override
-    public String getHelpText(final Locale locale) {
-        return TranslationKey.SYNTAX_EVENT.getTranslation(locale);
+    public String getHelpText(final ResourceBundle locale) {
+        return locale.getString("SYNTAX_EVENT");
     }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(final Locale locale, final long guildID, final PermissionManager permissions) {
+    public Collection<CommandPermission> getDefaultRanks(final ResourceBundle locale, final long guildID, final PermissionManager permissions) {
         return List.of(new CommandPermission(getCommand(locale), MemberRank.MEMBER, guildID));
     }
 
@@ -85,11 +84,11 @@ public class EventCommand implements ChatCommand {
     public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = translationCache.getResourceBundle();
 
         final String[] opts = matcher.getArguments(2);
         if (opts.length == 0) {
-            textChannel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("ERROR_MISSING_OPERATION")).queue();
             return;
         }
 
@@ -138,7 +137,7 @@ public class EventCommand implements ChatCommand {
                 return;
             }
             default: {
-                textChannel.sendMessage(TranslationKey.ERROR_UNKNOWN_OPERATION.getTranslation(locale) + action).queue();
+                textChannel.sendMessage(locale.getString("ERROR_UNKNOWN_OPERATION") + action).queue();
             }
         }
     }
@@ -146,10 +145,10 @@ public class EventCommand implements ChatCommand {
     private static void createEvent(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
         final Member sender = matcher.getMember();
         final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         final EventManager events = guildData.getEventManager();
         if (opts.length < 2) {
-            textChannel.sendMessage(TranslationKey.EVENT_CREATE_MISSING_NAME.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_CREATE_MISSING_NAME")).queue();
             return;
         }
         final String eventName = opts[1];
@@ -163,16 +162,16 @@ public class EventCommand implements ChatCommand {
 
         try {
             if (!events.addEvent(newEvent)) {
-                textChannel.sendMessage(TranslationKey.EVENT_ALREADY_EXISTS.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("EVENT_ALREADY_EXISTS")).queue();
                 return;
             }
             if (!events.joinEvent(newEvent, sender)) {
-                textChannel.sendMessage(TranslationKey.EVENT_CREATE_JOIN_FAILED.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("EVENT_CREATE_JOIN_FAILED")).queue();
                 return;
             }
-            textChannel.sendMessage(TranslationKey.EVENT_CREATE_SUCCESS.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_CREATE_SUCCESS")).queue();
         } catch (SQLException ex) {
-            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_CREATE.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_CREATE")).queue();
             LOGGER.error("Failure to create event: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);
         }
@@ -182,9 +181,9 @@ public class EventCommand implements ChatCommand {
         final Member sender = matcher.getMember();
         final TextChannel textChannel = matcher.getTextChannel();
         final EventManager events = guildData.getEventManager();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         if (opts.length < 2) {
-            textChannel.sendMessage(TranslationKey.EVENT_DELETE_MISSING_NAME.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_DELETE_MISSING_NAME")).queue();
             return;
         }
         final String eventName = opts[1];
@@ -194,11 +193,11 @@ public class EventCommand implements ChatCommand {
         try {
             oldEvent = events.getEvent(eventName);
         } catch (SQLException e) {
-            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_FINDING_EVENT")).queue();
             return;
         }
         if (oldEvent.isEmpty()) {
-            textChannel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
+            textChannel.sendMessageFormat(locale.getString("EVENT_NOT_FOUND_WITH_NAME"), eventName).queue();
             return;
         }
         final Event event = oldEvent.get();
@@ -206,14 +205,14 @@ public class EventCommand implements ChatCommand {
             //Check if user has permission to remove the event
             final boolean hasPermission = PermissionUtilities.hasPermission(sender, eventOwner);
             if (!hasPermission) {
-                textChannel.sendMessage(TranslationKey.EVENT_REMOVE_PERMISSION_DENIED.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("EVENT_REMOVE_PERMISSION_DENIED")).queue();
                 return;
             }
             try {
                 events.removeEvent(event);
-                textChannel.sendMessage(TranslationKey.EVENT_REMOVED_SUCCESFULLY.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("EVENT_REMOVED_SUCCESFULLY")).queue();
             } catch (SQLException ex) {
-                textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_REMOVE.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_REMOVE")).queue();
                 LOGGER.error("Failure to remove event: {}", ex.getMessage());
                 LOGGER.trace("Stack trace", ex);
             }
@@ -223,11 +222,11 @@ public class EventCommand implements ChatCommand {
 
     private static void joinEvent(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         final Member sender = matcher.getMember();
 
         if (opts.length < 2) {
-            textChannel.sendMessage(TranslationKey.EVENT_JOIN_MISSING_NAME.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_JOIN_MISSING_NAME")).queue();
             return;
         }
         final String eventName = opts[1];
@@ -238,29 +237,29 @@ public class EventCommand implements ChatCommand {
         try {
             oldEvent = events.getEvent(eventName);
         } catch (SQLException e) {
-            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_FINDING_EVENT")).queue();
             return;
         }
         if (oldEvent.isEmpty()) {
-            textChannel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
+            textChannel.sendMessageFormat(locale.getString("EVENT_NOT_FOUND_WITH_NAME"), eventName).queue();
             return;
         }
 
         //Check if event is locked
         final Event event = oldEvent.get();
         if (event.isLocked()) {
-            textChannel.sendMessage(TranslationKey.EVENT_JOIN_LOCKED.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_JOIN_LOCKED")).queue();
             return;
         }
 
         try {
             if (events.joinEvent(event, sender)) {
-                textChannel.sendMessage(TranslationKey.EVENT_JOIN_SUCCESS.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("EVENT_JOIN_SUCCESS")).queue();
                 return;
             }
-            textChannel.sendMessage(TranslationKey.EVENT_JOIN_ALREADY_JOINED.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_JOIN_ALREADY_JOINED")).queue();
         } catch (SQLException ex) {
-            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_JOIN.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_JOIN")).queue();
             LOGGER.error("Failure to join event: {}\n{}", eventName, ex.getMessage());
             LOGGER.trace("Stack trace", ex);
         }
@@ -268,11 +267,11 @@ public class EventCommand implements ChatCommand {
 
     private static void leaveEvent(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         final Member sender = matcher.getMember();
 
         if (opts.length < 2) {
-            textChannel.sendMessage(TranslationKey.EVENT_LEAVE_MISSING_NAME.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_LEAVE_MISSING_NAME")).queue();
             return;
         }
         final String eventName = opts[1];
@@ -283,30 +282,30 @@ public class EventCommand implements ChatCommand {
         try {
             oldEvent = events.getEvent(eventName);
         } catch (SQLException e) {
-            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_FINDING_EVENT")).queue();
             return;
         }
         if (oldEvent.isEmpty()) {
-            textChannel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
+            textChannel.sendMessageFormat(locale.getString("EVENT_NOT_FOUND_WITH_NAME"), eventName).queue();
             return;
         }
 
         //Check if event is locked
         final Event event = oldEvent.get();
         if (event.isLocked()) {
-            textChannel.sendMessage(TranslationKey.EVENT_LEAVE_LOCKED.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_LEAVE_LOCKED")).queue();
             return;
         }
 
         //Leave the event
         try {
             if (events.leaveEvent(event, sender.getIdLong())) {
-                textChannel.sendMessage(TranslationKey.EVENT_LEAVE_SUCCESS.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("EVENT_LEAVE_SUCCESS")).queue();
                 return;
             }
-            textChannel.sendMessage(TranslationKey.EVENT_LEAVE_ALREADY_LEFT.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_LEAVE_ALREADY_LEFT")).queue();
         } catch (SQLException ex) {
-            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_LEAVE.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_LEAVE")).queue();
             LOGGER.error("Failure to leave event: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);
         }
@@ -314,10 +313,10 @@ public class EventCommand implements ChatCommand {
 
     private static void showEventMembers(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
 
         if (opts.length < 2) {
-            textChannel.sendMessage(TranslationKey.EVENT_SHOW_MEMBERS_MISSING_NAME.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_SHOW_MEMBERS_MISSING_NAME")).queue();
             return;
         }
         final String eventName = opts[1];
@@ -328,11 +327,11 @@ public class EventCommand implements ChatCommand {
         try {
             opt = events.getEvent(eventName);
         } catch (SQLException e) {
-            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_FINDING_EVENT")).queue();
             return;
         }
         if (opt.isEmpty()) {
-            textChannel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
+            textChannel.sendMessageFormat(locale.getString("EVENT_NOT_FOUND_WITH_NAME"), eventName).queue();
             return;
         }
         final Event event = opt.get();
@@ -340,11 +339,11 @@ public class EventCommand implements ChatCommand {
         try {
             eventMemberIDs = events.getMembers(event);
         } catch (SQLException e) {
-            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_LOADING_MEMBERS.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_LOADING_MEMBERS")).queue();
             return;
         }
 
-        final String header = String.format(TranslationKey.HEADER_EVENT_MEMBERS.getTranslation(locale), eventName);
+        final String header = String.format(locale.getString("HEADER_EVENT_MEMBERS"), eventName);
         batchMemberList(eventMemberIDs).forEach((List<Long> idBatch) -> {
             textChannel.getGuild().retrieveMembersByIds(false, idBatch).onSuccess((List<Member> foundMembersList) -> {
                 final EmbedBuilder eb = new EmbedBuilder();
@@ -356,7 +355,7 @@ public class EventCommand implements ChatCommand {
                 //Did not find any event members
                 if (foundMembersList.isEmpty()) {
                     //If any batch returns empty this might appear without reason
-                    eb.setDescription(TranslationKey.EVENT_NO_MEMBERS.getTranslation(locale));
+                    eb.setDescription(locale.getString("EVENT_NO_MEMBERS"));
                 } else {
                     eb.setDescription(mentions);
                 }
@@ -373,11 +372,11 @@ public class EventCommand implements ChatCommand {
 
     private static void clearEventMembers(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         final Member sender = matcher.getMember();
 
         if (opts.length < 2) {
-            textChannel.sendMessage(TranslationKey.EVENT_CLEAR_MISSING_NAME.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_CLEAR_MISSING_NAME")).queue();
             return;
         }
         final String eventName = opts[1];
@@ -388,23 +387,23 @@ public class EventCommand implements ChatCommand {
         try {
             opt = events.getEvent(eventName);
         } catch (SQLException e) {
-            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_FINDING_EVENT")).queue();
             return;
         }
         if (opt.isEmpty()) {
-            textChannel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
+            textChannel.sendMessageFormat(locale.getString("EVENT_NOT_FOUND_WITH_NAME"), eventName).queue();
             return;
         }
         final Event event = opt.get();
         if (event.getOwner() != sender.getIdLong()) {
-            textChannel.sendMessage(TranslationKey.EVENT_CLEAR_PERMISSION_DENIED.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_CLEAR_PERMISSION_DENIED")).queue();
             return;
         }
         try {
             events.clearEvent(event);
-            textChannel.sendMessage(TranslationKey.EVENT_CLEAR_SUCCESS.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_CLEAR_SUCCESS")).queue();
         } catch (SQLException ex) {
-            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_CLEAR.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_CLEAR")).queue();
             LOGGER.error("Failure to clear event: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);
         }
@@ -412,18 +411,18 @@ public class EventCommand implements ChatCommand {
 
     private static void listEvents(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         final EventManager eventManager = guildData.getEventManager();
 
         final EmbedBuilder eb = new EmbedBuilder();
-        eb.setTitle(TranslationKey.HEADER_EVENTS.getTranslation(locale));
+        eb.setTitle(locale.getString("HEADER_EVENTS"));
 
         //Get the list of events
         final Collection<Event> ev;
         try {
             ev = eventManager.getEvents();
         } catch (SQLException e) {
-            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_LOADING_EVENTS.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_LOADING_EVENTS")).queue();
             return;
         }
         final List<CompletableFuture<String>> futures = new ArrayList<>(ev.size());
@@ -436,7 +435,7 @@ public class EventCommand implements ChatCommand {
             contentBuilder.append(desc.join());
         });
         if (ev.isEmpty()) {
-            contentBuilder.append(TranslationKey.EVENT_NO_EVENTS.getTranslation(locale));
+            contentBuilder.append(locale.getString("EVENT_NO_EVENTS"));
         }
         eb.setDescription(contentBuilder);
         textChannel.sendMessage(eb.build()).queue();
@@ -444,10 +443,10 @@ public class EventCommand implements ChatCommand {
 
     private static void pickRandomEventMember(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel channel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
 
         if (opts.length < 2) {
-            channel.sendMessage(TranslationKey.EVENT_PICK_RANDOM_MISSING_NAME.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("EVENT_PICK_RANDOM_MISSING_NAME")).queue();
             return;
         }
         final String eventName = opts[1];
@@ -457,18 +456,18 @@ public class EventCommand implements ChatCommand {
         try {
             final Optional<Member> optMember = events.getRandomMember(eventName, guild);
             optMember.ifPresentOrElse((Member member) -> {
-                final String template = TranslationKey.EVENT_SELECTED_MEMBER.getTranslation(locale);
+                final String template = locale.getString("EVENT_SELECTED_MEMBER");
                 channel.sendMessageFormat(template, member.getEffectiveName()).queue();
             }, () -> {
-                channel.sendMessage(TranslationKey.EVENT_NO_MEMBERS.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("EVENT_NO_MEMBERS")).queue();
             });
         } catch (NoSuchElementException e) {
             //Could not find event with provided name
-            final String template = TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale);
+            final String template = locale.getString("EVENT_NOT_FOUND_WITH_NAME");
             channel.sendMessageFormat(template, eventName).queue();
         } catch (SQLException e) {
             //Database failed to retrieve event or members for event
-            channel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_FINDING_EVENT")).queue();
         }
     }
 
@@ -481,9 +480,9 @@ public class EventCommand implements ChatCommand {
      */
     private static void lockEvent(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel channel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         if (opts.length < 2) {
-            channel.sendMessage(TranslationKey.EVENT_LOCK_MISSING_NAME.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("EVENT_LOCK_MISSING_NAME")).queue();
             return;
         }
         final String eventName = opts[1];
@@ -494,16 +493,16 @@ public class EventCommand implements ChatCommand {
         try {
             oldEvent = events.getEvent(eventName);
         } catch (SQLException e) {
-            channel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_FINDING_EVENT")).queue();
             return;
         }
         if (oldEvent.isEmpty()) {
-            channel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
+            channel.sendMessageFormat(locale.getString("EVENT_NOT_FOUND_WITH_NAME"), eventName).queue();
             return;
         }
         final Event event = oldEvent.get();
         if (event.isLocked()) {
-            channel.sendMessage(TranslationKey.EVENT_ALREADY_LOCKED.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("EVENT_ALREADY_LOCKED")).queue();
             return;
         }
         channel.getGuild().retrieveMemberById(event.getOwner()).submit().whenComplete((Member eventOwner, Throwable error) -> {
@@ -511,14 +510,14 @@ public class EventCommand implements ChatCommand {
             final Member sender = matcher.getMember();
             final boolean hasPermission = PermissionUtilities.hasPermission(sender, eventOwner);
             if (!hasPermission) {
-                channel.sendMessage(TranslationKey.EVENT_LOCK_PERMISSION_DENIED.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("EVENT_LOCK_PERMISSION_DENIED")).queue();
                 return;
             }
             try {
                 events.lockEvent(event);
-                channel.sendMessage(TranslationKey.EVENT_LOCKED_SUCCESFULLY.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("EVENT_LOCKED_SUCCESFULLY")).queue();
             } catch (SQLException ex) {
-                channel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_LOCK.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_LOCK")).queue();
                 LOGGER.error("Failure to lock event: {}", ex.getMessage());
                 LOGGER.trace("Stack trace", ex);
             }
@@ -536,9 +535,9 @@ public class EventCommand implements ChatCommand {
         final Member sender = matcher.getMember();
         final TextChannel textChannel = matcher.getTextChannel();
         final EventManager events = guildData.getEventManager();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         if (opts.length < 2) {
-            textChannel.sendMessage(TranslationKey.EVENT_UNLOCK_MISSING_NAME.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_UNLOCK_MISSING_NAME")).queue();
             return;
         }
         final String eventName = opts[1];
@@ -548,18 +547,18 @@ public class EventCommand implements ChatCommand {
         try {
             oldEvent = events.getEvent(eventName);
         } catch (SQLException e) {
-            textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_FINDING_EVENT.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_FINDING_EVENT")).queue();
             return;
         }
         if (oldEvent.isEmpty()) {
-            textChannel.sendMessageFormat(TranslationKey.EVENT_NOT_FOUND_WITH_NAME.getTranslation(locale), eventName).queue();
+            textChannel.sendMessageFormat(locale.getString("EVENT_NOT_FOUND_WITH_NAME"), eventName).queue();
             return;
         }
 
         //Check if event is locked
         final Event event = oldEvent.get();
         if (!event.isLocked()) {
-            textChannel.sendMessage(TranslationKey.EVENT_ALREADY_UNLOCKED.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("EVENT_ALREADY_UNLOCKED")).queue();
             return;
         }
 
@@ -568,14 +567,14 @@ public class EventCommand implements ChatCommand {
             //Check if user has permission to remove the event
             final boolean hasPermission = PermissionUtilities.hasPermission(sender, eventOwner);
             if (!hasPermission) {
-                textChannel.sendMessage(TranslationKey.EVENT_UNLOCK_PERMISSION_DENIED.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("EVENT_UNLOCK_PERMISSION_DENIED")).queue();
                 return;
             }
             try {
                 events.unlockEvent(event);
-                textChannel.sendMessage(TranslationKey.EVENT_UNLOCKED_SUCCESFULLY.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("EVENT_UNLOCKED_SUCCESFULLY")).queue();
             } catch (SQLException ex) {
-                textChannel.sendMessage(TranslationKey.EVENT_SQL_ERROR_ON_UNLOCK.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_UNLOCK")).queue();
                 LOGGER.error("Failure to unlock event: {}", ex.getMessage());
                 LOGGER.trace("Stack trace", ex);
             }

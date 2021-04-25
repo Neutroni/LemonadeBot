@@ -26,8 +26,8 @@ package eternal.lemonadebot.keywords;
 import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.util.Locale;
+import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -93,16 +93,16 @@ public class KeywordAction extends CustomCommand {
     }
 
     @Override
-    public CompletableFuture<String> toListElement(final Locale locale, final JDA jda) {
+    public CompletableFuture<String> toListElement(final ResourceBundle locale, final JDA jda) {
         final CompletableFuture<String> result = new CompletableFuture<>();
-        final String template = TranslationKey.KEYWORD_COMMAND_LIST_ELEMENT.getTranslation(locale);
+        final String template = locale.getString("KEYWORD_COMMAND_LIST_ELEMENT");
         jda.retrieveUserById(getAuthor()).queue((User commandOwner) -> {
             //Found user
             final String creatorName = commandOwner.getAsMention();
             result.complete(String.format(template, getName(), getPatternString(), creatorName));
         }, (Throwable t) -> {
             //User missing
-            final String creatorName = TranslationKey.UNKNOWN_USER.getTranslation(locale);
+            final String creatorName = locale.getString("UNKNOWN_USER");
             result.complete(String.format(template, getName(), getPatternString(), creatorName));
         });
         return result;

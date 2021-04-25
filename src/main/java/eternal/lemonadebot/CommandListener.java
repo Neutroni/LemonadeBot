@@ -32,10 +32,9 @@ import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.MessageMatcher;
 import eternal.lemonadebot.permissions.PermissionManager;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
@@ -99,7 +98,7 @@ public class CommandListener extends ListenerAdapter {
         final Message message = event.getMessage();
         final GuildDataStore guildData = this.db.getGuildData(eventGuild);
         final ConfigManager configManager = guildData.getConfigManager();
-        final Locale locale = configManager.getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         final List<Member> mentionedMembers = message.getMentionedMembers();
         if (mentionedMembers.size() == 1 && mentionedMembers.contains(selfMember)) {
             //Check that the message is just the mention and possibly whitespace
@@ -113,9 +112,9 @@ public class CommandListener extends ListenerAdapter {
             mentionMatcher.appendTail(sb);
             if (sb.toString().isBlank()) {
                 final MessageBuilder responseBuilder = new MessageBuilder();
-                responseBuilder.appendFormat(TranslationKey.BOT_VERSION.getTranslation(locale), LemonadeBot.BOT_VERSION);
+                responseBuilder.appendFormat(locale.getString("BOT_VERSION"), LemonadeBot.BOT_VERSION);
                 responseBuilder.append('\n');
-                responseBuilder.appendFormat(TranslationKey.PREFIX_CURRENT_VALUE.getTranslation(locale), configManager.getCommandPrefix());
+                responseBuilder.appendFormat(locale.getString("PREFIX_CURRENT_VALUE"), configManager.getCommandPrefix());
                 textChannel.sendMessage(responseBuilder.build()).queue();
                 return;
             }
@@ -139,7 +138,7 @@ public class CommandListener extends ListenerAdapter {
         final String inputString = cmdMatch.getAction();
 
         if (!permissions.hasPermission(member, command, inputString)) {
-            final String response = TranslationKey.ERROR_INSUFFICIENT_PERMISSION.getTranslation(locale);
+            final String response = locale.getString("ERROR_INSUFFICIENT_PERMISSION");
             textChannel.sendMessage(response).queue();
             return;
         }
@@ -148,7 +147,7 @@ public class CommandListener extends ListenerAdapter {
         final CooldownManager cooldownManager = guildData.getCooldownManager();
         cooldownManager.checkCooldown(member, inputString).ifPresentOrElse((t) -> {
             //Command on cooldown
-            final String template = TranslationKey.ERROR_COMMAND_COOLDOWN_TIME.getTranslation(locale);
+            final String template = locale.getString("ERROR_COMMAND_COOLDOWN_TIME");
             final String currentCooldown = CooldownManager.formatDuration(t, locale);
             textChannel.sendMessage(template + currentCooldown).queue();
         }, () -> {

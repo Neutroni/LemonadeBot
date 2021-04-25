@@ -29,7 +29,6 @@ import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.text.Collator;
 import java.time.DateTimeException;
@@ -42,8 +41,8 @@ import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
@@ -62,29 +61,29 @@ public class ReminderCommand extends AdminCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand(final Locale locale) {
-        return TranslationKey.COMMAND_REMINDER.getTranslation(locale);
+    public String getCommand(final ResourceBundle locale) {
+        return locale.getString("COMMAND_REMINDER");
     }
 
     @Override
-    public String getDescription(final Locale locale) {
-        return TranslationKey.DESCRIPTION_REMINDER.getTranslation(locale);
+    public String getDescription(final ResourceBundle locale) {
+        return locale.getString("DESCRIPTION_REMINDER");
     }
 
     @Override
-    public String getHelpText(final Locale locale) {
-        return TranslationKey.SYNTAX_REMINDER.getTranslation(locale);
+    public String getHelpText(final ResourceBundle locale) {
+        return locale.getString("SYNTAX_REMINDER");
     }
 
     @Override
     public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = translationCache.getResourceBundle();
 
         final String[] arguments = matcher.getArguments(2);
         if (arguments.length == 0) {
-            textChannel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("ERROR_MISSING_OPERATION")).queue();
             return;
         }
 
@@ -104,7 +103,7 @@ public class ReminderCommand extends AdminCommand {
                 break;
             }
             default: {
-                textChannel.sendMessage(TranslationKey.ERROR_UNKNOWN_OPERATION.getTranslation(locale) + arguments[0]).queue();
+                textChannel.sendMessage(locale.getString("ERROR_UNKNOWN_OPERATION") + arguments[0]).queue();
             }
         }
     }
@@ -114,18 +113,18 @@ public class ReminderCommand extends AdminCommand {
         final TextChannel channel = matcher.getTextChannel();
         final ReminderManager reminders = guildData.getReminderManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = translationCache.getResourceBundle();
 
         final String[] arguments = matcher.getArguments(6);
         if (arguments.length < 2) {
-            channel.sendMessage(TranslationKey.REMINDER_MISSING_NAME.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("REMINDER_MISSING_NAME")).queue();
             return;
         }
         final String reminderName = arguments[1];
 
         //Parse time of day
         if (arguments.length < 3) {
-            channel.sendMessage(TranslationKey.REMINDER_MISSING_TIME.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("REMINDER_MISSING_TIME")).queue();
             return;
         }
         final String reminderTime = arguments[2];
@@ -133,13 +132,13 @@ public class ReminderCommand extends AdminCommand {
         try {
             timeOfDay = LocalTime.parse(reminderTime, translationCache.getTimeFormatter());
         } catch (DateTimeParseException e) {
-            channel.sendMessageFormat(TranslationKey.REMINDER_UNKNOWN_TIME.getTranslation(locale), reminderTime).queue();
+            channel.sendMessageFormat(locale.getString("REMINDER_UNKNOWN_TIME"), reminderTime).queue();
             return;
         }
 
         //Parse day of month
         if (arguments.length < 4) {
-            channel.sendMessage(TranslationKey.REMINDER_MISSING_DAY.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("REMINDER_MISSING_DAY")).queue();
             return;
         }
         final String reminderDate = arguments[3];
@@ -148,18 +147,18 @@ public class ReminderCommand extends AdminCommand {
             try {
                 dayOfMonth = Integer.parseUnsignedInt(reminderDate);
                 if (dayOfMonth < 1 || dayOfMonth > 31) {
-                    channel.sendMessageFormat(TranslationKey.REMINDER_DAY_OF_MONTH_OUT_OF_RANGE.getTranslation(locale)).queue();
+                    channel.sendMessageFormat(locale.getString("REMINDER_DAY_OF_MONTH_OUT_OF_RANGE")).queue();
                     return;
                 }
             } catch (NumberFormatException e) {
-                channel.sendMessageFormat(TranslationKey.REMINDER_DAY_OF_MONTH_NOT_NUMBER.getTranslation(locale)).queue();
+                channel.sendMessageFormat(locale.getString("REMINDER_DAY_OF_MONTH_NOT_NUMBER")).queue();
                 return;
             }
         }
 
         //Parse month of year
         if (arguments.length < 5) {
-            channel.sendMessage(TranslationKey.REMINDER_MISSING_MONTH.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("REMINDER_MISSING_MONTH")).queue();
             return;
         }
         final String reminderMonth = arguments[4];
@@ -169,10 +168,10 @@ public class ReminderCommand extends AdminCommand {
                 final int monthNumber = Integer.parseUnsignedInt(reminderMonth);
                 monthOfYear = Month.of(monthNumber);
             } catch (NumberFormatException e) {
-                channel.sendMessage(TranslationKey.REMINDER_MONTH_NOT_NUMBER.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("REMINDER_MONTH_NOT_NUMBER")).queue();
                 return;
             } catch (DateTimeParseException e) {
-                channel.sendMessage(TranslationKey.REMINDER_MONTH_OUT_OF_RANGE.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("REMINDER_MONTH_OUT_OF_RANGE")).queue();
                 return;
             }
         }
@@ -183,14 +182,14 @@ public class ReminderCommand extends AdminCommand {
                 final MonthDay monthDay = MonthDay.of(monthOfYear, dayOfMonth);
                 LOGGER.debug("Found monthDay: {} in reminder creation.", monthDay.toString());
             } catch (DateTimeException e) {
-                channel.sendMessage(TranslationKey.REMINDER_INVALID_DATE.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("REMINDER_INVALID_DATE")).queue();
                 return;
             }
         }
 
         //Parse day of week
         if (arguments.length < 6) {
-            channel.sendMessage(TranslationKey.REMINDER_MISSING_DAY_OF_WEEK.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("REMINDER_MISSING_DAY_OF_WEEK")).queue();
             return;
         }
         final String reminderDay = arguments[5];
@@ -198,7 +197,7 @@ public class ReminderCommand extends AdminCommand {
         if (!"*".equals(reminderDay)) {
             final Collator collator = guildData.getTranslationCache().getCollator();
             for (final DayOfWeek day : DayOfWeek.values()) {
-                final String localDayName = day.getDisplayName(TextStyle.FULL_STANDALONE, locale);
+                final String localDayName = day.getDisplayName(TextStyle.FULL_STANDALONE, locale.getLocale());
                 if (collator.equals(localDayName, reminderDay)) {
                     dayOfWeek = day;
                     break;
@@ -206,7 +205,7 @@ public class ReminderCommand extends AdminCommand {
             }
             //Check if we found the day with given name
             if (dayOfWeek == null) {
-                channel.sendMessage(TranslationKey.REMINDER_ERROR_UNKNOWN_DAY.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("REMINDER_ERROR_UNKNOWN_DAY")).queue();
                 return;
             }
         }
@@ -216,7 +215,7 @@ public class ReminderCommand extends AdminCommand {
 
         //Get the reminder message
         if (arguments.length < 7) {
-            channel.sendMessage(TranslationKey.REMINDER_MISSING_MESSAGE.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("REMINDER_MISSING_MESSAGE")).queue();
             return;
         }
         final String messageInput = arguments[6];
@@ -231,12 +230,12 @@ public class ReminderCommand extends AdminCommand {
         //Add reminder to database
         try {
             if (!reminders.addReminder(reminder)) {
-                channel.sendMessage(TranslationKey.REMINDER_ALREADY_EXISTS.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("REMINDER_ALREADY_EXISTS")).queue();
                 return;
             }
-            channel.sendMessageFormat(TranslationKey.REMINDER_CREATE_SUCCESS.getTranslation(locale)).queue();
+            channel.sendMessageFormat(locale.getString("REMINDER_CREATE_SUCCESS")).queue();
         } catch (SQLException ex) {
-            channel.sendMessage(TranslationKey.REMINDER_SQL_ERROR_ON_CREATE.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("REMINDER_SQL_ERROR_ON_CREATE")).queue();
             LOGGER.error("Failure to create reminder: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);
         }
@@ -244,10 +243,10 @@ public class ReminderCommand extends AdminCommand {
 
     private static void deleteReminder(final String[] arguments, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
 
         if (arguments.length < 2) {
-            textChannel.sendMessage(TranslationKey.REMINDER_DELETE_MISSING_NAME.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("REMINDER_DELETE_MISSING_NAME")).queue();
             return;
         }
         final ReminderManager reminders = guildData.getReminderManager();
@@ -255,7 +254,7 @@ public class ReminderCommand extends AdminCommand {
         final String reminderName = arguments[1];
         final Optional<Reminder> oldReminder = reminders.getReminder(reminderName);
         if (oldReminder.isEmpty()) {
-            textChannel.sendMessageFormat(TranslationKey.REMINDER_NOT_FOUND_NAME.getTranslation(locale), reminderName).queue();
+            textChannel.sendMessageFormat(locale.getString("REMINDER_NOT_FOUND_NAME"), reminderName).queue();
             return;
         }
         final Reminder reminder = oldReminder.get();
@@ -265,15 +264,15 @@ public class ReminderCommand extends AdminCommand {
         textChannel.getGuild().retrieveMemberById(reminder.getAuthor()).submit().whenComplete((Member reminderOwner, Throwable e) -> {
             final boolean hasPermission = PermissionUtilities.hasPermission(sender, reminderOwner);
             if (!hasPermission) {
-                textChannel.sendMessage(TranslationKey.REMINDER_DELETE_MISSING_PERMISSION.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("REMINDER_DELETE_MISSING_PERMISSION")).queue();
                 return;
             }
 
             try {
                 reminders.deleteReminder(reminder);
-                textChannel.sendMessage(TranslationKey.REMINDER_DELETE_SUCCESS.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("REMINDER_DELETE_SUCCESS")).queue();
             } catch (SQLException ex) {
-                textChannel.sendMessage(TranslationKey.REMINDER_SQL_ERROR_ON_DELETE.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("REMINDER_SQL_ERROR_ON_DELETE")).queue();
                 LOGGER.error("Failure to delete reminder: {}", ex.getMessage());
                 LOGGER.trace("Stack trace", ex);
             }
@@ -281,10 +280,10 @@ public class ReminderCommand extends AdminCommand {
     }
 
     private static void listReminders(final CommandMatcher matcher, final GuildDataStore guildData) {
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
 
         //Construct the embed
-        final String header = TranslationKey.HEADER_REMINDERS.getTranslation(locale);
+        final String header = locale.getString("HEADER_REMINDERS");
         final EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle(header);
 
@@ -301,7 +300,7 @@ public class ReminderCommand extends AdminCommand {
             contentBuilder.append(desc.join());
         });
         if (ev.isEmpty()) {
-            contentBuilder.append(TranslationKey.REMINDER_NO_REMINDERS.getTranslation(locale));
+            contentBuilder.append(locale.getString("REMINDER_NO_REMINDERS"));
         }
         eb.setDescription(contentBuilder);
 

@@ -30,13 +30,12 @@ import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.PatternSyntaxException;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -55,18 +54,18 @@ public class KeywordCommand extends AdminCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand(final Locale locale) {
-        return TranslationKey.COMMAND_KEYWORD.getTranslation(locale);
+    public String getCommand(final ResourceBundle locale) {
+        return locale.getString("COMMAND_KEYWORD");
     }
 
     @Override
-    public String getDescription(final Locale locale) {
-        return TranslationKey.DESCRIPTION_KEYWORD.getTranslation(locale);
+    public String getDescription(final ResourceBundle locale) {
+        return locale.getString("DESCRIPTION_KEYWORD");
     }
 
     @Override
-    public String getHelpText(final Locale locale) {
-        final String template = TranslationKey.SYNTAX_KEYWORD.getTranslation(locale);
+    public String getHelpText(final ResourceBundle locale) {
+        final String template = locale.getString("SYNTAX_KEYWORD");
         final String keys = TemplateProvider.getHelp(locale);
         return String.format(template, keys);
     }
@@ -75,10 +74,10 @@ public class KeywordCommand extends AdminCommand {
     public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = translationCache.getResourceBundle();
         final String[] arguments = matcher.getArguments(1);
         if (arguments.length == 0) {
-            textChannel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("ERROR_MISSING_OPERATION")).queue();
             return;
         }
 
@@ -98,43 +97,43 @@ public class KeywordCommand extends AdminCommand {
                 break;
             }
             default:
-                textChannel.sendMessage(TranslationKey.ERROR_UNKNOWN_OPERATION.getTranslation(locale) + actionName).queue();
+                textChannel.sendMessage(locale.getString("ERROR_UNKNOWN_OPERATION") + actionName).queue();
                 break;
         }
     }
 
     private static void createKeywords(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
 
         //create name runas pattern action
         final List<String> arguments = matcher.parseArguments(5);
         if (arguments.size() < 2) {
-            textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_MISSING_NAME.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("KEYWORD_CREATE_MISSING_NAME")).queue();
             return;
         }
         if (arguments.size() < 3) {
-            textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_MISSING_USER.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("KEYWORD_CREATE_MISSING_USER")).queue();
             return;
         }
         if (arguments.size() < 4) {
-            textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_MISSING_KEYWORD.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("KEYWORD_CREATE_MISSING_KEYWORD")).queue();
             return;
         }
         if (arguments.size() < 5) {
-            textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_MISSING_TEMPLATE.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("KEYWORD_CREATE_MISSING_TEMPLATE")).queue();
             return;
         }
 
         final String commandName = arguments.get(1);
         final String runAs = arguments.get(2);
         final boolean runAsCreator;
-        if (runAs.equals(TranslationKey.KEYWORD_RUN_AS_USER.getTranslation(locale))) {
+        if (runAs.equals(locale.getString("KEYWORD_RUN_AS_USER"))) {
             runAsCreator = false;
-        } else if (runAs.equals(TranslationKey.KEYWORD_RUN_AS_CREATOR.getTranslation(locale))) {
+        } else if (runAs.equals(locale.getString("KEYWORD_RUN_AS_CREATOR"))) {
             runAsCreator = true;
         } else {
-            textChannel.sendMessage(TranslationKey.KEYWORD_RUN_AS_UNKNOWN.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("KEYWORD_RUN_AS_UNKNOWN")).queue();
             return;
         }
         final String commandPattern = arguments.get(3);
@@ -144,14 +143,14 @@ public class KeywordCommand extends AdminCommand {
         try {
             final KeywordAction newAction = new KeywordAction(commandName, commandPattern, commandTemplate, sender.getIdLong(), runAsCreator);
             if (commands.addKeyword(newAction)) {
-                textChannel.sendMessage(TranslationKey.KEYWORD_CREATE_SUCCESS.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("KEYWORD_CREATE_SUCCESS")).queue();
                 return;
             }
-            textChannel.sendMessage(TranslationKey.KEYWORD_ALREADY_EXISTS.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("KEYWORD_ALREADY_EXISTS")).queue();
         } catch (PatternSyntaxException e) {
-            textChannel.sendMessage(TranslationKey.KEYWORD_PATTERN_SYNTAX_ERROR.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("KEYWORD_PATTERN_SYNTAX_ERROR")).queue();
         } catch (SQLException ex) {
-            textChannel.sendMessage(TranslationKey.KEYWORD_SQL_ERROR_ON_CREATE.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("KEYWORD_SQL_ERROR_ON_CREATE")).queue();
             LOGGER.error("Failure to add keyword command: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);
         }
@@ -160,17 +159,17 @@ public class KeywordCommand extends AdminCommand {
 
     private static void deleteKeyword(final String[] arguments, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
 
         if (arguments.length < 2) {
-            textChannel.sendMessage(TranslationKey.KEYWORD_DELETE_MISSING_NAME.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("KEYWORD_DELETE_MISSING_NAME")).queue();
             return;
         }
         final String commandName = arguments[1];
         final KeywordManager commands = guildData.getKeywordManager();
         final Optional<KeywordAction> optCommand = commands.getCommand(commandName);
         if (optCommand.isEmpty()) {
-            final String template = TranslationKey.KEYWORD_DELETE_NOT_FOUND.getTranslation(locale);
+            final String template = locale.getString("KEYWORD_DELETE_NOT_FOUND");
             textChannel.sendMessageFormat(template, commandName).queue();
             return;
         }
@@ -181,16 +180,16 @@ public class KeywordCommand extends AdminCommand {
         textChannel.getGuild().retrieveMemberById(command.getAuthor()).submit().whenComplete((Member commandOwner, Throwable u) -> {
             final boolean hasPermission = PermissionUtilities.hasPermission(sender, commandOwner);
             if (!hasPermission) {
-                textChannel.sendMessage(TranslationKey.KEYWORD_DELETE_PERMISSION_DENIED.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("KEYWORD_DELETE_PERMISSION_DENIED")).queue();
                 return;
             }
 
             //Delete the command
             try {
                 commands.removeKeyword(command);
-                textChannel.sendMessage(TranslationKey.KEYWORD_DELETE_SUCCESS.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("KEYWORD_DELETE_SUCCESS")).queue();
             } catch (SQLException ex) {
-                textChannel.sendMessage(TranslationKey.KEYWORD_SQL_ERROR_ON_DELETE.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("KEYWORD_SQL_ERROR_ON_DELETE")).queue();
                 LOGGER.error("Failure to delete keyword command: {}", ex.getMessage());
                 LOGGER.trace("Stack trace", ex);
             }
@@ -198,11 +197,11 @@ public class KeywordCommand extends AdminCommand {
     }
 
     private static void listKeywords(final CommandMatcher matcher, final GuildDataStore guildData) {
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         final TextChannel textChannel = matcher.getTextChannel();
 
         //Construct embed
-        final String header = TranslationKey.HEADER_KEYWORDS.getTranslation(locale);
+        final String header = locale.getString("HEADER_KEYWORDS");
         final EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle(header);
 
@@ -218,7 +217,7 @@ public class KeywordCommand extends AdminCommand {
             contentBuilder.append(desc.join());
         });
         if (templates.isEmpty()) {
-            contentBuilder.append(TranslationKey.KEYWORD_NO_KEYWORDS.getTranslation(locale));
+            contentBuilder.append(locale.getString("KEYWORD_NO_KEYWORDS"));
         }
         eb.setDescription(contentBuilder);
         textChannel.sendMessage(eb.build()).queue();

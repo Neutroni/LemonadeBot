@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.TreeMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -45,6 +46,7 @@ import org.apache.logging.log4j.Logger;
 public class TranslationCache implements LocaleUpdateListener {
 
     private static final Logger LOGGER = LogManager.getLogger();
+    private volatile ResourceBundle resources;
     private final ReadWriteLock rwLock;
     private volatile Map<String, ChronoUnit> chronoMap;
     private final Map<String, ActionKey> actionMap;
@@ -60,6 +62,15 @@ public class TranslationCache implements LocaleUpdateListener {
         this.rwLock = new ReentrantReadWriteLock();
         this.actionMap = new HashMap<>();
         localeUpdate(locale);
+    }
+
+    /**
+     * Get the resource bundle for current locale
+     *
+     * @return ResourceBundle
+     */
+    public ResourceBundle getResourceBundle() {
+        return this.resources;
     }
 
     /**
@@ -123,11 +134,13 @@ public class TranslationCache implements LocaleUpdateListener {
     private void localeUpdate(final Locale newLocale) {
         this.rwLock.writeLock().lock();
         try {
+            //Update resource bundle
+            this.resources = ResourceBundle.getBundle("Translation", newLocale);
             //Update collator
             this.collator = Collator.getInstance(newLocale);
             this.collator.setStrength(Collator.SECONDARY);
             //Update time formatter
-            final String timePattern = TranslationKey.REMINDER_TIME_FORMAT.getTranslation(newLocale);
+            final String timePattern = this.resources.getString("REMINDER_TIME_FORMAT");
             try {
                 this.timeFormat = DateTimeFormatter.ofPattern(timePattern);
             } catch (IllegalArgumentException e) {
@@ -137,26 +150,27 @@ public class TranslationCache implements LocaleUpdateListener {
             }
             //Update chronoMap
             this.chronoMap = new TreeMap<>(this.collator);
-            this.chronoMap.put(TranslationKey.TIME_SECOND.getTranslation(newLocale), ChronoUnit.SECONDS);
-            this.chronoMap.put(TranslationKey.TIME_MINUTE.getTranslation(newLocale), ChronoUnit.MINUTES);
-            this.chronoMap.put(TranslationKey.TIME_HOUR.getTranslation(newLocale), ChronoUnit.HOURS);
-            this.chronoMap.put(TranslationKey.TIME_DAY.getTranslation(newLocale), ChronoUnit.DAYS);
-            this.chronoMap.put(TranslationKey.TIME_WEEK.getTranslation(newLocale), ChronoUnit.WEEKS);
-            this.chronoMap.put(TranslationKey.TIME_MONTH.getTranslation(newLocale), ChronoUnit.MONTHS);
-            this.chronoMap.put(TranslationKey.TIME_YEAR.getTranslation(newLocale), ChronoUnit.YEARS);
-            this.chronoMap.put(TranslationKey.TIME_SECONDS.getTranslation(newLocale), ChronoUnit.SECONDS);
-            this.chronoMap.put(TranslationKey.TIME_MINUTES.getTranslation(newLocale), ChronoUnit.MINUTES);
-            this.chronoMap.put(TranslationKey.TIME_HOURS.getTranslation(newLocale), ChronoUnit.HOURS);
-            this.chronoMap.put(TranslationKey.TIME_DAYS.getTranslation(newLocale), ChronoUnit.DAYS);
-            this.chronoMap.put(TranslationKey.TIME_WEEKS.getTranslation(newLocale), ChronoUnit.WEEKS);
-            this.chronoMap.put(TranslationKey.TIME_MONTHS.getTranslation(newLocale), ChronoUnit.MONTHS);
-            this.chronoMap.put(TranslationKey.TIME_YEARS.getTranslation(newLocale), ChronoUnit.YEARS);
+            this.chronoMap.put(this.resources.getString("TIME_SECOND"), ChronoUnit.SECONDS);
+            this.chronoMap.put(this.resources.getString("TIME_MINUTE"), ChronoUnit.MINUTES);
+            this.chronoMap.put(this.resources.getString("TIME_HOUR"), ChronoUnit.HOURS);
+            this.chronoMap.put(this.resources.getString("TIME_DAY"), ChronoUnit.DAYS);
+            this.chronoMap.put(this.resources.getString("TIME_WEEK"), ChronoUnit.WEEKS);
+            this.chronoMap.put(this.resources.getString("TIME_MONTH"), ChronoUnit.MONTHS);
+            this.chronoMap.put(this.resources.getString("TIME_YEAR"), ChronoUnit.YEARS);
+            this.chronoMap.put(this.resources.getString("TIME_SECONDS"), ChronoUnit.SECONDS);
+            this.chronoMap.put(this.resources.getString("TIME_MINUTES"), ChronoUnit.MINUTES);
+            this.chronoMap.put(this.resources.getString("TIME_HOURS"), ChronoUnit.HOURS);
+            this.chronoMap.put(this.resources.getString("TIME_DAYS"), ChronoUnit.DAYS);
+            this.chronoMap.put(this.resources.getString("TIME_WEEKS"), ChronoUnit.WEEKS);
+            this.chronoMap.put(this.resources.getString("TIME_MONTHS"), ChronoUnit.MONTHS);
+            this.chronoMap.put(this.resources.getString("TIME_YEARS"), ChronoUnit.YEARS);
             //Update actionMap
             this.actionMap.clear();
             for (final ActionKey key : ActionKey.values()) {
-                final TranslationKey translationKey = key.getTranslationKey();
+                final String translationKey = key.getTranslationKey();
                 if (translationKey != null) {
-                    this.actionMap.put(translationKey.getTranslation(newLocale), key);
+                    final String translation = this.resources.getString(translationKey);
+                    this.actionMap.put(translation, key);
                 }
             }
         } finally {

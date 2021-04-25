@@ -28,12 +28,12 @@ import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.SimpleMessageMatcher;
 import eternal.lemonadebot.translation.TranslationCache;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -157,23 +157,23 @@ class Reminder extends CustomCommand implements Runnable {
         return this.activationTime;
     }
 
-    CompletableFuture<String> toListElement(final Locale locale) {
+    CompletableFuture<String> toListElement(final ResourceBundle locale) {
         final CompletableFuture<String> result = new CompletableFuture<>();
 
         //Get the channel for reminder
         final TextChannel channel = this.jda.getTextChannelById(this.channelID);
         if (channel == null) {
             deleteDueToMissingChannel();
-            final String response = TranslationKey.REMINDER_CHANNEL_MISSING.getTranslation(locale);
+            final String response = locale.getString("REMINDER_CHANNEL_MISSING");
             result.complete(String.format(response, getName()));
             return result;
         }
 
         final TranslationCache translationCache = this.guildData.getTranslationCache();
         final DateTimeFormatter timeFormatter = translationCache.getTimeFormatter();
-        final String cronString = this.activationTime.getCronString(locale, timeFormatter);
+        final String cronString = this.activationTime.getCronString(locale.getLocale(), timeFormatter);
         final String channelName = channel.getAsMention();
-        final String template = TranslationKey.REMINDER_LIST_ELEMENT_TEMPLATE.getTranslation(locale);
+        final String template = locale.getString("REMINDER_LIST_ELEMENT_TEMPLATE");
         this.jda.retrieveUserById(getAuthor()).queue((User reminderOwner) -> {
             //Found reminder owner
             final String ownerName = reminderOwner.getAsMention();
@@ -182,7 +182,7 @@ class Reminder extends CustomCommand implements Runnable {
         }, (Throwable t) -> {
             //Reminder owner missing
             deleteDueToMissingOwner();
-            final String response = TranslationKey.REMINDER_USER_MISSING.getTranslation(locale);
+            final String response = locale.getString("REMINDER_USER_MISSING");
             result.complete(String.format(response, getName()));
         });
         return result;

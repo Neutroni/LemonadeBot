@@ -29,7 +29,6 @@ import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
@@ -37,8 +36,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
@@ -57,29 +56,29 @@ public class NotificationCommand extends AdminCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand(final Locale locale) {
-        return TranslationKey.COMMAND_NOTIFY.getTranslation(locale);
+    public String getCommand(final ResourceBundle locale) {
+        return locale.getString("COMMAND_NOTIFY");
     }
 
     @Override
-    public String getDescription(final Locale locale) {
-        return TranslationKey.DESCRIPTION_NOTIFY.getTranslation(locale);
+    public String getDescription(final ResourceBundle locale) {
+        return locale.getString("DESCRIPTION_NOTIFY");
     }
 
     @Override
-    public String getHelpText(final Locale locale) {
-        return TranslationKey.SYNTAX_NOTIFY.getTranslation(locale);
+    public String getHelpText(final ResourceBundle locale) {
+        return locale.getString("SYNTAX_NOTIFY");
     }
 
     @Override
     public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = translationCache.getResourceBundle();
 
         final String[] arguments = matcher.getArguments(2);
         if (arguments.length == 0) {
-            textChannel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("ERROR_MISSING_OPERATION")).queue();
             return;
         }
 
@@ -99,7 +98,7 @@ public class NotificationCommand extends AdminCommand {
                 break;
             }
             default: {
-                textChannel.sendMessage(TranslationKey.ERROR_UNKNOWN_OPERATION.getTranslation(locale) + arguments[0]).queue();
+                textChannel.sendMessage(locale.getString("ERROR_UNKNOWN_OPERATION") + arguments[0]).queue();
             }
         }
     }
@@ -110,13 +109,13 @@ public class NotificationCommand extends AdminCommand {
         final Member member = matcher.getMember();
         final NotificationManager notifications = guildData.getNotificationManager();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = translationCache.getResourceBundle();
 
         final String[] arguments = matcher.getArguments(5);
 
         //Parse time amount to acticvation
         if (arguments.length < 2) {
-            channel.sendMessage(TranslationKey.NOTIFY_MISSING_TIME.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("NOTIFY_MISSING_TIME")).queue();
             return;
         }
         final String notificationTime = arguments[1];
@@ -124,19 +123,19 @@ public class NotificationCommand extends AdminCommand {
         try {
             timeAmount = Long.parseUnsignedLong(notificationTime);
         } catch (NumberFormatException e) {
-            channel.sendMessageFormat(TranslationKey.NOTIFY_UNKNOWN_TIME.getTranslation(locale), notificationTime).queue();
+            channel.sendMessageFormat(locale.getString("NOTIFY_UNKNOWN_TIME"), notificationTime).queue();
             return;
         }
 
         //Parse time unit
         if (arguments.length < 3) {
-            channel.sendMessage(TranslationKey.NOTIFY_MISSING_UNIT.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("NOTIFY_MISSING_UNIT")).queue();
             return;
         }
         final String notificationUnit = arguments[2];
         final Optional<ChronoUnit> optUnit = translationCache.getChronoUnit(notificationUnit);
         if (optUnit.isEmpty()) {
-            channel.sendMessageFormat(TranslationKey.NOTIFY_UNKNOWN_UNIT.getTranslation(locale)).queue();
+            channel.sendMessageFormat(locale.getString("NOTIFY_UNKNOWN_UNIT")).queue();
             return;
         }
         final ChronoUnit timeUnit = optUnit.get();
@@ -146,7 +145,7 @@ public class NotificationCommand extends AdminCommand {
 
         //Get the notification message
         if (arguments.length < 4) {
-            channel.sendMessage(TranslationKey.NOTIFY_MISSING_MESSAGE.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("NOTIFY_MISSING_MESSAGE")).queue();
             return;
         }
         final String messageInput = arguments[3];
@@ -163,12 +162,12 @@ public class NotificationCommand extends AdminCommand {
         //Add notification to database
         try {
             if (!notifications.addNotification(notification)) {
-                channel.sendMessage(TranslationKey.NOTIFICATION_IN_PAST.getTranslation(locale)).queue();
+                channel.sendMessage(locale.getString("NOTIFICATION_IN_PAST")).queue();
                 return;
             }
-            channel.sendMessageFormat(TranslationKey.NOTIFICATION_CREATE_SUCCESS.getTranslation(locale)).queue();
+            channel.sendMessageFormat(locale.getString("NOTIFICATION_CREATE_SUCCESS")).queue();
         } catch (SQLException ex) {
-            channel.sendMessage(TranslationKey.NOTIFICATION_SQL_ERROR_ON_CREATE.getTranslation(locale)).queue();
+            channel.sendMessage(locale.getString("NOTIFICATION_SQL_ERROR_ON_CREATE")).queue();
             LOGGER.error("Failure to create notification: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);
         }
@@ -176,10 +175,10 @@ public class NotificationCommand extends AdminCommand {
 
     private static void deleteNotification(final String[] arguments, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
 
         if (arguments.length < 2) {
-            textChannel.sendMessage(TranslationKey.NOTIFICATION_DELETE_MISSING_NAME.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("NOTIFICATION_DELETE_MISSING_NAME")).queue();
             return;
         }
         final NotificationManager notifications = guildData.getNotificationManager();
@@ -187,7 +186,7 @@ public class NotificationCommand extends AdminCommand {
         final String notificationName = arguments[1];
         final Optional<Notification> oldNotification = notifications.getNotification(notificationName);
         if (oldNotification.isEmpty()) {
-            textChannel.sendMessageFormat(TranslationKey.NOTIFICATION_NOT_FOUND_NAME.getTranslation(locale), notificationName).queue();
+            textChannel.sendMessageFormat(locale.getString("NOTIFICATION_NOT_FOUND_NAME"), notificationName).queue();
             return;
         }
         final Notification reminder = oldNotification.get();
@@ -197,15 +196,15 @@ public class NotificationCommand extends AdminCommand {
         textChannel.getGuild().retrieveMemberById(reminder.getAuthor()).submit().whenComplete((Member reminderOwner, Throwable e) -> {
             final boolean hasPermission = PermissionUtilities.hasPermission(sender, reminderOwner);
             if (!hasPermission) {
-                textChannel.sendMessage(TranslationKey.NOTIFICATION_DELETE_MISSING_PERMISSION.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("NOTIFICATION_DELETE_MISSING_PERMISSION")).queue();
                 return;
             }
 
             try {
                 notifications.deleteNotification(reminder);
-                textChannel.sendMessage(TranslationKey.NOTIFICATION_DELETE_SUCCESS.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("NOTIFICATION_DELETE_SUCCESS")).queue();
             } catch (SQLException ex) {
-                textChannel.sendMessage(TranslationKey.NOTIFICATION_SQL_ERROR_ON_DELETE.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("NOTIFICATION_SQL_ERROR_ON_DELETE")).queue();
                 LOGGER.error("Failure to delete reminder: {}", ex.getMessage());
                 LOGGER.trace("Stack trace", ex);
             }
@@ -213,12 +212,12 @@ public class NotificationCommand extends AdminCommand {
     }
 
     private static void listNotifications(final CommandMatcher matcher, final GuildDataStore guildData) {
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         //Only list notifications of the user
         final Member user = matcher.getMember();
 
         //Construct the embed
-        final String header = TranslationKey.HEADER_NOTIFICATIONS.getTranslation(locale);
+        final String header = locale.getString("HEADER_NOTIFICATIONS");
         final EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle(header);
 
@@ -237,7 +236,7 @@ public class NotificationCommand extends AdminCommand {
             contentBuilder.append(desc.join());
         });
         if (futures.isEmpty()) {
-            contentBuilder.append(TranslationKey.NOTIFICATION_NO_NOTIFICATIONS.getTranslation(locale));
+            contentBuilder.append(locale.getString("NOTIFICATION_NO_NOTIFICATIONS"));
         }
         eb.setDescription(contentBuilder);
 

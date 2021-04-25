@@ -33,13 +33,12 @@ import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
@@ -57,24 +56,24 @@ public class TemplateCommand implements ChatCommand {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Override
-    public String getCommand(final Locale locale) {
-        return TranslationKey.COMMAND_TEMPLATE.getTranslation(locale);
+    public String getCommand(final ResourceBundle locale) {
+        return locale.getString("COMMAND_TEMPLATE");
     }
 
     @Override
-    public String getDescription(final Locale locale) {
-        return TranslationKey.DESCRIPTION_TEMPLATE.getTranslation(locale);
+    public String getDescription(final ResourceBundle locale) {
+        return locale.getString("DESCRIPTION_TEMPLATE");
     }
 
     @Override
-    public String getHelpText(final Locale locale) {
-        final String template = TranslationKey.SYNTAX_TEMPLATE.getTranslation(locale);
+    public String getHelpText(final ResourceBundle locale) {
+        final String template = locale.getString("SYNTAX_TEMPLATE");
         final String keys = TemplateProvider.getHelp(locale);
         return String.format(template, keys);
     }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(final Locale locale, final long guildID, final PermissionManager permissions) {
+    public Collection<CommandPermission> getDefaultRanks(final ResourceBundle locale, final long guildID, final PermissionManager permissions) {
         return List.of(new CommandPermission(getCommand(locale), MemberRank.MEMBER, guildID));
     }
 
@@ -82,10 +81,10 @@ public class TemplateCommand implements ChatCommand {
     public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
         final TranslationCache translationCache = guildData.getTranslationCache();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = translationCache.getResourceBundle();
         final String[] arguments = matcher.getArguments(2);
         if (arguments.length == 0) {
-            textChannel.sendMessage(TranslationKey.ERROR_MISSING_OPERATION.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("ERROR_MISSING_OPERATION")).queue();
             return;
         }
 
@@ -105,21 +104,21 @@ public class TemplateCommand implements ChatCommand {
                 break;
             }
             default:
-                textChannel.sendMessage(TranslationKey.ERROR_UNKNOWN_OPERATION.getTranslation(locale) + actionName).queue();
+                textChannel.sendMessage(locale.getString("ERROR_UNKNOWN_OPERATION") + actionName).queue();
                 break;
         }
     }
 
     private static void createCustomCommand(final String[] arguments, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
 
         if (arguments.length < 2) {
-            textChannel.sendMessage(TranslationKey.TEMPLATE_CREATE_MISSING_NAME.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("TEMPLATE_CREATE_MISSING_NAME")).queue();
             return;
         }
         if (arguments.length < 3) {
-            textChannel.sendMessage(TranslationKey.TEMPLATE_CREATE_MISSING_TEMPLATE.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("TEMPLATE_CREATE_MISSING_TEMPLATE")).queue();
             return;
         }
 
@@ -128,7 +127,7 @@ public class TemplateCommand implements ChatCommand {
         final CommandProvider commandProvider = guildData.getCommandProvider();
         final Optional<ChatCommand> optCommand = commandProvider.getBuiltInCommand(commandName);
         if (optCommand.isPresent()) {
-            textChannel.sendMessage(TranslationKey.TEMPLATE_NAME_RESERVED.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("TEMPLATE_NAME_RESERVED")).queue();
             return;
         }
 
@@ -138,12 +137,12 @@ public class TemplateCommand implements ChatCommand {
         final CustomCommand newAction = new CustomCommand(commandName, commandTemplate, sender.getIdLong());
         try {
             if (commands.addCommand(newAction)) {
-                textChannel.sendMessage(TranslationKey.TEMPLATE_CREATE_SUCCESS.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("TEMPLATE_CREATE_SUCCESS")).queue();
                 return;
             }
-            textChannel.sendMessage(TranslationKey.TEMPLATE_ALREADY_EXISTS.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("TEMPLATE_ALREADY_EXISTS")).queue();
         } catch (SQLException ex) {
-            textChannel.sendMessage(TranslationKey.TEMPLATE_SQL_ERROR_ON_CREATE.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("TEMPLATE_SQL_ERROR_ON_CREATE")).queue();
             LOGGER.error("Failure to add custom command: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);
         }
@@ -152,10 +151,10 @@ public class TemplateCommand implements ChatCommand {
 
     private static void deleteCustomCommand(final String[] arguments, final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
 
         if (arguments.length < 2) {
-            textChannel.sendMessage(TranslationKey.TEMPLATE_DELETE_MISSING_NAME.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("TEMPLATE_DELETE_MISSING_NAME")).queue();
             return;
         }
         final String commandName = arguments[1];
@@ -164,11 +163,11 @@ public class TemplateCommand implements ChatCommand {
         try {
             optCommand = commands.getCommand(commandName);
         } catch (SQLException e) {
-            textChannel.sendMessage(TranslationKey.TEMPLATE_SQL_ERROR_ON_FINDING_COMMAND.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("TEMPLATE_SQL_ERROR_ON_FINDING_COMMAND")).queue();
             return;
         }
         if (optCommand.isEmpty()) {
-            final String template = TranslationKey.TEMPLATE_DELETE_NOT_FOUND.getTranslation(locale);
+            final String template = locale.getString("TEMPLATE_DELETE_NOT_FOUND");
             textChannel.sendMessageFormat(template, commandName).queue();
             return;
         }
@@ -179,16 +178,16 @@ public class TemplateCommand implements ChatCommand {
         textChannel.getGuild().retrieveMemberById(command.getAuthor()).submit().whenComplete((Member commandOwner, Throwable u) -> {
             final boolean hasPermission = PermissionUtilities.hasPermission(sender, commandOwner);
             if (!hasPermission) {
-                textChannel.sendMessage(TranslationKey.TEMPLATE_DELETE_PERMISSION_DENIED.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("TEMPLATE_DELETE_PERMISSION_DENIED")).queue();
                 return;
             }
 
             //Delete the command
             try {
                 commands.removeCommand(command);
-                textChannel.sendMessage(TranslationKey.TEMPLATE_DELETE_SUCCESS.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("TEMPLATE_DELETE_SUCCESS")).queue();
             } catch (SQLException ex) {
-                textChannel.sendMessage(TranslationKey.TEMPLATE_SQL_ERROR_ON_DELETE.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("TEMPLATE_SQL_ERROR_ON_DELETE")).queue();
                 LOGGER.error("Failure to delete custom command: {}", ex.getMessage());
                 LOGGER.trace("Stack trace", ex);
             }
@@ -196,11 +195,11 @@ public class TemplateCommand implements ChatCommand {
     }
 
     private static void listCustomCommands(final CommandMatcher matcher, final GuildDataStore guildData) {
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         final TextChannel textChannel = matcher.getTextChannel();
 
         //Construct embed
-        final String header = TranslationKey.HEADER_COMMANDS.getTranslation(locale);
+        final String header = locale.getString("HEADER_COMMANDS");
         final EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle(header);
 
@@ -209,7 +208,7 @@ public class TemplateCommand implements ChatCommand {
         try {
             templates = guildData.getCustomCommands().getCommands();
         } catch (SQLException e) {
-            textChannel.sendMessage(TranslationKey.TEMPLATE_SQL_ERROR_ON_LOADING_COMMANDS.getTranslation(locale)).queue();
+            textChannel.sendMessage(locale.getString("TEMPLATE_SQL_ERROR_ON_LOADING_COMMANDS")).queue();
             return;
         }
         final ArrayList<CompletableFuture<String>> futures = new ArrayList<>(templates.size());
@@ -222,7 +221,7 @@ public class TemplateCommand implements ChatCommand {
             contentBuilder.append(desc.join());
         });
         if (templates.isEmpty()) {
-            contentBuilder.append(TranslationKey.TEMPLATE_NO_COMMANDS.getTranslation(locale));
+            contentBuilder.append(locale.getString("TEMPLATE_NO_COMMANDS"));
         }
         eb.setDescription(contentBuilder);
         textChannel.sendMessage(eb.build()).queue();

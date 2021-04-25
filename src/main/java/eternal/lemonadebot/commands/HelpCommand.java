@@ -29,11 +29,10 @@ import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.permissions.PermissionManager;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -46,45 +45,45 @@ import net.dv8tion.jda.api.entities.TextChannel;
 class HelpCommand implements ChatCommand {
 
     @Override
-    public String getCommand(final Locale locale) {
-        return TranslationKey.COMMAND_HELP.getTranslation(locale);
+    public String getCommand(final ResourceBundle locale) {
+        return locale.getString("COMMAND_HELP");
     }
 
     @Override
-    public String getDescription(final Locale locale) {
-        return TranslationKey.DESCRIPTION_HELP.getTranslation(locale);
+    public String getDescription(final ResourceBundle locale) {
+        return locale.getString("DESCRIPTION_HELP");
     }
 
     @Override
-    public String getHelpText(final Locale locale) {
-        return TranslationKey.SYNTAX_HELP.getTranslation(locale);
+    public String getHelpText(final ResourceBundle locale) {
+        return locale.getString("SYNTAX_HELP");
     }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(final Locale locale, final long guildID, final PermissionManager permissions) {
+    public Collection<CommandPermission> getDefaultRanks(final ResourceBundle locale, final long guildID, final PermissionManager permissions) {
         return List.of(new CommandPermission(getCommand(locale), MemberRank.USER, guildID));
     }
 
     @Override
     public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
 
         final String[] options = matcher.getArguments(1);
         if (options.length == 0) {
             //Help for this command
             final EmbedBuilder eb = new EmbedBuilder();
             eb.setTitle(getCommand(locale) + " - " + getDescription(locale));
-            final String helpText = TranslationKey.SYNTAX_HELP.getTranslation(locale);
+            final String helpText = locale.getString("SYNTAX_HELP");
             eb.setDescription(helpText);
-            final String template = TranslationKey.BOT_VERSION.getTranslation(locale);
+            final String template = locale.getString("BOT_VERSION");
             final String footer = String.format(template, LemonadeBot.BOT_VERSION);
             eb.setFooter(footer);
             textChannel.sendMessage(eb.build()).queue();
             return;
         }
         final String name = options[0];
-        if (TranslationKey.ACTION_COMMANDS.getTranslation(locale).equals(name)) {
+        if (locale.getString("ACTION_COMMANDS").equals(name)) {
             //Respond with list of commands available to the user
             listCommands(matcher, guildData.getPermissionManager(), locale);
             return;
@@ -104,7 +103,7 @@ class HelpCommand implements ChatCommand {
      */
     private static void listHelp(final CommandMatcher matcher, final GuildDataStore guildData, final String name) {
         final TextChannel textChannel = matcher.getTextChannel();
-        final Locale locale = guildData.getConfigManager().getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         final PermissionManager permissions = guildData.getPermissionManager();
         final CommandProvider commands = guildData.getCommandProvider();
 
@@ -122,12 +121,12 @@ class HelpCommand implements ChatCommand {
                 eb.setDescription(helpText);
                 textChannel.sendMessage(eb.build()).queue();
             } else {
-                textChannel.sendMessage(TranslationKey.ERROR_PERMISSION_DENIED.getTranslation(locale)).queue();
+                textChannel.sendMessage(locale.getString("ERROR_PERMISSION_DENIED")).queue();
             }
             return;
         }
         //Did not find a command
-        textChannel.sendMessage(TranslationKey.ERROR_NO_SUCH_COMMAND.getTranslation(locale) + name).queue();
+        textChannel.sendMessage(locale.getString("ERROR_NO_SUCH_COMMAND") + name).queue();
     }
 
     /**
@@ -137,7 +136,7 @@ class HelpCommand implements ChatCommand {
      * @param permissions Used to check if user has permission to the commands
      * @param locale TranslationManager to get command names from
      */
-    private static void listCommands(final CommandMatcher matcher, final PermissionManager permissions, final Locale locale) {
+    private static void listCommands(final CommandMatcher matcher, final PermissionManager permissions, final ResourceBundle locale) {
         //Construct the list of commands
         final StringBuilder sb = new StringBuilder();
         final Member member = matcher.getMember();
@@ -151,7 +150,7 @@ class HelpCommand implements ChatCommand {
         }
 
         final EmbedBuilder eb = new EmbedBuilder();
-        eb.setTitle(TranslationKey.HEADER_COMMANDS.getTranslation(locale));
+        eb.setTitle(locale.getString("HEADER_COMMANDS"));
         eb.setDescription(sb.toString());
 
         matcher.getTextChannel().sendMessage(eb.build()).queue();

@@ -23,8 +23,7 @@
  */
 package eternal.lemonadebot.rolemanagement;
 
-import eternal.lemonadebot.translation.TranslationKey;
-import java.util.Locale;
+import java.util.ResourceBundle;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 
@@ -98,14 +97,14 @@ public class AllowedRole {
      * @param guild guild to get the role name from
      * @return String
      */
-    String toListElement(final Locale locale, final Guild guild) {
+    String toListElement(final ResourceBundle locale, final Guild guild) {
         final Role role = guild.getRoleById(this.roleID);
-        final String template = TranslationKey.ROLE_COMMAND_LIST_ELEMENT.getTranslation(locale);
+        final String template = locale.getString("ROLE_COMMAND_LIST_ELEMENT");
 
         //Get the role as mention
         final String roleName;
         if (role == null) {
-            roleName = TranslationKey.ROLE_MISSING.getTranslation(locale);
+            roleName = locale.getString("ROLE_MISSING");
         } else {
             roleName = role.getAsMention();
         }
@@ -113,7 +112,7 @@ public class AllowedRole {
         //Get the description for the role
         final String roleDescription;
         if (this.description == null) {
-            roleDescription = TranslationKey.ROLE_NO_DESCRIPTION.getTranslation(locale);
+            roleDescription = locale.getString("ROLE_NO_DESCRIPTION");
         } else {
             roleDescription = this.description;
         }

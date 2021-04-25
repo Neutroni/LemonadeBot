@@ -23,8 +23,7 @@
  */
 package eternal.lemonadebot.events;
 
-import eternal.lemonadebot.translation.TranslationKey;
-import java.util.Locale;
+import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Member;
@@ -141,25 +140,25 @@ public class Event {
      * @param jda JDA to use to get the event owner
      * @return String
      */
-    CompletableFuture<String> toListElement(final Locale locale, final JDA jda) {
+    CompletableFuture<String> toListElement(final ResourceBundle locale, final JDA jda) {
         final CompletableFuture<String> result = new CompletableFuture<>();
-        final String template = TranslationKey.EVENT_COMMAND_LIST_ELEMENT.getTranslation(locale);
+        final String template = locale.getString("EVENT_COMMAND_LIST_ELEMENT");
         jda.retrieveUserById(this.ownerID).queue((User eventCreator) -> {
             //Found user
             final String creatorName = eventCreator.getAsMention();
             final String eventDescription;
             if (this.description == null) {
-                eventDescription = TranslationKey.EVENT_NO_DESCRIPTION.getTranslation(locale);
+                eventDescription = locale.getString("EVENT_NO_DESCRIPTION");
             } else {
                 eventDescription = this.description;
             }
             result.complete(String.format(template, this.name, eventDescription, creatorName));
         }, (Throwable t) -> {
             //User missing
-            final String creatorName = TranslationKey.UNKNOWN_USER.getTranslation(locale);
+            final String creatorName = locale.getString("UNKNOWN_USER");
             final String eventDescription;
             if (this.description == null) {
-                eventDescription = TranslationKey.EVENT_NO_DESCRIPTION.getTranslation(locale);
+                eventDescription = locale.getString("EVENT_NO_DESCRIPTION");
             } else {
                 eventDescription = this.description;
             }

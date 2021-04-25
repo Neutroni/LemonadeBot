@@ -24,7 +24,6 @@
 package eternal.lemonadebot.cooldowns;
 
 import eternal.lemonadebot.permissions.MemberRank;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -35,8 +34,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
@@ -213,10 +212,10 @@ public class CooldownManager {
      * Format duration to a string in locale
      *
      * @param duration Duration to format
-     * @param locale Locale to return the duration string in
+     * @param locale ResourceBundle to get translated strings from
      * @return Duration as string
      */
-    public static String formatDuration(final Duration duration, final Locale locale) {
+    public static String formatDuration(final Duration duration, final ResourceBundle locale) {
         if (duration.isNegative() || duration.isZero()) {
             return "00:00:00";
         }
@@ -225,14 +224,14 @@ public class CooldownManager {
         final long remainingMinutes = duration.toMinutesPart();
         final long remainingSeconds = duration.toSecondsPart();
 
-        final String days = TranslationKey.TIME_DAYS.getTranslation(locale);
-        final String hours = TranslationKey.TIME_HOURS.getTranslation(locale);
-        final String minutes = TranslationKey.TIME_MINUTES.getTranslation(locale);
-        final String seconds = TranslationKey.TIME_SECONDS.getTranslation(locale);
-        final String day = TranslationKey.TIME_DAY.getTranslation(locale);
-        final String hour = TranslationKey.TIME_HOUR.getTranslation(locale);
-        final String minute = TranslationKey.TIME_MINUTE.getTranslation(locale);
-        final String second = TranslationKey.TIME_SECOND.getTranslation(locale);
+        final String days = locale.getString("TIME_DAYS");
+        final String hours = locale.getString("TIME_HOURS");
+        final String minutes = locale.getString("TIME_MINUTES");
+        final String seconds = locale.getString("TIME_SECONDS");
+        final String day = locale.getString("TIME_DAY");
+        final String hour = locale.getString("TIME_HOUR");
+        final String minute = locale.getString("TIME_MINUTE");
+        final String second = locale.getString("TIME_SECOND");
 
         final StringBuilder sb = new StringBuilder();
         boolean printRemaining = false;

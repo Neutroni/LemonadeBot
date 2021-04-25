@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -82,7 +83,7 @@ public class CommandProvider implements LocaleUpdateListener {
      * @param locale Locale in which to load command names in
      * @param templates TemplateManager to get templates from
      */
-    public CommandProvider(final Locale locale, final TemplateManager templates) {
+    public CommandProvider(final ResourceBundle locale, final TemplateManager templates) {
         this.templateManager = templates;
         //Load translated built in commands
         COMMANDS.forEach(command -> this.commandMap.put(command.getCommand(locale), command));
@@ -135,9 +136,10 @@ public class CommandProvider implements LocaleUpdateListener {
      */
     @Override
     public void updateLocale(final Locale newLocale) {
+        final ResourceBundle rb = ResourceBundle.getBundle("Translation", newLocale);
         this.commandMap.clear();
         COMMANDS.forEach(command -> {
-            this.commandMap.put(command.getCommand(newLocale), command);
+            this.commandMap.put(command.getCommand(rb), command);
         });
     }
 

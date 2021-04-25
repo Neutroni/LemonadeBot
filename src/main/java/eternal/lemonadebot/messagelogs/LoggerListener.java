@@ -26,10 +26,9 @@ package eternal.lemonadebot.messagelogs;
 import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.translation.TranslationKey;
 import java.time.OffsetDateTime;
-import java.util.Locale;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
@@ -103,17 +102,17 @@ public class LoggerListener extends ListenerAdapter {
         //Get the old content if stored
         final Message message = event.getMessage();
         final MessageManager messageManager = guildData.getMessageManager();
-        final Locale locale = guildConf.getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         final Optional<StoredMessage> oldContent = messageManager.getMessageContent(message.getIdLong());
         oldContent.ifPresent((StoredMessage t) -> {
             final User author = event.getAuthor();
             final EmbedBuilder eb = new EmbedBuilder();
-            eb.setAuthor(TranslationKey.MESSAGE_UPDATE_HEADER.getTranslation(locale));
-            eb.setTitle(TranslationKey.MESSAGE_LOG_USER.getTranslation(locale) + author.getAsMention());
-            eb.addField(TranslationKey.MESSAGE_CONTENT_BEFORE.getTranslation(locale), t.getContent(), false);
-            eb.addField(TranslationKey.MESSAGE_CONTENT_AFTER.getTranslation(locale), message.getContentRaw(), false);
+            eb.setAuthor(locale.getString("MESSAGE_UPDATE_HEADER"));
+            eb.setTitle(locale.getString("MESSAGE_LOG_USER") + author.getAsMention());
+            eb.addField(locale.getString("MESSAGE_CONTENT_BEFORE"), t.getContent(), false);
+            eb.addField(locale.getString("MESSAGE_CONTENT_AFTER"), message.getContentRaw(), false);
             final OffsetDateTime dt = message.getTimeCreated();
-            eb.setFooter(TranslationKey.MESSAGE_CREATION_TIME.getTranslation(locale) + dt.toString());
+            eb.setFooter(locale.getString("MESSAGE_CREATION_TIME") + dt.toString());
             logChannel.sendMessage(eb.build()).queue();
         });
 
@@ -145,20 +144,20 @@ public class LoggerListener extends ListenerAdapter {
         //Get the old content if stored
         final long messageID = event.getMessageIdLong();
         final MessageManager messageManager = guildData.getMessageManager();
-        final Locale locale = guildConf.getLocale();
+        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
         final Optional<StoredMessage> oldContent = messageManager.getMessageContent(messageID);
         oldContent.ifPresent((StoredMessage t) -> {
             final EmbedBuilder eb = new EmbedBuilder();
-            eb.setAuthor(TranslationKey.MESSAGE_DELETE_HEADER.getTranslation(locale));
+            eb.setAuthor(locale.getString("MESSAGE_DELETE_HEADER"));
             event.getJDA().retrieveUserById(t.getAuthor()).submit().whenComplete((User user, Throwable error) -> {
                 if (user == null) {
-                    eb.setTitle(TranslationKey.MESSAGE_LOG_USER_UNKNOWN.getTranslation(locale));
+                    eb.setTitle(locale.getString("MESSAGE_LOG_USER_UNKNOWN"));
                 } else {
-                    eb.setTitle(TranslationKey.MESSAGE_LOG_USER + user.getAsMention());
+                    eb.setTitle(locale.getString("MESSAGE_LOG_USER") + user.getAsMention());
                 }
-                eb.addField(TranslationKey.MESSAGE_CONTENT.getTranslation(locale), t.getContent(), false);
+                eb.addField(locale.getString("MESSAGE_CONTENT"), t.getContent(), false);
                 final OffsetDateTime dt = TimeUtil.getTimeCreated(messageID);
-                eb.setFooter(TranslationKey.MESSAGE_CREATION_TIME.getTranslation(locale) + dt.toString());
+                eb.setFooter(locale.getString("MESSAGE_CREATION_TIME") + dt.toString());
                 logChannel.sendMessage(eb.build()).queue();
             });
         });

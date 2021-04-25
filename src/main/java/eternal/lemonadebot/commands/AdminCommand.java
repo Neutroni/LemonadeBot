@@ -28,7 +28,7 @@ import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.permissions.PermissionManager;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
+import java.util.ResourceBundle;
 
 /**
  * Abstract class with admin defaultRank implementation
@@ -38,7 +38,7 @@ import java.util.Locale;
 public abstract class AdminCommand implements ChatCommand {
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(final Locale locale, final long guildID, final PermissionManager permissions) {
+    public Collection<CommandPermission> getDefaultRanks(final ResourceBundle locale, final long guildID, final PermissionManager permissions) {
         return List.of(new CommandPermission(getCommand(locale), MemberRank.ADMIN, guildID));
     }
 }

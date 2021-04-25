@@ -101,7 +101,7 @@ public class GuildDataStore implements Closeable {
         } else {
             this.commands = new TemplateManager(dataSource, guildID);
         }
-        this.commandProvider = new CommandProvider(locale, this.commands);
+        this.commandProvider = new CommandProvider(this.translationCache.getResourceBundle(), this.commands);
         if (cacheConf.eventCacheEnabled()) {
             this.events = new EventCache(dataSource, guildID);
         } else {
