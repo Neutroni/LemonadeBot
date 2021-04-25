@@ -73,7 +73,11 @@ class HelpCommand implements ChatCommand {
         if (options.length == 0) {
             //Help for this command
             final EmbedBuilder eb = new EmbedBuilder();
-            eb.setTitle(getCommand(locale) + " - " + getDescription(locale));
+            final String name = getCommand(locale);
+            final String desc = getDescription(locale);
+            final String titleTemplate = locale.getString("HELP_LIST_ELEMENT_TEMPLATE");
+            final String title = String.format(titleTemplate, name, desc);
+            eb.setTitle(title);
             final String helpText = locale.getString("SYNTAX_HELP");
             eb.setDescription(helpText);
             final String template = locale.getString("BOT_VERSION");
@@ -116,7 +120,8 @@ class HelpCommand implements ChatCommand {
             if (permissions.hasPermission(member, com, name)) {
                 final EmbedBuilder eb = new EmbedBuilder();
                 final String description = com.getDescription(locale);
-                eb.setTitle(name + " - " + description);
+                final String template = locale.getString("HELP_LIST_ELEMENT_TEMPLATE");
+                eb.setTitle(String.format(template, name, description));
                 final String helpText = com.getHelpText(locale);
                 eb.setDescription(helpText);
                 textChannel.sendMessage(eb.build()).queue();
@@ -126,7 +131,8 @@ class HelpCommand implements ChatCommand {
             return;
         }
         //Did not find a command
-        textChannel.sendMessage(locale.getString("ERROR_NO_SUCH_COMMAND") + name).queue();
+        final String response = String.format(locale.getString("ERROR_NO_SUCH_COMMAND"), name);
+        textChannel.sendMessage(response).queue();
     }
 
     /**
