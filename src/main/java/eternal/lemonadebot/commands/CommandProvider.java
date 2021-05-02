@@ -38,6 +38,7 @@ import eternal.lemonadebot.reminders.ReminderCommand;
 import eternal.lemonadebot.rolemanagement.RoleCommand;
 import eternal.lemonadebot.translation.LocaleUpdateListener;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -54,6 +55,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class CommandProvider implements LocaleUpdateListener {
 
+    private static final Logger LOGGER = LogManager.getLogger();
     /**
      * List of all the built in commands
      */
@@ -72,21 +74,26 @@ public class CommandProvider implements LocaleUpdateListener {
             new PermissionCommand(),
             new KeywordCommand()
     );
-
-    private static final Logger LOGGER = LogManager.getLogger();
-    private final Map<String, ChatCommand> commandMap = new ConcurrentHashMap<>();
+    private static final Map<Locale, Map<String, ChatCommand>> commandMap = new ConcurrentHashMap<>();
+    private volatile Map<String,ChatCommand> currentMap;
     private final TemplateManager templateManager;
 
     /**
      * Constructor
      *
-     * @param locale Locale in which to load command names in
+     * @param resource Locale in which to load command names in
      * @param templates TemplateManager to get templates from
      */
-    public CommandProvider(final ResourceBundle locale, final TemplateManager templates) {
+    public CommandProvider(final ResourceBundle resource, final TemplateManager templates) {
         this.templateManager = templates;
         //Load translated built in commands
-        COMMANDS.forEach(command -> this.commandMap.put(command.getCommand(locale), command));
+        this.currentMap = commandMap.computeIfAbsent(resource.getLocale(), (Locale t) -> {
+            final Map<String, ChatCommand> localeMap = new HashMap<>();
+            COMMANDS.forEach(
+                    command -> localeMap.put(command.getCommand(resource), command)
+            );
+            return localeMap;
+        });
     }
 
     /**
@@ -96,7 +103,7 @@ public class CommandProvider implements LocaleUpdateListener {
      * @return Optional containing the command if found
      */
     public Optional<ChatCommand> getBuiltInCommand(final String commandName) {
-        return Optional.ofNullable(this.commandMap.get(commandName));
+        return Optional.ofNullable(this.currentMap.get(commandName));
     }
 
     /**
@@ -137,9 +144,12 @@ public class CommandProvider implements LocaleUpdateListener {
     @Override
     public void updateLocale(final Locale newLocale) {
         final ResourceBundle rb = ResourceBundle.getBundle("Translation", newLocale);
-        this.commandMap.clear();
-        COMMANDS.forEach(command -> {
-            this.commandMap.put(command.getCommand(rb), command);
+        this.currentMap = commandMap.computeIfAbsent(rb.getLocale(), (Locale t) -> {
+            final Map<String, ChatCommand> localeMap = new HashMap<>();
+            COMMANDS.forEach(
+                    command -> localeMap.put(command.getCommand(rb), command)
+            );
+            return localeMap;
         });
     }
 

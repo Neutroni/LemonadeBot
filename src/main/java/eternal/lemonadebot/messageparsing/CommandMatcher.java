@@ -46,10 +46,8 @@ public interface CommandMatcher {
      * Get parameters limited by whitespace and the rest of the message as last
      * entry in returned array.
      *
-     * Examples: String "foo bar baz"
-     * count 1 {"foo","bar baz"}
-     * count 0 {"foo bar baz"}
-     * count -1 {"foo","bar","baz"]
+     * Examples: String "foo bar baz" count 1 {"foo","bar baz"} count 0 {"foo
+     * bar baz"} count -1 {"foo","bar","baz"]
      *
      * @param count number of parameters to return
      * @return array of parameters
@@ -58,8 +56,8 @@ public interface CommandMatcher {
 
     /**
      * Parse arguments from command, Collection will contain at most count
-     * elements and the last element will contain all the input beyond the
-     * count - 1 arguments input beyond n - 1 arguments will not be validated.
+     * elements and the last element will contain all the input beyond the count
+     * - 1 arguments input beyond n - 1 arguments will not be validated.
      *
      * @param count Maximum size of collection
      * @return Collection of argument strings

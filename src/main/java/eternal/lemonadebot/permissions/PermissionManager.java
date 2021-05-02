@@ -182,9 +182,9 @@ public class PermissionManager implements LocaleUpdateListener {
     Collection<CommandPermission> getPermissions() throws SQLException {
         final List<CommandPermission> permissions = new ArrayList<>();
         //Get default permissions for commands
-        for (final ChatCommand c : CommandProvider.COMMANDS) {
+        CommandProvider.COMMANDS.forEach(c -> {
             permissions.addAll(c.getDefaultRanks(this.locale, this.guildID, this));
-        }
+        });
 
         //Load permissions from database
         final String query = "SELECT action,requiredRank,requiredRole FROM Permissions WHERE guild = ?;";
