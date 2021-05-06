@@ -24,6 +24,7 @@
 package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.commands.ChatCommand;
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
@@ -78,9 +79,10 @@ public class TemplateCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
+    public void respond(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
-        final TranslationCache translationCache = guildData.getTranslationCache();
+        final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
         final String[] arguments = matcher.getArguments(2);
         if (arguments.length == 0) {
@@ -92,15 +94,15 @@ public class TemplateCommand implements ChatCommand {
         final ActionKey action = translationCache.getActionKey(actionName);
         switch (action) {
             case CREATE: {
-                createCustomCommand(arguments, matcher, guildData);
+                createCustomCommand(arguments, context);
                 break;
             }
             case DELETE: {
-                deleteCustomCommand(arguments, matcher, guildData);
+                deleteCustomCommand(arguments, context);
                 break;
             }
             case LIST: {
-                listCustomCommands(matcher, guildData);
+                listCustomCommands(context);
                 break;
             }
             default:
@@ -109,9 +111,10 @@ public class TemplateCommand implements ChatCommand {
         }
     }
 
-    private static void createCustomCommand(final String[] arguments, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void createCustomCommand(final String[] arguments, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
 
         if (arguments.length < 2) {
             textChannel.sendMessage(locale.getString("TEMPLATE_CREATE_MISSING_NAME")).queue();
@@ -124,6 +127,7 @@ public class TemplateCommand implements ChatCommand {
 
         //Check that there is no such built in command
         final String commandName = arguments[1];
+        final GuildDataStore guildData = context.getGuildData();
         final CommandProvider commandProvider = guildData.getCommandProvider();
         final Optional<ChatCommand> optCommand = commandProvider.getBuiltInCommand(commandName);
         if (optCommand.isPresent()) {
@@ -149,9 +153,11 @@ public class TemplateCommand implements ChatCommand {
 
     }
 
-    private static void deleteCustomCommand(final String[] arguments, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void deleteCustomCommand(final String[] arguments, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
+        final GuildDataStore guildData = context.getGuildData();
         final TextChannel textChannel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
 
         if (arguments.length < 2) {
             textChannel.sendMessage(locale.getString("TEMPLATE_DELETE_MISSING_NAME")).queue();
@@ -194,9 +200,10 @@ public class TemplateCommand implements ChatCommand {
         });
     }
 
-    private static void listCustomCommands(final CommandMatcher matcher, final GuildDataStore guildData) {
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
-        final TextChannel textChannel = matcher.getTextChannel();
+    private static void listCustomCommands(final CommandContext context) {
+        final GuildDataStore guildData = context.getGuildData();
+        final ResourceBundle locale = context.getResource();
+        final TextChannel textChannel = context.getChannel();
 
         //Construct embed
         final String header = locale.getString("HEADER_COMMANDS");

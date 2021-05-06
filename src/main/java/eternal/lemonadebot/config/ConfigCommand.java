@@ -24,6 +24,7 @@
 package eternal.lemonadebot.config;
 
 import eternal.lemonadebot.commands.AdminCommand;
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.translation.ActionKey;
@@ -66,18 +67,20 @@ public class ConfigCommand extends AdminCommand {
     }
 
     @Override
-    public void respond(final CommandMatcher message, final GuildDataStore guildData) {
-        final TextChannel channel = message.getTextChannel();
-        final TranslationCache translationCache = guildData.getTranslationCache();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
-        final String[] options = message.getArguments(2);
+    public void respond(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
+        final TranslationCache translation = context.getTranslation();
+        final GuildDataStore guildData = context.getGuildData();
+        final TextChannel channel = matcher.getTextChannel();
+        final ResourceBundle locale = translation.getResourceBundle();
+        final String[] options = matcher.getArguments(2);
         if (options.length == 0) {
             channel.sendMessage(locale.getString("ERROR_MISSING_OPERATION")).queue();
             return;
         }
 
         final String action = options[0];
-        final ActionKey key = translationCache.getActionKey(action);
+        final ActionKey key = translation.getActionKey(action);
         switch (key) {
             case SET: {
                 if (options.length < 2) {
@@ -87,7 +90,7 @@ public class ConfigCommand extends AdminCommand {
                 if (options.length < 3) {
                     channel.sendMessage(locale.getString("CONFIG_MISSING_VALUE")).queue();
                 }
-                setValue(options[1], options[2], guildData, message);
+                setValue(options[1], options[2], context);
                 break;
             }
             case GET: {
@@ -95,7 +98,7 @@ public class ConfigCommand extends AdminCommand {
                     channel.sendMessage(locale.getString("CONFIG_GET_MISSING_OPTION")).queue();
                     return;
                 }
-                getValue(options[1], channel, guildData);
+                getValue(options[1], context);
                 break;
             }
             case DISABLE: {
@@ -103,7 +106,7 @@ public class ConfigCommand extends AdminCommand {
                     channel.sendMessage(locale.getString("CONFIG_DISABLE_MISSING_OPTION")).queue();
                     return;
                 }
-                disableValue(options[1], channel, guildData);
+                disableValue(options[1], context);
                 break;
             }
             default: {
@@ -121,12 +124,14 @@ public class ConfigCommand extends AdminCommand {
      * @param guildData GuildData to get config from
      * @param matcher message that made the request
      */
-    private static void setValue(final String config, final String value, final GuildDataStore guildData, final CommandMatcher matcher) {
+    private static void setValue(final String config, final String value, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
+        final TranslationCache translation = context.getTranslation();
+        final GuildDataStore guildData = context.getGuildData();
         final TextChannel channel = matcher.getTextChannel();
         final ConfigManager guildConf = guildData.getConfigManager();
-        final TranslationCache translationCache = guildData.getTranslationCache();
-        final ResourceBundle locale = translationCache.getResourceBundle();
-        final ActionKey key = translationCache.getActionKey(config);
+        final ResourceBundle locale = translation.getResourceBundle();
+        final ActionKey key = translation.getActionKey(config);
         switch (key) {
             case PREFIX: {
                 try {
@@ -171,7 +176,7 @@ public class ConfigCommand extends AdminCommand {
                 try {
                     final Locale newLocale = new Locale(value);
                     if (guildConf.setLocale(newLocale)) {
-                        final ResourceBundle newRB = translationCache.getResourceBundle();
+                        final ResourceBundle newRB = translation.getResourceBundle();
                         channel.sendMessage(newRB.getString("CONFIG_LANGUAGE_UPDATE_SUCCESS") + newLocale.getDisplayLanguage(newLocale)).queue();
                     } else {
                         final String supportedLanguages = ConfigManager.SUPPORTED_LOCALES.stream().map((t) -> {
@@ -220,9 +225,11 @@ public class ConfigCommand extends AdminCommand {
      * @param channel TextChannel to reply on
      * @param guildData ConfigManager to get value from
      */
-    private static void getValue(final String option, final TextChannel channel, final GuildDataStore guildData) {
+    private static void getValue(final String option, final CommandContext context) {
+        final TextChannel channel = context.getMatcher().getTextChannel();
+        final TranslationCache translationCache = context.getTranslation();
+        final GuildDataStore guildData = context.getGuildData();
         final ConfigManager guildConf = guildData.getConfigManager();
-        final TranslationCache translationCache = guildData.getTranslationCache();
         final ResourceBundle locale = translationCache.getResourceBundle();
         final ActionKey key = translationCache.getActionKey(option);
         switch (key) {
@@ -275,9 +282,12 @@ public class ConfigCommand extends AdminCommand {
      * @param channel TextChannel to reply on
      * @param guildData ConfigManager in which to disable to value
      */
-    private static void disableValue(final String option, final TextChannel channel, final GuildDataStore guildData) {
+    private static void disableValue(final String option, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
+        final TextChannel channel = matcher.getTextChannel();
+        final TranslationCache translationCache = context.getTranslation();
+        final GuildDataStore guildData = context.getGuildData();
         final ConfigManager guildConf = guildData.getConfigManager();
-        final TranslationCache translationCache = guildData.getTranslationCache();
         final ResourceBundle locale = translationCache.getResourceBundle();
         final ActionKey key = translationCache.getActionKey(option);
         switch (key) {

@@ -24,6 +24,7 @@
 package eternal.lemonadebot.rolemanagement;
 
 import eternal.lemonadebot.commands.ChatCommand;
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
@@ -89,10 +90,11 @@ public class RoleCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
+    public void respond(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
-        final TranslationCache translationCache = guildData.getTranslationCache();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final TranslationCache translationCache = context.getTranslation();
+        final ResourceBundle locale = translationCache.getResourceBundle();
 
         //Check that we can assign roles here
         final Guild guild = matcher.getGuild();
@@ -111,31 +113,31 @@ public class RoleCommand implements ChatCommand {
         final ActionKey key = translationCache.getActionKey(action);
         switch (key) {
             case ALLOW: {
-                allowRole(matcher, guildData);
+                allowRole(context);
                 break;
             }
             case DISALLOW: {
-                disallowRole(opts, matcher, guildData);
+                disallowRole(opts, context);
                 break;
             }
             case GET: {
-                getRole(opts, matcher, guildData);
+                getRole(opts, context);
                 break;
             }
             case REMOVE: {
-                removeRole(opts, matcher, guildData);
+                removeRole(opts, context);
                 break;
             }
             case LIST: {
-                listAllowedRoles(matcher, guildData);
+                listAllowedRoles(context);
                 break;
             }
             case RANDOM: {
-                getRandomMemberWithRole(opts, matcher, guildData);
+                getRandomMemberWithRole(opts, context);
                 break;
             }
             case GUILD: {
-                getRoleFromGuild(opts, matcher, guildData);
+                getRoleFromGuild(opts, context);
                 break;
             }
             default: {
@@ -145,10 +147,12 @@ public class RoleCommand implements ChatCommand {
 
     }
 
-    private static void getRoleFromGuild(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void getRoleFromGuild(final String[] opts, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
         final Guild guild = matcher.getGuild();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final TranslationCache translation = context.getTranslation();
+        final ResourceBundle locale = translation.getResourceBundle();
 
         //Check persons doesn't already have a role
         final Member sender = matcher.getMember();
@@ -164,13 +168,13 @@ public class RoleCommand implements ChatCommand {
         }
         //Ignore current server
         final String requestedRoleName = opts[1];
-        final Collator collator = guildData.getTranslationCache().getCollator();
+        final Collator collator = translation.getCollator();
         if (collator.equals(guild.getName(), requestedRoleName)) {
             channel.sendMessage(locale.getString("ROLE_CURRENT_GUILD_NOT_ALLOWED")).queue();
             return;
         }
         //Try to assign the role user wants
-        assignRole(channel, sender, requestedRoleName, guildData);
+        assignRole(channel, sender, requestedRoleName, translation);
     }
 
     /**
@@ -181,10 +185,10 @@ public class RoleCommand implements ChatCommand {
      * @param requestedRoleName Name of the role user wants
      * @param guildData GuildData to get locale from
      */
-    private static void assignRole(final TextChannel channel, final Member sender, final String requestedRoleName, final GuildDataStore guildData) {
+    private static void assignRole(final TextChannel channel, final Member sender, final String requestedRoleName, final TranslationCache translation) {
         final Guild currentGuild = channel.getGuild();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
-        final Collator collator = guildData.getTranslationCache().getCollator();
+        final ResourceBundle locale = translation.getResourceBundle();
+        final Collator collator = translation.getCollator();
         //Guilds we share with the user
         final List<Guild> mutualGuilds = sender.getUser().getMutualGuilds();
 
@@ -325,9 +329,10 @@ public class RoleCommand implements ChatCommand {
 
     }
 
-    private static void allowRole(final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void allowRole(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
         final List<String> opts = matcher.parseArguments(3);
         final Member requester = matcher.getMember();
         if (!requester.hasPermission(Permission.MANAGE_ROLES)) {
@@ -362,6 +367,7 @@ public class RoleCommand implements ChatCommand {
         }
 
         //Add role to roleManagers list
+        final GuildDataStore guildData = context.getGuildData();
         final RoleManager roleManager = guildData.getRoleManager();
         final AllowedRole allowedRole = new AllowedRole(role, roleDescription);
         try {
@@ -378,9 +384,10 @@ public class RoleCommand implements ChatCommand {
 
     }
 
-    private static void disallowRole(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void disallowRole(final String[] opts, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
         final Member requester = matcher.getMember();
         if (!requester.hasPermission(Permission.MANAGE_ROLES)) {
             channel.sendMessage(locale.getString("ROLE_USER_NO_PERMISSION")).queue();
@@ -404,6 +411,7 @@ public class RoleCommand implements ChatCommand {
             return;
         }
         final Role role = roles.get(0);
+        final GuildDataStore guildData = context.getGuildData();
         final RoleManager roleManager = guildData.getRoleManager();
         try {
             if (roleManager.disallowRole(role)) {
@@ -418,9 +426,10 @@ public class RoleCommand implements ChatCommand {
         }
     }
 
-    private static void getRole(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void getRole(final String[] opts, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
         if (opts.length < 2) {
             channel.sendMessage(locale.getString("ROLE_GET_MISSING_ROLE_NAME")).queue();
             return;
@@ -441,6 +450,7 @@ public class RoleCommand implements ChatCommand {
             return;
         }
         final Role role = roles.get(0);
+        final GuildDataStore guildData = context.getGuildData();
         final RoleManager roleManager = guildData.getRoleManager();
 
         //Check if we can remove the role from requester
@@ -473,9 +483,10 @@ public class RoleCommand implements ChatCommand {
         channel.sendMessageFormat(template, roleName).queue();
     }
 
-    private static void removeRole(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void removeRole(final String[] opts, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
         if (opts.length < 2) {
             channel.sendMessage(locale.getString("ROLE_REMOVE_MISSING_ROLE_NAME")).queue();
             return;
@@ -494,6 +505,7 @@ public class RoleCommand implements ChatCommand {
             return;
         }
         final Role role = roles.get(0);
+        final GuildDataStore guildData = context.getGuildData();
         final RoleManager roleManager = guildData.getRoleManager();
 
         //Check if we can remove the role from requester
@@ -526,13 +538,15 @@ public class RoleCommand implements ChatCommand {
 
     }
 
-    private static void listAllowedRoles(final CommandMatcher matcher, final GuildDataStore guildData) {
-        final RoleManager roleManager = guildData.getRoleManager();
+    private static void listAllowedRoles(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
         final Guild guild = matcher.getGuild();
 
         //Get the list of roles we are allowed to assign
+        final GuildDataStore guildData = context.getGuildData();
+        final RoleManager roleManager = guildData.getRoleManager();
         final Collection<AllowedRole> roles;
         try {
             roles = roleManager.getRoles();
@@ -555,9 +569,10 @@ public class RoleCommand implements ChatCommand {
         channel.sendMessage(eb.build()).queue();
     }
 
-    private static void getRandomMemberWithRole(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void getRandomMemberWithRole(final String[] opts, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
         if (opts.length < 2) {
             channel.sendMessage(locale.getString("ROLE_RANDOM_MISSING_ROLE_NAME")).queue();
             return;

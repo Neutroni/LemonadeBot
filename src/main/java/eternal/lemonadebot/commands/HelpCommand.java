@@ -24,16 +24,19 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.LemonadeBot;
+import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
 import eternal.lemonadebot.permissions.PermissionManager;
+import eternal.lemonadebot.translation.TranslationCache;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 
@@ -65,9 +68,11 @@ class HelpCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
+    public void respond(CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
+        final TranslationCache translation = context.getTranslation();
         final TextChannel textChannel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = translation.getResourceBundle();
 
         final String[] options = matcher.getArguments(1);
         if (options.length == 0) {
@@ -89,12 +94,14 @@ class HelpCommand implements ChatCommand {
         final String name = options[0];
         if (locale.getString("ACTION_COMMANDS").equals(name)) {
             //Respond with list of commands available to the user
-            listCommands(matcher, guildData.getPermissionManager(), locale);
+            final GuildDataStore guildData = context.getGuildData();
+            final PermissionManager permissionManager = guildData.getPermissionManager();
+            listCommands(matcher, permissionManager, locale);
             return;
         }
 
         //Respond with help for command with given name if found
-        listHelp(matcher, guildData, name);
+        listHelp(context, name);
     }
 
     /**
@@ -102,12 +109,15 @@ class HelpCommand implements ChatCommand {
      * Respond with help of command if available to the user
      *
      * @param matcher Request matcher
-     * @param guildData GuildData of the guild request originated from
+     * @param db GuildData of the guild request originated from
      * @param name Name of the command to get help for
      */
-    private static void listHelp(final CommandMatcher matcher, final GuildDataStore guildData, final String name) {
+    private static void listHelp(final CommandContext context, final String name) {
+        final CommandMatcher matcher = context.getMatcher();
+        final TranslationCache translation = context.getTranslation();
+        final GuildDataStore guildData = context.getGuildData();
         final TextChannel textChannel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = translation.getResourceBundle();
         final PermissionManager permissions = guildData.getPermissionManager();
         final CommandProvider commands = guildData.getCommandProvider();
 

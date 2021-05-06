@@ -24,6 +24,7 @@
 package eternal.lemonadebot.notifications;
 
 import eternal.lemonadebot.commands.AdminCommand;
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.PermissionUtilities;
@@ -71,9 +72,10 @@ public class NotificationCommand extends AdminCommand {
     }
 
     @Override
-    public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
+    public void respond(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
-        final TranslationCache translationCache = guildData.getTranslationCache();
+        final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
 
         final String[] arguments = matcher.getArguments(2);
@@ -86,15 +88,15 @@ public class NotificationCommand extends AdminCommand {
         final ActionKey key = translationCache.getActionKey(action);
         switch (key) {
             case CREATE: {
-                createNotification(matcher, guildData);
+                createNotification(context);
                 break;
             }
             case DELETE: {
-                deleteNotification(arguments, matcher, guildData);
+                deleteNotification(arguments, context);
                 break;
             }
             case LIST: {
-                listNotifications(matcher, guildData);
+                listNotifications(context);
                 break;
             }
             default: {
@@ -103,12 +105,14 @@ public class NotificationCommand extends AdminCommand {
         }
     }
 
-    private static void createNotification(final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void createNotification(final CommandContext context) {
         //notification create 17 hours text
+        final CommandMatcher matcher = context.getMatcher();
+        final GuildDataStore guildData = context.getGuildData();
         final TextChannel channel = matcher.getTextChannel();
         final Member member = matcher.getMember();
         final NotificationManager notifications = guildData.getNotificationManager();
-        final TranslationCache translationCache = guildData.getTranslationCache();
+        final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
 
         final String[] arguments = matcher.getArguments(5);
@@ -173,9 +177,11 @@ public class NotificationCommand extends AdminCommand {
         }
     }
 
-    private static void deleteNotification(final String[] arguments, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void deleteNotification(final String[] arguments, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
+        final GuildDataStore guildData = context.getGuildData();
         final TextChannel textChannel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getTranslation().getResourceBundle();
 
         if (arguments.length < 2) {
             textChannel.sendMessage(locale.getString("NOTIFICATION_DELETE_MISSING_NAME")).queue();
@@ -211,9 +217,11 @@ public class NotificationCommand extends AdminCommand {
         });
     }
 
-    private static void listNotifications(final CommandMatcher matcher, final GuildDataStore guildData) {
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+    private static void listNotifications(final CommandContext context) {
+        final TranslationCache translation = context.getTranslation();
+        final ResourceBundle locale = translation.getResourceBundle();
         //Only list notifications of the user
+        final CommandMatcher matcher = context.getMatcher();
         final Member user = matcher.getMember();
 
         //Construct the embed
@@ -222,11 +230,12 @@ public class NotificationCommand extends AdminCommand {
         eb.setTitle(header);
 
         //Initialize all the futures
+        final GuildDataStore guildData = context.getGuildData();
         final Collection<Notification> ev = guildData.getNotificationManager().getNotifications();
         final List<CompletableFuture<String>> futures = new ArrayList<>(ev.size());
         ev.forEach((Notification reminder) -> {
             if (reminder.getAuthor() == user.getIdLong()) {
-                futures.add(reminder.toListElement(locale));
+                futures.add(reminder.toListElement(translation));
             }
         });
 

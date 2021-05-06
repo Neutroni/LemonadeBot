@@ -23,7 +23,9 @@
  */
 package eternal.lemonadebot.notifications;
 
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.customcommands.CustomCommand;
+import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.SimpleMessageMatcher;
@@ -108,7 +110,10 @@ class Notification extends CustomCommand implements Runnable {
         channel.getGuild().retrieveMemberById(getAuthor()).queue((Member member) -> {
             //Success
             final CommandMatcher matcher = new SimpleMessageMatcher(member, channel);
-            respond(matcher, this.guildData);
+            final DatabaseManager db = this.guildData.getDataBaseManager();
+            final TranslationCache translation = db.getTranslationCache(channel.getGuild());
+            final CommandContext context = new CommandContext(matcher, guildData, translation);
+            respond(context);
             LOGGER.debug("Notification: {} successfully activated on channel: {}", getName(), channel.getName());
         }, (Throwable t) -> {
             //Failure
@@ -149,8 +154,9 @@ class Notification extends CustomCommand implements Runnable {
         return this.activationTime;
     }
 
-    CompletableFuture<String> toListElement(final ResourceBundle locale) {
+    CompletableFuture<String> toListElement(final TranslationCache translation) {
         final CompletableFuture<String> result = new CompletableFuture<>();
+        final ResourceBundle locale = translation.getResourceBundle();
 
         //Get the channel for notifications
         final TextChannel channel = this.jda.getTextChannelById(this.channelID);
@@ -161,8 +167,7 @@ class Notification extends CustomCommand implements Runnable {
             return result;
         }
 
-        final TranslationCache translationCache = this.guildData.getTranslationCache();
-        final DateTimeFormatter timeFormatter = translationCache.getTimeFormatter();
+        final DateTimeFormatter timeFormatter = translation.getTimeFormatter();
         final String timeString = timeFormatter.format(this.activationTime);
         final String channelName = channel.getAsMention();
         final String template = locale.getString("NOTIFICATION_LIST_ELEMENT_TEMPLATE");
@@ -192,7 +197,7 @@ class Notification extends CustomCommand implements Runnable {
             return false;
         }
         final long millisecondsToActivation = duration.toMillis();
-        notificationTimer.schedule(this, millisecondsToActivation, TimeUnit.MILLISECONDS);
+        this.future = notificationTimer.schedule(this, millisecondsToActivation, TimeUnit.MILLISECONDS);
         return true;
     }
 

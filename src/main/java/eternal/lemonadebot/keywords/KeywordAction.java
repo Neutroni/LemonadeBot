@@ -23,10 +23,11 @@
  */
 package eternal.lemonadebot.keywords;
 
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.customcommands.CustomCommand;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
-import java.util.Locale;
+import eternal.lemonadebot.translation.TranslationCache;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
@@ -80,15 +81,19 @@ public class KeywordAction extends CustomCommand {
     }
 
     @Override
-    public void respond(final CommandMatcher message, final GuildDataStore guildData) {
+    public void respond(final CommandContext context) {
+        final CommandMatcher message = context.getMatcher();
+        final GuildDataStore guildData = context.getGuildData();
+        final TranslationCache translation = context.getTranslation();
         if (this.runAsOwner) {
             //Command should be run as the creator of the keyword
             message.getGuild().retrieveMemberById(getAuthor()).queue((Member t) -> {
                 final KeywordMatcher matcher = new KeywordMatcher(message, t);
-                super.respond(matcher, guildData);
+                final CommandContext fakeContext = new CommandContext(matcher, guildData, translation);
+                super.respond(fakeContext);
             });
         } else {
-            super.respond(message, guildData);
+            super.respond(context);
         }
     }
 

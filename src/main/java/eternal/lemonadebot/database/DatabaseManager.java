@@ -25,14 +25,18 @@ package eternal.lemonadebot.database;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import eternal.lemonadebot.config.ConfigManager;
+import eternal.lemonadebot.translation.TranslationCache;
 import java.io.Closeable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.sql.DataSource;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import org.apache.logging.log4j.LogManager;
@@ -50,6 +54,7 @@ public class DatabaseManager implements Closeable {
     private final CacheConfig cacheConfig;
     private final JDA jda;
     private final Map<Long, GuildDataStore> guildDataStores = new ConcurrentHashMap<>();
+    private final Map<Locale, TranslationCache> translationCaches = new ConcurrentHashMap<>();
     private final int maxMessages;
 
     /**
@@ -93,6 +98,15 @@ public class DatabaseManager implements Closeable {
     }
 
     /**
+     * Get the database conntection pool
+     *
+     * @return DataSource
+     */
+    DataSource getDataSource() {
+        return this.dataSource;
+    }
+
+    /**
      * Get GuildDataStore for guild
      *
      * @param guild guild to get manager for
@@ -100,7 +114,21 @@ public class DatabaseManager implements Closeable {
      */
     public GuildDataStore getGuildData(final Guild guild) {
         return this.guildDataStores.computeIfAbsent(guild.getIdLong(), (Long newGuildID) -> {
-            return new GuildDataStore(this.dataSource, newGuildID, this.jda, this.cacheConfig);
+            return new GuildDataStore(this, newGuildID, this.jda, this.cacheConfig);
+        });
+    }
+
+    /**
+     * Get translationCache for locale of a guild
+     *
+     * @param guild Guild to get transaltion cache for
+     * @return TranslationCache
+     */
+    public TranslationCache getTranslationCache(final Guild guild) {
+        final ConfigManager config = getGuildData(guild).getConfigManager();
+        final Locale locale = config.getLocale();
+        return this.translationCaches.computeIfAbsent(locale, (Locale t) -> {
+            return new TranslationCache(locale);
         });
     }
 
@@ -240,7 +268,7 @@ public class DatabaseManager implements Closeable {
                 final ResultSet rs = st.executeQuery(query)) {
             while (rs.next()) {
                 final long guildID = rs.getLong("id");
-                this.guildDataStores.put(guildID, new GuildDataStore(this.dataSource, guildID, this.jda, this.cacheConfig));
+                this.guildDataStores.put(guildID, new GuildDataStore(this, guildID, this.jda, this.cacheConfig));
             }
         }
         LOGGER.debug("Loaded guilds successfully");

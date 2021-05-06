@@ -23,11 +23,11 @@
  */
 package eternal.lemonadebot.permissions;
 
+import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.radixtree.RadixTree;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Locale;
 import java.util.Optional;
 import javax.sql.DataSource;
 
@@ -47,7 +47,7 @@ public class PermissionManagerCache extends PermissionManager {
      * @param guildID ID of the guild to store permissions for
      * @param locale Locale to use for loading default permissions
      */
-    public PermissionManagerCache(final DataSource ds, final long guildID, final Locale locale) {
+    public PermissionManagerCache(final DataSource ds, final long guildID, final ConfigManager locale) {
         super(ds, guildID, locale);
         this.permissions = new RadixTree<>(null);
     }

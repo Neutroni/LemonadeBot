@@ -31,7 +31,7 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import eternal.lemonadebot.commands.ChatCommand;
-import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
@@ -94,13 +94,14 @@ public class MusicCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(final CommandMatcher message, final GuildDataStore guildData) {
-        final TextChannel textChannel = message.getTextChannel();
-        final TranslationCache translationCache = guildData.getTranslationCache();
+    public void respond(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
+        final TextChannel textChannel = matcher.getTextChannel();
+        final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
 
         //Get arguments and parse accordingly
-        final String[] arguments = message.getArguments(1);
+        final String[] arguments = matcher.getArguments(1);
         if (arguments.length == 0) {
             textChannel.sendMessage(locale.getString("ERROR_MISSING_OPERATION")).queue();
             return;

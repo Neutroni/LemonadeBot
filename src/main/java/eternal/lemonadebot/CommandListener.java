@@ -24,6 +24,7 @@
 package eternal.lemonadebot;
 
 import eternal.lemonadebot.commands.ChatCommand;
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.cooldowns.CooldownManager;
@@ -32,6 +33,7 @@ import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.MessageMatcher;
 import eternal.lemonadebot.permissions.PermissionManager;
+import eternal.lemonadebot.translation.TranslationCache;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -98,7 +100,8 @@ public class CommandListener extends ListenerAdapter {
         final Message message = event.getMessage();
         final GuildDataStore guildData = this.db.getGuildData(eventGuild);
         final ConfigManager configManager = guildData.getConfigManager();
-        final ResourceBundle resources = guildData.getTranslationCache().getResourceBundle();
+        final TranslationCache translation = this.db.getTranslationCache(eventGuild);
+        final ResourceBundle resources = translation.getResourceBundle();
         final List<Member> mentionedMembers = message.getMentionedMembers();
         if (mentionedMembers.size() == 1 && mentionedMembers.contains(selfMember)) {
             //Check that the message is just the mention and possibly whitespace
@@ -152,7 +155,8 @@ public class CommandListener extends ListenerAdapter {
             textChannel.sendMessage(template + currentCooldown).queue();
         }, () -> {
             //Run the command
-            command.respond(cmdMatch, guildData);
+            final CommandContext context = new CommandContext(cmdMatch, guildData, translation);
+            command.respond(context);
         });
 
     }

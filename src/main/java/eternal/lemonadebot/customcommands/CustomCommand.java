@@ -24,6 +24,7 @@
 package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.commands.ChatCommand;
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.cooldowns.CooldownManager;
 import eternal.lemonadebot.database.GuildDataStore;
@@ -123,10 +124,10 @@ public class CustomCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(final CommandMatcher message, final GuildDataStore guildData) {
-        final TextChannel channel = message.getTextChannel();
-        final CharSequence response = TemplateProvider.parseAction(message, guildData, this.actionTemplate);
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+    public void respond(final CommandContext context) {
+        final TextChannel channel = context.getChannel();
+        final CharSequence response = TemplateProvider.parseAction(context, this.actionTemplate);
+        final ResourceBundle locale = context.getResource();
 
         //Check if message is empty
         final String commandString = response.toString();
@@ -142,6 +143,8 @@ public class CustomCommand implements ChatCommand {
         }
 
         //If response begins with a exclamation point it should be treated as a command
+        final GuildDataStore guildData = context.getGuildData();
+        final CommandMatcher message = context.getMatcher();
         final CommandMatcher fakeMatcher = new FakeMessageMatcher(message, commandString);
         final CommandProvider commands = guildData.getCommandProvider();
         final Optional<ChatCommand> optCommand = commands.getAction(fakeMatcher);
@@ -172,7 +175,8 @@ public class CustomCommand implements ChatCommand {
             final String template = locale.getString("ERROR_COMMAND_COOLDOWN_TIME");
             channel.sendMessage(template + currentCooldown).queue();
         }, () -> {
-            command.respond(fakeMatcher, guildData);
+            final CommandContext fakeContext = new CommandContext(fakeMatcher, guildData, context.getTranslation());
+            command.respond(fakeContext);
         });
     }
 

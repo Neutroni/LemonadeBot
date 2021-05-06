@@ -23,7 +23,9 @@
  */
 package eternal.lemonadebot.reminders;
 
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.customcommands.CustomCommand;
+import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.SimpleMessageMatcher;
@@ -32,13 +34,13 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
@@ -116,7 +118,11 @@ class Reminder extends CustomCommand implements Runnable {
         channel.getGuild().retrieveMemberById(getAuthor()).queue((Member member) -> {
             //Success
             final CommandMatcher matcher = new SimpleMessageMatcher(member, channel);
-            respond(matcher, this.guildData);
+            final Guild guild = channel.getGuild();
+            final DatabaseManager db = this.guildData.getDataBaseManager();
+            final TranslationCache translation = db.getTranslationCache(guild);
+            final CommandContext context = new CommandContext(matcher, guildData, translation);
+            respond(context);
             LOGGER.debug("Reminder: {} successfully activated on channel: {}", getName(), channel.getName());
         }, (Throwable t) -> {
             //Failure
@@ -157,8 +163,9 @@ class Reminder extends CustomCommand implements Runnable {
         return this.activationTime;
     }
 
-    CompletableFuture<String> toListElement(final ResourceBundle locale) {
+    CompletableFuture<String> toListElement(final TranslationCache translationCache) {
         final CompletableFuture<String> result = new CompletableFuture<>();
+        final ResourceBundle locale = translationCache.getResourceBundle();
 
         //Get the channel for reminder
         final TextChannel channel = this.jda.getTextChannelById(this.channelID);
@@ -169,7 +176,6 @@ class Reminder extends CustomCommand implements Runnable {
             return result;
         }
 
-        final TranslationCache translationCache = this.guildData.getTranslationCache();
         final DateTimeFormatter timeFormatter = translationCache.getTimeFormatter();
         final String cronString = this.activationTime.getCronString(locale.getLocale(), timeFormatter);
         final String channelName = channel.getAsMention();

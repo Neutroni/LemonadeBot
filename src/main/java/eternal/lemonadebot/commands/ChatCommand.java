@@ -23,12 +23,13 @@
  */
 package eternal.lemonadebot.commands;
 
+import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.PermissionManager;
+import eternal.lemonadebot.translation.TranslationCache;
 import java.util.Collection;
-import java.util.Locale;
 import java.util.ResourceBundle;
 
 /**
@@ -75,9 +76,8 @@ public interface ChatCommand {
     /**
      * Responds to a message
      *
-     * @param matcher Message contents
-     * @param guildData data for the guild the message was sent in
+     * @param context Context for the message
      */
-    void respond(CommandMatcher matcher, GuildDataStore guildData);
+    void respond(CommandContext context);
 
 }

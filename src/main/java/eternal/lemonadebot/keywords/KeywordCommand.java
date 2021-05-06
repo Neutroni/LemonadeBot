@@ -24,6 +24,7 @@
 package eternal.lemonadebot.keywords;
 
 import eternal.lemonadebot.commands.AdminCommand;
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.customcommands.TemplateProvider;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
@@ -71,9 +72,10 @@ public class KeywordCommand extends AdminCommand {
     }
 
     @Override
-    public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
+    public void respond(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
-        final TranslationCache translationCache = guildData.getTranslationCache();
+        final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
         final String[] arguments = matcher.getArguments(1);
         if (arguments.length == 0) {
@@ -85,15 +87,15 @@ public class KeywordCommand extends AdminCommand {
         final ActionKey action = translationCache.getActionKey(actionName);
         switch (action) {
             case CREATE: {
-                createKeywords(matcher, guildData);
+                createKeywords(context);
                 break;
             }
             case DELETE: {
-                deleteKeyword(arguments, matcher, guildData);
+                deleteKeyword(arguments, context);
                 break;
             }
             case LIST: {
-                listKeywords(matcher, guildData);
+                listKeywords(context);
                 break;
             }
             default:
@@ -102,9 +104,11 @@ public class KeywordCommand extends AdminCommand {
         }
     }
 
-    private static void createKeywords(final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void createKeywords(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
+        final GuildDataStore guildData = context.getGuildData();
 
         //create name runas pattern action
         final List<String> arguments = matcher.parseArguments(5);
@@ -157,9 +161,11 @@ public class KeywordCommand extends AdminCommand {
 
     }
 
-    private static void deleteKeyword(final String[] arguments, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void deleteKeyword(final String[] arguments, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
+        final GuildDataStore guildData = context.getGuildData();
 
         if (arguments.length < 2) {
             textChannel.sendMessage(locale.getString("KEYWORD_DELETE_MISSING_NAME")).queue();
@@ -196,9 +202,10 @@ public class KeywordCommand extends AdminCommand {
         });
     }
 
-    private static void listKeywords(final CommandMatcher matcher, final GuildDataStore guildData) {
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
-        final TextChannel textChannel = matcher.getTextChannel();
+    private static void listKeywords(final CommandContext context) {
+        final ResourceBundle locale = context.getResource();
+        final TextChannel textChannel = context.getChannel();
+        final GuildDataStore guildData = context.getGuildData();
 
         //Construct embed
         final String header = locale.getString("HEADER_KEYWORDS");

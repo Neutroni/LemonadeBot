@@ -24,6 +24,7 @@
 package eternal.lemonadebot.reminders;
 
 import eternal.lemonadebot.commands.AdminCommand;
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.PermissionUtilities;
@@ -76,9 +77,10 @@ public class ReminderCommand extends AdminCommand {
     }
 
     @Override
-    public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
+    public void respond(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
-        final TranslationCache translationCache = guildData.getTranslationCache();
+        final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
 
         final String[] arguments = matcher.getArguments(2);
@@ -91,15 +93,15 @@ public class ReminderCommand extends AdminCommand {
         final ActionKey key = translationCache.getActionKey(action);
         switch (key) {
             case CREATE: {
-                createReminder(matcher, guildData);
+                createReminder(context);
                 break;
             }
             case DELETE: {
-                deleteReminder(arguments, matcher, guildData);
+                deleteReminder(arguments, context);
                 break;
             }
             case LIST: {
-                listReminders(matcher, guildData);
+                listReminders(context);
                 break;
             }
             default: {
@@ -108,11 +110,13 @@ public class ReminderCommand extends AdminCommand {
         }
     }
 
-    private static void createReminder(final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void createReminder(final CommandContext context) {
         //reminder create test 17.00 * * * reminder text
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
+        final GuildDataStore guildData = context.getGuildData();
         final ReminderManager reminders = guildData.getReminderManager();
-        final TranslationCache translationCache = guildData.getTranslationCache();
+        final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
 
         final String[] arguments = matcher.getArguments(6);
@@ -195,7 +199,7 @@ public class ReminderCommand extends AdminCommand {
         final String reminderDay = arguments[5];
         DayOfWeek dayOfWeek = null;
         if (!"*".equals(reminderDay)) {
-            final Collator collator = guildData.getTranslationCache().getCollator();
+            final Collator collator = translationCache.getCollator();
             for (final DayOfWeek day : DayOfWeek.values()) {
                 final String localDayName = day.getDisplayName(TextStyle.FULL_STANDALONE, locale.getLocale());
                 if (collator.equals(localDayName, reminderDay)) {
@@ -241,14 +245,16 @@ public class ReminderCommand extends AdminCommand {
         }
     }
 
-    private static void deleteReminder(final String[] arguments, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void deleteReminder(final String[] arguments, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
 
         if (arguments.length < 2) {
             textChannel.sendMessage(locale.getString("REMINDER_DELETE_MISSING_NAME")).queue();
             return;
         }
+        final GuildDataStore guildData = context.getGuildData();
         final ReminderManager reminders = guildData.getReminderManager();
 
         final String reminderName = arguments[1];
@@ -279,8 +285,9 @@ public class ReminderCommand extends AdminCommand {
         });
     }
 
-    private static void listReminders(final CommandMatcher matcher, final GuildDataStore guildData) {
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+    private static void listReminders(final CommandContext context) {
+        final TranslationCache translationCache = context.getTranslation();
+        final ResourceBundle locale = translationCache.getResourceBundle();
 
         //Construct the embed
         final String header = locale.getString("HEADER_REMINDERS");
@@ -288,10 +295,11 @@ public class ReminderCommand extends AdminCommand {
         eb.setTitle(header);
 
         //Initialize all the futures
+        final GuildDataStore guildData = context.getGuildData();
         final Collection<Reminder> ev = guildData.getReminderManager().getReminders();
         final List<CompletableFuture<String>> futures = new ArrayList<>(ev.size());
         ev.forEach((Reminder reminder) -> {
-            futures.add(reminder.toListElement(locale));
+            futures.add(reminder.toListElement(translationCache));
         });
 
         //After all the futures all initialized start waiting for results
@@ -303,8 +311,8 @@ public class ReminderCommand extends AdminCommand {
             contentBuilder.append(locale.getString("REMINDER_NO_REMINDERS"));
         }
         eb.setDescription(contentBuilder);
-
-        final TextChannel textChannel = matcher.getTextChannel();
+        
+        final TextChannel textChannel = context.getChannel();
         textChannel.sendMessage(eb.build()).queue();
     }
 

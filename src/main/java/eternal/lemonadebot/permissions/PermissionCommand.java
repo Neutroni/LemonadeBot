@@ -25,6 +25,7 @@ package eternal.lemonadebot.permissions;
 
 import eternal.lemonadebot.commands.AdminCommand;
 import eternal.lemonadebot.commands.ChatCommand;
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
@@ -69,9 +70,10 @@ public class PermissionCommand extends AdminCommand {
     }
 
     @Override
-    public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
+    public void respond(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
-        final TranslationCache translationCache = guildData.getTranslationCache();
+        final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
         final String[] arguments = matcher.getArguments(1);
         if (arguments.length == 0) {
@@ -83,15 +85,15 @@ public class PermissionCommand extends AdminCommand {
         final ActionKey key = translationCache.getActionKey(actionString);
         switch (key) {
             case GET: {
-                getPermission(arguments, channel, guildData);
+                getPermission(arguments, context);
                 break;
             }
             case SET: {
-                setPermission(matcher, guildData);
+                setPermission(context);
                 break;
             }
             case LIST: {
-                listPermissions(matcher, guildData);
+                listPermissions(context);
                 break;
             }
             default: {
@@ -100,9 +102,11 @@ public class PermissionCommand extends AdminCommand {
         }
     }
 
-    private static void getPermission(final String[] arguments, final TextChannel channel, final GuildDataStore guildData) {
+    private static void getPermission(final String[] arguments, final CommandContext context) {
+        final TextChannel channel = context.getChannel();
+        final GuildDataStore guildData = context.getGuildData();
         final PermissionManager permissions = guildData.getPermissionManager();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
 
         if (arguments.length < 2) {
             channel.sendMessage(locale.getString("PERMISSION_GET_MISSING_NAME")).queue();
@@ -170,13 +174,15 @@ public class PermissionCommand extends AdminCommand {
         channel.sendMessage(eb.build()).queue();
     }
 
-    private static void setPermission(final CommandMatcher message, final GuildDataStore guildData) {
-        final TextChannel channel = message.getTextChannel();
+    private static void setPermission(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
+        final TextChannel channel = matcher.getTextChannel();
+        final GuildDataStore guildData = context.getGuildData();
         final PermissionManager permissions = guildData.getPermissionManager();
-        final TranslationCache translationCache = guildData.getTranslationCache();
+        final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
 
-        final List<String> args = message.parseArguments(4);
+        final List<String> args = matcher.parseArguments(4);
         if (args.size() < 2) {
             channel.sendMessage(locale.getString("PERMISSION_SET_MISSING_RANK")).queue();
             return;
@@ -225,11 +231,13 @@ public class PermissionCommand extends AdminCommand {
         }
     }
 
-    private static void listPermissions(final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void listPermissions(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
         final Guild guild = matcher.getGuild();
+        final GuildDataStore guildData = context.getGuildData();
         final PermissionManager permissionManager = guildData.getPermissionManager();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
 
         final Collection<CommandPermission> permissions;
         try {

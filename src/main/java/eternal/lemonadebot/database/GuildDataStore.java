@@ -41,7 +41,6 @@ import eternal.lemonadebot.permissions.PermissionManagerCache;
 import eternal.lemonadebot.reminders.ReminderManager;
 import eternal.lemonadebot.rolemanagement.RoleManager;
 import eternal.lemonadebot.rolemanagement.RoleManagerCache;
-import eternal.lemonadebot.translation.TranslationCache;
 import java.io.Closeable;
 import java.util.Locale;
 import javax.sql.DataSource;
@@ -55,6 +54,7 @@ import net.dv8tion.jda.api.JDA;
 public class GuildDataStore implements Closeable {
 
     private final long guildID;
+    private final DatabaseManager database;
     private final ConfigManager config;
     private final PermissionManager permissions;
     private final TemplateManager commands;
@@ -65,7 +65,6 @@ public class GuildDataStore implements Closeable {
     private final CooldownManager cooldowns;
     private final MessageManager messages;
     private final CommandProvider commandProvider;
-    private final TranslationCache translationCache;
     private final KeywordManager keywordManager;
     private final InventoryManager inventoryManager;
 
@@ -77,19 +76,20 @@ public class GuildDataStore implements Closeable {
      * @param jda JDA to use for reminders
      * @param cacheConf Configuration for what data to cache
      */
-    GuildDataStore(final DataSource dataSource, final long guildID, final JDA jda, final CacheConfig cacheConf) {
+    GuildDataStore(final DatabaseManager db, final long guildID, final JDA jda, final CacheConfig cacheConf) {
         this.guildID = guildID;
+        this.database = db;
+        final DataSource dataSource = db.getDataSource();
         this.config = new ConfigManager(dataSource, guildID);
         final Locale locale = this.config.getLocale();
         if (cacheConf.permissionsCacheEnabled()) {
-            this.permissions = new PermissionManagerCache(dataSource, guildID, locale);
+            this.permissions = new PermissionManagerCache(dataSource, guildID, this.config);
         } else {
-            this.permissions = new PermissionManager(dataSource, guildID, locale);
+            this.permissions = new PermissionManager(dataSource, guildID, this.config);
         }
         this.reminders = new ReminderManager(dataSource, jda, this);
         this.notifications = new NotificationManager(dataSource, jda, this);
         this.messages = new MessageManager(dataSource);
-        this.translationCache = new TranslationCache(locale);
         this.keywordManager = new KeywordManager(dataSource, guildID);
         if (cacheConf.cooldownCacheEnabled()) {
             this.cooldowns = new CooldownCache(dataSource, guildID);
@@ -101,7 +101,7 @@ public class GuildDataStore implements Closeable {
         } else {
             this.commands = new TemplateManager(dataSource, guildID);
         }
-        this.commandProvider = new CommandProvider(this.translationCache.getResourceBundle(), this.commands);
+        this.commandProvider = new CommandProvider(this.config, this.commands);
         if (cacheConf.eventCacheEnabled()) {
             this.events = new EventCache(dataSource, guildID);
         } else {
@@ -117,11 +117,6 @@ public class GuildDataStore implements Closeable {
         } else {
             this.inventoryManager = new InventoryManager(dataSource, guildID);
         }
-
-        //Add locale update listeners
-        this.config.registerLocaleUpdateListener(this.permissions);
-        this.config.registerLocaleUpdateListener(this.commandProvider);
-        this.config.registerLocaleUpdateListener(this.translationCache);
     }
 
     /**
@@ -131,6 +126,15 @@ public class GuildDataStore implements Closeable {
      */
     public long getGuildID() {
         return this.guildID;
+    }
+
+    /**
+     * Get the database manager
+     *
+     * @return DatabaseManager
+     */
+    public DatabaseManager getDataBaseManager() {
+        return this.database;
     }
 
     /**
@@ -221,15 +225,6 @@ public class GuildDataStore implements Closeable {
      */
     public CommandProvider getCommandProvider() {
         return this.commandProvider;
-    }
-
-    /**
-     * Get the translationCache
-     *
-     * @return TranslationCache
-     */
-    public TranslationCache getTranslationCache() {
-        return this.translationCache;
     }
 
     /**

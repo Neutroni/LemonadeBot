@@ -24,6 +24,7 @@
 package eternal.lemonadebot.cooldowns;
 
 import eternal.lemonadebot.commands.AdminCommand;
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.translation.ActionKey;
@@ -64,10 +65,11 @@ public class CooldownCommand extends AdminCommand {
     }
 
     @Override
-    public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
+    public void respond(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final String[] arguments = matcher.getArguments(1);
         final TextChannel channel = matcher.getTextChannel();
-        final TranslationCache translationCache = guildData.getTranslationCache();
+        final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
         if (arguments.length == 0) {
             channel.sendMessage(locale.getString("ERROR_MISSING_OPERATION")).queue();
@@ -82,20 +84,20 @@ public class CooldownCommand extends AdminCommand {
         final ActionKey key = translationCache.getActionKey(option);
         switch (key) {
             case GET: {
-                getCooldown(channel, guildData, arguments[1]);
+                getCooldown(context, arguments[1]);
                 break;
             }
             case SET: {
                 final String[] setArguments = matcher.getArguments(3);
-                setCooldown(channel, guildData, setArguments);
+                setCooldown(context, setArguments);
                 break;
             }
             case DISABLE: {
-                disableCooldown(channel, guildData, arguments[1]);
+                disableCooldown(context, arguments[1]);
                 break;
             }
             case LIST: {
-                listCooldowns(matcher, guildData);
+                listCooldowns(context);
                 break;
             }
             default: {
@@ -111,9 +113,11 @@ public class CooldownCommand extends AdminCommand {
      * @param guildData GuildData to get cooldown manager from
      * @param requestedAction action to get cooldown for
      */
-    private static void getCooldown(final TextChannel channel, final GuildDataStore guildData, final String requestedAction) {
+    private static void getCooldown(final CommandContext context, final String requestedAction) {
+        final GuildDataStore guildData = context.getGuildData();
         final CooldownManager cooldownManager = guildData.getCooldownManager();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
+        final TextChannel channel = context.getChannel();
         final Optional<ActionCooldown> cd;
         try {
             cd = cooldownManager.getActionCooldown(requestedAction);
@@ -142,9 +146,12 @@ public class CooldownCommand extends AdminCommand {
      * @param guildData cooldown manager to use for setting cooldown
      * @param arguments arguments time,amount,action to use for setting cooldown
      */
-    private static void setCooldown(final TextChannel channel, final GuildDataStore guildData, final String[] arguments) {
+    private static void setCooldown(final CommandContext context, final String[] arguments) {
+        final GuildDataStore guildData = context.getGuildData();
         final CooldownManager cooldownManager = guildData.getCooldownManager();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final TranslationCache translationCache = context.getTranslation();
+        final ResourceBundle locale = translationCache.getResourceBundle();
+        final TextChannel channel = context.getChannel();
 
         //No time amount
         if (arguments.length < 2) {
@@ -168,7 +175,6 @@ public class CooldownCommand extends AdminCommand {
         }
 
         final String unitName = arguments[2].toLowerCase();
-        final TranslationCache translationCache = guildData.getTranslationCache();
         final Optional<ChronoUnit> optUnit = translationCache.getChronoUnit(unitName);
         final ChronoUnit unit;
         if (optUnit.isPresent()) {
@@ -202,9 +208,11 @@ public class CooldownCommand extends AdminCommand {
      * @param guildData CooldownManager to remove cooldown in
      * @param requestedAction Action which to remove cooldown from
      */
-    private static void disableCooldown(final TextChannel channel, final GuildDataStore guildData, final String requestedAction) {
+    private static void disableCooldown(final CommandContext context, final String requestedAction) {
+        final GuildDataStore guildData = context.getGuildData();
         final CooldownManager cooldownManager = guildData.getCooldownManager();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
+        final TextChannel channel = context.getChannel();
         try {
             if (cooldownManager.removeCooldown(requestedAction)) {
                 //Found cooldown for action
@@ -220,10 +228,11 @@ public class CooldownCommand extends AdminCommand {
         }
     }
 
-    private static void listCooldowns(final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void listCooldowns(final CommandContext context) {
+        final GuildDataStore guildData = context.getGuildData();
         final CooldownManager cooldownManager = guildData.getCooldownManager();
-        final TextChannel channel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final TextChannel channel = context.getChannel();
+        final ResourceBundle locale = context.getResource();
 
         //Fetch the list of set cooldowns from database
         final Collection<ActionCooldown> cooldowns;

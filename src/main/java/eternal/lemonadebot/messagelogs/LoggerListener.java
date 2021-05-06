@@ -102,7 +102,7 @@ public class LoggerListener extends ListenerAdapter {
         //Get the old content if stored
         final Message message = event.getMessage();
         final MessageManager messageManager = guildData.getMessageManager();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = this.db.getTranslationCache(guild).getResourceBundle();
         final Optional<StoredMessage> oldContent = messageManager.getMessageContent(message.getIdLong());
         oldContent.ifPresent((StoredMessage t) -> {
             final User author = event.getAuthor();
@@ -144,7 +144,7 @@ public class LoggerListener extends ListenerAdapter {
         //Get the old content if stored
         final long messageID = event.getMessageIdLong();
         final MessageManager messageManager = guildData.getMessageManager();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = this.db.getTranslationCache(guild).getResourceBundle();
         final Optional<StoredMessage> oldContent = messageManager.getMessageContent(messageID);
         oldContent.ifPresent((StoredMessage t) -> {
             final EmbedBuilder eb = new EmbedBuilder();

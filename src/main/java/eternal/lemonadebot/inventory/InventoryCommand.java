@@ -24,6 +24,7 @@
 package eternal.lemonadebot.inventory;
 
 import eternal.lemonadebot.commands.ChatCommand;
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
@@ -77,12 +78,13 @@ public class InventoryCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(final CommandMatcher message, final GuildDataStore guildData) {
-        final TextChannel channel = message.getTextChannel();
-        final TranslationCache translationCache = guildData.getTranslationCache();
+    public void respond(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
+        final TextChannel channel = matcher.getTextChannel();
+        final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
 
-        final String[] opts = message.getArguments(1);
+        final String[] opts = matcher.getArguments(1);
         if (opts.length == 0) {
             channel.sendMessage(locale.getString("ERROR_MISSING_OPERATION")).queue();
             return;
@@ -92,15 +94,15 @@ public class InventoryCommand implements ChatCommand {
         final ActionKey key = translationCache.getActionKey(action);
         switch (key) {
             case LIST: {
-                showInventory(opts, message, guildData);
+                showInventory(opts, context);
                 break;
             }
             case ADD: {
-                addItemToInventory(message, guildData);
+                addItemToInventory(context);
                 break;
             }
             case PAY: {
-                payItemToUser(message, guildData);
+                payItemToUser(context);
                 break;
             }
             default: {
@@ -109,12 +111,14 @@ public class InventoryCommand implements ChatCommand {
         }
     }
 
-    private static void showInventory(final String[] opts, final CommandMatcher message, final GuildDataStore guildData) {
-        final TextChannel channel = message.getTextChannel();
+    private static void showInventory(final String[] opts, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
+        final TextChannel channel = matcher.getTextChannel();
+        final GuildDataStore guildData = context.getGuildData();
         final InventoryManager inventoryManager = guildData.getInventoryManager();
-        final Guild guild = message.getGuild();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
-        final Member requester = message.getMember();
+        final Guild guild = matcher.getGuild();
+        final ResourceBundle locale = context.getResource();
+        final Member requester = matcher.getMember();
         if (opts.length < 2) {
             //No user specified, show inventory of requester
             showInventoryForUser(requester, inventoryManager, locale, channel);
@@ -175,13 +179,15 @@ public class InventoryCommand implements ChatCommand {
         channel.sendMessage(eb.build()).queue();
     }
 
-    private static void addItemToInventory(final CommandMatcher message, final GuildDataStore guildData) {
-        final TextChannel channel = message.getTextChannel();
-        final Guild guild = message.getGuild();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
-        final Member requester = message.getMember();
+    private static void addItemToInventory(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
+        final TextChannel channel = matcher.getTextChannel();
+        final Guild guild = matcher.getGuild();
+        final GuildDataStore guildData = context.getGuildData();
+        final ResourceBundle locale = context.getResource();
+        final Member requester = matcher.getMember();
         //add item count user
-        final List<String> args = message.parseArguments(5);
+        final List<String> args = matcher.parseArguments(5);
         if (args.size() < 2) {
             channel.sendMessage(locale.getString("INVENTORY_ADD_MISSING_ITEM_NAME")).queue();
             return;
@@ -323,13 +329,15 @@ public class InventoryCommand implements ChatCommand {
         channel.sendMessageFormat(template, modeName).queue();
     }
 
-    private static void payItemToUser(final CommandMatcher message, final GuildDataStore guildData) {
-        final TextChannel channel = message.getTextChannel();
-        final Guild guild = message.getGuild();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
-        final Member requester = message.getMember();
+    private static void payItemToUser(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
+        final TextChannel channel = matcher.getTextChannel();
+        final Guild guild = matcher.getGuild();
+        final GuildDataStore guildData = context.getGuildData();
+        final ResourceBundle locale = context.getResource();
+        final Member requester = matcher.getMember();
         //pay item count user
-        final List<String> args = message.parseArguments(5);
+        final List<String> args = matcher.parseArguments(5);
         if (args.size() < 2) {
             channel.sendMessage(locale.getString("INVENTORY_PAY_MISSING_ITEM_NAME")).queue();
             return;

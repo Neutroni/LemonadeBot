@@ -24,6 +24,7 @@
 package eternal.lemonadebot.keywords;
 
 import eternal.lemonadebot.commands.ChatCommand;
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.cooldowns.CooldownManager;
@@ -32,6 +33,7 @@ import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.MessageMatcher;
 import eternal.lemonadebot.messageparsing.SimpleMessageMatcher;
+import eternal.lemonadebot.translation.TranslationCache;
 import java.time.Duration;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
@@ -122,7 +124,9 @@ public class KeywordListener extends ListenerAdapter {
             if (cooldownTime.isEmpty()) {
                 //Run the command
                 final CommandMatcher fakeMatcher = new SimpleMessageMatcher(event.getMember(), event.getChannel());
-                com.respond(fakeMatcher, guildData);
+                final TranslationCache translation = this.db.getTranslationCache(eventGuild);
+                final CommandContext context = new CommandContext(fakeMatcher, guildData, translation);
+                com.respond(context);
             }
         }
     }

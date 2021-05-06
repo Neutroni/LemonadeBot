@@ -23,6 +23,7 @@
  */
 package eternal.lemonadebot.customcommands;
 
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.events.EventManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
@@ -56,18 +57,19 @@ public class TemplateProvider {
     private static final Random RNG = new Random();
     private static final List<ActionTemplate> actions = List.of(
             new ActionTemplate("choice (.*(\\|.*)+)", "HELP_TEMPLATE_CHOICE",
-                    (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
+                    (CommandContext context, Matcher input) -> {
                         final String[] parts = input.group(1).split("\\|");
                         return parts[RNG.nextInt(parts.length)];
                     }),
             new ActionTemplate("rng (\\d+),(\\d+)", "HELP_TEMPLATE_RNG",
-                    (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
+                    (CommandContext context, Matcher input) -> {
                         final int start = Integer.parseInt(input.group(1));
                         final int end = Integer.parseInt(input.group(2));
                         return String.valueOf(RNG.nextInt(end + 1) + start);
                     }),
             new ActionTemplate("message", "HELP_TEMPLATE_MESSAGE",
-                    (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
+                    (CommandContext context, Matcher input) -> {
+                        final CommandMatcher message = context.getMatcher();
                         final String[] messageText = message.getArguments(0);
                         if (messageText.length == 0) {
                             return "";
@@ -75,7 +77,8 @@ public class TemplateProvider {
                         return messageText[0];
                     }),
             new ActionTemplate("argument (\\d+),(\\d+)", "HELP_TEMPLATE_ARGUMENT",
-                    (commandMatcher, guildData, templateMatcher) -> {
+                    (CommandContext context, Matcher templateMatcher) -> {
+                        final CommandMatcher commandMatcher = context.getMatcher();
                         final int groups = Integer.parseUnsignedInt(templateMatcher.group(1));
                         final int n = Integer.parseUnsignedInt(templateMatcher.group(2));
                         final String[] args = commandMatcher.getArguments(groups - 1);
@@ -85,7 +88,8 @@ public class TemplateProvider {
                         return "";
                     }),
             new ActionTemplate("messageText", "HELP_TEMPLATE_MESSAGE_TEXT",
-                    (CommandMatcher message, GuildDataStore guildData, Matcher input) -> {
+                    (CommandContext context, Matcher input) -> {
+                        final CommandMatcher message = context.getMatcher();
                         final String[] messageText = message.getArguments(0);
                         if (messageText.length == 0) {
                             return "";
@@ -105,21 +109,24 @@ public class TemplateProvider {
                         return response.trim();
                     }),
             new ActionTemplate("mentions", "HELP_TEMPLATE_MENTIONS",
-                    (CommandMatcher matcher, GuildDataStore guildData, Matcher input) -> {
-
+                    (CommandContext context, Matcher input) -> {
+                        final CommandMatcher matcher = context.getMatcher();
                         final List<Member> mentionedMembers = matcher.getMentionedMembers();
                         return mentionedMembers.stream().map(Member::getEffectiveName).collect(Collectors.joining(","));
                     }),
             new ActionTemplate("sender", "HELP_TEMPLATE_SENDER",
-                    (CommandMatcher matcher, GuildDataStore guildData, Matcher input) -> {
+                    (CommandContext context, Matcher input) -> {
+                        final CommandMatcher matcher = context.getMatcher();
                         return matcher.getMember().getEffectiveName();
                     }),
             new ActionTemplate("randomEventMember (\\S+)", "HELP_TEMPLATE_RANDOM_EVENT_MEMBER",
-                    (CommandMatcher matcher, GuildDataStore guildData, Matcher input) -> {
+                    (CommandContext context, Matcher input) -> {
                         final String eventName = input.group(1);
+                        final GuildDataStore guildData = context.getGuildData();
+                        final CommandMatcher matcher = context.getMatcher();
                         final EventManager eventManager = guildData.getEventManager();
                         final Guild guild = matcher.getGuild();
-                        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+                        final ResourceBundle locale = context.getTranslation().getResourceBundle();
 
                         try {
                             final Optional<Member> optMember = eventManager.getRandomMember(eventName, guild);
@@ -137,8 +144,8 @@ public class TemplateProvider {
                         }
                     }),
             new ActionTemplate("daysSince (\\d+-\\d+\\d+)", "HELP_TEMPLATE_DAYS_SINCE",
-                    (commandMatcher, guildData, templateMatcher) -> {
-                        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+                    (CommandContext context, Matcher templateMatcher) -> {
+                        final ResourceBundle locale = context.getTranslation().getResourceBundle();
                         final String dateString = templateMatcher.group(1);
                         try {
                             final LocalDate date = LocalDate.parse(dateString);
@@ -157,12 +164,11 @@ public class TemplateProvider {
     /**
      * Parse the template string
      *
-     * @param message Message this action is a reply to
-     * @param guildData GuildDataStore for current guild
+     * @param context Message this action is a reply to
      * @param action Template string for action
      * @return String response
      */
-    public static CharSequence parseAction(final CommandMatcher message, final GuildDataStore guildData, final String action) {
+    public static CharSequence parseAction(final CommandContext context, final String action) {
         //Check that action is not empty string
         if (action.isEmpty()) {
             return "";
@@ -217,7 +223,7 @@ public class TemplateProvider {
                             final Matcher m = s.getMatcher(sb);
                             if (m.matches()) {
                                 foundMatch = true;
-                                final String response = s.getValue(message, guildData, m);
+                                final String response = s.getValue(context, m);
                                 final StringBuilder newBuilder = stack.peekFirst();
                                 if (newBuilder == null) {
                                     stack.addFirst(new StringBuilder(response));

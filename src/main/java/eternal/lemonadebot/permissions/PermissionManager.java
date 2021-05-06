@@ -25,7 +25,7 @@ package eternal.lemonadebot.permissions;
 
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandProvider;
-import eternal.lemonadebot.translation.LocaleUpdateListener;
+import eternal.lemonadebot.config.ConfigManager;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -45,27 +45,27 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class PermissionManager implements LocaleUpdateListener {
+public class PermissionManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final DataSource dataSource;
     private final long guildID;
     private final CommandPermission adminPermission;
-    private volatile ResourceBundle locale;
+    private final ConfigManager configManager;
 
     /**
      * Constructor
      *
      * @param ds DataSource to get connection from
      * @param guildID ID of the guild to store permissions for
-     * @param locale Locale to use for loading default permissions
+     * @param config Locale to use for loading default permissions
      */
-    public PermissionManager(final DataSource ds, final long guildID, final Locale locale) {
+    public PermissionManager(final DataSource ds, final long guildID, final ConfigManager config) {
         this.dataSource = ds;
         this.guildID = guildID;
         this.adminPermission = new CommandPermission("", MemberRank.ADMIN, guildID);
-        this.locale = ResourceBundle.getBundle("Translation", locale);
+        this.configManager = config;
     }
 
     /**
@@ -83,16 +83,6 @@ public class PermissionManager implements LocaleUpdateListener {
         } catch (SQLException ex) {
             return this.adminPermission.hashPermission(member);
         }
-    }
-
-    /**
-     * Update permissions according to locale
-     *
-     * @param locale Translation to use
-     */
-    @Override
-    public void updateLocale(final Locale locale) {
-        this.locale = ResourceBundle.getBundle("Translation", locale);
     }
 
     /**
@@ -121,7 +111,9 @@ public class PermissionManager implements LocaleUpdateListener {
      * @return CommandPermission
      */
     public CommandPermission getTemplateRunPermission() {
-        final String key = this.locale.getString("TEMPLATE_RUN_ACTION");
+        final Locale locale = this.configManager.getLocale();
+        final ResourceBundle resource = ResourceBundle.getBundle("Translation", locale);
+        final String key = resource.getString("TEMPLATE_RUN_ACTION");
         try {
             final CommandPermission perm = getPermission(key).orElse(this.adminPermission);
             if (key.equals(perm.getAction())) {
@@ -144,9 +136,11 @@ public class PermissionManager implements LocaleUpdateListener {
      */
     CommandPermission getPermission(final ChatCommand command, final String action) throws SQLException {
         final Optional<CommandPermission> optPerm = getPermission(action);
+        final Locale locale = this.configManager.getLocale();
+        final ResourceBundle resource = ResourceBundle.getBundle("Translation", locale);
         CommandPermission builtInPerm = null;
         int keyLength = 0;
-        for (final CommandPermission p : command.getDefaultRanks(this.locale, this.guildID, this)) {
+        for (final CommandPermission p : command.getDefaultRanks(resource, this.guildID, this)) {
             final String key = p.getAction();
             if (!action.startsWith(key)) {
                 continue;
@@ -181,9 +175,11 @@ public class PermissionManager implements LocaleUpdateListener {
      */
     Collection<CommandPermission> getPermissions() throws SQLException {
         final List<CommandPermission> permissions = new ArrayList<>();
+        final Locale locale = this.configManager.getLocale();
+        final ResourceBundle resource = ResourceBundle.getBundle("Translation", locale);
         //Get default permissions for commands
         CommandProvider.COMMANDS.forEach(c -> {
-            permissions.addAll(c.getDefaultRanks(this.locale, this.guildID, this));
+            permissions.addAll(c.getDefaultRanks(resource, this.guildID, this));
         });
 
         //Load permissions from database

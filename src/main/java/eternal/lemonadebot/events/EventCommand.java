@@ -24,6 +24,7 @@
 package eternal.lemonadebot.events;
 
 import eternal.lemonadebot.commands.ChatCommand;
+import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
@@ -81,9 +82,10 @@ public class EventCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(final CommandMatcher matcher, final GuildDataStore guildData) {
+    public void respond(final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
-        final TranslationCache translationCache = guildData.getTranslationCache();
+        final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
 
         final String[] opts = matcher.getArguments(2);
@@ -97,43 +99,43 @@ public class EventCommand implements ChatCommand {
         switch (key) {
             case CREATE: {
                 //event create(0) name(1) description(2)
-                createEvent(opts, matcher, guildData);
+                createEvent(opts, context);
                 break;
             }
             case DELETE: {
-                deleteEvent(opts, matcher, guildData);
+                deleteEvent(opts, context);
                 break;
             }
             case JOIN: {
-                joinEvent(opts, matcher, guildData);
+                joinEvent(opts, context);
                 break;
             }
             case LEAVE: {
-                leaveEvent(opts, matcher, guildData);
+                leaveEvent(opts, context);
                 break;
             }
             case LIST_MEMBERS: {
-                showEventMembers(opts, matcher, guildData);
+                showEventMembers(opts, context);
                 break;
             }
             case CLEAR: {
-                clearEventMembers(opts, matcher, guildData);
+                clearEventMembers(opts, context);
                 break;
             }
             case LIST: {
-                listEvents(matcher, guildData);
+                listEvents(context);
                 break;
             }
             case RANDOM: {
-                pickRandomEventMember(opts, matcher, guildData);
+                pickRandomEventMember(opts, context);
                 break;
             }
             case LOCK: {
-                lockEvent(opts, matcher, guildData);
+                lockEvent(opts, context);
                 break;
             }
             case UNLOCK: {
-                unlockEvent(opts, matcher, guildData);
+                unlockEvent(opts, context);
                 return;
             }
             default: {
@@ -142,10 +144,12 @@ public class EventCommand implements ChatCommand {
         }
     }
 
-    private static void createEvent(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void createEvent(final String[] opts, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final Member sender = matcher.getMember();
         final TextChannel textChannel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
+        final GuildDataStore guildData = context.getGuildData();
         final EventManager events = guildData.getEventManager();
         if (opts.length < 2) {
             textChannel.sendMessage(locale.getString("EVENT_CREATE_MISSING_NAME")).queue();
@@ -177,11 +181,13 @@ public class EventCommand implements ChatCommand {
         }
     }
 
-    private static void deleteEvent(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void deleteEvent(final String[] opts, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final Member sender = matcher.getMember();
         final TextChannel textChannel = matcher.getTextChannel();
+        final GuildDataStore guildData = context.getGuildData();
         final EventManager events = guildData.getEventManager();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
         if (opts.length < 2) {
             textChannel.sendMessage(locale.getString("EVENT_DELETE_MISSING_NAME")).queue();
             return;
@@ -220,9 +226,10 @@ public class EventCommand implements ChatCommand {
 
     }
 
-    private static void joinEvent(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void joinEvent(final String[] opts, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
         final Member sender = matcher.getMember();
 
         if (opts.length < 2) {
@@ -230,6 +237,7 @@ public class EventCommand implements ChatCommand {
             return;
         }
         final String eventName = opts[1];
+        final GuildDataStore guildData = context.getGuildData();
         final EventManager events = guildData.getEventManager();
 
         //Get the event to join
@@ -265,9 +273,10 @@ public class EventCommand implements ChatCommand {
         }
     }
 
-    private static void leaveEvent(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void leaveEvent(final String[] opts, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
         final Member sender = matcher.getMember();
 
         if (opts.length < 2) {
@@ -275,6 +284,7 @@ public class EventCommand implements ChatCommand {
             return;
         }
         final String eventName = opts[1];
+        final GuildDataStore guildData = context.getGuildData();
         final EventManager events = guildData.getEventManager();
 
         //Get the event to leave
@@ -311,9 +321,10 @@ public class EventCommand implements ChatCommand {
         }
     }
 
-    private static void showEventMembers(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
-        final TextChannel textChannel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+    private static void showEventMembers(final String[] opts, final CommandContext context) {
+        final TextChannel textChannel = context.getChannel();
+        final ResourceBundle locale = context.getResource();
+        final GuildDataStore guildData = context.getGuildData();
 
         if (opts.length < 2) {
             textChannel.sendMessage(locale.getString("EVENT_SHOW_MEMBERS_MISSING_NAME")).queue();
@@ -370,9 +381,11 @@ public class EventCommand implements ChatCommand {
 
     }
 
-    private static void clearEventMembers(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void clearEventMembers(final String[] opts, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
+        final GuildDataStore guildData = context.getGuildData();
         final TextChannel textChannel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
         final Member sender = matcher.getMember();
 
         if (opts.length < 2) {
@@ -409,9 +422,10 @@ public class EventCommand implements ChatCommand {
         }
     }
 
-    private static void listEvents(final CommandMatcher matcher, final GuildDataStore guildData) {
-        final TextChannel textChannel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+    private static void listEvents(final CommandContext context) {
+        final TextChannel textChannel = context.getChannel();
+        final ResourceBundle locale = context.getResource();
+        final GuildDataStore guildData = context.getGuildData();
         final EventManager eventManager = guildData.getEventManager();
 
         final EmbedBuilder eb = new EmbedBuilder();
@@ -441,9 +455,11 @@ public class EventCommand implements ChatCommand {
         textChannel.sendMessage(eb.build()).queue();
     }
 
-    private static void pickRandomEventMember(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void pickRandomEventMember(final String[] opts, final CommandContext context) {
+        final ResourceBundle locale = context.getResource();
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final GuildDataStore guildData = context.getGuildData();
 
         if (opts.length < 2) {
             channel.sendMessage(locale.getString("EVENT_PICK_RANDOM_MISSING_NAME")).queue();
@@ -478,9 +494,11 @@ public class EventCommand implements ChatCommand {
      * @param matcher Matcher for request
      * @param guildData guildData for guild
      */
-    private static void lockEvent(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void lockEvent(final String[] opts, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
+        final GuildDataStore guildData = context.getGuildData();
         if (opts.length < 2) {
             channel.sendMessage(locale.getString("EVENT_LOCK_MISSING_NAME")).queue();
             return;
@@ -531,11 +549,13 @@ public class EventCommand implements ChatCommand {
      * @param matcher commandMatcher to get requester from
      * @param guildData guildData for guild to find event in
      */
-    private static void unlockEvent(final String[] opts, final CommandMatcher matcher, final GuildDataStore guildData) {
+    private static void unlockEvent(final String[] opts, final CommandContext context) {
+        final CommandMatcher matcher = context.getMatcher();
         final Member sender = matcher.getMember();
         final TextChannel textChannel = matcher.getTextChannel();
+        final GuildDataStore guildData = context.getGuildData();
         final EventManager events = guildData.getEventManager();
-        final ResourceBundle locale = guildData.getTranslationCache().getResourceBundle();
+        final ResourceBundle locale = context.getResource();
         if (opts.length < 2) {
             textChannel.sendMessage(locale.getString("EVENT_UNLOCK_MISSING_NAME")).queue();
             return;

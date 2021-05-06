@@ -23,7 +23,6 @@
  */
 package eternal.lemonadebot.config;
 
-import eternal.lemonadebot.translation.LocaleUpdateListener;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -31,8 +30,6 @@ import java.sql.SQLException;
 import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -57,8 +54,6 @@ public class ConfigManager {
 
     //Database connection
     private final DataSource dataSource;
-    //Locale update listeners
-    private final List<LocaleUpdateListener> localeListeners = new ArrayList<>(3);
 
     //Stored values
     private final long guildID;
@@ -126,15 +121,6 @@ public class ConfigManager {
     }
 
     /**
-     * Register a listener that will get notified when locale changes
-     *
-     * @param listener LocaleUpdateListener
-     */
-    public void registerLocaleUpdateListener(final LocaleUpdateListener listener) {
-        this.localeListeners.add(listener);
-    }
-
-    /**
      * Set command prefix
      *
      * @param prefix new command prefix
@@ -189,11 +175,6 @@ public class ConfigManager {
             return false;
         }
         this.locale = newLocale;
-
-        //Notify listeners
-        this.localeListeners.forEach((LocaleUpdateListener t) -> {
-            t.updateLocale(newLocale);
-        });
 
         final String query = "UPDATE Guilds SET locale = ? WHERE id = ?;";
         try (final Connection connection = this.dataSource.getConnection();

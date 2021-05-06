@@ -33,8 +33,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.TreeMap;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,15 +41,14 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class TranslationCache implements LocaleUpdateListener {
+public class TranslationCache {
 
     private static final Logger LOGGER = LogManager.getLogger();
     private volatile ResourceBundle resources;
-    private final ReadWriteLock rwLock;
     private volatile Map<String, ChronoUnit> chronoMap;
     private final Map<String, ActionKey> actionMap;
-    private volatile Collator collator;
-    private volatile DateTimeFormatter timeFormat;
+    private final Collator collator;
+    private final DateTimeFormatter timeFormat;
 
     /**
      * Constructor
@@ -59,9 +56,47 @@ public class TranslationCache implements LocaleUpdateListener {
      * @param locale Locale to cache
      */
     public TranslationCache(final Locale locale) {
-        this.rwLock = new ReentrantReadWriteLock();
-        this.actionMap = new HashMap<>();
-        localeUpdate(locale);
+        //Initialize resource bundle
+        this.resources = ResourceBundle.getBundle("Translation", locale);
+        //Initialize collator
+        this.collator = Collator.getInstance(locale);
+        this.collator.setStrength(Collator.SECONDARY);
+        //Initialize time formatter
+        final String timePattern = this.resources.getString("REMINDER_TIME_FORMAT");
+        DateTimeFormatter formetter;
+        try {
+            formetter = DateTimeFormatter.ofPattern(timePattern);
+        } catch (IllegalArgumentException e) {
+            LOGGER.error("Error updating DateTimeFormatter for time parsing: {}", e.getMessage());
+            LOGGER.error("Malformed time pattern for formatter: {}", timePattern);
+            formetter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).localizedBy(Locale.ROOT);
+        }
+        this.timeFormat = formetter;
+        //Initialize chronoMap
+        this.chronoMap = new TreeMap<>(this.collator);
+        this.chronoMap.put(this.resources.getString("TIME_SECOND"), ChronoUnit.SECONDS);
+        this.chronoMap.put(this.resources.getString("TIME_MINUTE"), ChronoUnit.MINUTES);
+        this.chronoMap.put(this.resources.getString("TIME_HOUR"), ChronoUnit.HOURS);
+        this.chronoMap.put(this.resources.getString("TIME_DAY"), ChronoUnit.DAYS);
+        this.chronoMap.put(this.resources.getString("TIME_WEEK"), ChronoUnit.WEEKS);
+        this.chronoMap.put(this.resources.getString("TIME_MONTH"), ChronoUnit.MONTHS);
+        this.chronoMap.put(this.resources.getString("TIME_YEAR"), ChronoUnit.YEARS);
+        this.chronoMap.put(this.resources.getString("TIME_SECONDS"), ChronoUnit.SECONDS);
+        this.chronoMap.put(this.resources.getString("TIME_MINUTES"), ChronoUnit.MINUTES);
+        this.chronoMap.put(this.resources.getString("TIME_HOURS"), ChronoUnit.HOURS);
+        this.chronoMap.put(this.resources.getString("TIME_DAYS"), ChronoUnit.DAYS);
+        this.chronoMap.put(this.resources.getString("TIME_WEEKS"), ChronoUnit.WEEKS);
+        this.chronoMap.put(this.resources.getString("TIME_MONTHS"), ChronoUnit.MONTHS);
+        this.chronoMap.put(this.resources.getString("TIME_YEARS"), ChronoUnit.YEARS);
+        //Initialize actionMap
+        this.actionMap = new HashMap<>(ActionKey.values().length);
+        for (final ActionKey key : ActionKey.values()) {
+            final String translationKey = key.getTranslationKey();
+            if (translationKey != null) {
+                final String translation = this.resources.getString(translationKey);
+                this.actionMap.put(translation, key);
+            }
+        }
     }
 
     /**
@@ -91,11 +126,6 @@ public class TranslationCache implements LocaleUpdateListener {
         return this.timeFormat;
     }
 
-    @Override
-    public void updateLocale(final Locale newLocale) {
-        localeUpdate(newLocale);
-    }
-
     /**
      * Get ChronoUnit by translated name
      *
@@ -103,13 +133,8 @@ public class TranslationCache implements LocaleUpdateListener {
      * @return Optional containging ChronoUnit if found
      */
     public Optional<ChronoUnit> getChronoUnit(final String name) {
-        this.rwLock.readLock().lock();
-        try {
-            final ChronoUnit unit = this.chronoMap.get(name);
-            return Optional.ofNullable(unit);
-        } finally {
-            this.rwLock.readLock().unlock();
-        }
+        final ChronoUnit unit = this.chronoMap.get(name);
+        return Optional.ofNullable(unit);
     }
 
     /**
@@ -119,63 +144,11 @@ public class TranslationCache implements LocaleUpdateListener {
      * @return Key for given action if found ActionKey.UNKNOWN if not found
      */
     public ActionKey getActionKey(final String name) {
-        this.rwLock.readLock().lock();
-        try {
-            final ActionKey key = this.actionMap.get(name);
-            if (key == null) {
-                return ActionKey.UNKNOWN;
-            }
-            return key;
-        } finally {
-            this.rwLock.readLock().unlock();
+        final ActionKey key = this.actionMap.get(name);
+        if (key == null) {
+            return ActionKey.UNKNOWN;
         }
-    }
-
-    private void localeUpdate(final Locale newLocale) {
-        this.rwLock.writeLock().lock();
-        try {
-            //Update resource bundle
-            this.resources = ResourceBundle.getBundle("Translation", newLocale);
-            //Update collator
-            this.collator = Collator.getInstance(newLocale);
-            this.collator.setStrength(Collator.SECONDARY);
-            //Update time formatter
-            final String timePattern = this.resources.getString("REMINDER_TIME_FORMAT");
-            try {
-                this.timeFormat = DateTimeFormatter.ofPattern(timePattern);
-            } catch (IllegalArgumentException e) {
-                LOGGER.error("Error updating DateTimeFormatter for time parsing: {}", e.getMessage());
-                LOGGER.error("Malformed time pattern for formatter: {}", timePattern);
-                this.timeFormat = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).localizedBy(Locale.ROOT);
-            }
-            //Update chronoMap
-            this.chronoMap = new TreeMap<>(this.collator);
-            this.chronoMap.put(this.resources.getString("TIME_SECOND"), ChronoUnit.SECONDS);
-            this.chronoMap.put(this.resources.getString("TIME_MINUTE"), ChronoUnit.MINUTES);
-            this.chronoMap.put(this.resources.getString("TIME_HOUR"), ChronoUnit.HOURS);
-            this.chronoMap.put(this.resources.getString("TIME_DAY"), ChronoUnit.DAYS);
-            this.chronoMap.put(this.resources.getString("TIME_WEEK"), ChronoUnit.WEEKS);
-            this.chronoMap.put(this.resources.getString("TIME_MONTH"), ChronoUnit.MONTHS);
-            this.chronoMap.put(this.resources.getString("TIME_YEAR"), ChronoUnit.YEARS);
-            this.chronoMap.put(this.resources.getString("TIME_SECONDS"), ChronoUnit.SECONDS);
-            this.chronoMap.put(this.resources.getString("TIME_MINUTES"), ChronoUnit.MINUTES);
-            this.chronoMap.put(this.resources.getString("TIME_HOURS"), ChronoUnit.HOURS);
-            this.chronoMap.put(this.resources.getString("TIME_DAYS"), ChronoUnit.DAYS);
-            this.chronoMap.put(this.resources.getString("TIME_WEEKS"), ChronoUnit.WEEKS);
-            this.chronoMap.put(this.resources.getString("TIME_MONTHS"), ChronoUnit.MONTHS);
-            this.chronoMap.put(this.resources.getString("TIME_YEARS"), ChronoUnit.YEARS);
-            //Update actionMap
-            this.actionMap.clear();
-            for (final ActionKey key : ActionKey.values()) {
-                final String translationKey = key.getTranslationKey();
-                if (translationKey != null) {
-                    final String translation = this.resources.getString(translationKey);
-                    this.actionMap.put(translation, key);
-                }
-            }
-        } finally {
-            this.rwLock.writeLock().unlock();
-        }
+        return key;
     }
 
 }
