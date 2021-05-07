@@ -25,7 +25,9 @@ package eternal.lemonadebot.reminders;
 
 import eternal.lemonadebot.commands.AdminCommand;
 import eternal.lemonadebot.commands.CommandContext;
+import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.RuntimeStorage;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.translation.ActionKey;
@@ -42,11 +44,14 @@ import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
@@ -60,6 +65,35 @@ import org.apache.logging.log4j.Logger;
 public class ReminderCommand extends AdminCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
+    private final DatabaseManager dataBase;
+    private final Map<Long, ReminderManager> managers;
+
+    public ReminderCommand(DatabaseManager db) {
+        this.dataBase = db;
+        this.managers = new ConcurrentHashMap<>();
+    }
+
+    @Override
+    public void initialize(final List<Guild> guilds, final RuntimeStorage rs) {
+        guilds.forEach(guild -> {
+            getReminderManager(guild, rs.getGuildData(guild));
+        });
+    }
+    
+    @Override
+    public void close(){
+        this.managers.values().forEach((ReminderManager t) -> {
+            t.close();
+        });
+    }
+
+    private ReminderManager getReminderManager(final Guild guild, final GuildDataStore guildData) {
+        return this.managers.computeIfAbsent(guild.getIdLong(), (Long t) -> {
+            final ReminderManager reminderManager = new ReminderManager(this.dataBase.getDataSource(), t);
+            reminderManager.loadReminders(guild.getJDA(), guildData);
+            return reminderManager;
+        });
+    }
 
     @Override
     public String getCommand(final ResourceBundle locale) {
@@ -110,12 +144,13 @@ public class ReminderCommand extends AdminCommand {
         }
     }
 
-    private static void createReminder(final CommandContext context) {
+    private void createReminder(final CommandContext context) {
         //reminder create test 17.00 * * * reminder text
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
         final GuildDataStore guildData = context.getGuildData();
-        final ReminderManager reminders = guildData.getReminderManager();
+        final Guild guild = matcher.getGuild();
+        final ReminderManager reminders = getReminderManager(guild, guildData);
         final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
 
@@ -228,7 +263,7 @@ public class ReminderCommand extends AdminCommand {
         final JDA jda = channel.getJDA();
         final long channelID = channel.getIdLong();
         final long memberID = matcher.getMember().getIdLong();
-        final Reminder reminder = new Reminder(jda, guildData, reminderName,
+        final Reminder reminder = new Reminder(jda, guildData, reminders, reminderName,
                 messageInput, channelID, memberID, reminderActivationTime);
 
         //Add reminder to database
@@ -245,7 +280,7 @@ public class ReminderCommand extends AdminCommand {
         }
     }
 
-    private static void deleteReminder(final String[] arguments, final CommandContext context) {
+    private void deleteReminder(final String[] arguments, final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
         final ResourceBundle locale = context.getResource();
@@ -254,8 +289,9 @@ public class ReminderCommand extends AdminCommand {
             textChannel.sendMessage(locale.getString("REMINDER_DELETE_MISSING_NAME")).queue();
             return;
         }
+        final Guild guild = matcher.getGuild();
         final GuildDataStore guildData = context.getGuildData();
-        final ReminderManager reminders = guildData.getReminderManager();
+        final ReminderManager reminders = getReminderManager(guild, guildData);
 
         final String reminderName = arguments[1];
         final Optional<Reminder> oldReminder = reminders.getReminder(reminderName);
@@ -285,7 +321,7 @@ public class ReminderCommand extends AdminCommand {
         });
     }
 
-    private static void listReminders(final CommandContext context) {
+    private void listReminders(final CommandContext context) {
         final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
 
@@ -295,8 +331,9 @@ public class ReminderCommand extends AdminCommand {
         eb.setTitle(header);
 
         //Initialize all the futures
+        final Guild guild = context.getMatcher().getGuild();
         final GuildDataStore guildData = context.getGuildData();
-        final Collection<Reminder> ev = guildData.getReminderManager().getReminders();
+        final Collection<Reminder> ev = getReminderManager(guild, guildData).getReminders();
         final List<CompletableFuture<String>> futures = new ArrayList<>(ev.size());
         ev.forEach((Reminder reminder) -> {
             futures.add(reminder.toListElement(translationCache));
@@ -311,7 +348,7 @@ public class ReminderCommand extends AdminCommand {
             contentBuilder.append(locale.getString("REMINDER_NO_REMINDERS"));
         }
         eb.setDescription(contentBuilder);
-        
+
         final TextChannel textChannel = context.getChannel();
         textChannel.sendMessage(eb.build()).queue();
     }

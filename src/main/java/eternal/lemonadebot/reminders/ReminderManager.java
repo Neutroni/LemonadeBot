@@ -56,26 +56,20 @@ public class ReminderManager implements Closeable {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final DataSource dataSource;
-    private final JDA jda;
     private final long guildID;
 
     private final Map<String, Reminder> reminders = new ConcurrentHashMap<>();
     private final ScheduledExecutorService reminderTimer = Executors.newSingleThreadScheduledExecutor();
-    private final GuildDataStore guildData;
 
     /**
      * Constructor
      *
      * @param ds DataSource to get connection from
-     * @param guildData GuildData to pass to reminders
-     * @param jda JDA to pass to reminders
+     * @param guildID GuildData to pass to reminders
      */
-    public ReminderManager(final DataSource ds, final JDA jda, final GuildDataStore guildData) {
+    public ReminderManager(final DataSource ds, final long guildID) {
         this.dataSource = ds;
-        this.jda = jda;
-        this.guildData = guildData;
-        this.guildID = guildData.getGuildID();
-        loadReminders();
+        this.guildID = guildID;
     }
 
     @Override
@@ -181,8 +175,10 @@ public class ReminderManager implements Closeable {
 
     /**
      * Load reminders from database
+     * @param jda
+     * @param guildData
      */
-    private void loadReminders() {
+    public void loadReminders(final JDA jda, final GuildDataStore guildData) {
         LOGGER.debug("Started loading reminders for guild: {} from database", this.guildID);
         final String query = "SELECT name,message,author,channel,time,dayOfWeek,dayOfMonth,monthOfYear FROM Reminders WHERE guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
@@ -243,7 +239,7 @@ public class ReminderManager implements Closeable {
                     final ReminderActivationTime reminderActivationTime = new ReminderActivationTime(activationTime, activationDay, dayOfMonth, reminderMonth);
 
                     //Construct and add to list of reminders
-                    final Reminder reminder = new Reminder(this.jda, this.guildData,
+                    final Reminder reminder = new Reminder(jda, guildData, this,
                             reminderName, reminderMessage, reminderChannel, reminderAuthor, reminderActivationTime);
                     this.reminders.put(reminder.getName(), reminder);
                     LOGGER.debug("Reminder successfully loaded: {}", reminder.getName());

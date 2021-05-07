@@ -59,6 +59,7 @@ class Reminder extends CustomCommand implements Runnable {
     private final JDA jda;
     private final long channelID;
     private final GuildDataStore guildData;
+    private final ReminderManager remiderManager;
     private volatile ScheduledFuture<?> future;
     private final ReminderActivationTime activationTime;
 
@@ -73,11 +74,12 @@ class Reminder extends CustomCommand implements Runnable {
      * @param input Input string to either send or execute if it is a command
      * @param activationTime Weekday the reminder happens
      */
-    Reminder(final JDA jda, final GuildDataStore guildData, final String name, final String input,
+    Reminder(final JDA jda, final GuildDataStore guildData, final ReminderManager rm, final String name, final String input,
             final long channelID, final long author, final ReminderActivationTime activationTime) {
         super(name, input, author);
         this.jda = jda;
         this.guildData = guildData;
+        this.remiderManager = rm;
         this.channelID = channelID;
         this.activationTime = activationTime;
         this.future = null;
@@ -219,7 +221,7 @@ class Reminder extends CustomCommand implements Runnable {
     private void deleteDueToMissingOwner() {
         LOGGER.info("Deleting reminder: {} with missing author, member id: {}", getName(), getAuthor());
         try {
-            this.guildData.getReminderManager().deleteReminder(this);
+            this.remiderManager.deleteReminder(this);
             LOGGER.info("Reminder with missing author deleted");
         } catch (SQLException ex) {
             LOGGER.error("Error removing reminder with missing author: {}", ex.getMessage());
@@ -230,7 +232,7 @@ class Reminder extends CustomCommand implements Runnable {
     private void deleteDueToMissingChannel() {
         LOGGER.info("Deleting reminder: {} for textChannel that does not exist, channel id: {}", getName(), this.channelID);
         try {
-            this.guildData.getReminderManager().deleteReminder(this);
+            this.remiderManager.deleteReminder(this);
             LOGGER.info("Deleted reminder with missing channel: {}", this.channelID);
         } catch (SQLException ex) {
             LOGGER.error("Error removing reminder with missing channel: {}", ex.getMessage());

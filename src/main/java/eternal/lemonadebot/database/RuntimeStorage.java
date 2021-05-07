@@ -90,21 +90,30 @@ public class RuntimeStorage implements Closeable {
         });
     }
 
+    /**
+     * Initialize data and commands
+     *
+     * @param guilds Guilds to initialize data for
+     */
+    public void initialize(final List<Guild> guilds) {
+        LOGGER.debug("Initializing RuntimeStorage");
+        this.commands.forEach((ChatCommand t) -> {
+            t.initialize(guilds, this);
+        });
+        //Initialize guildData storage
+        guilds.forEach(this::getGuildData);
+        LOGGER.debug("RuntimeStorage intialized succesfully");
+    }
+
     @Override
     public void close() {
         this.db.close();
         this.guildDataStores.forEach((Long t, GuildDataStore u) -> {
             u.close();
         });
-    }
-
-    public void initialize(final List<Guild> guilds) {
-        LOGGER.debug("Loading guilds from database");
         this.commands.forEach((ChatCommand t) -> {
-            t.initialize(guilds);
+            t.close();
         });
-        //Initialize guildData storage
-        guilds.forEach(this::getGuildData);
     }
 
 }

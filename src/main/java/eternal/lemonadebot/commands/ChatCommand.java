@@ -23,9 +23,9 @@
  */
 package eternal.lemonadebot.commands;
 
+import eternal.lemonadebot.database.RuntimeStorage;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.PermissionManager;
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -83,8 +83,16 @@ public interface ChatCommand {
      * Initialize data that the command needs
      *
      * @param guilds List of guilds that need to be initialized
+     * @param rs RuntimeStorage that commands can use in initialization
      */
-    default void initialize(final List<Guild> guilds) {
+    default void initialize(final List<Guild> guilds, final RuntimeStorage rs) {
+        //No-op
+    }
+    
+    /**
+     * Close any resources command might use when shutting down the bot
+     */
+    default void close(){
         //No-op
     }
 

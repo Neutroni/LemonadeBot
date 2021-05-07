@@ -26,7 +26,6 @@ package eternal.lemonadebot.commands;
 import eternal.lemonadebot.config.ConfigCommand;
 import eternal.lemonadebot.cooldowns.CooldownCommand;
 import eternal.lemonadebot.customcommands.TemplateCommand;
-import eternal.lemonadebot.database.CacheConfig;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.events.EventCommand;
 import eternal.lemonadebot.inventory.InventoryCommand;
@@ -44,7 +43,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.sql.DataSource;
 
 /**
  *
@@ -73,7 +71,7 @@ public class CommandList implements Iterable<ChatCommand> {
                 //Admin commands
                 new ConfigCommand(),
                 new CooldownCommand(),
-                new ReminderCommand(),
+                new ReminderCommand(db),
                 new NotificationCommand(),
                 new PermissionCommand(),
                 new KeywordCommand()
