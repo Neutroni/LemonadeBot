@@ -52,7 +52,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class TemplateCommand implements ChatCommand {
+public class TemplateCommand extends ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -79,7 +79,7 @@ public class TemplateCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(final CommandContext context) {
+    protected void respond(final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
         final TranslationCache translationCache = context.getTranslation();

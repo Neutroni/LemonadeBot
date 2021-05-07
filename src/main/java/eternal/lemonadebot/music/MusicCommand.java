@@ -56,7 +56,7 @@ import net.dv8tion.jda.api.managers.AudioManager;
  *
  * @author Neutroni
  */
-public class MusicCommand implements ChatCommand {
+public class MusicCommand extends ChatCommand {
 
     private final AudioPlayerManager playerManager;
     private final Map<Long, GuildMusicManager> musicManagers;
@@ -94,7 +94,7 @@ public class MusicCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(final CommandContext context) {
+    protected void respond(final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
         final TranslationCache translationCache = context.getTranslation();

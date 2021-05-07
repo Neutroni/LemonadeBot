@@ -23,20 +23,26 @@
  */
 package eternal.lemonadebot.commands;
 
+import eternal.lemonadebot.cooldowns.CooldownManager;
+import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.RuntimeStorage;
+import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.PermissionManager;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.ResourceBundle;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
  * Interface all commands must implement
  *
  * @author Neutroni
  */
-public interface ChatCommand {
+public abstract class ChatCommand {
 
     /**
      * Every action has a command it is called with
@@ -44,7 +50,7 @@ public interface ChatCommand {
      * @param locale Locale to get the command name inF
      * @return the command to activate this action
      */
-    String getCommand(ResourceBundle locale);
+    public abstract String getCommand(ResourceBundle locale);
 
     /**
      * Short description for command, used for command listings
@@ -52,7 +58,7 @@ public interface ChatCommand {
      * @param locale Locale to return the description in
      * @return Description for what this command does
      */
-    String getDescription(ResourceBundle locale);
+    public abstract String getDescription(ResourceBundle locale);
 
     /**
      * Help text for command, usage info for the command
@@ -60,7 +66,7 @@ public interface ChatCommand {
      * @param locale Locale to return the help in
      * @return help text for the command
      */
-    String getHelpText(ResourceBundle locale);
+    public abstract String getHelpText(ResourceBundle locale);
 
     /**
      * What rank is needed to run this command by default
@@ -70,14 +76,60 @@ public interface ChatCommand {
      * @param permissions PermissionManager to use
      * @return The default rank needed to run this command
      */
-    Collection<CommandPermission> getDefaultRanks(ResourceBundle locale, long guildID, PermissionManager permissions);
+    public abstract Collection<CommandPermission> getDefaultRanks(ResourceBundle locale, long guildID, PermissionManager permissions);
+
+    public void run(CommandContext context, boolean silent) {
+        final CommandMatcher cmdMatch = context.getMatcher();
+        final Member member = cmdMatch.getMember();
+        final String inputString = cmdMatch.getAction();
+        final TextChannel textChannel = cmdMatch.getTextChannel();
+        final GuildDataStore guildData = context.getGuildData();
+        final ResourceBundle resources = context.getResource();
+
+        //Check if user has permission
+        final PermissionManager permissions = guildData.getPermissionManager();
+        if (!permissions.hasPermission(member, this, inputString)) {
+            //No message if silent
+            if (silent) {
+                return;
+            }
+            final String response = resources.getString("ERROR_INSUFFICIENT_PERMISSION");
+            textChannel.sendMessage(response).queue();
+            return;
+        }
+
+        //Check if command is on cooldown
+        final CooldownManager cooldownManager = guildData.getCooldownManager();
+        cooldownManager.checkCooldown(member, inputString).ifPresentOrElse((Duration t) -> {
+            //No message if silent
+            if (silent) {
+                return;
+            }
+            //Command on cooldown
+            final String template = resources.getString("ERROR_COMMAND_COOLDOWN_TIME");
+            final String currentCooldown = CooldownManager.formatDuration(t, resources);
+            textChannel.sendMessage(template + currentCooldown).queue();
+        }, () -> {
+            //Run the command
+            respond(context);
+        });
+    }
+
+    /**
+     * Run the command if user has permission, if not user will see error
+     *
+     * @param context Context to run the command in
+     */
+    public void run(CommandContext context) {
+        run(context, false);
+    }
 
     /**
      * Responds to a message
      *
      * @param context Context for the message
      */
-    void respond(CommandContext context);
+    protected abstract void respond(CommandContext context);
 
     /**
      * Initialize data that the command needs
@@ -85,14 +137,14 @@ public interface ChatCommand {
      * @param guilds List of guilds that need to be initialized
      * @param rs RuntimeStorage that commands can use in initialization
      */
-    default void initialize(final List<Guild> guilds, final RuntimeStorage rs) {
+    public void initialize(final List<Guild> guilds, final RuntimeStorage rs) {
         //No-op
     }
-    
+
     /**
      * Close any resources command might use when shutting down the bot
      */
-    default void close(){
+    public void close() {
         //No-op
     }
 

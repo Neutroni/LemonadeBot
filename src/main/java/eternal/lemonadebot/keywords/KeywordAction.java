@@ -81,7 +81,7 @@ public class KeywordAction extends CustomCommand {
     }
 
     @Override
-    public void respond(final CommandContext context) {
+    protected void respond(final CommandContext context) {
         final CommandMatcher message = context.getMatcher();
         final GuildDataStore guildData = context.getGuildData();
         final TranslationCache translation = context.getTranslation();
@@ -90,10 +90,10 @@ public class KeywordAction extends CustomCommand {
             message.getGuild().retrieveMemberById(getAuthor()).queue((Member t) -> {
                 final KeywordMatcher matcher = new KeywordMatcher(message, t);
                 final CommandContext fakeContext = new CommandContext(matcher, guildData, translation);
-                super.respond(fakeContext);
+                super.run(fakeContext, true);
             });
         } else {
-            super.respond(context);
+            super.run(context, true);
         }
     }
 

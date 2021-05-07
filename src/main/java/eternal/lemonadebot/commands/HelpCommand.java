@@ -43,7 +43,7 @@ import net.dv8tion.jda.api.entities.TextChannel;
  *
  * @author Neutroni
  */
-class HelpCommand implements ChatCommand {
+class HelpCommand extends ChatCommand {
 
     @Override
     public String getCommand(final ResourceBundle locale) {
@@ -66,7 +66,7 @@ class HelpCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(CommandContext context) {
+    protected void respond(CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TranslationCache translation = context.getTranslation();
         final TextChannel textChannel = matcher.getTextChannel();

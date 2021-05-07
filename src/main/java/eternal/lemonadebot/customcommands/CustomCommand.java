@@ -26,19 +26,16 @@ package eternal.lemonadebot.customcommands;
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.commands.CommandProvider;
-import eternal.lemonadebot.cooldowns.CooldownManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.PermissionManager;
-import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
 
@@ -49,7 +46,7 @@ import net.dv8tion.jda.api.entities.User;
  *
  * @author Neutroni
  */
-public class CustomCommand implements ChatCommand {
+public class CustomCommand extends ChatCommand {
 
     private final String commandName;
     private final String actionTemplate;
@@ -124,7 +121,7 @@ public class CustomCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(final CommandContext context) {
+    protected void respond(final CommandContext context) {
         final TextChannel channel = context.getChannel();
         final CharSequence response = TemplateProvider.parseAction(context, this.actionTemplate);
         final ResourceBundle locale = context.getResource();
@@ -148,35 +145,17 @@ public class CustomCommand implements ChatCommand {
         final CommandMatcher fakeMatcher = new FakeMessageMatcher(message, commandString);
         final CommandProvider commands = guildData.getCommandProvider();
         final Optional<ChatCommand> optCommand = commands.getAction(fakeMatcher);
-        if (optCommand.isEmpty()) {
-            channel.sendMessage(locale.getString("ERROR_COMMAND_NOT_FOUND") + commandString).queue();
-            return;
-        }
-
-        //Check if command is custom command, do not allow recursion
-        final ChatCommand command = optCommand.get();
-        if (command instanceof CustomCommand) {
-            channel.sendMessage(locale.getString("ERROR_RECURSION_NOT_PERMITTED")).queue();
-            return;
-        }
-
-        //Check if user has permission to run the command
-        final Member member = message.getMember();
-        final PermissionManager permissions = guildData.getPermissionManager();
-        if (!permissions.hasPermission(member, command, commandString)) {
-            channel.sendMessage(locale.getString("ERROR_INSUFFICIENT_PERMISSION")).queue();
-            return;
-        }
-
-        //Check if command is on cooldown
-        final CooldownManager cdm = guildData.getCooldownManager();
-        cdm.checkCooldown(member, commandString).ifPresentOrElse((Duration remainingCooldown) -> {
-            final String currentCooldown = CooldownManager.formatDuration(remainingCooldown, locale);
-            final String template = locale.getString("ERROR_COMMAND_COOLDOWN_TIME");
-            channel.sendMessage(template + currentCooldown).queue();
+        optCommand.ifPresentOrElse((ChatCommand command) -> {
+            //Check if command is custom command, do not allow recursion
+            if (command instanceof CustomCommand) {
+                channel.sendMessage(locale.getString("ERROR_RECURSION_NOT_PERMITTED")).queue();
+                return;
+            }
+            //Run the command
+            command.run(context);
         }, () -> {
-            final CommandContext fakeContext = new CommandContext(fakeMatcher, guildData, context.getTranslation());
-            command.respond(fakeContext);
+            //Did not find a command
+            channel.sendMessage(locale.getString("ERROR_COMMAND_NOT_FOUND") + commandString).queue();
         });
     }
 

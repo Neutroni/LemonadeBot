@@ -35,7 +35,7 @@ import java.util.ResourceBundle;
  *
  * @author Neutroni
  */
-public abstract class AdminCommand implements ChatCommand {
+public abstract class AdminCommand extends ChatCommand {
 
     @Override
     public Collection<CommandPermission> getDefaultRanks(final ResourceBundle locale, final long guildID, final PermissionManager permissions) {

@@ -57,7 +57,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class EventCommand implements ChatCommand {
+public class EventCommand extends ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -82,7 +82,7 @@ public class EventCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(final CommandContext context) {
+    protected void respond(final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
         final TranslationCache translationCache = context.getTranslation();

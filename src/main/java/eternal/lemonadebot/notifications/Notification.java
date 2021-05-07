@@ -115,7 +115,7 @@ class Notification extends CustomCommand implements Runnable {
             final RuntimeStorage db = this.guildData.getRuntimeStorage();
             final TranslationCache translation = db.getTranslationCache(channel.getGuild());
             final CommandContext context = new CommandContext(matcher, guildData, translation);
-            respond(context);
+            run(context, true);
             LOGGER.debug("Notification: {} successfully activated on channel: {}", getName(), channel.getName());
         }, (Throwable t) -> {
             //Failure

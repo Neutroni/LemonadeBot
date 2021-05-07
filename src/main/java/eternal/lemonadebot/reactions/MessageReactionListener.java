@@ -26,17 +26,12 @@ package eternal.lemonadebot.reactions;
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.commands.CommandProvider;
-import eternal.lemonadebot.cooldowns.CooldownManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.RuntimeStorage;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
-import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.translation.TranslationCache;
-import java.time.Duration;
 import java.util.Optional;
-import java.util.ResourceBundle;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageReaction;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.react.GenericGuildMessageReactionEvent;
@@ -81,26 +76,10 @@ public class MessageReactionListener extends ListenerAdapter {
         commandProvider.getAction(matcher).ifPresent((ChatCommand com) -> {
             final Guild guild = event.getGuild();
             final TranslationCache translation = this.storage.getTranslationCache(guild);
-            final ResourceBundle resource = translation.getResourceBundle();
-            final Member member = event.getMember();
-            final TextChannel channel = event.getChannel();
             
-            final PermissionManager permissions = guildData.getPermissionManager();
-            if (!permissions.hasPermission(member, com, action)) {
-                channel.sendMessage(resource.getString("ERROR_INSUFFICIENT_PERMISSION")).queue();
-                return;
-            }
-            
-            //Check if command is on cooldown
-            final CooldownManager cdm = guildData.getCooldownManager();
-            cdm.checkCooldown(member, action).ifPresentOrElse((Duration remainingCooldown) -> {
-                final String currentCooldown = CooldownManager.formatDuration(remainingCooldown, resource);
-                final String template = resource.getString("ERROR_COMMAND_COOLDOWN_TIME");
-                channel.sendMessage(template + currentCooldown).queue();
-            }, () -> {
-                final CommandContext context = new CommandContext(matcher, guildData, translation);
-                com.respond(context);
-            });
+            //Run the command
+            final CommandContext context = new CommandContext(matcher, guildData, translation);
+            com.run(context);
         });
     }
 

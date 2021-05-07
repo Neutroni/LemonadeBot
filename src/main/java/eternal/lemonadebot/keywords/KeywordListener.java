@@ -27,17 +27,14 @@ import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.config.ConfigManager;
-import eternal.lemonadebot.cooldowns.CooldownManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.database.RuntimeStorage;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.MessageMatcher;
 import eternal.lemonadebot.messageparsing.SimpleMessageMatcher;
 import eternal.lemonadebot.translation.TranslationCache;
-import java.time.Duration;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
@@ -87,7 +84,6 @@ public class KeywordListener extends ListenerAdapter {
         final Message message = event.getMessage();
         final GuildDataStore guildData = this.db.getGuildData(eventGuild);
         final KeywordManager keywordManager = guildData.getKeywordManager();
-        final CooldownManager cooldownManager = guildData.getCooldownManager();
 
         //Check to make sure we are not reacting to our own creation
         final ConfigManager guildConf = guildData.getConfigManager();
@@ -117,17 +113,10 @@ public class KeywordListener extends ListenerAdapter {
                 continue;
             }
 
-            //Check cooldown
-            final String commandName = com.getName();
-            final Member member = matcher.getMember();
-            final Optional<Duration> cooldownTime = cooldownManager.checkCooldown(member, commandName);
-            if (cooldownTime.isEmpty()) {
-                //Run the command
-                final CommandMatcher fakeMatcher = new SimpleMessageMatcher(event.getMember(), event.getChannel());
-                final TranslationCache translation = this.db.getTranslationCache(eventGuild);
-                final CommandContext context = new CommandContext(fakeMatcher, guildData, translation);
-                com.respond(context);
-            }
+            final CommandMatcher fakeMatcher = new SimpleMessageMatcher(event.getMember(), event.getChannel());
+            final TranslationCache translation = this.db.getTranslationCache(eventGuild);
+            final CommandContext context = new CommandContext(fakeMatcher, guildData, translation);
+            com.run(context, true);
         }
     }
 }

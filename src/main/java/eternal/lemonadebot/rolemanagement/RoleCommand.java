@@ -59,7 +59,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Neutroni
  */
-public class RoleCommand implements ChatCommand {
+public class RoleCommand extends ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
     private final DataSource dataSource;
@@ -113,7 +113,7 @@ public class RoleCommand implements ChatCommand {
     }
 
     @Override
-    public void respond(final CommandContext context) {
+    protected void respond(final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
         final TranslationCache translationCache = context.getTranslation();
