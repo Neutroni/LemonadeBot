@@ -58,6 +58,7 @@ class Notification extends CustomCommand implements Runnable {
     private final JDA jda;
     private final long channelID;
     private final GuildDataStore guildData;
+    private final NotificationManager notificationManager;
     private volatile ScheduledFuture<?> future;
     private final Instant activationTime;
 
@@ -72,11 +73,12 @@ class Notification extends CustomCommand implements Runnable {
      * @param input Input string to either send or execute if it is a command
      * @param activationTime Instant the notification happens
      */
-    Notification(final JDA jda, final GuildDataStore guildData, final String name, final String input,
+    Notification(final JDA jda, final GuildDataStore guildData, final NotificationManager nm, final String name, final String input,
             final long channelID, final long author, final Instant activationTime) {
         super(name, input, author);
         this.jda = jda;
         this.guildData = guildData;
+        this.notificationManager = nm;
         this.channelID = channelID;
         this.activationTime = activationTime;
         this.future = null;
@@ -213,7 +215,7 @@ class Notification extends CustomCommand implements Runnable {
     private void deleteDueToMissingOwner() {
         LOGGER.info("Deleting notification: {} with missing author, member id: {}", getName(), getAuthor());
         try {
-            this.guildData.getNotificationManager().deleteNotification(this);
+            this.notificationManager.deleteNotification(this);
             LOGGER.info("Notification with missing author deleted");
         } catch (SQLException ex) {
             LOGGER.error("Error removing notification with missing author: {}", ex.getMessage());
@@ -224,7 +226,7 @@ class Notification extends CustomCommand implements Runnable {
     private void deleteDueToMissingChannel() {
         LOGGER.info("Deleting notification: {} for textChannel that does not exist, channel id: {}", getName(), this.channelID);
         try {
-            this.guildData.getNotificationManager().deleteNotification(this);
+            this.notificationManager.deleteNotification(this);
             LOGGER.info("Deleted notification with missing channel: {}", this.channelID);
         } catch (SQLException ex) {
             LOGGER.error("Error removing notification with missing channel: {}", ex.getMessage());

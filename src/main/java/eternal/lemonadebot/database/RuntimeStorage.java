@@ -72,7 +72,7 @@ public class RuntimeStorage implements Closeable {
      */
     public GuildDataStore getGuildData(final Guild guild) {
         return this.guildDataStores.computeIfAbsent(guild.getIdLong(), (Long newGuildID) -> {
-            return new GuildDataStore(this.db, newGuildID, guild.getJDA(), this);
+            return new GuildDataStore(this.db, newGuildID, this);
         });
     }
 
@@ -108,9 +108,6 @@ public class RuntimeStorage implements Closeable {
     @Override
     public void close() {
         this.db.close();
-        this.guildDataStores.forEach((Long t, GuildDataStore u) -> {
-            u.close();
-        });
         this.commands.forEach((ChatCommand t) -> {
             t.close();
         });

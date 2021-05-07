@@ -51,26 +51,20 @@ public class NotificationManager implements Closeable {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final DataSource dataSource;
-    private final JDA jda;
     private final long guildID;
 
     private final Map<String, Notification> notifications = new ConcurrentHashMap<>();
     private final ScheduledExecutorService notificastionTimer = Executors.newSingleThreadScheduledExecutor();
-    private final GuildDataStore guildData;
 
     /**
      * Constructor
      *
      * @param ds DataSource to get connection from
-     * @param guildData GuildData to pass to notifications
-     * @param jda JDA to pass to notifications
+     * @param guildID
      */
-    public NotificationManager(final DataSource ds, final JDA jda, final GuildDataStore guildData) {
+    public NotificationManager(final DataSource ds, final long guildID) {
         this.dataSource = ds;
-        this.jda = jda;
-        this.guildData = guildData;
-        this.guildID = guildData.getGuildID();
-        loadNotifications();
+        this.guildID = guildID;
     }
 
     @Override
@@ -165,8 +159,11 @@ public class NotificationManager implements Closeable {
 
     /**
      * Load notifications from database
+     *
+     * @param jda JDA to pass to notifications
+     * @param guildData GuilData to pass to notifications
      */
-    private void loadNotifications() {
+    public void loadNotifications(final JDA jda, final GuildDataStore guildData) {
         LOGGER.debug("Started loading notifications for guild: {} from database", this.guildID);
         final String query = "SELECT name,message,author,channel,time FROM Notifications WHERE guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
@@ -184,7 +181,7 @@ public class NotificationManager implements Closeable {
                     final Instant notificationActivationTime = Instant.ofEpochMilli(notificationsTime);
 
                     //Construct and add to list of notifications
-                    final Notification notification = new Notification(this.jda, this.guildData,
+                    final Notification notification = new Notification(jda, guildData, this,
                             notificationName, notificationMessage, notificationChannel, notificationAuthor, notificationActivationTime);
                     this.notifications.put(notification.getName(), notification);
                     LOGGER.debug("Notification successfully loaded: {}", notification.getName());

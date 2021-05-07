@@ -72,7 +72,7 @@ public class CommandList implements Iterable<ChatCommand> {
                 new ConfigCommand(),
                 new CooldownCommand(),
                 new ReminderCommand(db),
-                new NotificationCommand(),
+                new NotificationCommand(db),
                 new PermissionCommand(),
                 new KeywordCommand()
         );

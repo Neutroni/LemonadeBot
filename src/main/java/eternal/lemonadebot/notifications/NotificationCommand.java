@@ -25,7 +25,9 @@ package eternal.lemonadebot.notifications;
 
 import eternal.lemonadebot.commands.AdminCommand;
 import eternal.lemonadebot.commands.CommandContext;
+import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.RuntimeStorage;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.translation.ActionKey;
@@ -37,11 +39,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
@@ -55,6 +60,36 @@ import org.apache.logging.log4j.Logger;
 public class NotificationCommand extends AdminCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
+
+    private final DatabaseManager dataBase;
+    private final Map<Long, NotificationManager> managers;
+
+    public NotificationCommand(DatabaseManager db) {
+        this.dataBase = db;
+        this.managers = new ConcurrentHashMap<>();
+    }
+
+    @Override
+    public void initialize(final List<Guild> guilds, final RuntimeStorage rs) {
+        guilds.forEach(guild -> {
+            getNotificationManager(guild, rs.getGuildData(guild));
+        });
+    }
+
+    @Override
+    public void close() {
+        this.managers.values().forEach((NotificationManager t) -> {
+            t.close();
+        });
+    }
+
+    private NotificationManager getNotificationManager(final Guild guild, final GuildDataStore guildData) {
+        return this.managers.computeIfAbsent(guild.getIdLong(), (Long t) -> {
+            final NotificationManager notificationManager = new NotificationManager(this.dataBase.getDataSource(), t);
+            notificationManager.loadNotifications(guild.getJDA(), guildData);
+            return notificationManager;
+        });
+    }
 
     @Override
     public String getCommand(final ResourceBundle locale) {
@@ -105,13 +140,14 @@ public class NotificationCommand extends AdminCommand {
         }
     }
 
-    private static void createNotification(final CommandContext context) {
+    private void createNotification(final CommandContext context) {
         //notification create 17 hours text
         final CommandMatcher matcher = context.getMatcher();
         final GuildDataStore guildData = context.getGuildData();
         final TextChannel channel = matcher.getTextChannel();
         final Member member = matcher.getMember();
-        final NotificationManager notifications = guildData.getNotificationManager();
+        final Guild guild = matcher.getGuild();
+        final NotificationManager notifications = getNotificationManager(guild, guildData);
         final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
 
@@ -160,7 +196,7 @@ public class NotificationCommand extends AdminCommand {
         final JDA jda = channel.getJDA();
         final long channelID = channel.getIdLong();
         final long memberID = matcher.getMember().getIdLong();
-        final Notification notification = new Notification(jda, guildData, notificationName,
+        final Notification notification = new Notification(jda, guildData, notifications, notificationName,
                 messageInput, channelID, memberID, notificationActivationTime);
 
         //Add notification to database
@@ -177,8 +213,9 @@ public class NotificationCommand extends AdminCommand {
         }
     }
 
-    private static void deleteNotification(final String[] arguments, final CommandContext context) {
+    private void deleteNotification(final String[] arguments, final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
+        final Guild guild = matcher.getGuild();
         final GuildDataStore guildData = context.getGuildData();
         final TextChannel textChannel = matcher.getTextChannel();
         final ResourceBundle locale = context.getTranslation().getResourceBundle();
@@ -187,7 +224,7 @@ public class NotificationCommand extends AdminCommand {
             textChannel.sendMessage(locale.getString("NOTIFICATION_DELETE_MISSING_NAME")).queue();
             return;
         }
-        final NotificationManager notifications = guildData.getNotificationManager();
+        final NotificationManager notifications = getNotificationManager(guild, guildData);
 
         final String notificationName = arguments[1];
         final Optional<Notification> oldNotification = notifications.getNotification(notificationName);
@@ -217,11 +254,12 @@ public class NotificationCommand extends AdminCommand {
         });
     }
 
-    private static void listNotifications(final CommandContext context) {
+    private void listNotifications(final CommandContext context) {
         final TranslationCache translation = context.getTranslation();
         final ResourceBundle locale = translation.getResourceBundle();
         //Only list notifications of the user
         final CommandMatcher matcher = context.getMatcher();
+        final Guild guild = matcher.getGuild();
         final Member user = matcher.getMember();
 
         //Construct the embed
@@ -231,7 +269,7 @@ public class NotificationCommand extends AdminCommand {
 
         //Initialize all the futures
         final GuildDataStore guildData = context.getGuildData();
-        final Collection<Notification> ev = guildData.getNotificationManager().getNotifications();
+        final Collection<Notification> ev = getNotificationManager(guild, guildData).getNotifications();
         final List<CompletableFuture<String>> futures = new ArrayList<>(ev.size());
         ev.forEach((Notification reminder) -> {
             if (reminder.getAuthor() == user.getIdLong()) {
