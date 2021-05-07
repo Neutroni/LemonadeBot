@@ -25,7 +25,7 @@ package eternal.lemonadebot.inventory;
 
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandContext;
-import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.CacheConfig;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
@@ -37,7 +37,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import javax.sql.DataSource;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -53,6 +55,21 @@ import org.apache.logging.log4j.Logger;
 public class InventoryCommand implements ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
+    private final DataSource dataSource;
+    private final CacheConfig cacheConfig;
+    private final Map<Long, InventoryManager> managers;
+
+    /**
+     * Constructor
+     *
+     * @param ds DataSource
+     * @param cacheConfig cacheConfig
+     */
+    public InventoryCommand(final DataSource ds, final CacheConfig cacheConfig) {
+        this.dataSource = ds;
+        this.cacheConfig = cacheConfig;
+        this.managers = new ConcurrentHashMap<>();
+    }
 
     @Override
     public String getCommand(final ResourceBundle locale) {
@@ -75,6 +92,21 @@ public class InventoryCommand implements ChatCommand {
         final String actionCreate = locale.getString("ACTION_ADD");
         return List.of(new CommandPermission(commandName, MemberRank.USER, guildID),
                 new CommandPermission(commandName + ' ' + actionCreate, MemberRank.ADMIN, guildID));
+    }
+
+    /**
+     * Get the inventorymanager for a guild
+     *
+     * @param guild Guild to get inventory manager for
+     * @return InventoryManager
+     */
+    private InventoryManager getInventory(final Guild guild) {
+        return this.managers.computeIfAbsent(guild.getIdLong(), (Long t) -> {
+            if (cacheConfig.inventoryCacheEnabled()) {
+                return new InventoryCache(this.dataSource, t);
+            }
+            return new InventoryManager(dataSource, t);
+        });
     }
 
     @Override
@@ -111,12 +143,11 @@ public class InventoryCommand implements ChatCommand {
         }
     }
 
-    private static void showInventory(final String[] opts, final CommandContext context) {
+    private void showInventory(final String[] opts, final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
-        final GuildDataStore guildData = context.getGuildData();
-        final InventoryManager inventoryManager = guildData.getInventoryManager();
         final Guild guild = matcher.getGuild();
+        final InventoryManager inventoryManager = getInventory(guild);
         final ResourceBundle locale = context.getResource();
         final Member requester = matcher.getMember();
         if (opts.length < 2) {
@@ -179,11 +210,10 @@ public class InventoryCommand implements ChatCommand {
         channel.sendMessage(eb.build()).queue();
     }
 
-    private static void addItemToInventory(final CommandContext context) {
+    private void addItemToInventory(final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
         final Guild guild = matcher.getGuild();
-        final GuildDataStore guildData = context.getGuildData();
         final ResourceBundle locale = context.getResource();
         final Member requester = matcher.getMember();
         //add item count user
@@ -210,7 +240,7 @@ public class InventoryCommand implements ChatCommand {
             return;
         }
 
-        final InventoryManager inventoryManager = guildData.getInventoryManager();
+        final InventoryManager inventoryManager = getInventory(guild);
         final String targetName;
         if (args.size() < 4) {
             //Add item to users own inventory
@@ -329,11 +359,10 @@ public class InventoryCommand implements ChatCommand {
         channel.sendMessageFormat(template, modeName).queue();
     }
 
-    private static void payItemToUser(final CommandContext context) {
+    private void payItemToUser(final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
         final Guild guild = matcher.getGuild();
-        final GuildDataStore guildData = context.getGuildData();
         final ResourceBundle locale = context.getResource();
         final Member requester = matcher.getMember();
         //pay item count user
@@ -364,7 +393,7 @@ public class InventoryCommand implements ChatCommand {
             return;
         }
 
-        final InventoryManager inventoryManager = guildData.getInventoryManager();
+        final InventoryManager inventoryManager = getInventory(guild);
         final String targetName;
         if (args.size() < 4) {
             channel.sendMessage(locale.getString("INVENTORY_PAY_USER_MISSING")).queue();

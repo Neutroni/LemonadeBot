@@ -27,7 +27,6 @@ import eternal.lemonadebot.config.ConfigCommand;
 import eternal.lemonadebot.cooldowns.CooldownCommand;
 import eternal.lemonadebot.customcommands.TemplateCommand;
 import eternal.lemonadebot.database.CacheConfig;
-import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.events.EventCommand;
 import eternal.lemonadebot.inventory.InventoryCommand;
 import eternal.lemonadebot.keywords.KeywordCommand;
@@ -70,7 +69,7 @@ public class CommandList implements Iterable<ChatCommand> {
                 new EventCommand(),
                 new TemplateCommand(),
                 new RoleCommand(),
-                new InventoryCommand(),
+                new InventoryCommand(ds, cacheConf),
                 //Admin commands
                 new ConfigCommand(),
                 new CooldownCommand(),

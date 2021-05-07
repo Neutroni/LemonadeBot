@@ -52,7 +52,7 @@ public class CacheConfig {
      *
      * @return true if inventory cache is enabled
      */
-    boolean inventoryCacheEnabled() {
+    public boolean inventoryCacheEnabled() {
         return this.cacheInventory;
     }
 

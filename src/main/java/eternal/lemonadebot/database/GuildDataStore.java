@@ -64,7 +64,6 @@ public class GuildDataStore implements Closeable {
     private final CooldownManager cooldowns;
     private final CommandProvider commandProvider;
     private final KeywordManager keywordManager;
-    private final InventoryManager inventoryManager;
 
     /**
      * Constructor
@@ -108,11 +107,6 @@ public class GuildDataStore implements Closeable {
             this.roleManager = new RoleManagerCache(dataSource, guildID);
         } else {
             this.roleManager = new RoleManager(dataSource, guildID);
-        }
-        if (cacheConf.inventoryCacheEnabled()) {
-            this.inventoryManager = new InventoryCache(dataSource, guildID);
-        } else {
-            this.inventoryManager = new InventoryManager(dataSource, guildID);
         }
     }
 
@@ -222,15 +216,6 @@ public class GuildDataStore implements Closeable {
      */
     public KeywordManager getKeywordManager() {
         return this.keywordManager;
-    }
-
-    /**
-     * Get the inventoryManager for guild
-     *
-     * @return inventoryManager
-     */
-    public InventoryManager getInventoryManager() {
-        return this.inventoryManager;
     }
 
     @Override
