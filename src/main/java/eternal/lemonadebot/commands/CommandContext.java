@@ -36,7 +36,7 @@ import net.dv8tion.jda.api.entities.TextChannel;
  */
 public class CommandContext {
 
-    private final CommandMatcher command;
+    private final CommandMatcher message;
     private final GuildDataStore guildData;
     private final TranslationCache translation;
 
@@ -48,7 +48,7 @@ public class CommandContext {
      * @param translation Translation data for the locale of the guild
      */
     public CommandContext(final CommandMatcher matcher, final GuildDataStore guildData, final TranslationCache translation) {
-        this.command = matcher;
+        this.message = matcher;
         this.guildData = guildData;
         this.translation = translation;
     }
@@ -59,7 +59,7 @@ public class CommandContext {
      * @return Command that initiated the action
      */
     public CommandMatcher getMatcher() {
-        return command;
+        return message;
     }
 
     /**
@@ -86,7 +86,7 @@ public class CommandContext {
      * @return TextChannel
      */
     public TextChannel getChannel() {
-        return this.command.getTextChannel();
+        return this.message.getTextChannel();
     }
 
     /**

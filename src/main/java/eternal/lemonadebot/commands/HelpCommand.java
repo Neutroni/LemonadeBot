@@ -24,7 +24,6 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.LemonadeBot;
-import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
@@ -36,7 +35,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 
@@ -94,9 +92,7 @@ class HelpCommand implements ChatCommand {
         final String name = options[0];
         if (locale.getString("ACTION_COMMANDS").equals(name)) {
             //Respond with list of commands available to the user
-            final GuildDataStore guildData = context.getGuildData();
-            final PermissionManager permissionManager = guildData.getPermissionManager();
-            listCommands(matcher, permissionManager, locale);
+            listCommands(context);
             return;
         }
 
@@ -152,12 +148,17 @@ class HelpCommand implements ChatCommand {
      * @param permissions Used to check if user has permission to the commands
      * @param locale TranslationManager to get command names from
      */
-    private static void listCommands(final CommandMatcher matcher, final PermissionManager permissions, final ResourceBundle locale) {
+    private static void listCommands(final CommandContext context) {
+        final ResourceBundle locale = context.getResource();
+        final CommandMatcher matcher = context.getMatcher();
+        final GuildDataStore guildData = context.getGuildData();
+        final PermissionManager permissions = guildData.getPermissionManager();
+        final CommandProvider commands = guildData.getCommandProvider();
         //Construct the list of commands
         final StringBuilder sb = new StringBuilder();
         final Member member = matcher.getMember();
 
-        for (final ChatCommand c : CommandProvider.COMMANDS) {
+        for (final ChatCommand c : commands.getBuiltInCommands()) {
             if (permissions.hasPermission(member, c, c.getCommand(locale))) {
                 sb.append(c.getCommand(locale)).append(" - ");
                 final String description = c.getDescription(locale);

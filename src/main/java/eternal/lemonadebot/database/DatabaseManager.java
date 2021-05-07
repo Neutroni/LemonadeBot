@@ -25,6 +25,7 @@ package eternal.lemonadebot.database;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import eternal.lemonadebot.commands.CommandList;
 import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.translation.TranslationCache;
 import java.io.Closeable;
@@ -53,6 +54,7 @@ public class DatabaseManager implements Closeable {
     private final HikariDataSource dataSource;
     private final CacheConfig cacheConfig;
     private final JDA jda;
+    private final CommandList commands;
     private final Map<Long, GuildDataStore> guildDataStores = new ConcurrentHashMap<>();
     private final Map<Locale, TranslationCache> translationCaches = new ConcurrentHashMap<>();
     private final int maxMessages;
@@ -83,6 +85,9 @@ public class DatabaseManager implements Closeable {
         hikariConfig.setConnectionInitSql("PRAGMA foreign_keys = ON;");
         this.dataSource = new HikariDataSource(hikariConfig);
 
+        //Initialize commands
+        this.commands = new CommandList(dataSource, cacheConfig);
+
         //Initialize database
         initialize();
         //load guilds from database
@@ -102,8 +107,17 @@ public class DatabaseManager implements Closeable {
      *
      * @return DataSource
      */
-    DataSource getDataSource() {
+    public DataSource getDataSource() {
         return this.dataSource;
+    }
+
+    /**
+     * Get the list of built in commands
+     *
+     * @return CommandList
+     */
+    public CommandList getCommands() {
+        return this.commands;
     }
 
     /**

@@ -29,7 +29,7 @@ import java.util.Properties;
  *
  * @author Neutroni
  */
-class CacheConfig {
+public class CacheConfig {
 
     private final boolean cacheInventory;
     private final boolean cacheEvents;

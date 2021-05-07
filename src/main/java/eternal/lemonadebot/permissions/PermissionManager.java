@@ -24,6 +24,7 @@
 package eternal.lemonadebot.permissions;
 
 import eternal.lemonadebot.commands.ChatCommand;
+import eternal.lemonadebot.commands.CommandList;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.config.ConfigManager;
 import java.sql.Connection;
@@ -53,6 +54,7 @@ public class PermissionManager {
     private final long guildID;
     private final CommandPermission adminPermission;
     private final ConfigManager configManager;
+    private final CommandList commands;
 
     /**
      * Constructor
@@ -60,12 +62,14 @@ public class PermissionManager {
      * @param ds DataSource to get connection from
      * @param guildID ID of the guild to store permissions for
      * @param config Locale to use for loading default permissions
+     * @param commands Built in commands
      */
-    public PermissionManager(final DataSource ds, final long guildID, final ConfigManager config) {
+    public PermissionManager(final DataSource ds, final long guildID, final ConfigManager config, final CommandList commands) {
         this.dataSource = ds;
         this.guildID = guildID;
         this.adminPermission = new CommandPermission("", MemberRank.ADMIN, guildID);
         this.configManager = config;
+        this.commands = commands;
     }
 
     /**
@@ -178,7 +182,7 @@ public class PermissionManager {
         final Locale locale = this.configManager.getLocale();
         final ResourceBundle resource = ResourceBundle.getBundle("Translation", locale);
         //Get default permissions for commands
-        CommandProvider.COMMANDS.forEach(c -> {
+        this.commands.forEach(c -> {
             permissions.addAll(c.getDefaultRanks(resource, this.guildID, this));
         });
 

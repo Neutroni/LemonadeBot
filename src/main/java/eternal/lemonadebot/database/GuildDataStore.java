@@ -23,6 +23,7 @@
  */
 package eternal.lemonadebot.database;
 
+import eternal.lemonadebot.commands.CommandList;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.cooldowns.CooldownCache;
@@ -34,7 +35,6 @@ import eternal.lemonadebot.events.EventManager;
 import eternal.lemonadebot.inventory.InventoryCache;
 import eternal.lemonadebot.inventory.InventoryManager;
 import eternal.lemonadebot.keywords.KeywordManager;
-import eternal.lemonadebot.messagelogs.MessageManager;
 import eternal.lemonadebot.notifications.NotificationManager;
 import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.permissions.PermissionManagerCache;
@@ -42,7 +42,6 @@ import eternal.lemonadebot.reminders.ReminderManager;
 import eternal.lemonadebot.rolemanagement.RoleManager;
 import eternal.lemonadebot.rolemanagement.RoleManagerCache;
 import java.io.Closeable;
-import java.util.Locale;
 import javax.sql.DataSource;
 import net.dv8tion.jda.api.JDA;
 
@@ -63,7 +62,6 @@ public class GuildDataStore implements Closeable {
     private final ReminderManager reminders;
     private final NotificationManager notifications;
     private final CooldownManager cooldowns;
-    private final MessageManager messages;
     private final CommandProvider commandProvider;
     private final KeywordManager keywordManager;
     private final InventoryManager inventoryManager;
@@ -81,15 +79,14 @@ public class GuildDataStore implements Closeable {
         this.database = db;
         final DataSource dataSource = db.getDataSource();
         this.config = new ConfigManager(dataSource, guildID);
-        final Locale locale = this.config.getLocale();
+        final CommandList commandList = db.getCommands();
         if (cacheConf.permissionsCacheEnabled()) {
-            this.permissions = new PermissionManagerCache(dataSource, guildID, this.config);
+            this.permissions = new PermissionManagerCache(dataSource, guildID, this.config, commandList);
         } else {
-            this.permissions = new PermissionManager(dataSource, guildID, this.config);
+            this.permissions = new PermissionManager(dataSource, guildID, this.config, commandList);
         }
         this.reminders = new ReminderManager(dataSource, jda, this);
         this.notifications = new NotificationManager(dataSource, jda, this);
-        this.messages = new MessageManager(dataSource);
         this.keywordManager = new KeywordManager(dataSource, guildID);
         if (cacheConf.cooldownCacheEnabled()) {
             this.cooldowns = new CooldownCache(dataSource, guildID);
@@ -101,7 +98,7 @@ public class GuildDataStore implements Closeable {
         } else {
             this.commands = new TemplateManager(dataSource, guildID);
         }
-        this.commandProvider = new CommandProvider(this.config, this.commands);
+        this.commandProvider = new CommandProvider(commandList, this.config, this.commands);
         if (cacheConf.eventCacheEnabled()) {
             this.events = new EventCache(dataSource, guildID);
         } else {
@@ -207,15 +204,6 @@ public class GuildDataStore implements Closeable {
      */
     public CooldownManager getCooldownManager() {
         return this.cooldowns;
-    }
-
-    /**
-     * Get the messageManager for this guild
-     *
-     * @return MessageManager
-     */
-    public MessageManager getMessageManager() {
-        return this.messages;
     }
 
     /**
