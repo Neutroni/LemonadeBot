@@ -35,6 +35,7 @@ import eternal.lemonadebot.events.EventManager;
 import eternal.lemonadebot.keywords.KeywordManager;
 import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.permissions.PermissionManagerCache;
+import eternal.lemonadebot.reactions.ReactionManager;
 import javax.sql.DataSource;
 
 /**
@@ -52,6 +53,7 @@ public class GuildDataStore {
     private final CooldownManager cooldowns;
     private final CommandProvider commandProvider;
     private final KeywordManager keywordManager;
+    private final ReactionManager reactionManager;
 
     /**
      * Constructor
@@ -72,6 +74,7 @@ public class GuildDataStore {
             this.permissions = new PermissionManager(dataSource, guildID, this.config, commandList);
         }
         this.keywordManager = new KeywordManager(dataSource, guildID);
+        this.reactionManager = new ReactionManager(dataSource);
         if (cacheConf.cooldownCacheEnabled()) {
             this.cooldowns = new CooldownCache(dataSource, guildID);
         } else {
@@ -155,6 +158,14 @@ public class GuildDataStore {
      */
     public KeywordManager getKeywordManager() {
         return this.keywordManager;
+    }
+
+    /**
+     * Get the reactionManager for guild
+     * @return reactionManager
+     */
+    public ReactionManager getReactionManager() {
+        return this.reactionManager;
     }
 
 }

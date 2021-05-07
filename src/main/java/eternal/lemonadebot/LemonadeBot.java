@@ -101,6 +101,7 @@ public class LemonadeBot {
         final List<GatewayIntent> intents = List.of(
                 GatewayIntent.GUILD_MEMBERS, //User join
                 GatewayIntent.GUILD_MESSAGES, //Messages
+                //GatewayIntent.GUILD_MESSAGE_REACTIONS, //Reactions
                 GatewayIntent.GUILD_VOICE_STATES //Voice chat
         );
         final JDABuilder jdabuilder = JDABuilder.create(discordKey, intents);
