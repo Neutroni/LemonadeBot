@@ -25,8 +25,8 @@ package eternal.lemonadebot.reminders;
 
 import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.RuntimeStorage;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.SimpleMessageMatcher;
 import eternal.lemonadebot.translation.TranslationCache;
@@ -119,7 +119,7 @@ class Reminder extends CustomCommand implements Runnable {
             //Success
             final CommandMatcher matcher = new SimpleMessageMatcher(member, channel);
             final Guild guild = channel.getGuild();
-            final DatabaseManager db = this.guildData.getDataBaseManager();
+            final RuntimeStorage db = this.guildData.getRuntimeStorage();
             final TranslationCache translation = db.getTranslationCache(guild);
             final CommandContext context = new CommandContext(matcher, guildData, translation);
             respond(context);

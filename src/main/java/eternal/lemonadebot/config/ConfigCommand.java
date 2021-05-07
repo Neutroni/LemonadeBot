@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -70,7 +71,6 @@ public class ConfigCommand extends AdminCommand {
     public void respond(final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TranslationCache translation = context.getTranslation();
-        final GuildDataStore guildData = context.getGuildData();
         final TextChannel channel = matcher.getTextChannel();
         final ResourceBundle locale = translation.getResourceBundle();
         final String[] options = matcher.getArguments(2);

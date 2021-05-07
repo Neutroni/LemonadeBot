@@ -26,9 +26,11 @@ package eternal.lemonadebot.messagelogs;
 import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.RuntimeStorage;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import javax.sql.DataSource;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
@@ -46,17 +48,18 @@ import net.dv8tion.jda.api.utils.TimeUtil;
  */
 public class LoggerListener extends ListenerAdapter {
 
-    private final DatabaseManager db;
+    private final RuntimeStorage db;
     private final MessageManager messageManager;
 
     /**
      * Constructor
      *
-     * @param database Database to use for operations
+     * @param rs
+     * @param db
      */
-    public LoggerListener(final DatabaseManager database) {
-        this.db = database;
-        this.messageManager = new MessageManager(database.getDataSource());
+    public LoggerListener(final RuntimeStorage rs, final DatabaseManager db) {
+        this.db = rs;
+        this.messageManager = new MessageManager(db.getDataSource());
     }
 
     /**

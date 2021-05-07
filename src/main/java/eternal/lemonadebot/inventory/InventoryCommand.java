@@ -26,6 +26,7 @@ package eternal.lemonadebot.inventory;
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.database.CacheConfig;
+import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
@@ -62,12 +63,11 @@ public class InventoryCommand implements ChatCommand {
     /**
      * Constructor
      *
-     * @param ds DataSource
-     * @param cacheConfig cacheConfig
+     * @param db DataSource
      */
-    public InventoryCommand(final DataSource ds, final CacheConfig cacheConfig) {
-        this.dataSource = ds;
-        this.cacheConfig = cacheConfig;
+    public InventoryCommand(final DatabaseManager db) {
+        this.dataSource = db.getDataSource();
+        this.cacheConfig = db.getCacheConfig();
         this.managers = new ConcurrentHashMap<>();
     }
 

@@ -28,8 +28,8 @@ import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.cooldowns.CooldownManager;
-import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.RuntimeStorage;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.MessageMatcher;
 import eternal.lemonadebot.messageparsing.SimpleMessageMatcher;
@@ -49,14 +49,14 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
  */
 public class KeywordListener extends ListenerAdapter {
 
-    private final DatabaseManager db;
+    private final RuntimeStorage db;
 
     /**
      * Constructor
      *
      * @param database Database to use for operations
      */
-    public KeywordListener(final DatabaseManager database) {
+    public KeywordListener(final RuntimeStorage database) {
         this.db = database;
     }
 

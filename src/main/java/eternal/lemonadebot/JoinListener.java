@@ -24,7 +24,7 @@
 package eternal.lemonadebot;
 
 import eternal.lemonadebot.config.ConfigManager;
-import eternal.lemonadebot.database.DatabaseManager;
+import eternal.lemonadebot.database.RuntimeStorage;
 import java.util.Optional;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -44,14 +44,14 @@ public class JoinListener extends ListenerAdapter {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final DatabaseManager db;
+    private final RuntimeStorage db;
 
     /**
      * Constructor
      *
      * @param database Database to use for operations
      */
-    public JoinListener(final DatabaseManager database) {
+    public JoinListener(final RuntimeStorage database) {
         this.db = database;
     }
 

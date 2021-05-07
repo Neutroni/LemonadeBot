@@ -25,21 +25,14 @@ package eternal.lemonadebot.database;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import eternal.lemonadebot.commands.CommandList;
-import eternal.lemonadebot.config.ConfigManager;
-import eternal.lemonadebot.translation.TranslationCache;
 import java.io.Closeable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Guild;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,9 +47,6 @@ public class DatabaseManager implements Closeable {
     private final HikariDataSource dataSource;
     private final CacheConfig cacheConfig;
     private final JDA jda;
-    private final CommandList commands;
-    private final Map<Long, GuildDataStore> guildDataStores = new ConcurrentHashMap<>();
-    private final Map<Locale, TranslationCache> translationCaches = new ConcurrentHashMap<>();
     private final int maxMessages;
 
     /**
@@ -85,21 +75,13 @@ public class DatabaseManager implements Closeable {
         hikariConfig.setConnectionInitSql("PRAGMA foreign_keys = ON;");
         this.dataSource = new HikariDataSource(hikariConfig);
 
-        //Initialize commands
-        this.commands = new CommandList(dataSource, cacheConfig);
-
         //Initialize database
         initialize();
-        //load guilds from database
-        loadGuilds();
     }
 
     @Override
     public void close() {
         this.dataSource.close();
-        this.guildDataStores.forEach((Long t, GuildDataStore u) -> {
-            u.close();
-        });
     }
 
     /**
@@ -110,40 +92,14 @@ public class DatabaseManager implements Closeable {
     public DataSource getDataSource() {
         return this.dataSource;
     }
-
+    
     /**
-     * Get the list of built in commands
+     * Get CacheConfig object
      *
-     * @return CommandList
+     * @return cacheConfig
      */
-    public CommandList getCommands() {
-        return this.commands;
-    }
-
-    /**
-     * Get GuildDataStore for guild
-     *
-     * @param guild guild to get manager for
-     * @return GuildDataStore
-     */
-    public GuildDataStore getGuildData(final Guild guild) {
-        return this.guildDataStores.computeIfAbsent(guild.getIdLong(), (Long newGuildID) -> {
-            return new GuildDataStore(this, newGuildID, this.jda, this.cacheConfig);
-        });
-    }
-
-    /**
-     * Get translationCache for locale of a guild
-     *
-     * @param guild Guild to get transaltion cache for
-     * @return TranslationCache
-     */
-    public TranslationCache getTranslationCache(final Guild guild) {
-        final ConfigManager config = getGuildData(guild).getConfigManager();
-        final Locale locale = config.getLocale();
-        return this.translationCaches.computeIfAbsent(locale, (Locale t) -> {
-            return new TranslationCache(locale);
-        });
+    public CacheConfig getCacheConfig() {
+        return this.cacheConfig;
     }
 
     /**
@@ -272,19 +228,5 @@ public class DatabaseManager implements Closeable {
             st.executeBatch();
         }
         LOGGER.debug("Database initialized");
-    }
-
-    private void loadGuilds() throws SQLException {
-        LOGGER.debug("Loading guilds from database");
-        final String query = "SELECT id FROM Guilds;";
-        try (final Connection connection = this.dataSource.getConnection();
-                final Statement st = connection.createStatement();
-                final ResultSet rs = st.executeQuery(query)) {
-            while (rs.next()) {
-                final long guildID = rs.getLong("id");
-                this.guildDataStores.put(guildID, new GuildDataStore(this, guildID, this.jda, this.cacheConfig));
-            }
-        }
-        LOGGER.debug("Loaded guilds successfully");
     }
 }

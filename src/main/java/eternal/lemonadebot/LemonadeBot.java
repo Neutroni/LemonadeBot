@@ -24,6 +24,7 @@
 package eternal.lemonadebot;
 
 import eternal.lemonadebot.database.DatabaseManager;
+import eternal.lemonadebot.database.RuntimeStorage;
 import eternal.lemonadebot.keywords.KeywordListener;
 import eternal.lemonadebot.messagelogs.LoggerListener;
 import java.io.FileNotFoundException;
@@ -117,17 +118,18 @@ public class LemonadeBot {
 
             //Connect to the database
             final DatabaseManager DB = new DatabaseManager(properties, jda);
+            final RuntimeStorage storage = new RuntimeStorage(DB);
             LOGGER.debug("Connected to database successfully");
 
             //Start listening for messages
-            jda.addEventListener(new JoinListener(DB));
-            jda.addEventListener(new CommandListener(DB));
-            jda.addEventListener(new LoggerListener(DB));
-            jda.addEventListener(new KeywordListener(DB));
+            jda.addEventListener(new JoinListener(storage));
+            jda.addEventListener(new CommandListener(storage));
+            jda.addEventListener(new LoggerListener(storage, DB));
+            jda.addEventListener(new KeywordListener(storage));
 
             //Initialize connected guilds
             jda.awaitReady();
-            jda.getGuilds().forEach(DB::getGuildData);
+            storage.initialize(jda.getGuilds());
 
             LOGGER.debug("Startup successful");
         } catch (SQLException ex) {

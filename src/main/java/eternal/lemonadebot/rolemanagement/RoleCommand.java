@@ -26,6 +26,7 @@ package eternal.lemonadebot.rolemanagement;
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.database.CacheConfig;
+import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
@@ -66,9 +67,9 @@ public class RoleCommand implements ChatCommand {
     private final Random RNG = new Random();
     private final Map<Long, RoleManager> managers;
 
-    public RoleCommand(DataSource ds, CacheConfig cacheConfig) {
-        this.dataSource = ds;
-        this.cacheConfig = cacheConfig;
+    public RoleCommand(final DatabaseManager db) {
+        this.dataSource = db.getDataSource();
+        this.cacheConfig = db.getCacheConfig();
         this.managers = new ConcurrentHashMap<>();
     }
 

@@ -32,15 +32,11 @@ import eternal.lemonadebot.customcommands.TemplateCache;
 import eternal.lemonadebot.customcommands.TemplateManager;
 import eternal.lemonadebot.events.EventCache;
 import eternal.lemonadebot.events.EventManager;
-import eternal.lemonadebot.inventory.InventoryCache;
-import eternal.lemonadebot.inventory.InventoryManager;
 import eternal.lemonadebot.keywords.KeywordManager;
 import eternal.lemonadebot.notifications.NotificationManager;
 import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.permissions.PermissionManagerCache;
 import eternal.lemonadebot.reminders.ReminderManager;
-import eternal.lemonadebot.rolemanagement.RoleManager;
-import eternal.lemonadebot.rolemanagement.RoleManagerCache;
 import java.io.Closeable;
 import javax.sql.DataSource;
 import net.dv8tion.jda.api.JDA;
@@ -54,6 +50,7 @@ public class GuildDataStore implements Closeable {
 
     private final long guildID;
     private final DatabaseManager database;
+    private final RuntimeStorage storage;
     private final ConfigManager config;
     private final PermissionManager permissions;
     private final TemplateManager commands;
@@ -72,12 +69,14 @@ public class GuildDataStore implements Closeable {
      * @param jda JDA to use for reminders
      * @param cacheConf Configuration for what data to cache
      */
-    GuildDataStore(final DatabaseManager db, final long guildID, final JDA jda, final CacheConfig cacheConf) {
+    GuildDataStore(final DatabaseManager db, final long guildID, final JDA jda, final RuntimeStorage storage) {
         this.guildID = guildID;
         this.database = db;
+        this.storage = storage;
         final DataSource dataSource = db.getDataSource();
         this.config = new ConfigManager(dataSource, guildID);
-        final CommandList commandList = db.getCommands();
+        final CommandList commandList = storage.getCommands();
+        final CacheConfig cacheConf = db.getCacheConfig();
         if (cacheConf.permissionsCacheEnabled()) {
             this.permissions = new PermissionManagerCache(dataSource, guildID, this.config, commandList);
         } else {
@@ -121,6 +120,10 @@ public class GuildDataStore implements Closeable {
      */
     public DatabaseManager getDataBaseManager() {
         return this.database;
+    }
+    
+    public RuntimeStorage getRuntimeStorage() {
+        return this.storage;
     }
 
     /**

@@ -28,8 +28,8 @@ import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.cooldowns.CooldownManager;
-import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.RuntimeStorage;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.MessageMatcher;
 import eternal.lemonadebot.permissions.PermissionManager;
@@ -60,14 +60,14 @@ public class CommandListener extends ListenerAdapter {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final DatabaseManager db;
+    private final RuntimeStorage db;
 
     /**
      * Constructor
      *
      * @param database Database to use for operations
      */
-    public CommandListener(final DatabaseManager database) {
+    public CommandListener(final RuntimeStorage database) {
         this.db = database;
     }
 

@@ -23,14 +23,13 @@
  */
 package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.PermissionManager;
-import eternal.lemonadebot.translation.TranslationCache;
+import java.sql.SQLException;
 import java.util.Collection;
+import java.util.List;
 import java.util.ResourceBundle;
+import net.dv8tion.jda.api.entities.Guild;
 
 /**
  * Interface all commands must implement
@@ -79,5 +78,14 @@ public interface ChatCommand {
      * @param context Context for the message
      */
     void respond(CommandContext context);
+
+    /**
+     * Initialize data that the command needs
+     *
+     * @param guilds List of guilds that need to be initialized
+     */
+    default void initialize(final List<Guild> guilds) {
+        //No-op
+    }
 
 }

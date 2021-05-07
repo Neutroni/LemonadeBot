@@ -25,8 +25,8 @@ package eternal.lemonadebot.notifications;
 
 import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.RuntimeStorage;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.SimpleMessageMatcher;
 import eternal.lemonadebot.translation.TranslationCache;
@@ -110,7 +110,7 @@ class Notification extends CustomCommand implements Runnable {
         channel.getGuild().retrieveMemberById(getAuthor()).queue((Member member) -> {
             //Success
             final CommandMatcher matcher = new SimpleMessageMatcher(member, channel);
-            final DatabaseManager db = this.guildData.getDataBaseManager();
+            final RuntimeStorage db = this.guildData.getRuntimeStorage();
             final TranslationCache translation = db.getTranslationCache(channel.getGuild());
             final CommandContext context = new CommandContext(matcher, guildData, translation);
             respond(context);
