@@ -58,7 +58,6 @@ public class GuildDataStore implements Closeable {
     private final PermissionManager permissions;
     private final TemplateManager commands;
     private final EventManager events;
-    private final RoleManager roleManager;
     private final ReminderManager reminders;
     private final NotificationManager notifications;
     private final CooldownManager cooldowns;
@@ -103,11 +102,7 @@ public class GuildDataStore implements Closeable {
         } else {
             this.events = new EventManager(dataSource, guildID);
         }
-        if (cacheConf.allowedRolesCacheEnabled()) {
-            this.roleManager = new RoleManagerCache(dataSource, guildID);
-        } else {
-            this.roleManager = new RoleManager(dataSource, guildID);
-        }
+        
     }
 
     /**
@@ -162,15 +157,6 @@ public class GuildDataStore implements Closeable {
      */
     public EventManager getEventManager() {
         return this.events;
-    }
-
-    /**
-     * Get the roleManager for this guild
-     *
-     * @return RoleManager
-     */
-    public RoleManager getRoleManager() {
-        return this.roleManager;
     }
 
     /**

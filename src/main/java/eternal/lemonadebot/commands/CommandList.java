@@ -68,7 +68,7 @@ public class CommandList implements Iterable<ChatCommand> {
                 new MusicCommand(),
                 new EventCommand(),
                 new TemplateCommand(),
-                new RoleCommand(),
+                new RoleCommand(ds, cacheConf),
                 new InventoryCommand(ds, cacheConf),
                 //Admin commands
                 new ConfigCommand(),

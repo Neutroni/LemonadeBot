@@ -25,7 +25,7 @@ package eternal.lemonadebot.rolemanagement;
 
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandContext;
-import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.CacheConfig;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
@@ -37,9 +37,12 @@ import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.ResourceBundle;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import javax.sql.DataSource;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.Permission;
@@ -58,7 +61,26 @@ import org.apache.logging.log4j.Logger;
 public class RoleCommand implements ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final Random RNG = new Random();
+    private final DataSource dataSource;
+    private final CacheConfig cacheConfig;
+    private final Random RNG = new Random();
+    private final Map<Long, RoleManager> managers;
+
+    public RoleCommand(DataSource ds, CacheConfig cacheConfig) {
+        this.dataSource = ds;
+        this.cacheConfig = cacheConfig;
+        this.managers = new ConcurrentHashMap<>();
+    }
+
+    private RoleManager getRoleManager(final Guild guild) {
+        return this.managers.computeIfAbsent(guild.getIdLong(), (Long t) -> {
+            if (this.cacheConfig.allowedRolesCacheEnabled()) {
+                return new RoleManagerCache(dataSource, t);
+            } else {
+                return new RoleManager(dataSource, t);
+            }
+        });
+    }
 
     @Override
     public String getCommand(final ResourceBundle locale) {
@@ -329,7 +351,7 @@ public class RoleCommand implements ChatCommand {
 
     }
 
-    private static void allowRole(final CommandContext context) {
+    private void allowRole(final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
         final ResourceBundle locale = context.getResource();
@@ -367,8 +389,7 @@ public class RoleCommand implements ChatCommand {
         }
 
         //Add role to roleManagers list
-        final GuildDataStore guildData = context.getGuildData();
-        final RoleManager roleManager = guildData.getRoleManager();
+        final RoleManager roleManager = getRoleManager(guild);
         final AllowedRole allowedRole = new AllowedRole(role, roleDescription);
         try {
             if (roleManager.allowRole(allowedRole)) {
@@ -384,7 +405,7 @@ public class RoleCommand implements ChatCommand {
 
     }
 
-    private static void disallowRole(final String[] opts, final CommandContext context) {
+    private void disallowRole(final String[] opts, final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
         final ResourceBundle locale = context.getResource();
@@ -411,8 +432,7 @@ public class RoleCommand implements ChatCommand {
             return;
         }
         final Role role = roles.get(0);
-        final GuildDataStore guildData = context.getGuildData();
-        final RoleManager roleManager = guildData.getRoleManager();
+        final RoleManager roleManager = getRoleManager(guild);
         try {
             if (roleManager.disallowRole(role)) {
                 channel.sendMessage(locale.getString("ROLE_DISALLOW_SUCCESS")).queue();
@@ -426,7 +446,7 @@ public class RoleCommand implements ChatCommand {
         }
     }
 
-    private static void getRole(final String[] opts, final CommandContext context) {
+    private void getRole(final String[] opts, final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
         final ResourceBundle locale = context.getResource();
@@ -450,8 +470,7 @@ public class RoleCommand implements ChatCommand {
             return;
         }
         final Role role = roles.get(0);
-        final GuildDataStore guildData = context.getGuildData();
-        final RoleManager roleManager = guildData.getRoleManager();
+        final RoleManager roleManager = getRoleManager(guild);
 
         //Check if we can remove the role from requester
         final boolean roleAllowed;
@@ -483,7 +502,7 @@ public class RoleCommand implements ChatCommand {
         channel.sendMessageFormat(template, roleName).queue();
     }
 
-    private static void removeRole(final String[] opts, final CommandContext context) {
+    private void removeRole(final String[] opts, final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
         final ResourceBundle locale = context.getResource();
@@ -505,8 +524,7 @@ public class RoleCommand implements ChatCommand {
             return;
         }
         final Role role = roles.get(0);
-        final GuildDataStore guildData = context.getGuildData();
-        final RoleManager roleManager = guildData.getRoleManager();
+        final RoleManager roleManager = getRoleManager(guild);
 
         //Check if we can remove the role from requester
         final boolean roleAllowed;
@@ -538,15 +556,14 @@ public class RoleCommand implements ChatCommand {
 
     }
 
-    private static void listAllowedRoles(final CommandContext context) {
+    private void listAllowedRoles(final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
         final ResourceBundle locale = context.getResource();
         final Guild guild = matcher.getGuild();
 
         //Get the list of roles we are allowed to assign
-        final GuildDataStore guildData = context.getGuildData();
-        final RoleManager roleManager = guildData.getRoleManager();
+        final RoleManager roleManager = getRoleManager(guild);
         final Collection<AllowedRole> roles;
         try {
             roles = roleManager.getRoles();
@@ -569,7 +586,7 @@ public class RoleCommand implements ChatCommand {
         channel.sendMessage(eb.build()).queue();
     }
 
-    private static void getRandomMemberWithRole(final String[] opts, final CommandContext context) {
+    private void getRandomMemberWithRole(final String[] opts, final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
         final ResourceBundle locale = context.getResource();
@@ -599,7 +616,7 @@ public class RoleCommand implements ChatCommand {
                 channel.sendMessageFormat(template, roleName).queue();
                 return;
             }
-            final int index = RNG.nextInt(members.size());
+            final int index = this.RNG.nextInt(members.size());
             final Member member = members.get(index);
             final String template = locale.getString("ROLE_SELECTED_USER");
             channel.sendMessageFormat(template, member.getEffectiveName()).queue();

@@ -70,7 +70,7 @@ public class CacheConfig {
      *
      * @return true if allowed roles cache is enabled
      */
-    boolean allowedRolesCacheEnabled() {
+    public boolean allowedRolesCacheEnabled() {
         return this.cacheAllowedRoles;
     }
 
