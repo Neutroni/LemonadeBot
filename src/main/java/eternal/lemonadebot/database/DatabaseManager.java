@@ -203,6 +203,15 @@ public class DatabaseManager implements Closeable {
         final String INVENTORY_CLEANUP = "CREATE TRIGGER IF NOT EXISTS InventoryCleanup "
                 + "AFTER UPDATE ON Inventory BEGIN "
                 + "DELETE FROM Inventory WHERE count = 0; END;";
+        final String REACTIONS = "CREATE TABLE IF NOT EXISTST Reactions("
+                + "messageId INTEGER NOT NULL,"
+                + "guild INTEGER NOT NULL,"
+                + "channel INTEGER NOT NULL,"
+                + "reaction INTEGER NOT NULL,"
+                + "commandAdd TEXT NOT NULL,"
+                + "commandRemove TEXT NOT NULL,"
+                + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE,"
+                + "PRIMARY KEY (guild,messageId,reaction));";
         try (final Connection connection = this.dataSource.getConnection();
                 final Statement st = connection.createStatement()) {
             st.addBatch(GUILDCONF);
@@ -220,6 +229,7 @@ public class DatabaseManager implements Closeable {
             st.addBatch(KEYWORDS);
             st.addBatch(INVENTORY);
             st.addBatch(INVENTORY_CLEANUP);
+            st.addBatch(REACTIONS);
             st.executeBatch();
         }
         LOGGER.debug("Database initialized");
