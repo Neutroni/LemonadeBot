@@ -124,7 +124,7 @@ class Reminder extends CustomCommand implements Runnable {
             final RuntimeStorage db = this.guildData.getRuntimeStorage();
             final TranslationCache translation = db.getTranslationCache(guild);
             final CommandContext context = new CommandContext(matcher, guildData, translation);
-            run(context,true);
+            run(context, true);
             LOGGER.debug("Reminder: {} successfully activated on channel: {}", getName(), channel.getName());
         }, (Throwable t) -> {
             //Failure

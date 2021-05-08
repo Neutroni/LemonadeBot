@@ -58,6 +58,7 @@ public class CommandList implements Iterable<ChatCommand> {
 
     /**
      * Constructor
+     *
      * @param db DataSource
      */
     public CommandList(final DatabaseManager db) {

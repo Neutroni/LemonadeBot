@@ -79,9 +79,9 @@ public class ReminderCommand extends AdminCommand {
             getReminderManager(guild, rs.getGuildData(guild));
         });
     }
-    
+
     @Override
-    public void close(){
+    public void close() {
         this.managers.values().forEach((ReminderManager t) -> {
             t.close();
         });

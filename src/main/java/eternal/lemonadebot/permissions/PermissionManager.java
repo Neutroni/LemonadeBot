@@ -25,7 +25,6 @@ package eternal.lemonadebot.permissions;
 
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandList;
-import eternal.lemonadebot.commands.CommandProvider;
 import eternal.lemonadebot.config.ConfigManager;
 import java.sql.Connection;
 import java.sql.PreparedStatement;

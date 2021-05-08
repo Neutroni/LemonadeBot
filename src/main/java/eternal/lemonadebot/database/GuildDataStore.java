@@ -162,6 +162,7 @@ public class GuildDataStore {
 
     /**
      * Get the reactionManager for guild
+     *
      * @return reactionManager
      */
     public ReactionManager getReactionManager() {

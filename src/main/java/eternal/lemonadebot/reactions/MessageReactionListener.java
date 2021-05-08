@@ -76,7 +76,7 @@ public class MessageReactionListener extends ListenerAdapter {
         commandProvider.getAction(matcher).ifPresent((ChatCommand com) -> {
             final Guild guild = event.getGuild();
             final TranslationCache translation = this.storage.getTranslationCache(guild);
-            
+
             //Run the command
             final CommandContext context = new CommandContext(matcher, guildData, translation);
             com.run(context);

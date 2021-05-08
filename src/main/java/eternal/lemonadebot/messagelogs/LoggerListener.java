@@ -30,7 +30,6 @@ import eternal.lemonadebot.database.RuntimeStorage;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.ResourceBundle;
-import javax.sql.DataSource;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;

@@ -27,12 +27,10 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import java.io.Closeable;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 import javax.sql.DataSource;
-import net.dv8tion.jda.api.JDA;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,17 +44,15 @@ public class DatabaseManager implements Closeable {
 
     private final HikariDataSource dataSource;
     private final CacheConfig cacheConfig;
-    private final JDA jda;
     private final int maxMessages;
 
     /**
      * Constructor
      *
      * @param config Properties that sot
-     * @param jda JDA to use for Managers that need it
      * @throws SQLException if loading database fails
      */
-    public DatabaseManager(final Properties config, final JDA jda) throws SQLException, NumberFormatException {
+    public DatabaseManager(final Properties config) throws SQLException, NumberFormatException {
         final String numberString = config.getProperty("max-messages");
         if (numberString == null) {
             this.maxMessages = 4096;
@@ -65,7 +61,6 @@ public class DatabaseManager implements Closeable {
             this.maxMessages = Integer.parseInt(numberString);
             LOGGER.info("Set max messages to: {}", this.maxMessages);
         }
-        this.jda = jda;
         this.cacheConfig = new CacheConfig(config);
 
         //Connect to database
@@ -92,7 +87,7 @@ public class DatabaseManager implements Closeable {
     public DataSource getDataSource() {
         return this.dataSource;
     }
-    
+
     /**
      * Get CacheConfig object
      *

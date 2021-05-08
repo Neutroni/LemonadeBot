@@ -25,7 +25,6 @@ package eternal.lemonadebot.cooldowns;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Locale;
 import java.util.ResourceBundle;
 
 /**

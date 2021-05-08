@@ -118,7 +118,7 @@ public class LemonadeBot {
             final JDA jda = jdabuilder.build();
 
             //Connect to the database
-            final DatabaseManager DB = new DatabaseManager(properties, jda);
+            final DatabaseManager DB = new DatabaseManager(properties);
             final RuntimeStorage storage = new RuntimeStorage(DB);
             LOGGER.debug("Connected to database successfully");
 

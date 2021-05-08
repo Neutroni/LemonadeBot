@@ -175,6 +175,7 @@ public class ReminderManager implements Closeable {
 
     /**
      * Load reminders from database
+     *
      * @param jda
      * @param guildData
      */

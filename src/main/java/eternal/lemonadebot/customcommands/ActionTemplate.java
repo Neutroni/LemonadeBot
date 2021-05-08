@@ -38,7 +38,7 @@ public class ActionTemplate {
 
     private final String helpText;
     private final Pattern pattern;
-    private final BiFunction<CommandContext,Matcher,String> function;
+    private final BiFunction<CommandContext, Matcher, String> function;
 
     /**
      * Constructor
@@ -47,7 +47,7 @@ public class ActionTemplate {
      * @param help help text for this action
      * @param func function this action executes
      */
-    ActionTemplate(final String pattern, final String help, final BiFunction<CommandContext,Matcher,String> func) {
+    ActionTemplate(final String pattern, final String help, final BiFunction<CommandContext, Matcher, String> func) {
         this.pattern = Pattern.compile(pattern);
         this.helpText = help;
         this.function = func;
