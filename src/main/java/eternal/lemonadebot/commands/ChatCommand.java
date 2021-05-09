@@ -50,7 +50,7 @@ public abstract class ChatCommand {
      * @param locale Locale to get the command name inF
      * @return the command to activate this action
      */
-    public abstract String getCommand(ResourceBundle locale);
+    public abstract String getCommand(final ResourceBundle locale);
 
     /**
      * Short description for command, used for command listings
@@ -58,7 +58,7 @@ public abstract class ChatCommand {
      * @param locale Locale to return the description in
      * @return Description for what this command does
      */
-    public abstract String getDescription(ResourceBundle locale);
+    public abstract String getDescription(final ResourceBundle locale);
 
     /**
      * Help text for command, usage info for the command
@@ -66,7 +66,7 @@ public abstract class ChatCommand {
      * @param locale Locale to return the help in
      * @return help text for the command
      */
-    public abstract String getHelpText(ResourceBundle locale);
+    public abstract String getHelpText(final ResourceBundle locale);
 
     /**
      * What rank is needed to run this command by default
@@ -78,7 +78,7 @@ public abstract class ChatCommand {
      */
     public abstract Collection<CommandPermission> getDefaultRanks(ResourceBundle locale, long guildID, PermissionManager permissions);
 
-    public void run(CommandContext context, boolean silent) {
+    public void run(final CommandContext context, final boolean silent) {
         final CommandMatcher cmdMatch = context.getMatcher();
         final Member member = cmdMatch.getMember();
         final String inputString = cmdMatch.getAction();
@@ -120,7 +120,7 @@ public abstract class ChatCommand {
      *
      * @param context Context to run the command in
      */
-    public void run(CommandContext context) {
+    public void run(final CommandContext context) {
         run(context, false);
     }
 
@@ -129,7 +129,7 @@ public abstract class ChatCommand {
      *
      * @param context Context for the message
      */
-    protected abstract void respond(CommandContext context);
+    protected abstract void respond(final CommandContext context);
 
     /**
      * Initialize data that the command needs

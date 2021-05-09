@@ -35,6 +35,7 @@ import eternal.lemonadebot.notifications.NotificationCommand;
 import eternal.lemonadebot.permissions.PermissionCommand;
 import eternal.lemonadebot.reminders.ReminderCommand;
 import eternal.lemonadebot.rolemanagement.RoleCommand;
+import java.io.Closeable;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -48,7 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Neutroni
  */
-public class CommandList implements Iterable<ChatCommand> {
+public class CommandList implements Iterable<ChatCommand>, Closeable {
 
     /**
      * List of all the built in commands
@@ -91,11 +92,18 @@ public class CommandList implements Iterable<ChatCommand> {
      * @param locale Locale to get the command name in
      * @return Optional containing the command if found
      */
-    public Optional<ChatCommand> getBuiltInCommand(final String commandName, Locale locale) {
+    public Optional<ChatCommand> getBuiltInCommand(final String commandName, final Locale locale) {
         return Optional.ofNullable(getActiveMap(locale).get(commandName));
     }
 
-    private Map<String, ChatCommand> getActiveMap(Locale locale) {
+    @Override
+    public void close() {
+        this.commands.forEach((ChatCommand t) -> {
+            t.close();
+        });
+    }
+
+    private Map<String, ChatCommand> getActiveMap(final Locale locale) {
         //Load translated built in commands
         return commandMap.computeIfAbsent(locale, (Locale t) -> {
             final ResourceBundle resource = ResourceBundle.getBundle("Translation", locale);

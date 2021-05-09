@@ -46,7 +46,7 @@ public class CommandPermission {
      *
      * @param action Action this CommandPermission is for
      * @param rank Rank required for this permission
-     * @param role Role required for this permission
+     * @param role Role required for this permission, use guild ID for anyone
      */
     public CommandPermission(final String action, final MemberRank rank, final long role) {
         this.action = action;

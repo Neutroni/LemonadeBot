@@ -107,10 +107,8 @@ public class RuntimeStorage implements Closeable {
 
     @Override
     public void close() {
+        this.commands.close();
         this.db.close();
-        this.commands.forEach((ChatCommand t) -> {
-            t.close();
-        });
     }
 
 }

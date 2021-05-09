@@ -30,12 +30,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.Set;
 import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
@@ -177,13 +177,7 @@ public class PermissionManager {
      * @return Collection of permissions
      */
     Collection<CommandPermission> getPermissions() throws SQLException {
-        final List<CommandPermission> permissions = new ArrayList<>();
-        final Locale locale = this.configManager.getLocale();
-        final ResourceBundle resource = ResourceBundle.getBundle("Translation", locale);
-        //Get default permissions for commands
-        this.commands.forEach(c -> {
-            permissions.addAll(c.getDefaultRanks(resource, this.guildID, this));
-        });
+        final Set<CommandPermission> permissions = new HashSet<>();
 
         //Load permissions from database
         final String query = "SELECT action,requiredRank,requiredRole FROM Permissions WHERE guild = ?;";
@@ -206,6 +200,15 @@ public class PermissionManager {
                 }
             }
         }
+
+        //Get default permissions for commands
+        final Locale locale = this.configManager.getLocale();
+        final ResourceBundle resource = ResourceBundle.getBundle("Translation", locale);
+        this.commands.forEach((ChatCommand c) -> {
+            //Set will ignore any that were also loaded from the database
+            permissions.addAll(c.getDefaultRanks(resource, this.guildID, this));
+        });
+
         return permissions;
     }
 
@@ -218,14 +221,15 @@ public class PermissionManager {
      */
     protected Optional<CommandPermission> getPermission(final String command) throws SQLException {
         final String query = "SELECT action,requiredRank,requiredRole FROM Permissions "
-                + "WHERE guild = ? AND (action = ? OR ? LIKE action || ' %');";
+                + "WHERE guild = ? AND (action = ? OR ? LIKE action || ' %')"
+                + "ORDER BY length(action) DESC LIMIT 1;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, this.guildID);
             ps.setString(2, command);
             ps.setString(3, command);
             try (final ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
+                if (rs.next()) {
                     final String action = rs.getString("action");
                     final String rankName = rs.getString("requiredRank");
                     final MemberRank rank;
@@ -233,7 +237,7 @@ public class PermissionManager {
                         rank = MemberRank.valueOf(rankName);
                     } catch (IllegalArgumentException ex) {
                         LOGGER.warn("Permission with malformed rank in database: {}", ex.getMessage());
-                        continue;
+                        return Optional.empty();
                     }
                     final long requiredRole = rs.getLong("requiredRole");
                     return Optional.of(new CommandPermission(action, rank, requiredRole));
