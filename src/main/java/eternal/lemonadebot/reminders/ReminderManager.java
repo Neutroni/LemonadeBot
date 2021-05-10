@@ -176,8 +176,8 @@ public class ReminderManager implements Closeable {
     /**
      * Load reminders from database
      *
-     * @param jda
-     * @param guildData
+     * @param jda JDA to pass to reminders
+     * @param guildData guildData to pass to reminders
      */
     public void loadReminders(final JDA jda, final GuildDataStore guildData) {
         LOGGER.debug("Started loading reminders for guild: {} from database", this.guildID);

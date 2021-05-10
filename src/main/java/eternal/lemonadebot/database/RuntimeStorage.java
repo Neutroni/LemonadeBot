@@ -49,6 +49,11 @@ public class RuntimeStorage implements Closeable {
     private final Map<Long, GuildDataStore> guildDataStores = new ConcurrentHashMap<>();
     private final Map<Locale, TranslationCache> translationCaches = new ConcurrentHashMap<>();
 
+    /**
+     * Constructor
+     *
+     * @param db Database connection
+     */
     public RuntimeStorage(final DatabaseManager db) {
         this.db = db;
         //Initialize commands

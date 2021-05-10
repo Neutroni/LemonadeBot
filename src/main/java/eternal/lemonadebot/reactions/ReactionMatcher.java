@@ -46,6 +46,12 @@ public class ReactionMatcher implements CommandMatcher {
     private final String arguments;
     private final GenericGuildMessageReactionEvent event;
 
+    /**
+     * Constructor
+     *
+     * @param command Command to activate
+     * @param event Event that caused the command actication
+     */
     public ReactionMatcher(final String command, final GenericGuildMessageReactionEvent event) {
         this.event = event;
         this.action = command;

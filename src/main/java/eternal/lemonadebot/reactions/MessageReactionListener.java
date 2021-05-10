@@ -47,6 +47,11 @@ public class MessageReactionListener extends ListenerAdapter {
 
     private final RuntimeStorage storage;
 
+    /**
+     * Constructor
+     *
+     * @param storage Storage to use
+     */
     public MessageReactionListener(final RuntimeStorage storage) {
         this.storage = storage;
     }

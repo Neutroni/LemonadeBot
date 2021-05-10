@@ -60,7 +60,7 @@ public class NotificationManager implements Closeable {
      * Constructor
      *
      * @param ds DataSource to get connection from
-     * @param guildID
+     * @param guildID ID of the guild to store notifications for
      */
     public NotificationManager(final DataSource ds, final long guildID) {
         this.dataSource = ds;

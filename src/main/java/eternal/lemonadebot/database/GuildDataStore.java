@@ -93,6 +93,11 @@ public class GuildDataStore {
         }
     }
 
+    /**
+     * Get runtTimeStorage that stores this guildDataStore
+     *
+     * @return RuntimeStorage
+     */
     public RuntimeStorage getRuntimeStorage() {
         return this.storage;
     }

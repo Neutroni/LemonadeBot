@@ -68,6 +68,11 @@ public class ReminderCommand extends AdminCommand {
     private final DatabaseManager dataBase;
     private final Map<Long, ReminderManager> managers;
 
+    /**
+     * Constrocutor
+     *
+     * @param db Database connection
+     */
     public ReminderCommand(DatabaseManager db) {
         this.dataBase = db;
         this.managers = new ConcurrentHashMap<>();

@@ -67,12 +67,23 @@ public class RoleCommand extends ChatCommand {
     private final Random RNG = new Random();
     private final Map<Long, RoleManager> managers;
 
+    /**
+     * Constructor
+     *
+     * @param db Database connection
+     */
     public RoleCommand(final DatabaseManager db) {
         this.dataSource = db.getDataSource();
         this.cacheConfig = db.getCacheConfig();
         this.managers = new ConcurrentHashMap<>();
     }
 
+    /**
+     * Get RoleManager for a guild
+     *
+     * @param guild Guild to get rolemanager for
+     * @return RoleManager
+     */
     private RoleManager getRoleManager(final Guild guild) {
         return this.managers.computeIfAbsent(guild.getIdLong(), (Long t) -> {
             if (this.cacheConfig.allowedRolesCacheEnabled()) {

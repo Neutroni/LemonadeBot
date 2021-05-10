@@ -64,6 +64,11 @@ public class NotificationCommand extends AdminCommand {
     private final DatabaseManager dataBase;
     private final Map<Long, NotificationManager> managers;
 
+    /**
+     * Constructor
+     *
+     * @param db Database connection
+     */
     public NotificationCommand(DatabaseManager db) {
         this.dataBase = db;
         this.managers = new ConcurrentHashMap<>();
@@ -83,6 +88,13 @@ public class NotificationCommand extends AdminCommand {
         });
     }
 
+    /**
+     * Get notification manager for a guild
+     *
+     * @param guild Guild to get the notification manager for
+     * @param guildData guildData to pass to notification manager
+     * @return NotificationManager
+     */
     private NotificationManager getNotificationManager(final Guild guild, final GuildDataStore guildData) {
         return this.managers.computeIfAbsent(guild.getIdLong(), (Long t) -> {
             final NotificationManager notificationManager = new NotificationManager(this.dataBase.getDataSource(), t);

@@ -78,6 +78,12 @@ public abstract class ChatCommand {
      */
     public abstract Collection<CommandPermission> getDefaultRanks(ResourceBundle locale, long guildID, PermissionManager permissions);
 
+    /**
+     * Run the command, will check if user has permission
+     *
+     * @param context Context to run the command in
+     * @param silent If on error command should respond with a error message
+     */
     public void run(final CommandContext context, final boolean silent) {
         final CommandMatcher cmdMatch = context.getMatcher();
         final Member member = cmdMatch.getMember();

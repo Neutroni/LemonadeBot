@@ -53,8 +53,8 @@ public class LoggerListener extends ListenerAdapter {
     /**
      * Constructor
      *
-     * @param rs
-     * @param db
+     * @param rs RuntimeStorage to use for getting guild info
+     * @param db Database to use for logging messages
      */
     public LoggerListener(final RuntimeStorage rs, final DatabaseManager db) {
         this.db = rs;
