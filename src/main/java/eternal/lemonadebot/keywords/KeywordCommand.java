@@ -227,6 +227,6 @@ public class KeywordCommand extends AdminCommand {
             contentBuilder.append(locale.getString("KEYWORD_NO_KEYWORDS"));
         }
         eb.setDescription(contentBuilder);
-        textChannel.sendMessage(eb.build()).queue();
+        textChannel.sendMessageEmbeds(eb.build()).queue();
     }
 }

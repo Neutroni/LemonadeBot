@@ -372,7 +372,7 @@ public class EventCommand extends ChatCommand {
                 }
 
                 //Send the message
-                textChannel.sendMessage(eb.build()).queue();
+                textChannel.sendMessageEmbeds(eb.build()).queue();
 
                 //Remove missing members from event
                 cleanEvent(event, idBatch, foundMembersList, events);
@@ -452,7 +452,7 @@ public class EventCommand extends ChatCommand {
             contentBuilder.append(locale.getString("EVENT_NO_EVENTS"));
         }
         eb.setDescription(contentBuilder);
-        textChannel.sendMessage(eb.build()).queue();
+        textChannel.sendMessageEmbeds(eb.build()).queue();
     }
 
     private static void pickRandomEventMember(final String[] opts, final CommandContext context) {

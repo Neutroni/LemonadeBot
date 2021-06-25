@@ -256,6 +256,6 @@ public class CooldownCommand extends AdminCommand {
             description.append(locale.getString("COOLDOWN_NO_COOLDOWNS"));
         }
         eb.setDescription(description);
-        channel.sendMessage(eb.build()).queue();
+        channel.sendMessageEmbeds(eb.build()).queue();
     }
 }

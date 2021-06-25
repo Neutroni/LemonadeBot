@@ -116,7 +116,7 @@ public class LoggerListener extends ListenerAdapter {
             eb.addField(locale.getString("MESSAGE_CONTENT_AFTER"), message.getContentRaw(), false);
             final OffsetDateTime dt = message.getTimeCreated();
             eb.setFooter(locale.getString("MESSAGE_CREATION_TIME") + dt.toString());
-            logChannel.sendMessage(eb.build()).queue();
+            logChannel.sendMessageEmbeds(eb.build()).queue();
         });
 
         //Log the message
@@ -160,7 +160,7 @@ public class LoggerListener extends ListenerAdapter {
                 eb.addField(locale.getString("MESSAGE_CONTENT"), t.getContent(), false);
                 final OffsetDateTime dt = TimeUtil.getTimeCreated(messageID);
                 eb.setFooter(locale.getString("MESSAGE_CREATION_TIME") + dt.toString());
-                logChannel.sendMessage(eb.build()).queue();
+                logChannel.sendMessageEmbeds(eb.build()).queue();
             });
         });
     }

@@ -595,7 +595,7 @@ public class RoleCommand extends ChatCommand {
         eb.setTitle(locale.getString("HEADER_ALLOWED_ROLES"));
         eb.setDescription(sb);
 
-        channel.sendMessage(eb.build()).queue();
+        channel.sendMessageEmbeds(eb.build()).queue();
     }
 
     private void getRandomMemberWithRole(final String[] opts, final CommandContext context) {

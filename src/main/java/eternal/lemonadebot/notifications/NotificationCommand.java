@@ -300,7 +300,7 @@ public class NotificationCommand extends AdminCommand {
         eb.setDescription(contentBuilder);
 
         final TextChannel textChannel = matcher.getTextChannel();
-        textChannel.sendMessage(eb.build()).queue();
+        textChannel.sendMessageEmbeds(eb.build()).queue();
     }
 
 }

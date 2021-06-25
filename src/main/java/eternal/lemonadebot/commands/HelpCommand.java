@@ -86,7 +86,7 @@ class HelpCommand extends ChatCommand {
             final String template = locale.getString("BOT_VERSION");
             final String footer = String.format(template, LemonadeBot.BOT_VERSION);
             eb.setFooter(footer);
-            textChannel.sendMessage(eb.build()).queue();
+            textChannel.sendMessageEmbeds(eb.build()).queue();
             return;
         }
         final String name = options[0];
@@ -130,7 +130,7 @@ class HelpCommand extends ChatCommand {
                 eb.setTitle(String.format(template, name, description));
                 final String helpText = com.getHelpText(locale);
                 eb.setDescription(helpText);
-                textChannel.sendMessage(eb.build()).queue();
+                textChannel.sendMessageEmbeds(eb.build()).queue();
             } else {
                 textChannel.sendMessage(locale.getString("ERROR_PERMISSION_DENIED")).queue();
             }
@@ -170,7 +170,7 @@ class HelpCommand extends ChatCommand {
         eb.setTitle(locale.getString("HEADER_COMMANDS"));
         eb.setDescription(sb.toString());
 
-        matcher.getTextChannel().sendMessage(eb.build()).queue();
+        matcher.getTextChannel().sendMessageEmbeds(eb.build()).queue();
     }
 
 }

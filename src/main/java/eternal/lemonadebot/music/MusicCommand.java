@@ -379,7 +379,7 @@ public class MusicCommand extends ChatCommand {
         if (currentTrack == null) {
             eb.setTitle(locale.getString("MUSIC_PLAYLIST_EMPTY"));
             eb.setDescription(locale.getString("MUSIC_HELP_ADD_MUSIC"));
-            textChannel.sendMessage(eb.build()).queue();
+            textChannel.sendMessageEmbeds(eb.build()).queue();
             return;
         }
 
@@ -418,7 +418,7 @@ public class MusicCommand extends ChatCommand {
         eb.addField(playlistLengthField);
 
         //Send the message
-        textChannel.sendMessage(eb.build()).queue();
+        textChannel.sendMessageEmbeds(eb.build()).queue();
     }
 
     /**

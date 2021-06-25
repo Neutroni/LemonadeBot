@@ -207,7 +207,7 @@ public class InventoryCommand extends ChatCommand {
             sb.append(locale.getString("INVENTORY_NO_ITEMS_IN_INVENTORY"));
         }
         eb.setDescription(sb);
-        channel.sendMessage(eb.build()).queue();
+        channel.sendMessageEmbeds(eb.build()).queue();
     }
 
     private void addItemToInventory(final CommandContext context) {

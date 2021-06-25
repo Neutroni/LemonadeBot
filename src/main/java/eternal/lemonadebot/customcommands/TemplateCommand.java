@@ -231,6 +231,6 @@ public class TemplateCommand extends ChatCommand {
             contentBuilder.append(locale.getString("TEMPLATE_NO_COMMANDS"));
         }
         eb.setDescription(contentBuilder);
-        textChannel.sendMessage(eb.build()).queue();
+        textChannel.sendMessageEmbeds(eb.build()).queue();
     }
 }

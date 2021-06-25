@@ -171,7 +171,7 @@ public class PermissionCommand extends AdminCommand {
         final String rankName = locale.getString(perm.getRequiredRank().getNameKey());
         final String fieldValue = String.format(template, rankName, r.getAsMention());
         eb.addField(fieldName, fieldValue, false);
-        channel.sendMessage(eb.build()).queue();
+        channel.sendMessageEmbeds(eb.build()).queue();
     }
 
     private static void setPermission(final CommandContext context) {
@@ -271,6 +271,6 @@ public class PermissionCommand extends AdminCommand {
             description.append(locale.getString("PERMISSION_NO_PERMISSIONS"));
         }
         eb.setDescription(description);
-        channel.sendMessage(eb.build()).queue();
+        channel.sendMessageEmbeds(eb.build()).queue();
     }
 }

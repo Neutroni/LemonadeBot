@@ -355,7 +355,7 @@ public class ReminderCommand extends AdminCommand {
         eb.setDescription(contentBuilder);
 
         final TextChannel textChannel = context.getChannel();
-        textChannel.sendMessage(eb.build()).queue();
+        textChannel.sendMessageEmbeds(eb.build()).queue();
     }
 
 }
