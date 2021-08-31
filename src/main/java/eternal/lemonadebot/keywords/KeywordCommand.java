@@ -26,7 +26,7 @@ package eternal.lemonadebot.keywords;
 import eternal.lemonadebot.commands.AdminCommand;
 import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.customcommands.TemplateProvider;
-import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.translation.ActionKey;
@@ -40,6 +40,7 @@ import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.PatternSyntaxException;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
@@ -53,6 +54,16 @@ import org.apache.logging.log4j.Logger;
 public class KeywordCommand extends AdminCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
+    private final KeywordManager keywordManager;
+
+    /**
+     * Construcotr
+     *
+     * @param db Database to use to store keywords in
+     */
+    public KeywordCommand(final DatabaseManager db) {
+        this.keywordManager = new KeywordManager(db);
+    }
 
     @Override
     public String getCommand(final ResourceBundle locale) {
@@ -87,7 +98,7 @@ public class KeywordCommand extends AdminCommand {
         final ActionKey action = translationCache.getActionKey(actionName);
         switch (action) {
             case CREATE: {
-                createKeywords(context);
+                createKeyword(context);
                 break;
             }
             case DELETE: {
@@ -104,11 +115,10 @@ public class KeywordCommand extends AdminCommand {
         }
     }
 
-    private static void createKeywords(final CommandContext context) {
+    private void createKeyword(final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
         final ResourceBundle locale = context.getResource();
-        final GuildDataStore guildData = context.getGuildData();
 
         //create name runas pattern action
         final List<String> arguments = matcher.parseArguments(5);
@@ -143,10 +153,9 @@ public class KeywordCommand extends AdminCommand {
         final String commandPattern = arguments.get(3);
         final String commandTemplate = arguments.get(4);
         final Member sender = matcher.getMember();
-        final KeywordManager commands = guildData.getKeywordManager();
         try {
-            final KeywordAction newAction = new KeywordAction(commandName, commandPattern, commandTemplate, sender.getIdLong(), runAsCreator);
-            if (commands.addKeyword(newAction)) {
+            final KeywordAction newAction = new KeywordAction(commandName, commandPattern, commandTemplate, sender, runAsCreator);
+            if (this.keywordManager.addKeyword(newAction)) {
                 textChannel.sendMessage(locale.getString("KEYWORD_CREATE_SUCCESS")).queue();
                 return;
             }
@@ -161,51 +170,55 @@ public class KeywordCommand extends AdminCommand {
 
     }
 
-    private static void deleteKeyword(final String[] arguments, final CommandContext context) {
+    private void deleteKeyword(final String[] arguments, final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
+        final Guild guild = matcher.getGuild();
         final ResourceBundle locale = context.getResource();
-        final GuildDataStore guildData = context.getGuildData();
 
         if (arguments.length < 2) {
             textChannel.sendMessage(locale.getString("KEYWORD_DELETE_MISSING_NAME")).queue();
             return;
         }
         final String commandName = arguments[1];
-        final KeywordManager commands = guildData.getKeywordManager();
-        final Optional<KeywordAction> optCommand = commands.getCommand(commandName);
-        if (optCommand.isEmpty()) {
-            final String template = locale.getString("KEYWORD_DELETE_NOT_FOUND");
-            textChannel.sendMessageFormat(template, commandName).queue();
-            return;
-        }
-        final KeywordAction command = optCommand.get();
-
-        //Check if user has permission to remove the keyword
-        final Member sender = matcher.getMember();
-        textChannel.getGuild().retrieveMemberById(command.getAuthor()).submit().whenComplete((Member commandOwner, Throwable u) -> {
-            final boolean hasPermission = PermissionUtilities.hasPermission(sender, commandOwner);
-            if (!hasPermission) {
-                textChannel.sendMessage(locale.getString("KEYWORD_DELETE_PERMISSION_DENIED")).queue();
+        try {
+            final Optional<KeywordAction> optCommand = this.keywordManager.getCommand(commandName, guild);
+            if (optCommand.isEmpty()) {
+                final String template = locale.getString("KEYWORD_DELETE_NOT_FOUND");
+                textChannel.sendMessageFormat(template, commandName).queue();
                 return;
             }
+            final KeywordAction command = optCommand.get();
 
-            //Delete the command
-            try {
-                commands.removeKeyword(command);
-                textChannel.sendMessage(locale.getString("KEYWORD_DELETE_SUCCESS")).queue();
-            } catch (SQLException ex) {
-                textChannel.sendMessage(locale.getString("KEYWORD_SQL_ERROR_ON_DELETE")).queue();
-                LOGGER.error("Failure to delete keyword command: {}", ex.getMessage());
-                LOGGER.trace("Stack trace", ex);
-            }
-        });
+            //Check if user has permission to remove the keyword
+            final Member sender = matcher.getMember();
+            textChannel.getGuild().retrieveMemberById(command.getAuthor()).submit().whenComplete((Member commandOwner, Throwable u) -> {
+                final boolean hasPermission = PermissionUtilities.hasPermission(sender, commandOwner);
+                if (!hasPermission) {
+                    textChannel.sendMessage(locale.getString("KEYWORD_DELETE_PERMISSION_DENIED")).queue();
+                    return;
+                }
+
+                //Delete the command
+                try {
+                    this.keywordManager.removeKeyword(command);
+                    textChannel.sendMessage(locale.getString("KEYWORD_DELETE_SUCCESS")).queue();
+                } catch (SQLException ex) {
+                    textChannel.sendMessage(locale.getString("KEYWORD_SQL_ERROR_ON_DELETE")).queue();
+                    LOGGER.error("Failure to delete keyword command: {}", ex.getMessage());
+                    LOGGER.trace("Stack trace", ex);
+                }
+            });
+        } catch (SQLException ex) {
+            textChannel.sendMessage(locale.getString("KEYWORD_SQL_ERROR_ON_DELETE")).queue();
+            LOGGER.error("Failure to locate keyword command for deletion: {}", ex.getMessage());
+            LOGGER.trace("Stack trace", ex);
+        }
     }
 
-    private static void listKeywords(final CommandContext context) {
+    private void listKeywords(final CommandContext context) {
         final ResourceBundle locale = context.getResource();
         final TextChannel textChannel = context.getChannel();
-        final GuildDataStore guildData = context.getGuildData();
 
         //Construct embed
         final String header = locale.getString("HEADER_KEYWORDS");
@@ -213,20 +226,26 @@ public class KeywordCommand extends AdminCommand {
         eb.setTitle(header);
 
         //Get the list of templates
-        final Collection<KeywordAction> templates = guildData.getKeywordManager().getCommands();
-        final ArrayList<CompletableFuture<String>> futures = new ArrayList<>(templates.size());
-        templates.forEach((KeywordAction command) -> {
-            futures.add(command.toListElement(locale, textChannel.getJDA()));
-        });
-        //After all the futures all initialized start waiting for results
-        final StringBuilder contentBuilder = new StringBuilder();
-        futures.forEach((CompletableFuture<String> desc) -> {
-            contentBuilder.append(desc.join());
-        });
-        if (templates.isEmpty()) {
-            contentBuilder.append(locale.getString("KEYWORD_NO_KEYWORDS"));
+        try {
+            final Collection<KeywordAction> templates = this.keywordManager.getCommands(context.getGuild());
+            final ArrayList<CompletableFuture<String>> futures = new ArrayList<>(templates.size());
+            templates.forEach((KeywordAction command) -> {
+                futures.add(command.toListElement(locale, textChannel.getJDA()));
+            });
+            //After all the futures all initialized start waiting for results
+            final StringBuilder contentBuilder = new StringBuilder();
+            futures.forEach((CompletableFuture<String> desc) -> {
+                contentBuilder.append(desc.join());
+            });
+            if (templates.isEmpty()) {
+                contentBuilder.append(locale.getString("KEYWORD_NO_KEYWORDS"));
+            }
+            eb.setDescription(contentBuilder);
+            textChannel.sendMessageEmbeds(eb.build()).queue();
+        } catch (SQLException ex) {
+            textChannel.sendMessage(locale.getString("KEYWORD_SQL_ERROR_ON_LIST")).queue();
+            LOGGER.error("Failure to fetch keywords from database: {}", ex.getMessage());
+            LOGGER.trace("Stack trace", ex);
         }
-        eb.setDescription(contentBuilder);
-        textChannel.sendMessageEmbeds(eb.build()).queue();
     }
 }

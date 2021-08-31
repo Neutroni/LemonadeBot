@@ -25,9 +25,8 @@ package eternal.lemonadebot.keywords;
 
 import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.StorageManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
-import eternal.lemonadebot.translation.TranslationCache;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
@@ -54,9 +53,26 @@ public class KeywordAction extends CustomCommand {
      * @param owner owner of the command
      * @param runAsOwner If true keyword runs as the creator of the keyword,
      * otherwise as the person who triggered it.
+     * @param guildID ID for the guild the keyword belongs in
      */
-    public KeywordAction(final String name, final String patternString, final String actionTemplate, final long owner, boolean runAsOwner) throws PatternSyntaxException {
-        super(name, actionTemplate, owner);
+    public KeywordAction(final String name, final String patternString, final String actionTemplate, final long owner, boolean runAsOwner, final long guildID) throws PatternSyntaxException {
+        super(name, actionTemplate, owner, guildID);
+        this.runAsOwner = runAsOwner;
+        this.keywordPattern = Pattern.compile(patternString);
+    }
+    
+    /**
+     * Constructor
+     *
+     * @param name Name of keyword
+     * @param patternString pattern for keyword
+     * @param actionTemplate template for action
+     * @param owner owner of the command
+     * @param runAsOwner If true keyword runs as the creator of the keyword,
+     * otherwise as the person who triggered it.
+     */
+    public KeywordAction(final String name, final String patternString, final String actionTemplate, final Member owner, boolean runAsOwner) throws PatternSyntaxException {
+        super(name, actionTemplate, owner.getIdLong(), owner.getGuild().getIdLong());
         this.runAsOwner = runAsOwner;
         this.keywordPattern = Pattern.compile(patternString);
     }
@@ -83,13 +99,12 @@ public class KeywordAction extends CustomCommand {
     @Override
     protected void respond(final CommandContext context) {
         final CommandMatcher message = context.getMatcher();
-        final GuildDataStore guildData = context.getGuildData();
-        final TranslationCache translation = context.getTranslation();
+        final StorageManager storage = context.getStorageManager();
         if (this.runAsOwner) {
             //Command should be run as the creator of the keyword
             message.getGuild().retrieveMemberById(getAuthor()).queue((Member t) -> {
                 final KeywordMatcher matcher = new KeywordMatcher(message, t);
-                final CommandContext fakeContext = new CommandContext(matcher, guildData, translation);
+                final CommandContext fakeContext = new CommandContext(matcher, storage);
                 super.run(fakeContext, true);
             });
         } else {

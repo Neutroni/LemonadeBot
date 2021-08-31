@@ -23,18 +23,16 @@
  */
 package eternal.lemonadebot.keywords;
 
+import eternal.lemonadebot.database.DatabaseManager;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import net.dv8tion.jda.api.entities.Guild;
 
 /**
  *
@@ -42,22 +40,15 @@ import org.apache.logging.log4j.Logger;
  */
 public class KeywordManager {
 
-    private static final Logger LOGGER = LogManager.getLogger();
-
     private final DataSource dataSource;
-    private final long guildID;
-    private final Map<String, KeywordAction> commands = new ConcurrentHashMap<>();
 
     /**
      * Constructor
      *
-     * @param ds Database connection to use
-     * @param guildID ID of the guild to store keywords for
+     * @param db Database connection to use
      */
-    public KeywordManager(final DataSource ds, final long guildID) {
-        this.dataSource = ds;
-        this.guildID = guildID;
-        loadCommands();
+    public KeywordManager(final DatabaseManager db) {
+        this.dataSource = db.getDataSource();
     }
 
     /**
@@ -68,13 +59,10 @@ public class KeywordManager {
      * @throws SQLException if database connection fails
      */
     boolean addKeyword(final KeywordAction command) throws SQLException {
-        this.commands.putIfAbsent(command.getName(), command);
-
-        //Add to database
         final String query = "INSERT OR IGNORE INTO Keywords(guild,name,pattern,template,owner,runasowner) VALUES(?,?,?,?,?);";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, command.getGuildID());
             ps.setString(2, command.getName());
             ps.setString(3, command.getPatternString());
             ps.setString(4, command.getTemplate());
@@ -92,14 +80,11 @@ public class KeywordManager {
      * @throws SQLException if database connection fails
      */
     boolean removeKeyword(final KeywordAction command) throws SQLException {
-        this.commands.remove(command.getName());
-
-        //Remove from database
         final String query = "DELETE FROM Keywords WHERE name = ? AND guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, command.getName());
-            ps.setLong(2, this.guildID);
+            ps.setLong(2, command.getGuildID());
             return ps.executeUpdate() > 0;
         }
     }
@@ -110,8 +95,24 @@ public class KeywordManager {
      * @param name name of the command
      * @return optional containing the command
      */
-    Optional<KeywordAction> getCommand(final String name) {
-        return Optional.ofNullable(this.commands.get(name));
+    Optional<KeywordAction> getCommand(final String name, final Guild guild) throws SQLException{
+        final long guildID = guild.getIdLong();
+        final String query = "SELECT pattern,template,owner,runasowner FROM Keywords WHERE guild = ? AND name = ?;";
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
+            ps.setLong(1, guildID);
+            ps.setString(2,name);
+            try (final ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    final String commandPattern = rs.getString("pattern");
+                    final String commandTemplate = rs.getString("template");
+                    final long commandOwnerID = rs.getLong("owner");
+                    final boolean runAsOwner = rs.getBoolean("runasowner");
+                    return Optional.of(new KeywordAction(name, commandPattern, commandTemplate, commandOwnerID, runAsOwner, guildID));
+                }
+            }
+        }
+        return Optional.empty();
     }
 
     /**
@@ -119,32 +120,24 @@ public class KeywordManager {
      *
      * @return custom commands
      */
-    Collection<KeywordAction> getCommands() {
-        return Collections.unmodifiableCollection(this.commands.values());
-    }
-
-    /**
-     * Loads custom commands from database
-     */
-    private void loadCommands() {
+    Collection<KeywordAction> getCommands(final Guild guild) throws SQLException{
         final String query = "SELECT name,pattern,template,owner,runasowner FROM Keywords WHERE guild = ?;";
+        final long guildID = guild.getIdLong();
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, guildID);
             try (final ResultSet rs = ps.executeQuery()) {
+                final ArrayList<KeywordAction> commands = new ArrayList<>();
                 while (rs.next()) {
                     final String commandName = rs.getString("name");
                     final String commandPattern = rs.getString("pattern");
                     final String commandTemplate = rs.getString("template");
                     final long commandOwnerID = rs.getLong("owner");
                     final boolean runAsOwner = rs.getBoolean("runasowner");
-                    final KeywordAction newCommand = new KeywordAction(commandName, commandPattern, commandTemplate, commandOwnerID, runAsOwner);
-                    this.commands.put(newCommand.getName(), newCommand);
+                    commands.add(new KeywordAction(commandName, commandPattern, commandTemplate, commandOwnerID, runAsOwner, guildID));
                 }
+                return commands;
             }
-        } catch (SQLException e) {
-            LOGGER.error("Loading Keywords from database failed: {}", e.getMessage());
-            LOGGER.trace(e);
         }
     }
 

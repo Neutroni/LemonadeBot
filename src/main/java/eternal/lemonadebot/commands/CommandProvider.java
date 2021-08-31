@@ -25,10 +25,14 @@ package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.customcommands.TemplateManager;
+import eternal.lemonadebot.database.DatabaseManager;
+import eternal.lemonadebot.database.StorageManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import net.dv8tion.jda.api.entities.Guild;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,45 +46,49 @@ public class CommandProvider {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final CommandList commands;
-    private final ConfigManager configManager;
-    private final TemplateManager templateManager;
+    private final TemplateManager templates;
 
     /**
      * Constructor
      *
-     * @param commands List of built in commands
-     * @param config Locale in which to load command names in
-     * @param templates TemplateManager to get templates from
+     * @param db DataSource
      */
-    public CommandProvider(final CommandList commands, final ConfigManager config, final TemplateManager templates) {
-        this.commands = commands;
-        this.configManager = config;
-        this.templateManager = templates;
+    public CommandProvider(final DatabaseManager db) {
+        this.commands = new CommandList(db);
+        this.templates = new TemplateManager(db);
     }
 
     /**
      * Get the action for command
      *
-     * @param cmdMatcher Matcher to find command for
+     * @param matcher Matcher to find command for
+     * @param config Configuration to get command prefix from
      * @return CommandAction or Option.empty if command was not found
      */
-    public Optional<ChatCommand> getAction(final CommandMatcher cmdMatcher) {
-        return cmdMatcher.getCommand().flatMap(this::getCommand);
+    public Optional<ChatCommand> getAction(final CommandMatcher matcher, final ConfigManager config) {
+        final Optional<String> optName = matcher.getCommand();
+        if (optName.isEmpty()) {
+            return Optional.empty();
+        }
+        final String commandName = optName.get();
+        return getCommand(commandName, config);
     }
 
     /**
      * Get command by name
      *
      * @param name command name to search action for
+     * @param config Configuration to get guild and locale from
      * @return Optional containing the action if found, empty if not found
      */
-    public Optional<ChatCommand> getCommand(final String name) {
-        final Locale locale = this.configManager.getLocale();
+    public Optional<ChatCommand> getCommand(final String name, final ConfigManager config) {
+        final Locale locale = config.getLocale();
+        final long guildID = config.getGuildID();
         //Checks if we find built in command by that name
         return this.commands.getBuiltInCommand(name, locale).or(() -> {
             //Did not find built in command, return optional from templateManager
             try {
-                return this.templateManager.getCommand(name);
+                return this.templates.getCommand(name, guildID);
             } catch (SQLException e) {
                 LOGGER.error("Loading templates from database failed: {}", e.getMessage());
                 LOGGER.trace("Stack trace: ", e);
@@ -94,19 +102,29 @@ public class CommandProvider {
      *
      * @return CommandList
      */
-    public Iterable<ChatCommand> getBuiltInCommands() {
+    public CommandList getBuiltInCommands() {
         return this.commands;
     }
 
     /**
-     * Get built in command by name
+     * Get the template manager
      *
-     * @param commandName name of the command to find
-     * @return ChatCommand if found
+     * @return TemplateManager
      */
-    public Optional<ChatCommand> getBuiltInCommand(String commandName) {
-        final Locale locale = this.configManager.getLocale();
-        return this.commands.getBuiltInCommand(commandName, locale);
+    public TemplateManager getTemplateManager() {
+        return this.templates;
+    }
+
+    /**
+     * Initialize storage for each command
+     *
+     * @param guilds Guilds to initialize commands for
+     * @param storage SotrageManager to use for initialization
+     */
+    public void initialize(final List<Guild> guilds, final StorageManager storage) {
+        this.commands.forEach((ChatCommand t) -> {
+            t.initialize(guilds, storage);
+        });
     }
 
 }

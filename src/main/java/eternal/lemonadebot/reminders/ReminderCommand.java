@@ -26,8 +26,7 @@ package eternal.lemonadebot.reminders;
 import eternal.lemonadebot.commands.AdminCommand;
 import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.database.RuntimeStorage;
+import eternal.lemonadebot.database.StorageManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.PermissionUtilities;
 import eternal.lemonadebot.translation.ActionKey;
@@ -79,9 +78,9 @@ public class ReminderCommand extends AdminCommand {
     }
 
     @Override
-    public void initialize(final List<Guild> guilds, final RuntimeStorage rs) {
-        guilds.forEach(guild -> {
-            getReminderManager(guild, rs.getGuildData(guild));
+    public void initialize(final List<Guild> guilds, final StorageManager storageManager) {
+        guilds.forEach((Guild guild) -> {
+            getReminderManager(guild, storageManager);
         });
     }
 
@@ -92,10 +91,10 @@ public class ReminderCommand extends AdminCommand {
         });
     }
 
-    private ReminderManager getReminderManager(final Guild guild, final GuildDataStore guildData) {
+    private ReminderManager getReminderManager(final Guild guild, final StorageManager storage) {
         return this.managers.computeIfAbsent(guild.getIdLong(), (Long t) -> {
             final ReminderManager reminderManager = new ReminderManager(this.dataBase.getDataSource(), t);
-            reminderManager.loadReminders(guild.getJDA(), guildData);
+            reminderManager.loadReminders(guild.getJDA(), storage);
             return reminderManager;
         });
     }
@@ -153,9 +152,9 @@ public class ReminderCommand extends AdminCommand {
         //reminder create test 17.00 * * * reminder text
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
-        final GuildDataStore guildData = context.getGuildData();
         final Guild guild = matcher.getGuild();
-        final ReminderManager reminders = getReminderManager(guild, guildData);
+        final StorageManager storage = context.getStorageManager();
+        final ReminderManager reminders = getReminderManager(guild, storage);
         final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
 
@@ -268,8 +267,8 @@ public class ReminderCommand extends AdminCommand {
         final JDA jda = channel.getJDA();
         final long channelID = channel.getIdLong();
         final long memberID = matcher.getMember().getIdLong();
-        final Reminder reminder = new Reminder(jda, guildData, reminders, reminderName,
-                messageInput, channelID, memberID, reminderActivationTime);
+        final Reminder reminder = new Reminder(jda, storage, guild.getIdLong(), reminders,
+                reminderName, messageInput, channelID, memberID, reminderActivationTime);
 
         //Add reminder to database
         try {
@@ -295,8 +294,7 @@ public class ReminderCommand extends AdminCommand {
             return;
         }
         final Guild guild = matcher.getGuild();
-        final GuildDataStore guildData = context.getGuildData();
-        final ReminderManager reminders = getReminderManager(guild, guildData);
+        final ReminderManager reminders = getReminderManager(guild, context.getStorageManager());
 
         final String reminderName = arguments[1];
         final Optional<Reminder> oldReminder = reminders.getReminder(reminderName);
@@ -337,8 +335,8 @@ public class ReminderCommand extends AdminCommand {
 
         //Initialize all the futures
         final Guild guild = context.getMatcher().getGuild();
-        final GuildDataStore guildData = context.getGuildData();
-        final Collection<Reminder> ev = getReminderManager(guild, guildData).getReminders();
+        final StorageManager storage = context.getStorageManager();
+        final Collection<Reminder> ev = getReminderManager(guild, storage).getReminders();
         final List<CompletableFuture<String>> futures = new ArrayList<>(ev.size());
         ev.forEach((Reminder reminder) -> {
             futures.add(reminder.toListElement(translationCache));

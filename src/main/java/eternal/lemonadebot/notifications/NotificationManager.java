@@ -23,7 +23,7 @@
  */
 package eternal.lemonadebot.notifications;
 
-import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.StorageManager;
 import java.io.Closeable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -163,7 +163,7 @@ public class NotificationManager implements Closeable {
      * @param jda JDA to pass to notifications
      * @param guildData GuilData to pass to notifications
      */
-    public void loadNotifications(final JDA jda, final GuildDataStore guildData) {
+    public void loadNotifications(final JDA jda, final StorageManager guildData) {
         LOGGER.debug("Started loading notifications for guild: {} from database", this.guildID);
         final String query = "SELECT name,message,author,channel,time FROM Notifications WHERE guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
@@ -182,7 +182,7 @@ public class NotificationManager implements Closeable {
 
                     //Construct and add to list of notifications
                     final Notification notification = new Notification(jda, guildData, this,
-                            notificationName, notificationMessage, notificationChannel, notificationAuthor, notificationActivationTime);
+                            notificationName, notificationMessage, notificationChannel, notificationAuthor, this.guildID, notificationActivationTime);
                     this.notifications.put(notification.getName(), notification);
                     LOGGER.debug("Notification successfully loaded: {}", notification.getName());
 

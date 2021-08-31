@@ -25,7 +25,6 @@ package eternal.lemonadebot.config;
 
 import eternal.lemonadebot.commands.AdminCommand;
 import eternal.lemonadebot.commands.CommandContext;
-import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;
@@ -126,9 +125,8 @@ public class ConfigCommand extends AdminCommand {
     private static void setValue(final String config, final String value, final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TranslationCache translation = context.getTranslation();
-        final GuildDataStore guildData = context.getGuildData();
         final TextChannel channel = matcher.getTextChannel();
-        final ConfigManager guildConf = guildData.getConfigManager();
+        final ConfigManager guildConf = context.getConfigManager();
         final ResourceBundle locale = translation.getResourceBundle();
         final ActionKey key = translation.getActionKey(config);
         switch (key) {
@@ -227,8 +225,7 @@ public class ConfigCommand extends AdminCommand {
     private static void getValue(final String option, final CommandContext context) {
         final TextChannel channel = context.getMatcher().getTextChannel();
         final TranslationCache translationCache = context.getTranslation();
-        final GuildDataStore guildData = context.getGuildData();
-        final ConfigManager guildConf = guildData.getConfigManager();
+        final ConfigManager guildConf = context.getConfigManager();
         final ResourceBundle locale = translationCache.getResourceBundle();
         final ActionKey key = translationCache.getActionKey(option);
         switch (key) {
@@ -285,8 +282,7 @@ public class ConfigCommand extends AdminCommand {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
         final TranslationCache translationCache = context.getTranslation();
-        final GuildDataStore guildData = context.getGuildData();
-        final ConfigManager guildConf = guildData.getConfigManager();
+        final ConfigManager guildConf = context.getConfigManager();
         final ResourceBundle locale = translationCache.getResourceBundle();
         final ActionKey key = translationCache.getActionKey(option);
         switch (key) {

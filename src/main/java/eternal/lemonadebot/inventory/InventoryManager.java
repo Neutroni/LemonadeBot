@@ -23,6 +23,7 @@
  */
 package eternal.lemonadebot.inventory;
 
+import eternal.lemonadebot.database.DatabaseManager;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -41,17 +42,14 @@ import net.dv8tion.jda.api.entities.Member;
 public class InventoryManager {
 
     private final DataSource dataSource;
-    private final long guildID;
 
     /**
      * Constructor
      *
-     * @param ds DataSource for guild
-     * @param guildID ID of the guild
+     * @param db DataSource for guild
      */
-    public InventoryManager(final DataSource ds, final long guildID) {
-        this.dataSource = ds;
-        this.guildID = guildID;
+    public InventoryManager(final DatabaseManager db) {
+        this.dataSource = db.getDataSource();
     }
 
     /**
@@ -64,12 +62,11 @@ public class InventoryManager {
      * @throws SQLException If database connection failed
      */
     boolean updateCount(final Member member, final String itemName, final long change) throws SQLException {
-        final long memberID = member.getIdLong();
         if (change > 0) {
-            return addItemsToUser(memberID, itemName, change);
+            return addItemsToUser(member, itemName, change);
         }
         if (change < 0) {
-            return removeItemsFromUser(memberID, itemName, change);
+            return removeItemsFromUser(member, itemName, change);
         }
         return false;
     }
@@ -93,11 +90,11 @@ public class InventoryManager {
 
             try {
                 //Update database
-                if (!removeItemsFromUser(sender.getIdLong(), itemName, count)) {
+                if (!removeItemsFromUser(sender, itemName, count)) {
                     //User does not have enough items
                     return false;
                 }
-                addItemsToUser(receiver.getIdLong(), itemName, count);
+                addItemsToUser(receiver, itemName, count);
 
                 //Commit transaction
                 final String transactionCommit = "COMMIT TRANSACTION;";
@@ -129,7 +126,7 @@ public class InventoryManager {
         final Map<String, Long> items = new HashMap<>();
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, member.getGuild().getIdLong());
             ps.setLong(2, member.getColorRaw());
             try (final ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -142,12 +139,12 @@ public class InventoryManager {
         return Collections.unmodifiableMap(items);
     }
 
-    private boolean addItemsToUser(final long userID, final String item, final long count) throws SQLException {
+    private boolean addItemsToUser(final Member member, final String item, final long count) throws SQLException {
         final String query = "INSERT INTO Items (guild,owner,item,count) VALUES(?,?,?,?) ON CONFLICT(item) DO UPDATE SET count = count + ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
-            ps.setLong(2, userID);
+            ps.setLong(1, member.getGuild().getIdLong());
+            ps.setLong(2, member.getIdLong());
             ps.setString(3, item);
             ps.setLong(4, count);
             ps.setLong(5, count);
@@ -155,13 +152,13 @@ public class InventoryManager {
         }
     }
 
-    private boolean removeItemsFromUser(final long userID, final String item, final long count) throws SQLException {
+    private boolean removeItemsFromUser(final Member member, final String item, final long count) throws SQLException {
         final String query = "UPDATE Inventory SET count = count - ? WHERE guild = ? AND owner = ? and item = ? AND count - ? >= 0;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, count);
-            ps.setLong(2, this.guildID);
-            ps.setLong(3, userID);
+            ps.setLong(2, member.getGuild().getIdLong());
+            ps.setLong(3, member.getIdLong());
             ps.setString(4, item);
             ps.setLong(5, count);
             return ps.executeUpdate() > 0;

@@ -25,8 +25,9 @@ package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandContext;
+import eternal.lemonadebot.commands.CommandList;
 import eternal.lemonadebot.commands.CommandProvider;
-import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
@@ -42,6 +43,7 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
@@ -55,6 +57,16 @@ import org.apache.logging.log4j.Logger;
 public class TemplateCommand extends ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
+    private final TemplateManager templateManager;
+
+    /**
+     * Constructor
+     *
+     * @param db Database to store templates in
+     */
+    public TemplateCommand(final DatabaseManager db) {
+        this.templateManager = new TemplateManager(db);
+    }
 
     @Override
     public String getCommand(final ResourceBundle locale) {
@@ -75,7 +87,7 @@ public class TemplateCommand extends ChatCommand {
 
     @Override
     public Collection<CommandPermission> getDefaultRanks(final ResourceBundle locale, final long guildID, final PermissionManager permissions) {
-        return List.of(new CommandPermission(getCommand(locale), MemberRank.MEMBER, guildID));
+        return List.of(new CommandPermission(getCommand(locale), MemberRank.MEMBER, guildID, guildID));
     }
 
     @Override
@@ -127,9 +139,10 @@ public class TemplateCommand extends ChatCommand {
 
         //Check that there is no such built in command
         final String commandName = arguments[1];
-        final GuildDataStore guildData = context.getGuildData();
-        final CommandProvider commandProvider = guildData.getCommandProvider();
-        final Optional<ChatCommand> optCommand = commandProvider.getBuiltInCommand(commandName);
+        final Guild guild = textChannel.getGuild();
+        final CommandProvider commandProvider = context.getCommandProvider();
+        final CommandList builtInCommands = commandProvider.getBuiltInCommands();
+        final Optional<ChatCommand> optCommand = builtInCommands.getBuiltInCommand(commandName, locale.getLocale());
         if (optCommand.isPresent()) {
             textChannel.sendMessage(locale.getString("TEMPLATE_NAME_RESERVED")).queue();
             return;
@@ -137,8 +150,8 @@ public class TemplateCommand extends ChatCommand {
 
         final String commandTemplate = arguments[2];
         final Member sender = matcher.getMember();
-        final TemplateManager commands = guildData.getCustomCommands();
-        final CustomCommand newAction = new CustomCommand(commandName, commandTemplate, sender.getIdLong());
+        final TemplateManager commands = commandProvider.getTemplateManager();
+        final CustomCommand newAction = new CustomCommand(commandName, commandTemplate, sender.getIdLong(), guild.getIdLong());
         try {
             if (commands.addCommand(newAction)) {
                 textChannel.sendMessage(locale.getString("TEMPLATE_CREATE_SUCCESS")).queue();
@@ -153,9 +166,8 @@ public class TemplateCommand extends ChatCommand {
 
     }
 
-    private static void deleteCustomCommand(final String[] arguments, final CommandContext context) {
+    private void deleteCustomCommand(final String[] arguments, final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
-        final GuildDataStore guildData = context.getGuildData();
         final TextChannel textChannel = matcher.getTextChannel();
         final ResourceBundle locale = context.getResource();
 
@@ -164,10 +176,10 @@ public class TemplateCommand extends ChatCommand {
             return;
         }
         final String commandName = arguments[1];
-        final TemplateManager commands = guildData.getCustomCommands();
+        final Guild guild = matcher.getGuild();
         final Optional<CustomCommand> optCommand;
         try {
-            optCommand = commands.getCommand(commandName);
+            optCommand = this.templateManager.getCommand(commandName, guild.getIdLong());
         } catch (SQLException e) {
             textChannel.sendMessage(locale.getString("TEMPLATE_SQL_ERROR_ON_FINDING_COMMAND")).queue();
             return;
@@ -190,7 +202,7 @@ public class TemplateCommand extends ChatCommand {
 
             //Delete the command
             try {
-                commands.removeCommand(command);
+                this.templateManager.removeCommand(command);
                 textChannel.sendMessage(locale.getString("TEMPLATE_DELETE_SUCCESS")).queue();
             } catch (SQLException ex) {
                 textChannel.sendMessage(locale.getString("TEMPLATE_SQL_ERROR_ON_DELETE")).queue();
@@ -200,10 +212,10 @@ public class TemplateCommand extends ChatCommand {
         });
     }
 
-    private static void listCustomCommands(final CommandContext context) {
-        final GuildDataStore guildData = context.getGuildData();
+    private void listCustomCommands(final CommandContext context) {
         final ResourceBundle locale = context.getResource();
         final TextChannel textChannel = context.getChannel();
+        final Guild guild = textChannel.getGuild();
 
         //Construct embed
         final String header = locale.getString("HEADER_COMMANDS");
@@ -213,7 +225,7 @@ public class TemplateCommand extends ChatCommand {
         //Get the list of templates
         final Collection<CustomCommand> templates;
         try {
-            templates = guildData.getCustomCommands().getCommands();
+            templates = this.templateManager.getCommands(guild.getIdLong());
         } catch (SQLException e) {
             textChannel.sendMessage(locale.getString("TEMPLATE_SQL_ERROR_ON_LOADING_COMMANDS")).queue();
             return;

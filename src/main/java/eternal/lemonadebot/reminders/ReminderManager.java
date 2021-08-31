@@ -23,8 +23,7 @@
  */
 package eternal.lemonadebot.reminders;
 
-import eternal.lemonadebot.database.GuildDataStore;
-
+import eternal.lemonadebot.database.StorageManager;
 import java.io.Closeable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -177,9 +176,9 @@ public class ReminderManager implements Closeable {
      * Load reminders from database
      *
      * @param jda JDA to pass to reminders
-     * @param guildData guildData to pass to reminders
+     * @param storage StorageManager to pass to reminders
      */
-    public void loadReminders(final JDA jda, final GuildDataStore guildData) {
+    public void loadReminders(final JDA jda, StorageManager storage) {
         LOGGER.debug("Started loading reminders for guild: {} from database", this.guildID);
         final String query = "SELECT name,message,author,channel,time,dayOfWeek,dayOfMonth,monthOfYear FROM Reminders WHERE guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
@@ -240,7 +239,7 @@ public class ReminderManager implements Closeable {
                     final ReminderActivationTime reminderActivationTime = new ReminderActivationTime(activationTime, activationDay, dayOfMonth, reminderMonth);
 
                     //Construct and add to list of reminders
-                    final Reminder reminder = new Reminder(jda, guildData, this,
+                    final Reminder reminder = new Reminder(jda, storage, this.guildID, this,
                             reminderName, reminderMessage, reminderChannel, reminderAuthor, reminderActivationTime);
                     this.reminders.put(reminder.getName(), reminder);
                     LOGGER.debug("Reminder successfully loaded: {}", reminder.getName());

@@ -26,19 +26,29 @@ package eternal.lemonadebot.keywords;
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.commands.CommandProvider;
+import eternal.lemonadebot.config.ConfigCache;
 import eternal.lemonadebot.config.ConfigManager;
-import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.database.RuntimeStorage;
+import eternal.lemonadebot.database.StorageManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.MessageMatcher;
 import eternal.lemonadebot.messageparsing.SimpleMessageMatcher;
-import eternal.lemonadebot.translation.TranslationCache;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Optional;
+import java.util.regex.Pattern;
+import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import org.apache.logging.log4j.LogManager;
+import org.sqlite.Function;
+import org.sqlite.SQLiteConnection;
 
 /**
  *
@@ -46,15 +56,23 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
  */
 public class KeywordListener extends ListenerAdapter {
 
-    private final RuntimeStorage db;
+    private static final org.apache.logging.log4j.Logger LOGGER = LogManager.getLogger();
+
+    private final CommandProvider commands;
+    private final ConfigCache configs;
+    private final DataSource dataSource;
+    private final StorageManager storage;
 
     /**
      * Constructor
      *
-     * @param database Database to use for operations
+     * @param storage StorageManager to pass to commands
      */
-    public KeywordListener(final RuntimeStorage database) {
-        this.db = database;
+    public KeywordListener(final StorageManager storage) {
+        this.storage = storage;
+        this.commands = storage.getCommandProvider();
+        this.configs = storage.getConfigCache();
+        this.dataSource = storage.getDataSource();
     }
 
     /**
@@ -82,14 +100,11 @@ public class KeywordListener extends ListenerAdapter {
 
         final Guild eventGuild = event.getGuild();
         final Message message = event.getMessage();
-        final GuildDataStore guildData = this.db.getGuildData(eventGuild);
-        final KeywordManager keywordManager = guildData.getKeywordManager();
 
         //Check to make sure we are not reacting to our own creation
-        final ConfigManager guildConf = guildData.getConfigManager();
-        final CommandProvider commandProvider = guildData.getCommandProvider();
+        final ConfigManager guildConf = this.configs.getConfigManager(eventGuild);
         final MessageMatcher matcher = new MessageMatcher(guildConf, message);
-        final Optional<ChatCommand> optCommand = commandProvider.getAction(matcher);
+        final Optional<ChatCommand> optCommand = commands.getAction(matcher, guildConf);
         String name = null;
         if (optCommand.isPresent()) {
             final ChatCommand command = optCommand.get();
@@ -101,22 +116,76 @@ public class KeywordListener extends ListenerAdapter {
             }
         }
 
-        //Find if message contains any keyword
+        //Get matching keywords
         final String input = message.getContentDisplay();
-        for (final KeywordAction com : keywordManager.getCommands()) {
-            if (!com.matches(input)) {
-                continue;
-            }
-
+        for (final KeywordAction com : getMatchingKeywords(input, eventGuild)) {
             //Ignore modification to the keyword
             if (com.getName().equals(name)) {
                 continue;
             }
 
             final CommandMatcher fakeMatcher = new SimpleMessageMatcher(event.getMember(), event.getChannel());
-            final TranslationCache translation = this.db.getTranslationCache(eventGuild);
-            final CommandContext context = new CommandContext(fakeMatcher, guildData, translation);
-            com.run(context, true);
+            final CommandContext fakeContext = new CommandContext(fakeMatcher, storage);
+            com.run(fakeContext, true);
         }
+    }
+
+    /**
+     * Used to load matching keywords from database
+     *
+     * @param text Text to match agains
+     * @param guild Guild to get keywords for
+     * @return Collection of the matching keywords
+     */
+    private Collection<KeywordAction> getMatchingKeywords(final String text, final Guild guild) {
+        final String query = "SELECT name,pattern,template,owner,runasowner FROM Keywords WHERE guild = ? AND ;";
+        final ArrayList<KeywordAction> keywords = new ArrayList<>();
+        try (final Connection connection = this.dataSource.getConnection()) {
+            //Add regexp function to the connection
+            registerRegexpFunction(connection);
+            //Get the matching keywords
+            try (final PreparedStatement ps = connection.prepareStatement(query)) {
+                final long guildID = guild.getIdLong();
+                ps.setLong(1, guildID);
+                ps.setString(2, text);
+                try (final ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        final String commandName = rs.getString("name");
+                        final String commandPattern = rs.getString("pattern");
+                        final String commandTemplate = rs.getString("template");
+                        final long commandOwnerID = rs.getLong("owner");
+                        final boolean runAsOwner = rs.getBoolean("runasowner");
+                        keywords.add(new KeywordAction(commandName, commandPattern, commandTemplate, commandOwnerID, runAsOwner, guildID));
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("Failed to fetch Keywords for a guild from database: {}", ex.getMessage());
+            LOGGER.trace("Stack trace:", ex);
+        }
+        return keywords;
+    }
+
+    /**
+     * Used to register the SQLite regexp function to the connection
+     *
+     * @param connection Connection to register the function in
+     * @throws SQLException If Function creation fails or connection is not
+     * from SQLite
+     */
+    private void registerRegexpFunction(final Connection connection) throws SQLException {
+        Function.create(connection.unwrap(SQLiteConnection.class), "REGEXP", new Function() {
+            @Override
+            protected void xFunc() throws SQLException {
+                final String expression = value_text(0);
+                String value = value_text(1);
+                if (value == null) {
+                    value = "";
+                }
+
+                final Pattern pattern = Pattern.compile(expression);
+                result(pattern.matcher(value).find() ? 1 : 0);
+            }
+        });
     }
 }

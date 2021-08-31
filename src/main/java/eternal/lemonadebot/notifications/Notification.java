@@ -25,8 +25,7 @@ package eternal.lemonadebot.notifications;
 
 import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.database.RuntimeStorage;
+import eternal.lemonadebot.database.StorageManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.SimpleMessageMatcher;
 import eternal.lemonadebot.translation.TranslationCache;
@@ -57,8 +56,8 @@ class Notification extends CustomCommand implements Runnable {
 
     private final JDA jda;
     private final long channelID;
-    private final GuildDataStore guildData;
     private final NotificationManager notificationManager;
+    private final StorageManager storage;
     private volatile ScheduledFuture<?> future;
     private final Instant activationTime;
 
@@ -70,14 +69,15 @@ class Notification extends CustomCommand implements Runnable {
      * @param name Name of the notification
      * @param channelID ID of the channel the message should be sent in
      * @param author Author of the notification
+     * @param guildID Guild the notifiction is for
      * @param input Input string to either send or execute if it is a command
      * @param activationTime Instant the notification happens
      */
-    Notification(final JDA jda, final GuildDataStore guildData, final NotificationManager nm, final String name, final String input,
-            final long channelID, final long author, final Instant activationTime) {
-        super(name, input, author);
+    Notification(final JDA jda, final StorageManager guildData, final NotificationManager nm, final String name, final String input,
+            final long channelID, final long author, final long guildID, final Instant activationTime) {
+        super(name, input, author, guildID);
         this.jda = jda;
-        this.guildData = guildData;
+        this.storage = guildData;
         this.notificationManager = nm;
         this.channelID = channelID;
         this.activationTime = activationTime;
@@ -112,9 +112,7 @@ class Notification extends CustomCommand implements Runnable {
         channel.getGuild().retrieveMemberById(getAuthor()).queue((Member member) -> {
             //Success
             final CommandMatcher matcher = new SimpleMessageMatcher(member, channel);
-            final RuntimeStorage db = this.guildData.getRuntimeStorage();
-            final TranslationCache translation = db.getTranslationCache(channel.getGuild());
-            final CommandContext context = new CommandContext(matcher, guildData, translation);
+            final CommandContext context = new CommandContext(matcher, this.storage);
             run(context, true);
             LOGGER.debug("Notification: {} successfully activated on channel: {}", getName(), channel.getName());
         }, (Throwable t) -> {

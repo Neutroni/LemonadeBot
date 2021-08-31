@@ -27,7 +27,7 @@ import eternal.lemonadebot.commands.AdminCommand;
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.commands.CommandProvider;
-import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;
@@ -104,8 +104,8 @@ public class PermissionCommand extends AdminCommand {
 
     private static void getPermission(final String[] arguments, final CommandContext context) {
         final TextChannel channel = context.getChannel();
-        final GuildDataStore guildData = context.getGuildData();
-        final PermissionManager permissions = guildData.getPermissionManager();
+        final PermissionManager permissions = context.getPermissionManager();
+        final ConfigManager config = context.getConfigManager();
         final ResourceBundle locale = context.getResource();
 
         if (arguments.length < 2) {
@@ -116,10 +116,10 @@ public class PermissionCommand extends AdminCommand {
 
         //Check if there is a command for the given action
         final ChatCommand command;
-        final CommandProvider commands = guildData.getCommandProvider();
+        final CommandProvider commands = context.getCommandProvider();
         final int i = permissionName.indexOf(' ');
         if (i == -1) {
-            final Optional<ChatCommand> optCommand = commands.getCommand(permissionName);
+            final Optional<ChatCommand> optCommand = commands.getCommand(permissionName, config);
             if (optCommand.isEmpty()) {
                 //No command for the action
                 channel.sendMessage(locale.getString("PERMISSION_NO_COMMAND")).queue();
@@ -128,7 +128,7 @@ public class PermissionCommand extends AdminCommand {
             command = optCommand.get();
         } else {
             final String commandName = permissionName.substring(0, i);
-            final Optional<ChatCommand> optCommand = commands.getCommand(commandName);
+            final Optional<ChatCommand> optCommand = commands.getCommand(commandName, config);
             if (optCommand.isEmpty()) {
                 //No command for the action
                 channel.sendMessage(locale.getString("PERMISSION_NO_COMMAND")).queue();
@@ -140,7 +140,7 @@ public class PermissionCommand extends AdminCommand {
         //Get the permission for the action
         final CommandPermission perm;
         try {
-            perm = permissions.getPermission(command, permissionName);
+            perm = permissions.getPermission(command, permissionName, context.getGuild().getIdLong());
         } catch (SQLException ex) {
             channel.sendMessage(locale.getString("PERMISSION_SQL_ERROR_ON_FIND")).queue();
             LOGGER.error("Failure to get permission from database: {}", ex.getMessage());
@@ -177,8 +177,6 @@ public class PermissionCommand extends AdminCommand {
     private static void setPermission(final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
-        final GuildDataStore guildData = context.getGuildData();
-        final PermissionManager permissions = guildData.getPermissionManager();
         final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
 
@@ -222,7 +220,9 @@ public class PermissionCommand extends AdminCommand {
         }
         final String actionString = args.get(3);
         try {
-            permissions.setPermission(new CommandPermission(actionString, rank, role.getIdLong()));
+            final PermissionManager permissions = context.getPermissionManager();
+            final long guildID = context.getGuild().getIdLong();
+            permissions.setPermission(new CommandPermission(actionString, rank, role.getIdLong(), guildID));
             channel.sendMessage(locale.getString("PERMISSION_UPDATE_SUCCESS")).queue();
         } catch (SQLException e) {
             channel.sendMessage(locale.getString("PERMISSION_SQL_ERROR_ON_SET")).queue();
@@ -235,13 +235,13 @@ public class PermissionCommand extends AdminCommand {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
         final Guild guild = matcher.getGuild();
-        final GuildDataStore guildData = context.getGuildData();
-        final PermissionManager permissionManager = guildData.getPermissionManager();
+
         final ResourceBundle locale = context.getResource();
 
         final Collection<CommandPermission> permissions;
         try {
-            permissions = permissionManager.getPermissions();
+            final PermissionManager permissionManager = context.getPermissionManager();
+            permissions = permissionManager.getPermissions(guild.getIdLong());
         } catch (SQLException ex) {
             channel.sendMessage(locale.getString("PERMISSION_SQL_ERROR_ON_LOAD")).queue();
             LOGGER.error("Failure to load permissions from database: {}", ex.getMessage());

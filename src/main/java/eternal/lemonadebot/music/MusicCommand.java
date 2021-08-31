@@ -88,8 +88,8 @@ public class MusicCommand extends ChatCommand {
     @Override
     public Collection<CommandPermission> getDefaultRanks(final ResourceBundle locale, final long guildID, final PermissionManager permissions) {
         return List.of(
-                new CommandPermission(getCommand(locale), MemberRank.MEMBER, guildID),
-                new CommandPermission(getCommand(locale) + ' ' + locale.getString("ACTION_LIST"), MemberRank.USER, guildID)
+                new CommandPermission(getCommand(locale), MemberRank.MEMBER, guildID, guildID),
+                new CommandPermission(getCommand(locale) + ' ' + locale.getString("ACTION_LIST"), MemberRank.USER, guildID, guildID)
         );
     }
 

@@ -24,7 +24,7 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.LemonadeBot;
-import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
@@ -62,7 +62,7 @@ class HelpCommand extends ChatCommand {
 
     @Override
     public Collection<CommandPermission> getDefaultRanks(final ResourceBundle locale, final long guildID, final PermissionManager permissions) {
-        return List.of(new CommandPermission(getCommand(locale), MemberRank.USER, guildID));
+        return List.of(new CommandPermission(getCommand(locale), MemberRank.USER, guildID, guildID));
     }
 
     @Override
@@ -110,15 +110,15 @@ class HelpCommand extends ChatCommand {
      */
     private static void listHelp(final CommandContext context, final String name) {
         final CommandMatcher matcher = context.getMatcher();
+        final ConfigManager config = context.getConfigManager();
         final TranslationCache translation = context.getTranslation();
-        final GuildDataStore guildData = context.getGuildData();
         final TextChannel textChannel = matcher.getTextChannel();
         final ResourceBundle locale = translation.getResourceBundle();
-        final PermissionManager permissions = guildData.getPermissionManager();
-        final CommandProvider commands = guildData.getCommandProvider();
+        final PermissionManager permissions = context.getPermissionManager();
+        final CommandProvider commands = context.getCommandProvider();
 
         //Get the command with the name user provided
-        final Optional<ChatCommand> opt = commands.getCommand(name);
+        final Optional<ChatCommand> opt = commands.getCommand(name, config);
         if (opt.isPresent()) {
             final ChatCommand com = opt.get();
             final Member member = matcher.getMember();
@@ -151,9 +151,8 @@ class HelpCommand extends ChatCommand {
     private static void listCommands(final CommandContext context) {
         final ResourceBundle locale = context.getResource();
         final CommandMatcher matcher = context.getMatcher();
-        final GuildDataStore guildData = context.getGuildData();
-        final PermissionManager permissions = guildData.getPermissionManager();
-        final CommandProvider commands = guildData.getCommandProvider();
+        final PermissionManager permissions = context.getPermissionManager();
+        final CommandProvider commands = context.getCommandProvider();
         //Construct the list of commands
         final StringBuilder sb = new StringBuilder();
         final Member member = matcher.getMember();

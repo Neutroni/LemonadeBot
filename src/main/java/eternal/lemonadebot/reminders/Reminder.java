@@ -25,8 +25,7 @@ package eternal.lemonadebot.reminders;
 
 import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.customcommands.CustomCommand;
-import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.database.RuntimeStorage;
+import eternal.lemonadebot.database.StorageManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.SimpleMessageMatcher;
 import eternal.lemonadebot.translation.TranslationCache;
@@ -40,7 +39,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
@@ -58,7 +56,7 @@ class Reminder extends CustomCommand implements Runnable {
 
     private final JDA jda;
     private final long channelID;
-    private final GuildDataStore guildData;
+    private final StorageManager storage;
     private final ReminderManager remiderManager;
     private volatile ScheduledFuture<?> future;
     private final ReminderActivationTime activationTime;
@@ -74,11 +72,12 @@ class Reminder extends CustomCommand implements Runnable {
      * @param input Input string to either send or execute if it is a command
      * @param activationTime Weekday the reminder happens
      */
-    Reminder(final JDA jda, final GuildDataStore guildData, final ReminderManager rm, final String name, final String input,
+    Reminder(final JDA jda, final StorageManager storage, final long guildID,
+            final ReminderManager rm, final String name, final String input,
             final long channelID, final long author, final ReminderActivationTime activationTime) {
-        super(name, input, author);
+        super(name, input, author, guildID);
         this.jda = jda;
-        this.guildData = guildData;
+        this.storage = storage;
         this.remiderManager = rm;
         this.channelID = channelID;
         this.activationTime = activationTime;
@@ -102,7 +101,7 @@ class Reminder extends CustomCommand implements Runnable {
         }
 
         //Check that reminder should activate today
-        final ZoneId timeZone = this.guildData.getConfigManager().getZoneId();
+        final ZoneId timeZone = this.storage.getConfigCache().getConfigManager(getGuildID()).getZoneId();
         if (!this.activationTime.shouldActivate(timeZone)) {
             LOGGER.debug("Reminder {}, did not activate not the correct day", getName());
             return;
@@ -120,10 +119,7 @@ class Reminder extends CustomCommand implements Runnable {
         channel.getGuild().retrieveMemberById(getAuthor()).queue((Member member) -> {
             //Success
             final CommandMatcher matcher = new SimpleMessageMatcher(member, channel);
-            final Guild guild = channel.getGuild();
-            final RuntimeStorage db = this.guildData.getRuntimeStorage();
-            final TranslationCache translation = db.getTranslationCache(guild);
-            final CommandContext context = new CommandContext(matcher, guildData, translation);
+            final CommandContext context = new CommandContext(matcher, this.storage);
             run(context, true);
             LOGGER.debug("Reminder: {} successfully activated on channel: {}", getName(), channel.getName());
         }, (Throwable t) -> {
@@ -202,7 +198,7 @@ class Reminder extends CustomCommand implements Runnable {
      * @param reminderTimer ScheduledExecutorService
      */
     void scheduleWith(final ScheduledExecutorService reminderTimer) {
-        final ZoneId timeZone = this.guildData.getConfigManager().getZoneId();
+        final ZoneId timeZone = this.storage.getConfigCache().getConfigManager(getGuildID()).getZoneId();
         final Duration duration = this.activationTime.getTimeToActivation(timeZone);
         final long millisecondsToActivation = duration.toMillis();
         final long reminderInterval = TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS);

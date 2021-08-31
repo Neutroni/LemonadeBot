@@ -23,8 +23,10 @@
  */
 package eternal.lemonadebot;
 
+import eternal.lemonadebot.commands.CommandProvider;
+import eternal.lemonadebot.config.ConfigCache;
 import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.database.RuntimeStorage;
+import eternal.lemonadebot.database.StorageManager;
 import eternal.lemonadebot.keywords.KeywordListener;
 import eternal.lemonadebot.messagelogs.LoggerListener;
 import java.io.FileNotFoundException;
@@ -38,6 +40,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import javax.security.auth.login.LoginException;
+import javax.sql.DataSource;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -118,19 +121,19 @@ public class LemonadeBot {
             final JDA jda = jdabuilder.build();
 
             //Connect to the database
-            final DatabaseManager DB = new DatabaseManager(properties);
-            final RuntimeStorage storage = new RuntimeStorage(DB);
+            final StorageManager storageManager = new StorageManager(properties);
             LOGGER.debug("Connected to database successfully");
 
             //Start listening for messages
-            jda.addEventListener(new JoinListener(storage));
-            jda.addEventListener(new CommandListener(storage));
-            jda.addEventListener(new LoggerListener(storage, DB));
-            jda.addEventListener(new KeywordListener(storage));
+            jda.addEventListener(new JoinListener(storageManager));
+            jda.addEventListener(new CommandListener(storageManager));
+            jda.addEventListener(new LoggerListener(storageManager));
+            jda.addEventListener(new KeywordListener(storageManager));
+            jda.addEventListener(new ShutdownListener(storageManager));
 
             //Initialize connected guilds
             jda.awaitReady();
-            storage.initialize(jda.getGuilds());
+            storageManager.initialize(jda.getGuilds());
 
             LOGGER.debug("Startup successful");
         } catch (SQLException ex) {

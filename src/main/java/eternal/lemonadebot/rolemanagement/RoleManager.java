@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import javax.sql.DataSource;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 
 /**
@@ -42,17 +43,14 @@ import net.dv8tion.jda.api.entities.Role;
 public class RoleManager {
 
     private final DataSource dataSource;
-    private final long guildID;
 
     /**
      * Constructor
      *
      * @param ds database connection
-     * @param guildID ID of the guild to store allowed roles for
      */
-    public RoleManager(final DataSource ds, final long guildID) {
+    public RoleManager(final DataSource ds) {
         this.dataSource = ds;
-        this.guildID = guildID;
     }
 
     /**
@@ -66,7 +64,7 @@ public class RoleManager {
         final String query = "INSERT OR IGNORE INTO Roles(guild,role,description) VALUES(?,?,?);";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, role.getGuildID());
             ps.setLong(2, role.getRoleID());
             ps.setString(3, role.getDescription());
             return ps.executeUpdate() > 0;
@@ -84,7 +82,7 @@ public class RoleManager {
         final String query = "DELETE FROM Roles Where guild = ? AND role = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, role.getGuild().getIdLong());
             ps.setLong(2, role.getIdLong());
             return ps.executeUpdate() > 0;
         }
@@ -96,17 +94,18 @@ public class RoleManager {
      * @return list of roles
      * @throws SQLException if database connection failed
      */
-    Collection<AllowedRole> getRoles() throws SQLException {
+    Collection<AllowedRole> getRoles(final Guild guild) throws SQLException {
+        final long guildID = guild.getIdLong();
         final List<AllowedRole> roles = new ArrayList<>();
         final String query = "SELECT role,description FROM Roles WHERE guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, guildID);
             try (final ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final long roleID = rs.getLong("role");
                     final String description = rs.getString("description");
-                    final AllowedRole role = new AllowedRole(roleID, description);
+                    final AllowedRole role = new AllowedRole(roleID, description, guildID);
                     roles.add(role);
                 }
             }
@@ -125,7 +124,7 @@ public class RoleManager {
         final String query = "SELECT role FROM Roles WHERE guild = ? AND role = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, role.getGuild().getIdLong());
             ps.setLong(2, role.getIdLong());
             try (final ResultSet rs = ps.executeQuery()) {
                 return rs.next();
@@ -141,16 +140,17 @@ public class RoleManager {
      * @throws SQLException If database connection failed
      */
     protected Optional<AllowedRole> getAllowedRole(final Role role) throws SQLException {
+        final long guildID = role.getGuild().getIdLong();
         final String query = "SELECT role,description FROM Roles WHERE guild = ? AND role = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, guildID);
             ps.setLong(2, role.getIdLong());
             try (final ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     final long roleID = rs.getLong("role");
                     final String description = rs.getString("description");
-                    return Optional.of(new AllowedRole(roleID, description));
+                    return Optional.of(new AllowedRole(roleID, description, guildID));
                 }
             }
         }

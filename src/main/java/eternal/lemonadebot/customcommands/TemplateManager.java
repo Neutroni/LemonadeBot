@@ -23,6 +23,9 @@
  */
 package eternal.lemonadebot.customcommands;
 
+import eternal.lemonadebot.cache.ItemCache;
+import eternal.lemonadebot.cache.NamedGuildItem;
+import eternal.lemonadebot.database.DatabaseManager;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -31,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import javax.sql.DataSource;
 
@@ -42,37 +46,64 @@ import javax.sql.DataSource;
 public class TemplateManager {
 
     private final DataSource dataSource;
-    private final long guildID;
+    private final Map<NamedGuildItem, CustomCommand> templateCache;
 
     /**
      * Constructor
      *
-     * @param ds Database connection to use
-     * @param guildID guild to store templates for
+     * @param db Database connection to use
      */
-    public TemplateManager(final DataSource ds, final long guildID) {
-        this.dataSource = ds;
-        this.guildID = guildID;
+    public TemplateManager(final DatabaseManager db) {
+        this.dataSource = db.getDataSource();
+        final int cacheLimit = db.getConfig().templateCacheEnabled();
+        this.templateCache = Collections.synchronizedMap(new ItemCache<>(cacheLimit));
     }
 
     /**
      * Get command by name
      *
      * @param name name of the command
+     * @param guildID guild to find a command for
      * @return optional containing the command
      * @throws SQLException if database connection failed
      */
-    public Optional<CustomCommand> getCommand(final String name) throws SQLException {
+    public Optional<CustomCommand> getCommand(final String name, final long guildID) throws SQLException {
+        final NamedGuildItem key = new NamedGuildItem(guildID, name);
+        synchronized (this.templateCache) {
+            //Check if command is cached
+            final CustomCommand com = this.templateCache.get(key);
+            if (com != null) {
+                return Optional.of(com);
+            }
+            //Not in cache, check database
+            final Optional<CustomCommand> optCommand = getCommandFromDatabase(key);
+            optCommand.ifPresent((CustomCommand t) -> {
+                this.templateCache.put(key, t);
+            });
+            return optCommand;
+        }
+    }
+
+    /**
+     * Function to fetch template from database
+     *
+     * @param key Key to find command for
+     * @return Optional containing the template if found
+     * @throws SQLException if database connection failed
+     */
+    private Optional<CustomCommand> getCommandFromDatabase(NamedGuildItem key) throws SQLException {
+        final long guildID = key.getGuildID();
+        final String name = key.getItemName();
         final String query = "SELECT template,owner FROM Commands WHERE guild = ? AND name = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, guildID);
             ps.setString(2, name);
             try (final ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     final String commandTemplate = rs.getString("template");
                     final long commandOwnerID = rs.getLong("owner");
-                    return Optional.of(new CustomCommand(name, commandTemplate, commandOwnerID));
+                    return Optional.of(new CustomCommand(name, commandTemplate, commandOwnerID, guildID));
                 }
             }
         }
@@ -90,7 +121,7 @@ public class TemplateManager {
         final String query = "INSERT OR IGNORE INTO Commands(guild,name,template,owner) VALUES(?,?,?,?);";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, command.getGuildID());
             ps.setString(2, command.getName());
             ps.setString(3, command.getTemplate());
             ps.setLong(4, command.getAuthor());
@@ -110,7 +141,7 @@ public class TemplateManager {
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, command.getName());
-            ps.setLong(2, this.guildID);
+            ps.setLong(2, command.getGuildID());
             return ps.executeUpdate() > 0;
         }
     }
@@ -121,18 +152,18 @@ public class TemplateManager {
      * @return custom commands
      * @throws SQLException of database connection failed
      */
-    Collection<CustomCommand> getCommands() throws SQLException {
+    Collection<CustomCommand> getCommands(final long guildID) throws SQLException {
         final List<CustomCommand> commands = new ArrayList<>();
         final String query = "SELECT name,template,owner FROM Commands WHERE guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, guildID);
             try (final ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final String commandName = rs.getString("name");
                     final String commandTemplate = rs.getString("template");
                     final long commandOwnerID = rs.getLong("owner");
-                    final CustomCommand newCommand = new CustomCommand(commandName, commandTemplate, commandOwnerID);
+                    final CustomCommand newCommand = new CustomCommand(commandName, commandTemplate, commandOwnerID, guildID);
                     commands.add(newCommand);
                 }
             }

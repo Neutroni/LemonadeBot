@@ -25,7 +25,6 @@ package eternal.lemonadebot.cooldowns;
 
 import eternal.lemonadebot.commands.AdminCommand;
 import eternal.lemonadebot.commands.CommandContext;
-import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.translation.ActionKey;
 import eternal.lemonadebot.translation.TranslationCache;
@@ -36,6 +35,7 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -114,13 +114,14 @@ public class CooldownCommand extends AdminCommand {
      * @param requestedAction action to get cooldown for
      */
     private static void getCooldown(final CommandContext context, final String requestedAction) {
-        final GuildDataStore guildData = context.getGuildData();
-        final CooldownManager cooldownManager = guildData.getCooldownManager();
+        final CooldownManager cooldownManager = context.getCooldownManager();
         final ResourceBundle locale = context.getResource();
         final TextChannel channel = context.getChannel();
+        final Guild guild = channel.getGuild();
+        final long guildID = guild.getIdLong();
         final Optional<ActionCooldown> cd;
         try {
-            cd = cooldownManager.getActionCooldown(requestedAction);
+            cd = cooldownManager.getActionCooldown(requestedAction, guildID);
         } catch (SQLException ex) {
             channel.sendMessage(locale.getString("COOLDOWN_SQL_ERROR_ON_RETRIEVE")).queue();
             LOGGER.error("Failure to get cooldown for action from database: {}", ex.getMessage());
@@ -147,8 +148,7 @@ public class CooldownCommand extends AdminCommand {
      * @param arguments arguments time,amount,action to use for setting cooldown
      */
     private static void setCooldown(final CommandContext context, final String[] arguments) {
-        final GuildDataStore guildData = context.getGuildData();
-        final CooldownManager cooldownManager = guildData.getCooldownManager();
+        final CooldownManager cooldownManager = context.getCooldownManager();
         final TranslationCache translationCache = context.getTranslation();
         final ResourceBundle locale = translationCache.getResourceBundle();
         final TextChannel channel = context.getChannel();
@@ -192,7 +192,9 @@ public class CooldownCommand extends AdminCommand {
         final String actionString = arguments[3];
 
         try {
-            cooldownManager.setCooldown(actionString, cooldownDuration);
+            final Guild guild = channel.getGuild();
+            final long guildID = guild.getIdLong();
+            cooldownManager.setCooldown(actionString, cooldownDuration, guildID);
             channel.sendMessage(locale.getString("COOLDOWN_UPDATED_SUCCESFULLY")).queue();
         } catch (SQLException ex) {
             channel.sendMessage(locale.getString("COOLDOWN_SQL_ERROR_ON_UPDATE")).queue();
@@ -209,12 +211,13 @@ public class CooldownCommand extends AdminCommand {
      * @param requestedAction Action which to remove cooldown from
      */
     private static void disableCooldown(final CommandContext context, final String requestedAction) {
-        final GuildDataStore guildData = context.getGuildData();
-        final CooldownManager cooldownManager = guildData.getCooldownManager();
+        final CooldownManager cooldownManager = context.getCooldownManager();
         final ResourceBundle locale = context.getResource();
         final TextChannel channel = context.getChannel();
         try {
-            if (cooldownManager.removeCooldown(requestedAction)) {
+            final Guild guild = context.getGuild();
+            final long guildID = guild.getIdLong();
+            if (cooldownManager.removeCooldown(requestedAction, guildID)) {
                 //Found cooldown for action
                 channel.sendMessage(locale.getString("COOLDOWN_DISABLE_SUCCESS")).queue();
             } else {
@@ -229,15 +232,15 @@ public class CooldownCommand extends AdminCommand {
     }
 
     private static void listCooldowns(final CommandContext context) {
-        final GuildDataStore guildData = context.getGuildData();
-        final CooldownManager cooldownManager = guildData.getCooldownManager();
+        final CooldownManager cooldownManager = context.getCooldownManager();
         final TextChannel channel = context.getChannel();
         final ResourceBundle locale = context.getResource();
 
         //Fetch the list of set cooldowns from database
         final Collection<ActionCooldown> cooldowns;
         try {
-            cooldowns = cooldownManager.getCooldowns();
+            final long guildID = context.getGuild().getIdLong();
+            cooldowns = cooldownManager.getCooldowns(guildID);
         } catch (SQLException ex) {
             channel.sendMessage(locale.getString("COOLDOWN_SQL_ERROR_ON_LOADING")).queue();
             LOGGER.error("Failure to load cooldown from database: {}", ex.getMessage());

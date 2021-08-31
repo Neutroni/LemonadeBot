@@ -23,8 +23,9 @@
  */
 package eternal.lemonadebot;
 
+import eternal.lemonadebot.config.ConfigCache;
 import eternal.lemonadebot.config.ConfigManager;
-import eternal.lemonadebot.database.RuntimeStorage;
+import eternal.lemonadebot.database.StorageManager;
 import java.util.Optional;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -44,15 +45,15 @@ public class JoinListener extends ListenerAdapter {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private final RuntimeStorage db;
+    private final ConfigCache configs;
 
     /**
      * Constructor
      *
-     * @param database Database to use for operations
+     * @param storage Database to use for operations
      */
-    public JoinListener(final RuntimeStorage database) {
-        this.db = database;
+    public JoinListener(final StorageManager storage) {
+        this.configs = storage.getConfigCache();
     }
 
     /**
@@ -79,7 +80,7 @@ public class JoinListener extends ListenerAdapter {
         }
 
         //Check if guild has message to send to new members
-        final ConfigManager guildConf = this.db.getGuildData(guild).getConfigManager();
+        final ConfigManager guildConf = this.configs.getConfigManager(guild.getIdLong());
         final Optional<String> optTemplate = guildConf.getGreetingTemplate();
         if (optTemplate.isEmpty()) {
             LOGGER.debug("Not greeting because greet template is not set");

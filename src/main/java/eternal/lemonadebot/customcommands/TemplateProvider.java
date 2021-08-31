@@ -24,7 +24,6 @@
 package eternal.lemonadebot.customcommands;
 
 import eternal.lemonadebot.commands.CommandContext;
-import eternal.lemonadebot.database.GuildDataStore;
 import eternal.lemonadebot.events.EventManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import java.sql.SQLException;
@@ -42,6 +41,7 @@ import java.util.ResourceBundle;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -122,14 +122,13 @@ public class TemplateProvider {
             new ActionTemplate("randomEventMember (\\S+)", "HELP_TEMPLATE_RANDOM_EVENT_MEMBER",
                     (CommandContext context, Matcher input) -> {
                         final String eventName = input.group(1);
-                        final GuildDataStore guildData = context.getGuildData();
                         final CommandMatcher matcher = context.getMatcher();
-                        final EventManager eventManager = guildData.getEventManager();
+                        final DataSource ds = context.getStorageManager().getDataSource();
                         final Guild guild = matcher.getGuild();
                         final ResourceBundle locale = context.getTranslation().getResourceBundle();
 
                         try {
-                            final Optional<Member> optMember = eventManager.getRandomMember(eventName, guild);
+                            final Optional<Member> optMember = EventManager.getRandomMember(ds, eventName, guild);
                             if (optMember.isEmpty()) {
                                 return locale.getString("EVENT_NO_MEMBERS");
                             }
@@ -274,9 +273,9 @@ public class TemplateProvider {
      */
     public static String getHelp(final ResourceBundle locale) {
         final StringBuilder sb = new StringBuilder();
-        for (final ActionTemplate action : actions) {
+        actions.forEach(action -> {
             sb.append(action.getHelp(locale)).append('\n');
-        }
+        });
         return sb.toString();
     }
 

@@ -38,6 +38,7 @@ public class Event {
     private final String name;
     private final String description;
     private final long ownerID;
+    private final long guildID;
     private volatile boolean locked;
 
     /**
@@ -51,6 +52,7 @@ public class Event {
         this.name = name;
         this.description = description;
         this.ownerID = owner.getIdLong();
+        this.guildID = owner.getGuild().getIdLong();
         this.locked = false;
     }
 
@@ -62,10 +64,11 @@ public class Event {
      * @param owner Owner id for this event
      * @param locked whether event is locked
      */
-    Event(final String name, final String description, final long owner, final boolean locked) {
+    Event(final String name, final String description, final long owner, final long guildID, final boolean locked) {
         this.name = name;
         this.description = description;
         this.ownerID = owner;
+        this.guildID = guildID;
         this.locked = locked;
     }
 
@@ -108,6 +111,15 @@ public class Event {
      */
     long getOwner() {
         return this.ownerID;
+    }
+
+    /**
+     * Get the id of the guild the event is from
+     *
+     * @return guild id
+     */
+    long getGuild() {
+        return this.guildID;
     }
 
     /**

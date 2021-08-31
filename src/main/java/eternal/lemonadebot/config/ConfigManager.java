@@ -23,6 +23,7 @@
  */
 package eternal.lemonadebot.config;
 
+import eternal.lemonadebot.translation.TranslationCache;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -31,8 +32,10 @@ import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.TextChannel;
 import org.apache.logging.log4j.LogManager;
@@ -46,6 +49,7 @@ public class ConfigManager {
 
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Locale DEFAULT_LOCALE = Locale.ENGLISH;
+    private static final Map<Locale, TranslationCache> translationCaches = new ConcurrentHashMap<>();
 
     /**
      * List of locales the bot supports
@@ -118,6 +122,26 @@ public class ConfigManager {
      */
     public ZoneId getZoneId() {
         return this.timeZone;
+    }
+
+    /**
+     * Get the ID of the guild this config is for
+     *
+     * @return guild id
+     */
+    public long getGuildID() {
+        return this.guildID;
+    }
+
+    /**
+     * Get translation cache for this guilds locale
+     *
+     * @return TranslationCache
+     */
+    public TranslationCache getTranslationCache() {
+        return translationCaches.computeIfAbsent(locale, (Locale t) -> {
+            return new TranslationCache(locale);
+        });
     }
 
     /**

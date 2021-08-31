@@ -66,8 +66,8 @@ public class CommandList implements Iterable<ChatCommand>, Closeable {
         this.commands = List.of(
                 new HelpCommand(),
                 new MusicCommand(),
-                new EventCommand(),
-                new TemplateCommand(),
+                new EventCommand(db),
+                new TemplateCommand(db),
                 new RoleCommand(db),
                 new InventoryCommand(db),
                 //Admin commands
@@ -76,7 +76,7 @@ public class CommandList implements Iterable<ChatCommand>, Closeable {
                 new ReminderCommand(db),
                 new NotificationCommand(db),
                 new PermissionCommand(),
-                new KeywordCommand()
+                new KeywordCommand(db)
         );
     }
 

@@ -23,10 +23,14 @@
  */
 package eternal.lemonadebot.commands;
 
-import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.config.ConfigManager;
+import eternal.lemonadebot.cooldowns.CooldownManager;
+import eternal.lemonadebot.database.StorageManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
+import eternal.lemonadebot.permissions.PermissionManager;
 import eternal.lemonadebot.translation.TranslationCache;
 import java.util.ResourceBundle;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
@@ -37,20 +41,18 @@ import net.dv8tion.jda.api.entities.TextChannel;
 public class CommandContext {
 
     private final CommandMatcher message;
-    private final GuildDataStore guildData;
-    private final TranslationCache translation;
+    private final StorageManager storage;
 
     /**
      * Constructor
      *
      * @param matcher Message that initiated the command
-     * @param guildData Data for the guild command was called in
-     * @param translation Translation data for the locale of the guild
+     * @param storage StorageManager to pass to commands
+     *
      */
-    public CommandContext(final CommandMatcher matcher, final GuildDataStore guildData, final TranslationCache translation) {
+    public CommandContext(final CommandMatcher matcher, final StorageManager storage) {
         this.message = matcher;
-        this.guildData = guildData;
-        this.translation = translation;
+        this.storage = storage;
     }
 
     /**
@@ -59,16 +61,44 @@ public class CommandContext {
      * @return Command that initiated the action
      */
     public CommandMatcher getMatcher() {
-        return message;
+        return this.message;
     }
 
     /**
-     * Getter for GuildDataStore
+     * Get StorageManager
      *
-     * @return Data for the guild
+     * @return StorageManager
      */
-    public GuildDataStore getGuildData() {
-        return guildData;
+    public StorageManager getStorageManager() {
+        return this.storage;
+    }
+
+    /**
+     * Get the guild this context is for
+     *
+     * @return Guild
+     */
+    public Guild getGuild() {
+        return this.message.getGuild();
+    }
+
+    /**
+     * Get configManager for this command
+     *
+     * @return ConfigManager
+     */
+    public ConfigManager getConfigManager() {
+        final long guildID = this.message.getGuild().getIdLong();
+        return this.storage.getConfigCache().getConfigManager(guildID);
+    }
+
+    /**
+     * Getter for CommandProvider
+     *
+     * @return CommandProvider
+     */
+    public CommandProvider getCommandProvider() {
+        return this.storage.getCommandProvider();
     }
 
     /**
@@ -77,7 +107,16 @@ public class CommandContext {
      * @return Locale specific data
      */
     public TranslationCache getTranslation() {
-        return translation;
+        return getConfigManager().getTranslationCache();
+    }
+
+    /**
+     * Shortcut to get the resourcebundle for the locale
+     *
+     * @return ResourceBundle
+     */
+    public ResourceBundle getResource() {
+        return getTranslation().getResourceBundle();
     }
 
     /**
@@ -90,12 +129,21 @@ public class CommandContext {
     }
 
     /**
-     * Shortcut to get the resourcebundle for the locale
+     * Shortcut to get permissionManager from storage
      *
-     * @return ResourceBundle
+     * @return PermissionManager
      */
-    public ResourceBundle getResource() {
-        return this.translation.getResourceBundle();
+    public PermissionManager getPermissionManager() {
+        return this.storage.getPermissionManager();
+    }
+
+    /**
+     * Shortcut to get cooldownManager from storage
+     *
+     * @return CooldownManager
+     */
+    public CooldownManager getCooldownManager() {
+        return this.storage.getCooldownManager();
     }
 
 }

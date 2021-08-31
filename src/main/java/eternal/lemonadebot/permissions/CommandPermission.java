@@ -40,6 +40,7 @@ public class CommandPermission {
     private final String action;
     private final MemberRank rank;
     private final long roleID;
+    private final long guildID;
 
     /**
      * Constructor
@@ -47,11 +48,13 @@ public class CommandPermission {
      * @param action Action this CommandPermission is for
      * @param rank Rank required for this permission
      * @param role Role required for this permission, use guild ID for anyone
+     * @param guild Guild the permission is for
      */
-    public CommandPermission(final String action, final MemberRank rank, final long role) {
+    public CommandPermission(final String action, final MemberRank rank, final long role, final long guild) {
         this.action = action;
         this.rank = rank;
         this.roleID = role;
+        this.guildID = guild;
     }
 
     /**
@@ -108,6 +111,15 @@ public class CommandPermission {
      */
     public long getRequiredRoleID() {
         return this.roleID;
+    }
+
+    /**
+     * Get ID for the guild this permission is from
+     *
+     * @return guildID
+     */
+    public long getGuildID() {
+        return this.guildID;
     }
 
 }

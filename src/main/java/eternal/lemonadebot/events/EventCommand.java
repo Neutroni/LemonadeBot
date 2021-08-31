@@ -25,7 +25,7 @@ package eternal.lemonadebot.events;
 
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandContext;
-import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.MemberRank;
@@ -60,6 +60,16 @@ import org.apache.logging.log4j.Logger;
 public class EventCommand extends ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
+    private final EventManager events;
+
+    /**
+     * Constructor
+     *
+     * @param database Database to store events in
+     */
+    public EventCommand(final DatabaseManager database) {
+        this.events = new EventManager(database);
+    }
 
     @Override
     public String getCommand(final ResourceBundle locale) {
@@ -78,7 +88,7 @@ public class EventCommand extends ChatCommand {
 
     @Override
     public Collection<CommandPermission> getDefaultRanks(final ResourceBundle locale, final long guildID, final PermissionManager permissions) {
-        return List.of(new CommandPermission(getCommand(locale), MemberRank.MEMBER, guildID));
+        return List.of(new CommandPermission(getCommand(locale), MemberRank.MEMBER, guildID, guildID));
     }
 
     @Override
@@ -144,13 +154,11 @@ public class EventCommand extends ChatCommand {
         }
     }
 
-    private static void createEvent(final String[] opts, final CommandContext context) {
+    private void createEvent(final String[] opts, final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final Member sender = matcher.getMember();
         final TextChannel textChannel = matcher.getTextChannel();
         final ResourceBundle locale = context.getResource();
-        final GuildDataStore guildData = context.getGuildData();
-        final EventManager events = guildData.getEventManager();
         if (opts.length < 2) {
             textChannel.sendMessage(locale.getString("EVENT_CREATE_MISSING_NAME")).queue();
             return;
@@ -181,12 +189,10 @@ public class EventCommand extends ChatCommand {
         }
     }
 
-    private static void deleteEvent(final String[] opts, final CommandContext context) {
+    private void deleteEvent(final String[] opts, final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final Member sender = matcher.getMember();
         final TextChannel textChannel = matcher.getTextChannel();
-        final GuildDataStore guildData = context.getGuildData();
-        final EventManager events = guildData.getEventManager();
         final ResourceBundle locale = context.getResource();
         if (opts.length < 2) {
             textChannel.sendMessage(locale.getString("EVENT_DELETE_MISSING_NAME")).queue();
@@ -197,7 +203,7 @@ public class EventCommand extends ChatCommand {
         //Get the event to remove
         final Optional<Event> oldEvent;
         try {
-            oldEvent = events.getEvent(eventName);
+            oldEvent = events.getEvent(eventName, context.getGuild());
         } catch (SQLException e) {
             textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_FINDING_EVENT")).queue();
             return;
@@ -226,7 +232,7 @@ public class EventCommand extends ChatCommand {
 
     }
 
-    private static void joinEvent(final String[] opts, final CommandContext context) {
+    private void joinEvent(final String[] opts, final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
         final ResourceBundle locale = context.getResource();
@@ -237,13 +243,11 @@ public class EventCommand extends ChatCommand {
             return;
         }
         final String eventName = opts[1];
-        final GuildDataStore guildData = context.getGuildData();
-        final EventManager events = guildData.getEventManager();
 
         //Get the event to join
         final Optional<Event> oldEvent;
         try {
-            oldEvent = events.getEvent(eventName);
+            oldEvent = this.events.getEvent(eventName, context.getGuild());
         } catch (SQLException e) {
             textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_FINDING_EVENT")).queue();
             return;
@@ -273,7 +277,7 @@ public class EventCommand extends ChatCommand {
         }
     }
 
-    private static void leaveEvent(final String[] opts, final CommandContext context) {
+    private void leaveEvent(final String[] opts, final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel textChannel = matcher.getTextChannel();
         final ResourceBundle locale = context.getResource();
@@ -284,13 +288,11 @@ public class EventCommand extends ChatCommand {
             return;
         }
         final String eventName = opts[1];
-        final GuildDataStore guildData = context.getGuildData();
-        final EventManager events = guildData.getEventManager();
 
         //Get the event to leave
         final Optional<Event> oldEvent;
         try {
-            oldEvent = events.getEvent(eventName);
+            oldEvent = events.getEvent(eventName, context.getGuild());
         } catch (SQLException e) {
             textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_FINDING_EVENT")).queue();
             return;
@@ -321,22 +323,20 @@ public class EventCommand extends ChatCommand {
         }
     }
 
-    private static void showEventMembers(final String[] opts, final CommandContext context) {
+    private void showEventMembers(final String[] opts, final CommandContext context) {
         final TextChannel textChannel = context.getChannel();
         final ResourceBundle locale = context.getResource();
-        final GuildDataStore guildData = context.getGuildData();
 
         if (opts.length < 2) {
             textChannel.sendMessage(locale.getString("EVENT_SHOW_MEMBERS_MISSING_NAME")).queue();
             return;
         }
         final String eventName = opts[1];
-        final EventManager events = guildData.getEventManager();
 
         //Get the event
         final Optional<Event> opt;
         try {
-            opt = events.getEvent(eventName);
+            opt = events.getEvent(eventName, context.getGuild());
         } catch (SQLException e) {
             textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_FINDING_EVENT")).queue();
             return;
@@ -381,9 +381,8 @@ public class EventCommand extends ChatCommand {
 
     }
 
-    private static void clearEventMembers(final String[] opts, final CommandContext context) {
+    private void clearEventMembers(final String[] opts, final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
-        final GuildDataStore guildData = context.getGuildData();
         final TextChannel textChannel = matcher.getTextChannel();
         final ResourceBundle locale = context.getResource();
         final Member sender = matcher.getMember();
@@ -393,12 +392,11 @@ public class EventCommand extends ChatCommand {
             return;
         }
         final String eventName = opts[1];
-        final EventManager events = guildData.getEventManager();
 
         //Get the event
         final Optional<Event> opt;
         try {
-            opt = events.getEvent(eventName);
+            opt = events.getEvent(eventName, context.getGuild());
         } catch (SQLException e) {
             textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_FINDING_EVENT")).queue();
             return;
@@ -422,11 +420,9 @@ public class EventCommand extends ChatCommand {
         }
     }
 
-    private static void listEvents(final CommandContext context) {
+    private void listEvents(final CommandContext context) {
         final TextChannel textChannel = context.getChannel();
         final ResourceBundle locale = context.getResource();
-        final GuildDataStore guildData = context.getGuildData();
-        final EventManager eventManager = guildData.getEventManager();
 
         final EmbedBuilder eb = new EmbedBuilder();
         eb.setTitle(locale.getString("HEADER_EVENTS"));
@@ -434,7 +430,7 @@ public class EventCommand extends ChatCommand {
         //Get the list of events
         final Collection<Event> ev;
         try {
-            ev = eventManager.getEvents();
+            ev = this.events.getEvents(context.getGuild());
         } catch (SQLException e) {
             textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_LOADING_EVENTS")).queue();
             return;
@@ -455,11 +451,10 @@ public class EventCommand extends ChatCommand {
         textChannel.sendMessageEmbeds(eb.build()).queue();
     }
 
-    private static void pickRandomEventMember(final String[] opts, final CommandContext context) {
+    private void pickRandomEventMember(final String[] opts, final CommandContext context) {
         final ResourceBundle locale = context.getResource();
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
-        final GuildDataStore guildData = context.getGuildData();
 
         if (opts.length < 2) {
             channel.sendMessage(locale.getString("EVENT_PICK_RANDOM_MISSING_NAME")).queue();
@@ -467,7 +462,6 @@ public class EventCommand extends ChatCommand {
         }
         final String eventName = opts[1];
         final Guild guild = matcher.getGuild();
-        final EventManager events = guildData.getEventManager();
 
         try {
             final Optional<Member> optMember = events.getRandomMember(eventName, guild);
@@ -494,22 +488,20 @@ public class EventCommand extends ChatCommand {
      * @param matcher Matcher for request
      * @param guildData guildData for guild
      */
-    private static void lockEvent(final String[] opts, final CommandContext context) {
+    private void lockEvent(final String[] opts, final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final TextChannel channel = matcher.getTextChannel();
         final ResourceBundle locale = context.getResource();
-        final GuildDataStore guildData = context.getGuildData();
         if (opts.length < 2) {
             channel.sendMessage(locale.getString("EVENT_LOCK_MISSING_NAME")).queue();
             return;
         }
         final String eventName = opts[1];
-        final EventManager events = guildData.getEventManager();
 
         //Get the event to unlock
         final Optional<Event> oldEvent;
         try {
-            oldEvent = events.getEvent(eventName);
+            oldEvent = events.getEvent(eventName, context.getGuild());
         } catch (SQLException e) {
             channel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_FINDING_EVENT")).queue();
             return;
@@ -549,12 +541,10 @@ public class EventCommand extends ChatCommand {
      * @param matcher commandMatcher to get requester from
      * @param guildData guildData for guild to find event in
      */
-    private static void unlockEvent(final String[] opts, final CommandContext context) {
+    private void unlockEvent(final String[] opts, final CommandContext context) {
         final CommandMatcher matcher = context.getMatcher();
         final Member sender = matcher.getMember();
         final TextChannel textChannel = matcher.getTextChannel();
-        final GuildDataStore guildData = context.getGuildData();
-        final EventManager events = guildData.getEventManager();
         final ResourceBundle locale = context.getResource();
         if (opts.length < 2) {
             textChannel.sendMessage(locale.getString("EVENT_UNLOCK_MISSING_NAME")).queue();
@@ -565,7 +555,7 @@ public class EventCommand extends ChatCommand {
         //Get the event to unlock
         final Optional<Event> oldEvent;
         try {
-            oldEvent = events.getEvent(eventName);
+            oldEvent = events.getEvent(eventName, context.getGuild());
         } catch (SQLException e) {
             textChannel.sendMessage(locale.getString("EVENT_SQL_ERROR_ON_FINDING_EVENT")).queue();
             return;

@@ -25,7 +25,9 @@ package eternal.lemonadebot.permissions;
 
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandList;
+import eternal.lemonadebot.config.ConfigCache;
 import eternal.lemonadebot.config.ConfigManager;
+import eternal.lemonadebot.database.DatabaseManager;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -37,6 +39,7 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import javax.sql.DataSource;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,24 +53,19 @@ public class PermissionManager {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final DataSource dataSource;
-    private final long guildID;
-    private final CommandPermission adminPermission;
-    private final ConfigManager configManager;
+    private final ConfigCache configCache;
     private final CommandList commands;
 
     /**
      * Constructor
      *
-     * @param ds DataSource to get connection from
-     * @param guildID ID of the guild to store permissions for
-     * @param config Locale to use for loading default permissions
+     * @param db DataSource to get connection from
+     * @param configs Configuration to get locale from
      * @param commands Built in commands
      */
-    public PermissionManager(final DataSource ds, final long guildID, final ConfigManager config, final CommandList commands) {
-        this.dataSource = ds;
-        this.guildID = guildID;
-        this.adminPermission = new CommandPermission("", MemberRank.ADMIN, guildID);
-        this.configManager = config;
+    public PermissionManager(final DatabaseManager db, final ConfigCache configs, final CommandList commands) {
+        this.dataSource = db.getDataSource();
+        this.configCache = configs;
         this.commands = commands;
     }
 
@@ -81,10 +79,11 @@ public class PermissionManager {
      */
     public boolean hasPermission(final Member member, final ChatCommand command, final String action) {
         try {
-            final CommandPermission perm = getPermission(command, action);
+            final long guildID = member.getGuild().getIdLong();
+            final CommandPermission perm = getPermission(command, action, guildID);
             return perm.hashPermission(member);
         } catch (SQLException ex) {
-            return this.adminPermission.hashPermission(member);
+            return member.getPermissions().contains(Permission.ADMINISTRATOR);
         }
     }
 
@@ -99,7 +98,7 @@ public class PermissionManager {
         final String query = "INSERT OR REPLACE INTO Permissions(guild,action,requiredRank,requiredRole) VALUES(?,?,?,?);";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, perm.getGuildID());
             ps.setString(3, perm.getAction());
             ps.setString(4, perm.getRequiredRank().name());
             ps.setLong(5, perm.getRequiredRoleID());
@@ -111,14 +110,16 @@ public class PermissionManager {
      * Get permission required to run custom commands that do not have any other
      * permission set
      *
+     * @param guildID ID of the guild to get default template run permission
      * @return CommandPermission
      */
-    public CommandPermission getTemplateRunPermission() {
-        final Locale locale = this.configManager.getLocale();
-        final ResourceBundle resource = ResourceBundle.getBundle("Translation", locale);
+    public CommandPermission getTemplateRunPermission(final long guildID) {
+        final ConfigManager config = this.configCache.getConfigManager(guildID);
+        final ResourceBundle resource = config.getTranslationCache().getResourceBundle();
         final String key = resource.getString("TEMPLATE_RUN_ACTION");
         try {
-            final CommandPermission perm = getPermission(key).orElse(this.adminPermission);
+            final CommandPermission perm = getPermission(key, guildID)
+                    .orElse(new CommandPermission(key, MemberRank.ADMIN, guildID, guildID));
             if (key.equals(perm.getAction())) {
                 return perm;
             }
@@ -126,7 +127,7 @@ public class PermissionManager {
             LOGGER.error("Failure to retrieve permission for running custom commands from database: {}", ex.getMessage());
             LOGGER.trace("Stack trace:", ex);
         }
-        return this.adminPermission;
+        return new CommandPermission(key, MemberRank.ADMIN, guildID, guildID);
     }
 
     /**
@@ -137,13 +138,13 @@ public class PermissionManager {
      * @return CommandPermission for action, if no permission has been set the
      * returned permission will have rank of ADMIN and any role
      */
-    CommandPermission getPermission(final ChatCommand command, final String action) throws SQLException {
-        final Optional<CommandPermission> optPerm = getPermission(action);
-        final Locale locale = this.configManager.getLocale();
+    CommandPermission getPermission(final ChatCommand command, final String action, final long guildID) throws SQLException {
+        final Optional<CommandPermission> optPerm = getPermission(action, guildID);
+        final Locale locale = this.configCache.getConfigManager(guildID).getLocale();
         final ResourceBundle resource = ResourceBundle.getBundle("Translation", locale);
         CommandPermission builtInPerm = null;
         int keyLength = 0;
-        for (final CommandPermission p : command.getDefaultRanks(resource, this.guildID, this)) {
+        for (final CommandPermission p : command.getDefaultRanks(resource, guildID, this)) {
             final String key = p.getAction();
             if (!action.startsWith(key)) {
                 continue;
@@ -155,7 +156,7 @@ public class PermissionManager {
             }
         }
         if (builtInPerm == null) {
-            builtInPerm = this.adminPermission;
+            builtInPerm = new CommandPermission("", MemberRank.ADMIN, guildID, guildID);
         }
         if (optPerm.isEmpty()) {
             return builtInPerm;
@@ -176,14 +177,14 @@ public class PermissionManager {
      *
      * @return Collection of permissions
      */
-    Collection<CommandPermission> getPermissions() throws SQLException {
+    Collection<CommandPermission> getPermissions(final long guildID) throws SQLException {
         final Set<CommandPermission> permissions = new HashSet<>();
 
         //Load permissions from database
         final String query = "SELECT action,requiredRank,requiredRole FROM Permissions WHERE guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, guildID);
             try (final ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final String action = rs.getString("action");
@@ -196,17 +197,17 @@ public class PermissionManager {
                         continue;
                     }
                     final long requiredRole = rs.getLong("requiredRole");
-                    permissions.add(new CommandPermission(action, rank, requiredRole));
+                    permissions.add(new CommandPermission(action, rank, requiredRole, guildID));
                 }
             }
         }
 
         //Get default permissions for commands
-        final Locale locale = this.configManager.getLocale();
+        final Locale locale = this.configCache.getConfigManager(guildID).getLocale();
         final ResourceBundle resource = ResourceBundle.getBundle("Translation", locale);
         this.commands.forEach((ChatCommand c) -> {
             //Set will ignore any that were also loaded from the database
-            permissions.addAll(c.getDefaultRanks(resource, this.guildID, this));
+            permissions.addAll(c.getDefaultRanks(resource, guildID, this));
         });
 
         return permissions;
@@ -216,16 +217,17 @@ public class PermissionManager {
      * Get permission from database for given action
      *
      * @param command Action to get permission for
+     * @param guildID ID of the guild to get permission from
      * @return Optional containing permission if found
      * @throws SQLException if database connection failed
      */
-    protected Optional<CommandPermission> getPermission(final String command) throws SQLException {
+    protected Optional<CommandPermission> getPermission(final String command, final long guildID) throws SQLException {
         final String query = "SELECT action,requiredRank,requiredRole FROM Permissions "
                 + "WHERE guild = ? AND (action = ? OR ? LIKE action || ' %')"
                 + "ORDER BY length(action) DESC LIMIT 1;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, guildID);
             ps.setString(2, command);
             ps.setString(3, command);
             try (final ResultSet rs = ps.executeQuery()) {
@@ -240,7 +242,7 @@ public class PermissionManager {
                         return Optional.empty();
                     }
                     final long requiredRole = rs.getLong("requiredRole");
-                    return Optional.of(new CommandPermission(action, rank, requiredRole));
+                    return Optional.of(new CommandPermission(action, rank, requiredRole, guildID));
                 }
             }
         }

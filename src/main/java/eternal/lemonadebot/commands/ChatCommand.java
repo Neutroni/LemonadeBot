@@ -24,8 +24,7 @@
 package eternal.lemonadebot.commands;
 
 import eternal.lemonadebot.cooldowns.CooldownManager;
-import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.database.RuntimeStorage;
+import eternal.lemonadebot.database.StorageManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.PermissionManager;
@@ -89,11 +88,11 @@ public abstract class ChatCommand {
         final Member member = cmdMatch.getMember();
         final String inputString = cmdMatch.getAction();
         final TextChannel textChannel = cmdMatch.getTextChannel();
-        final GuildDataStore guildData = context.getGuildData();
         final ResourceBundle resources = context.getResource();
+        final StorageManager storage = context.getStorageManager();
 
         //Check if user has permission
-        final PermissionManager permissions = guildData.getPermissionManager();
+        final PermissionManager permissions = storage.getPermissionManager();
         if (!permissions.hasPermission(member, this, inputString)) {
             //No message if silent
             if (silent) {
@@ -105,7 +104,7 @@ public abstract class ChatCommand {
         }
 
         //Check if command is on cooldown
-        final CooldownManager cooldownManager = guildData.getCooldownManager();
+        final CooldownManager cooldownManager = storage.getCooldownManager();
         cooldownManager.checkCooldown(member, inputString).ifPresentOrElse((Duration t) -> {
             //No message if silent
             if (silent) {
@@ -141,9 +140,9 @@ public abstract class ChatCommand {
      * Initialize data that the command needs
      *
      * @param guilds List of guilds that need to be initialized
-     * @param rs RuntimeStorage that commands can use in initialization
+     * @param storage StorageManager to use for intialization
      */
-    public void initialize(final List<Guild> guilds, final RuntimeStorage rs) {
+    public void initialize(final List<Guild> guilds, final StorageManager storage) {
         //No-op
     }
 

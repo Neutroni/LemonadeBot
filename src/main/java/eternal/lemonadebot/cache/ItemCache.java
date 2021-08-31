@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2020 Neutroni.
+ * Copyright 2021 Neutroni.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,24 +21,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.commands;
+package eternal.lemonadebot.cache;
 
-import eternal.lemonadebot.permissions.CommandPermission;
-import eternal.lemonadebot.permissions.MemberRank;
-import eternal.lemonadebot.permissions.PermissionManager;
-import java.util.Collection;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
- * Abstract class with admin defaultRank implementation
+ * Class used to store items limited
  *
  * @author Neutroni
+ * @param <Key> Type of the keys to store
+ * @param <Value> Type of the values to store
  */
-public abstract class AdminCommand extends ChatCommand {
+public class ItemCache<Key, Value> extends LinkedHashMap<Key, Value> {
+
+    /**
+     * Limit of the items to store
+     */
+    private final int itemLimit;
+
+    /**
+     * Constructor that initializes the backing LinkedHashMap with current
+     * default loadfactor and sets ordering to access order
+     *
+     * @param size Max amount of items to store
+     */
+    public ItemCache(final int size) throws IllegalArgumentException {
+        super(1, 0.75f, true);
+        if (size < 0) {
+            throw new IllegalArgumentException("Cache size can not be negative");
+        }
+        this.itemLimit = size;
+    }
 
     @Override
-    public Collection<CommandPermission> getDefaultRanks(final ResourceBundle locale, final long guildID, final PermissionManager permissions) {
-        return List.of(new CommandPermission(getCommand(locale), MemberRank.ADMIN, guildID, guildID));
+    protected boolean removeEldestEntry(final Map.Entry eldest) {
+        return size() > itemLimit;
     }
 }

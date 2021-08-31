@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2020 Neutroni.
+ * Copyright 2021 Neutroni.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,24 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eternal.lemonadebot.commands;
+package eternal.lemonadebot;
 
-import eternal.lemonadebot.permissions.CommandPermission;
-import eternal.lemonadebot.permissions.MemberRank;
-import eternal.lemonadebot.permissions.PermissionManager;
-import java.util.Collection;
-import java.util.List;
-import java.util.ResourceBundle;
+import eternal.lemonadebot.database.StorageManager;
+import javax.annotation.Nonnull;
+import net.dv8tion.jda.api.events.ShutdownEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 /**
- * Abstract class with admin defaultRank implementation
  *
  * @author Neutroni
  */
-public abstract class AdminCommand extends ChatCommand {
+public class ShutdownListener extends ListenerAdapter {
 
+    private final StorageManager storage;
+
+    /**
+     * Constructor
+     *
+     * @param storage Storage to shut down when JDA closes
+     */
+    public ShutdownListener(final StorageManager storage) {
+        this.storage = storage;
+    }
+
+    /**
+     * Closes the database once JDA has shutdown
+     *
+     * @param event event from JDA
+     */
     @Override
-    public Collection<CommandPermission> getDefaultRanks(final ResourceBundle locale, final long guildID, final PermissionManager permissions) {
-        return List.of(new CommandPermission(getCommand(locale), MemberRank.ADMIN, guildID, guildID));
+    public void onShutdown(final @Nonnull ShutdownEvent event) {
+        this.storage.close();
     }
 }

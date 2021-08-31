@@ -26,11 +26,11 @@ package eternal.lemonadebot.reactions;
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.commands.CommandProvider;
-import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.database.RuntimeStorage;
+import eternal.lemonadebot.config.ConfigManager;
+import eternal.lemonadebot.database.StorageManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
-import eternal.lemonadebot.translation.TranslationCache;
 import java.util.Optional;
+import javax.sql.DataSource;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageReaction;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -45,15 +45,18 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
  */
 public class MessageReactionListener extends ListenerAdapter {
 
-    private final RuntimeStorage storage;
+    private final StorageManager storage;
+    private final ReactionManager reactionManager;
 
     /**
      * Constructor
      *
      * @param storage Storage to use
      */
-    public MessageReactionListener(final RuntimeStorage storage) {
+    public MessageReactionListener(final StorageManager storage) {
         this.storage = storage;
+        final DataSource ds = storage.getDataSource();
+        this.reactionManager = new ReactionManager(ds);
     }
 
     @Override
@@ -65,25 +68,21 @@ public class MessageReactionListener extends ListenerAdapter {
         }
 
         //Check if we have a command for reaction
-        final Guild guild = event.getGuild();
-        final GuildDataStore guildData = this.storage.getGuildData(guild);
-        final ReactionManager reactionManager = guildData.getReactionManager();
         final MessageReaction.ReactionEmote reaction = event.getReactionEmote();
         final Optional<String> command = reactionManager.onReactionAdd(event.getMessageIdLong(), reaction);
         command.ifPresent((String t) -> {
-            runCommand(guildData, t, event);
+            runCommand(t, event);
         });
     }
 
-    private void runCommand(final GuildDataStore guildData, final String action, final GenericGuildMessageReactionEvent event) {
-        final CommandProvider commandProvider = guildData.getCommandProvider();
+    private void runCommand(final String action, final GenericGuildMessageReactionEvent event) {
+        final CommandProvider commandProvider = this.storage.getCommandProvider();
         final CommandMatcher matcher = new ReactionMatcher(action, event);
-        commandProvider.getAction(matcher).ifPresent((ChatCommand com) -> {
-            final Guild guild = event.getGuild();
-            final TranslationCache translation = this.storage.getTranslationCache(guild);
-
+        final long guildID = event.getGuild().getIdLong();
+        final ConfigManager config = this.storage.getConfigCache().getConfigManager(guildID);
+        commandProvider.getAction(matcher, config).ifPresent((ChatCommand com) -> {
             //Run the command
-            final CommandContext context = new CommandContext(matcher, guildData, translation);
+            final CommandContext context = new CommandContext(matcher, this.storage);
             com.run(context);
         });
     }
@@ -97,13 +96,10 @@ public class MessageReactionListener extends ListenerAdapter {
         }
 
         //Check if we have a command for reaction
-        final Guild guild = event.getGuild();
-        final GuildDataStore guildData = this.storage.getGuildData(guild);
-        final ReactionManager reactionManager = guildData.getReactionManager();
         final MessageReaction.ReactionEmote reaction = event.getReactionEmote();
         final Optional<String> command = reactionManager.onReactionRemove(event.getMessageIdLong(), reaction);
         command.ifPresent((String t) -> {
-            runCommand(guildData, t, event);
+            runCommand(t, event);
         });
     }
 }

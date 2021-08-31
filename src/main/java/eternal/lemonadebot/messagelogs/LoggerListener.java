@@ -23,13 +23,13 @@
  */
 package eternal.lemonadebot.messagelogs;
 
+import eternal.lemonadebot.config.ConfigCache;
 import eternal.lemonadebot.config.ConfigManager;
-import eternal.lemonadebot.database.DatabaseManager;
-import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.database.RuntimeStorage;
+import eternal.lemonadebot.database.StorageManager;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import javax.sql.DataSource;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
@@ -47,18 +47,18 @@ import net.dv8tion.jda.api.utils.TimeUtil;
  */
 public class LoggerListener extends ListenerAdapter {
 
-    private final RuntimeStorage db;
+    private final ConfigCache configs;
     private final MessageManager messageManager;
 
     /**
      * Constructor
      *
-     * @param rs RuntimeStorage to use for getting guild info
-     * @param db Database to use for logging messages
+     * @param storage StorageManager to use to access database
      */
-    public LoggerListener(final RuntimeStorage rs, final DatabaseManager db) {
-        this.db = rs;
-        this.messageManager = new MessageManager(db.getDataSource());
+    public LoggerListener(final StorageManager storage) {
+        this.configs = storage.getConfigCache();
+        final DataSource ds = storage.getDataSource();
+        this.messageManager = new MessageManager(ds);
     }
 
     /**
@@ -71,8 +71,7 @@ public class LoggerListener extends ListenerAdapter {
     public void onGuildMessageReceived(final GuildMessageReceivedEvent event) {
         final Guild eventGuild = event.getGuild();
         final Message message = event.getMessage();
-        final GuildDataStore guildData = this.db.getGuildData(eventGuild);
-        final ConfigManager guildConf = guildData.getConfigManager();
+        final ConfigManager guildConf = this.configs.getConfigManager(eventGuild.getIdLong());
 
         //Check if guild has logging enabled
         final Optional<Long> logID = guildConf.getLogChannelID();
@@ -90,10 +89,9 @@ public class LoggerListener extends ListenerAdapter {
     @Override
     public void onGuildMessageUpdate(final GuildMessageUpdateEvent event) {
         final Guild guild = event.getGuild();
-        final GuildDataStore guildData = this.db.getGuildData(guild);
 
         //Check if guild has logging enabled
-        final ConfigManager guildConf = guildData.getConfigManager();
+        final ConfigManager guildConf = this.configs.getConfigManager(guild.getIdLong());
         final Optional<Long> logID = guildConf.getLogChannelID();
         if (logID.isEmpty()) {
             return;
@@ -105,7 +103,7 @@ public class LoggerListener extends ListenerAdapter {
         }
         //Get the old content if stored
         final Message message = event.getMessage();
-        final ResourceBundle locale = this.db.getTranslationCache(guild).getResourceBundle();
+        final ResourceBundle locale = guildConf.getTranslationCache().getResourceBundle();
         final Optional<StoredMessage> oldContent = this.messageManager.getMessageContent(message.getIdLong());
         oldContent.ifPresent((StoredMessage t) -> {
             final User author = event.getAuthor();
@@ -131,10 +129,9 @@ public class LoggerListener extends ListenerAdapter {
     @Override
     public void onGuildMessageDelete(final GuildMessageDeleteEvent event) {
         final Guild guild = event.getGuild();
-        final GuildDataStore guildData = this.db.getGuildData(guild);
 
         //Check if guild has logging enabled
-        final ConfigManager guildConf = guildData.getConfigManager();
+        final ConfigManager guildConf = this.configs.getConfigManager(guild.getIdLong());
         final Optional<Long> logID = guildConf.getLogChannelID();
         if (logID.isEmpty()) {
             return;
@@ -146,7 +143,7 @@ public class LoggerListener extends ListenerAdapter {
         }
         //Get the old content if stored
         final long messageID = event.getMessageIdLong();
-        final ResourceBundle locale = this.db.getTranslationCache(guild).getResourceBundle();
+        final ResourceBundle locale = guildConf.getTranslationCache().getResourceBundle();
         final Optional<StoredMessage> oldContent = this.messageManager.getMessageContent(messageID);
         oldContent.ifPresent((StoredMessage t) -> {
             final EmbedBuilder eb = new EmbedBuilder();

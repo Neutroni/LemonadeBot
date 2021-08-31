@@ -26,9 +26,9 @@ package eternal.lemonadebot;
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.commands.CommandProvider;
+import eternal.lemonadebot.config.ConfigCache;
 import eternal.lemonadebot.config.ConfigManager;
-import eternal.lemonadebot.database.GuildDataStore;
-import eternal.lemonadebot.database.RuntimeStorage;
+import eternal.lemonadebot.database.StorageManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.messageparsing.MessageMatcher;
 import eternal.lemonadebot.translation.TranslationCache;
@@ -43,11 +43,8 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.events.ShutdownEvent;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * JDA MessageListener, responsible for reacting to messages discord sends
@@ -56,17 +53,19 @@ import org.apache.logging.log4j.Logger;
  */
 public class CommandListener extends ListenerAdapter {
 
-    private static final Logger LOGGER = LogManager.getLogger();
-
-    private final RuntimeStorage db;
+    private final CommandProvider commands;
+    private final ConfigCache configs;
+    private final StorageManager storage;
 
     /**
      * Constructor
      *
-     * @param database Database to use for operations
+     * @param storage StorageManager to get configuration and commands from
      */
-    public CommandListener(final RuntimeStorage database) {
-        this.db = database;
+    public CommandListener(final StorageManager storage) {
+        this.commands = storage.getCommandProvider();
+        this.configs = storage.getConfigCache();
+        this.storage = storage;
     }
 
     /**
@@ -96,9 +95,8 @@ public class CommandListener extends ListenerAdapter {
         final Guild eventGuild = event.getGuild();
         final Member selfMember = eventGuild.getSelfMember();
         final Message message = event.getMessage();
-        final GuildDataStore guildData = this.db.getGuildData(eventGuild);
-        final ConfigManager configManager = guildData.getConfigManager();
-        final TranslationCache translation = this.db.getTranslationCache(eventGuild);
+        final ConfigManager configManager = this.configs.getConfigManager(eventGuild.getIdLong());
+        final TranslationCache translation = configManager.getTranslationCache();
         final ResourceBundle resources = translation.getResourceBundle();
         final List<Member> mentionedMembers = message.getMentionedMembers();
         if (mentionedMembers.size() == 1 && mentionedMembers.contains(selfMember)) {
@@ -123,24 +121,11 @@ public class CommandListener extends ListenerAdapter {
 
         //Check if message is a command
         final CommandMatcher cmdMatch = new MessageMatcher(configManager, message);
-        final CommandProvider commandProvider = guildData.getCommandProvider();
-        final Optional<ChatCommand> action = commandProvider.getAction(cmdMatch);
+        final CommandContext context = new CommandContext(cmdMatch, this.storage);
+        final Optional<ChatCommand> action = this.commands.getAction(cmdMatch, configManager);
         action.ifPresent((ChatCommand command) -> {
             //Run the command
-            final CommandContext context = new CommandContext(cmdMatch, guildData, translation);
             command.run(context);
         });
     }
-
-    /**
-     * Closes the database once JDA has shutdown
-     *
-     * @param event event from JDA
-     */
-    @Override
-    public void onShutdown(final @Nonnull ShutdownEvent event) {
-        this.db.close();
-        LOGGER.info("Shutting down");
-    }
-
 }

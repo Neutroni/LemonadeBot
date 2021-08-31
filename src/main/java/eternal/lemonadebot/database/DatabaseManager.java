@@ -43,8 +43,7 @@ public class DatabaseManager implements Closeable {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final HikariDataSource dataSource;
-    private final CacheConfig cacheConfig;
-    private final int maxMessages;
+    private final StorageConfig storageConfig;
 
     /**
      * Constructor
@@ -53,15 +52,7 @@ public class DatabaseManager implements Closeable {
      * @throws SQLException if loading database fails
      */
     public DatabaseManager(final Properties config) throws SQLException, NumberFormatException {
-        final String numberString = config.getProperty("max-messages");
-        if (numberString == null) {
-            this.maxMessages = 4096;
-            LOGGER.info("Max messages to store not set, defaulting to: {}", this.maxMessages);
-        } else {
-            this.maxMessages = Integer.parseInt(numberString);
-            LOGGER.info("Set max messages to: {}", this.maxMessages);
-        }
-        this.cacheConfig = new CacheConfig(config);
+        this.storageConfig = new StorageConfig(config);
 
         //Connect to database
         final String databaseLocation = config.getProperty("database-location", "database.db");
@@ -89,12 +80,12 @@ public class DatabaseManager implements Closeable {
     }
 
     /**
-     * Get CacheConfig object
+     * Get bot configuration
      *
      * @return cacheConfig
      */
-    public CacheConfig getCacheConfig() {
-        return this.cacheConfig;
+    public StorageConfig getConfig() {
+        return this.storageConfig;
     }
 
     /**
@@ -125,10 +116,11 @@ public class DatabaseManager implements Closeable {
                 + "content TEXT NOT NULL,"
                 + "FOREIGN KEY (guild) REFERENCES Guilds(id) ON DELETE CASCADE);";
         final String DROP_TRIGGER_CLEANUP = "DROP TRIGGER IF EXISTS MessageCleanup;";
-        //Trigger called to remove old messages, yes there is string concatenation but maxMessage is numeric
+        //Trigger called to remove old messages, yes there is string concatenation but messageLogLimit is numeric
         final String MESSAGE_CLEANUP = "CREATE TRIGGER MessageCleanup AFTER INSERT ON Messages BEGIN "
                 + "DELETE FROM Messages WHERE id IN "
-                + "(SELECT id FROM Messages WHERE guild = NEW.guild ORDER BY id DESC LIMIT -1 OFFSET " + this.maxMessages + "); END;";
+                + "(SELECT id FROM Messages WHERE guild = NEW.guild ORDER BY id DESC LIMIT -1 OFFSET "
+                + this.storageConfig.getMessageLogLimit() + "); END;";
         final String COMMANDS = "CREATE TABLE IF NOT EXISTS Commands("
                 + "guild INTEGER NOT NULL,"
                 + "name TEXT NOT NULL,"

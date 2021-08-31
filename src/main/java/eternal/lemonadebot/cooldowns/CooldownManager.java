@@ -23,6 +23,7 @@
  */
 package eternal.lemonadebot.cooldowns;
 
+import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.permissions.MemberRank;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -51,17 +52,15 @@ public class CooldownManager {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final DataSource dataSource;
-    private final long guildID;
 
     /**
      * Constructor
      *
-     * @param ds DataSource for the guild
-     * @param guildID ID of the guild
+     * @param db DataSource for database
+
      */
-    public CooldownManager(final DataSource ds, final long guildID) {
-        this.dataSource = ds;
-        this.guildID = guildID;
+    public CooldownManager(final DatabaseManager db) {
+        this.dataSource = db.getDataSource();
     }
 
     /**
@@ -77,8 +76,9 @@ public class CooldownManager {
             return Optional.empty();
         }
 
+        final long guildID = member.getGuild().getIdLong();
         try {
-            final Optional<ActionCooldown> optCooldown = getActionCooldown(action);
+            final Optional<ActionCooldown> optCooldown = getActionCooldown(action, guildID);
             if (optCooldown.isEmpty()) {
                 //No cooldown set for action
                 return Optional.empty();
@@ -91,7 +91,7 @@ public class CooldownManager {
                 return Optional.of(duration);
             }
             //Inactive cooldown, update most recent activation
-            updateActivationTime(cd.getAction());
+            updateActivationTime(cd.getAction(), guildID);
         } catch (SQLException ex) {
             LOGGER.error("Failure to get cooldown for action from database: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);
@@ -107,11 +107,11 @@ public class CooldownManager {
      * @return true if cooldown was removed, false otherwise
      * @throws SQLException if database connection failed
      */
-    boolean removeCooldown(final String action) throws SQLException {
+    boolean removeCooldown(final String action, final long guildID) throws SQLException {
         final String query = "DELETE FROM Cooldowns Where guild = ? AND command = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, guildID);
             ps.setString(2, action);
             return ps.executeUpdate() > 0;
         }
@@ -125,11 +125,11 @@ public class CooldownManager {
      * @return true if cooldown was created or updated
      * @throws SQLException If database connection failed
      */
-    boolean setCooldown(final String action, final Duration duration) throws SQLException {
+    boolean setCooldown(final String action, final Duration duration, final long guildID) throws SQLException {
         final String query = "INSERT INTO Cooldowns(guild,command,duration,activationTime) VALUES(?,?,?,?) ON CONFLICT DO UPDATE SET duration = ?";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, guildID);
             ps.setString(2, action);
             ps.setLong(3, duration.getSeconds());
             ps.setLong(4, Instant.EPOCH.getEpochSecond());
@@ -146,13 +146,13 @@ public class CooldownManager {
      * @return ActionCooldown if found
      * @throws SQLException if database connection failed
      */
-    Optional<ActionCooldown> getActionCooldown(final String action) throws SQLException {
+    Optional<ActionCooldown> getActionCooldown(final String action, final long guildID) throws SQLException {
         final String query = "SELECT command,duration,activationTime FROM Cooldowns "
                 + "WHERE guild = ? AND (command = ? OR ? LIKE command || ' %') "
                 + "ORDER BY length(command) DESC LIMIT 1;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, guildID);
             try (final ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     final String command = rs.getString("command");
@@ -171,12 +171,12 @@ public class CooldownManager {
      * @return Unmodifiable collection of cooldowns
      * @throws SQLException if database connection failed
      */
-    Collection<ActionCooldown> getCooldowns() throws SQLException {
+    Collection<ActionCooldown> getCooldowns(final long guildID) throws SQLException {
         final List<ActionCooldown> cooldowns = new ArrayList<>();
         final String query = "SELECT command,duration,activationTime FROM Cooldowns WHERE guild = ?;";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
-            ps.setLong(1, this.guildID);
+            ps.setLong(1, guildID);
             try (final ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final String action = rs.getString("command");
@@ -194,15 +194,16 @@ public class CooldownManager {
      * Set action last seen time to current time.
      *
      * @param action Action string to set last seen time
+     * @param guildID ID of the guild to update action in
      * @return true if activate time updated successfully
      * @throws SQLException If database connection failed
      */
-    protected boolean updateActivationTime(final String action) throws SQLException {
+    protected boolean updateActivationTime(final String action, final long guildID) throws SQLException {
         final String query = "UPDATE Cooldowns SET activationTime = ? WHERE guild = ? AND command = ? VALUES(?,?,?)";
         try (final Connection connection = this.dataSource.getConnection();
                 final PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setLong(1, Instant.now().getEpochSecond());
-            ps.setLong(2, this.guildID);
+            ps.setLong(2, guildID);
             ps.setString(3, action);
             return ps.executeUpdate() > 0;
         }

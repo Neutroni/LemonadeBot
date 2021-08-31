@@ -25,7 +25,7 @@ package eternal.lemonadebot.rolemanagement;
 
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandContext;
-import eternal.lemonadebot.database.CacheConfig;
+import eternal.lemonadebot.database.StorageConfig;
 import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
@@ -62,10 +62,8 @@ import org.apache.logging.log4j.Logger;
 public class RoleCommand extends ChatCommand {
 
     private static final Logger LOGGER = LogManager.getLogger();
-    private final DataSource dataSource;
-    private final CacheConfig cacheConfig;
     private final Random RNG = new Random();
-    private final Map<Long, RoleManager> managers;
+    private final RoleManager manager;
 
     /**
      * Constructor
@@ -73,25 +71,7 @@ public class RoleCommand extends ChatCommand {
      * @param db Database connection
      */
     public RoleCommand(final DatabaseManager db) {
-        this.dataSource = db.getDataSource();
-        this.cacheConfig = db.getCacheConfig();
-        this.managers = new ConcurrentHashMap<>();
-    }
-
-    /**
-     * Get RoleManager for a guild
-     *
-     * @param guild Guild to get rolemanager for
-     * @return RoleManager
-     */
-    private RoleManager getRoleManager(final Guild guild) {
-        return this.managers.computeIfAbsent(guild.getIdLong(), (Long t) -> {
-            if (this.cacheConfig.allowedRolesCacheEnabled()) {
-                return new RoleManagerCache(dataSource, t);
-            } else {
-                return new RoleManager(dataSource, t);
-            }
-        });
+        this.manager = new RoleManager(db.getDataSource());
     }
 
     @Override
@@ -116,11 +96,11 @@ public class RoleCommand extends ChatCommand {
         final String actionRemove = locale.getString("ACTION_REMOVE");
         final String actionAllow = locale.getString("ACTION_ALLOW");
         final String actionDisallow = locale.getString("ACTION_DISALLOW");
-        return List.of(new CommandPermission(commandName, MemberRank.USER, guildID),
-                new CommandPermission(commandName + ' ' + actionGet, MemberRank.MEMBER, guildID),
-                new CommandPermission(commandName + ' ' + actionRemove, MemberRank.MEMBER, guildID),
-                new CommandPermission(commandName + ' ' + actionAllow, MemberRank.ADMIN, guildID),
-                new CommandPermission(commandName + ' ' + actionDisallow, MemberRank.ADMIN, guildID));
+        return List.of(new CommandPermission(commandName, MemberRank.USER, guildID, guildID),
+                new CommandPermission(commandName + ' ' + actionGet, MemberRank.MEMBER, guildID, guildID),
+                new CommandPermission(commandName + ' ' + actionRemove, MemberRank.MEMBER, guildID, guildID),
+                new CommandPermission(commandName + ' ' + actionAllow, MemberRank.ADMIN, guildID, guildID),
+                new CommandPermission(commandName + ' ' + actionDisallow, MemberRank.ADMIN, guildID, guildID));
     }
 
     @Override
@@ -401,10 +381,9 @@ public class RoleCommand extends ChatCommand {
         }
 
         //Add role to roleManagers list
-        final RoleManager roleManager = getRoleManager(guild);
         final AllowedRole allowedRole = new AllowedRole(role, roleDescription);
         try {
-            if (roleManager.allowRole(allowedRole)) {
+            if (this.manager.allowRole(allowedRole)) {
                 channel.sendMessage(locale.getString("ROLE_ALLOW_SUCCESS")).queue();
                 return;
             }
@@ -444,9 +423,8 @@ public class RoleCommand extends ChatCommand {
             return;
         }
         final Role role = roles.get(0);
-        final RoleManager roleManager = getRoleManager(guild);
         try {
-            if (roleManager.disallowRole(role)) {
+            if (this.manager.disallowRole(role)) {
                 channel.sendMessage(locale.getString("ROLE_DISALLOW_SUCCESS")).queue();
                 return;
             }
@@ -482,12 +460,11 @@ public class RoleCommand extends ChatCommand {
             return;
         }
         final Role role = roles.get(0);
-        final RoleManager roleManager = getRoleManager(guild);
 
         //Check if we can remove the role from requester
         final boolean roleAllowed;
         try {
-            roleAllowed = roleManager.isAllowed(role);
+            roleAllowed = this.manager.isAllowed(role);
         } catch (SQLException ex) {
             channel.sendMessage(locale.getString("ROLE_SQL_ERROR_ON_CHECK")).queue();
             LOGGER.error("Failure to check if we can remove role from user: {}", ex.getMessage());
@@ -536,12 +513,11 @@ public class RoleCommand extends ChatCommand {
             return;
         }
         final Role role = roles.get(0);
-        final RoleManager roleManager = getRoleManager(guild);
 
         //Check if we can remove the role from requester
         final boolean roleAllowed;
         try {
-            roleAllowed = roleManager.isAllowed(role);
+            roleAllowed = this.manager.isAllowed(role);
         } catch (SQLException ex) {
             channel.sendMessage(locale.getString("ROLE_SQL_ERROR_ON_CHECK")).queue();
             LOGGER.error("Failure to check if we can remove role from user: {}", ex.getMessage());
@@ -575,10 +551,9 @@ public class RoleCommand extends ChatCommand {
         final Guild guild = matcher.getGuild();
 
         //Get the list of roles we are allowed to assign
-        final RoleManager roleManager = getRoleManager(guild);
         final Collection<AllowedRole> roles;
         try {
-            roles = roleManager.getRoles();
+            roles = this.manager.getRoles(context.getGuild());
         } catch (SQLException ex) {
             LOGGER.error("Failure to get list of roles from database: {}", ex.getMessage());
             LOGGER.trace("Stack trace", ex);

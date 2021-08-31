@@ -33,6 +33,7 @@ import net.dv8tion.jda.api.entities.Role;
  */
 public class AllowedRole {
 
+    private final long guildID;
     private final long roleID;
     private final String description;
 
@@ -43,6 +44,7 @@ public class AllowedRole {
      * @param description Description for role
      */
     AllowedRole(final Role role, final String description) {
+        this.guildID = role.getGuild().getIdLong();
         this.roleID = role.getIdLong();
         this.description = description;
     }
@@ -53,9 +55,10 @@ public class AllowedRole {
      * @param role role id
      * @param description Description for this role
      */
-    AllowedRole(final long role, final String description) {
+    AllowedRole(final long role, final String description, final long guildID) {
         this.roleID = role;
         this.description = description;
+        this.guildID = guildID;
     }
 
     @Override
@@ -91,6 +94,15 @@ public class AllowedRole {
     }
 
     /**
+     * Get the id the role is from
+     *
+     * @return guild id
+     */
+    long getGuildID() {
+        return this.guildID;
+    }
+
+    /**
      * Get string representation of the event for listing events
      *
      * @param locale Locale to return the list element in
@@ -119,5 +131,4 @@ public class AllowedRole {
 
         return String.format(template, roleName, roleDescription);
     }
-
 }

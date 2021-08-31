@@ -26,12 +26,13 @@ package eternal.lemonadebot.customcommands;
 import eternal.lemonadebot.commands.ChatCommand;
 import eternal.lemonadebot.commands.CommandContext;
 import eternal.lemonadebot.commands.CommandProvider;
-import eternal.lemonadebot.database.GuildDataStore;
+import eternal.lemonadebot.config.ConfigManager;
 import eternal.lemonadebot.messageparsing.CommandMatcher;
 import eternal.lemonadebot.permissions.CommandPermission;
 import eternal.lemonadebot.permissions.PermissionManager;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
@@ -51,6 +52,7 @@ public class CustomCommand extends ChatCommand {
     private final String commandName;
     private final String actionTemplate;
     private final long author;
+    private final long guildID;
 
     /**
      * Constructor
@@ -58,11 +60,13 @@ public class CustomCommand extends ChatCommand {
      * @param commandName command this is activated by
      * @param actionTemplate action template
      * @param owner who created this command
+     * @param guildID ID of the guild the command belongs to
      */
-    public CustomCommand(final String commandName, final String actionTemplate, final long owner) {
+    public CustomCommand(final String commandName, final String actionTemplate, final long owner, final long guildID) {
         this.commandName = commandName;
         this.actionTemplate = actionTemplate;
         this.author = owner;
+        this.guildID = guildID;
     }
 
     /**
@@ -98,8 +102,8 @@ public class CustomCommand extends ChatCommand {
 
     @Override
     public Collection<CommandPermission> getDefaultRanks(final ResourceBundle locale, final long guildID, final PermissionManager permissions) {
-        final CommandPermission rankRole = permissions.getTemplateRunPermission();
-        return List.of(new CommandPermission(getName(), rankRole.getRequiredRank(), rankRole.getRequiredRoleID()));
+        final CommandPermission rankRole = permissions.getTemplateRunPermission(guildID);
+        return List.of(new CommandPermission(getName(), rankRole.getRequiredRank(), rankRole.getRequiredRoleID(), guildID));
     }
 
     /**
@@ -118,6 +122,15 @@ public class CustomCommand extends ChatCommand {
      */
     public long getAuthor() {
         return this.author;
+    }
+
+    /**
+     * Getter for the guild ID
+     *
+     * @return ID of the guild the command was created in
+     */
+    public long getGuildID() {
+        return this.guildID;
     }
 
     @Override
@@ -140,11 +153,11 @@ public class CustomCommand extends ChatCommand {
         }
 
         //If response begins with a exclamation point it should be treated as a command
-        final GuildDataStore guildData = context.getGuildData();
         final CommandMatcher message = context.getMatcher();
         final CommandMatcher fakeMatcher = new FakeMessageMatcher(message, commandString);
-        final CommandProvider commands = guildData.getCommandProvider();
-        final Optional<ChatCommand> optCommand = commands.getAction(fakeMatcher);
+        final CommandProvider commands = context.getCommandProvider();
+        final ConfigManager config = context.getConfigManager();
+        final Optional<ChatCommand> optCommand = commands.getAction(fakeMatcher, config);
         optCommand.ifPresentOrElse((ChatCommand command) -> {
             //Check if command is custom command, do not allow recursion
             if (command instanceof CustomCommand) {
@@ -161,16 +174,25 @@ public class CustomCommand extends ChatCommand {
 
     @Override
     public int hashCode() {
-        return this.commandName.hashCode();
+        return Objects.hash(this.guildID, this.commandName);
     }
 
     @Override
-    public boolean equals(final Object other) {
-        if (other instanceof CustomCommand) {
-            final CustomCommand otherCommand = (CustomCommand) other;
-            return this.commandName.equals(otherCommand.getName());
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
         }
-        return false;
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final CustomCommand other = (CustomCommand) obj;
+        if (this.guildID != other.guildID) {
+            return false;
+        }
+        return Objects.equals(this.commandName, other.commandName);
     }
 
     /**
