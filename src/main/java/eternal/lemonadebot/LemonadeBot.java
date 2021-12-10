@@ -107,7 +107,8 @@ public class LemonadeBot {
         final List<CacheFlag> cacheFlagsToDisable = List.of(
                 CacheFlag.ACTIVITY,
                 CacheFlag.EMOTE,
-                CacheFlag.CLIENT_STATUS
+                CacheFlag.CLIENT_STATUS,
+                CacheFlag.ONLINE_STATUS
         );
         jdabuilder.disableCache(cacheFlagsToDisable);
         jdabuilder.setMemberCachePolicy(MemberCachePolicy.ALL);
