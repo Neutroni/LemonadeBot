@@ -26,6 +26,7 @@ package eternal.lemonadebot.customcommands;
 import eternal.lemonadebot.cache.ItemCache;
 import eternal.lemonadebot.cache.NamedGuildItem;
 import eternal.lemonadebot.database.DatabaseManager;
+import eternal.lemonadebot.database.StorageConfig;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -46,6 +47,7 @@ import javax.sql.DataSource;
 public class TemplateManager {
 
     private final DataSource dataSource;
+    private final StorageConfig storageConfig;
     private final Map<NamedGuildItem, CustomCommand> templateCache;
 
     /**
@@ -55,7 +57,8 @@ public class TemplateManager {
      */
     public TemplateManager(final DatabaseManager db) {
         this.dataSource = db.getDataSource();
-        final int cacheLimit = db.getConfig().templateCacheEnabled();
+        this.storageConfig = db.getConfig();
+        final int cacheLimit = this.storageConfig.templateCacheEnabled();
         this.templateCache = Collections.synchronizedMap(new ItemCache<>(cacheLimit));
     }
 
@@ -91,7 +94,7 @@ public class TemplateManager {
      * @return Optional containing the template if found
      * @throws SQLException if database connection failed
      */
-    private Optional<CustomCommand> getCommandFromDatabase(NamedGuildItem key) throws SQLException {
+    private Optional<CustomCommand> getCommandFromDatabase(final NamedGuildItem key) throws SQLException {
         final long guildID = key.getGuildID();
         final String name = key.getItemName();
         final String query = "SELECT template,owner FROM Commands WHERE guild = ? AND name = ?;";
@@ -108,6 +111,23 @@ public class TemplateManager {
             }
         }
         return Optional.empty();
+    }
+
+    boolean guildTemplateLimitReached(final long guildID) throws SQLException {
+        final String query = "SELECT COUNT(name) as TemplateCount FROM Commands WHERE guild = ?";
+        try (final Connection connection = this.dataSource.getConnection();
+                final PreparedStatement ps = connection.prepareStatement(query)) {
+            ps.setLong(1, guildID);
+            try (final ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    final int commandCount = rs.getInt("TemplateCount");
+                    final int limit = this.storageConfig.getPerGuildTemplateLimit();
+                    return (commandCount > limit);
+                }
+                //Count did not return value
+                return false;
+            }
+        }
     }
 
     /**

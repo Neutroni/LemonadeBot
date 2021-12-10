@@ -23,9 +23,6 @@
  */
 package eternal.lemonadebot;
 
-import eternal.lemonadebot.commands.CommandProvider;
-import eternal.lemonadebot.config.ConfigCache;
-import eternal.lemonadebot.database.DatabaseManager;
 import eternal.lemonadebot.database.StorageManager;
 import eternal.lemonadebot.keywords.KeywordListener;
 import eternal.lemonadebot.messagelogs.LoggerListener;
@@ -40,7 +37,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import javax.security.auth.login.LoginException;
-import javax.sql.DataSource;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;

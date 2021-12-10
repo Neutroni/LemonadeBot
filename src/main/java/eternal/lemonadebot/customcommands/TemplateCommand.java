@@ -153,6 +153,10 @@ public class TemplateCommand extends ChatCommand {
         final TemplateManager commands = commandProvider.getTemplateManager();
         final CustomCommand newAction = new CustomCommand(commandName, commandTemplate, sender.getIdLong(), guild.getIdLong());
         try {
+            if(commands.guildTemplateLimitReached(guild.getIdLong())){
+                textChannel.sendMessage(locale.getString("TEMPLATE_GUILD_LIMIT_REACHED")).queue();
+                return;
+            }
             if (commands.addCommand(newAction)) {
                 textChannel.sendMessage(locale.getString("TEMPLATE_CREATE_SUCCESS")).queue();
                 return;
