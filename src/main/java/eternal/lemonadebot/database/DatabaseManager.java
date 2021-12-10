@@ -195,7 +195,7 @@ public class DatabaseManager implements Closeable {
         final String INVENTORY_CLEANUP = "CREATE TRIGGER IF NOT EXISTS InventoryCleanup "
                 + "AFTER UPDATE ON Inventory BEGIN "
                 + "DELETE FROM Inventory WHERE count = 0; END;";
-        final String REACTIONS = "CREATE TABLE IF NOT EXISTST Reactions("
+        final String REACTIONS = "CREATE TABLE IF NOT EXISTS Reactions("
                 + "messageId INTEGER NOT NULL,"
                 + "guild INTEGER NOT NULL,"
                 + "channel INTEGER NOT NULL,"
