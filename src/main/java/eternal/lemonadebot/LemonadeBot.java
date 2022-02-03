@@ -32,6 +32,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
@@ -76,7 +77,7 @@ public class LemonadeBot {
 
         //Load properties
         final Properties properties = new Properties();
-        try (final Reader inputReader = new FileReader(configLocation)) {
+        try (final Reader inputReader = new FileReader(configLocation, StandardCharsets.UTF_8)) {
             properties.load(inputReader);
         } catch (FileNotFoundException ex) {
             LOGGER.fatal("Could not find configuration file, {}", ex.getMessage());
@@ -163,7 +164,7 @@ public class LemonadeBot {
         properties.setProperty("discord-api-key", "<discord api key here>");
         properties.setProperty("database-location", "database.db");
         properties.setProperty("max-messages", "1000");
-        try (final Writer f = new FileWriter(configLocation)) {
+        try (final Writer f = new FileWriter(configLocation, StandardCharsets.UTF_8)) {
             properties.store(f, "Configuration file for LemonadeBot");
             LOGGER.debug("Configuration file successfully created.");
         } catch (IOException e) {

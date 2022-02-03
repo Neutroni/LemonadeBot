@@ -60,7 +60,7 @@ public class KeywordAction extends CustomCommand {
         this.runAsOwner = runAsOwner;
         this.keywordPattern = Pattern.compile(patternString);
     }
-    
+
     /**
      * Constructor
      *

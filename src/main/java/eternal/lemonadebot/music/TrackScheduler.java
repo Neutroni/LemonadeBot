@@ -13,12 +13,15 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.managers.AudioManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
  * @author Neutroni
  */
 class TrackScheduler extends AudioEventAdapter {
+    private static final Logger LOGGER = LogManager.getLogger();
 
     private final AudioPlayer player;
     private final AudioManager manager;
@@ -40,13 +43,16 @@ class TrackScheduler extends AudioEventAdapter {
      *
      * @param track The track to play or add to queue.
      */
-    public void queue(final AudioTrack track) {
+    public boolean queue(final AudioTrack track) {
         // Calling startTrack with the noInterrupt set to true will start the track only if nothing is currently playing. If
         // something is playing, it returns false and does nothing. In that case the player was already playing so this
         // track goes to the queue instead.
         if (!this.player.startTrack(track, true)) {
-            this.queue.offer(track);
+            //Return if track can be queued
+            return this.queue.offer(track);
         }
+        //Track playback started successfully
+        return true;
     }
 
     /**

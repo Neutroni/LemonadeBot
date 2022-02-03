@@ -428,7 +428,7 @@ public class MusicCommand extends ChatCommand {
      * @param musicManager musicManager to use
      * @param track AudioTrack to play
      */
-    private static void play(final Guild guild, final GuildMusicManager musicManager, final AudioTrack track) {
+    private static boolean play(final Guild guild, final GuildMusicManager musicManager, final AudioTrack track) {
         //Make sure we are connected
         final AudioManager audioManager = guild.getAudioManager();
         if (!audioManager.isConnected()) {
@@ -439,7 +439,7 @@ public class MusicCommand extends ChatCommand {
         }
 
         //Queue the track, starts playback if queue is empty
-        musicManager.scheduler.queue(track);
+        return musicManager.scheduler.queue(track);
     }
 
 }
